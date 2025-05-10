@@ -11,7 +11,8 @@ import {
   AlertOctagonIcon, 
   BriefcaseIcon,
   PlusIcon,
-  BarChart3Icon
+  BarChart3Icon,
+  TagIcon
 } from 'lucide-react';
 
 function AdminDashboard() {

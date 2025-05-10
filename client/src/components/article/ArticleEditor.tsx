@@ -48,8 +48,10 @@ import {
   ListTodo,
   Layout,
   Columns,
-  Plus
+  Plus,
+  AlertCircle
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useDropzone } from "react-dropzone";
 import { nanoid } from "nanoid";
