@@ -1461,6 +1461,34 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => addBlock("html")}
+                    >
+                      <FileCode className="h-4 w-4 mr-1" /> HTML
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => addBlock("poll")}
+                    >
+                      <BarChart2 className="h-4 w-4 mr-1" /> Poll
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => addBlock("toc")}
+                    >
+                      <List className="h-4 w-4 mr-1" /> Table of Contents
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => addBlock("columns")}
+                    >
+                      <Columns className="h-4 w-4 mr-1" /> Columns
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => addBlock("divider")}
                     >
                       <SeparatorHorizontal className="h-4 w-4 mr-1" /> Divider
