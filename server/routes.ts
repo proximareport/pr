@@ -418,17 +418,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fields: Object.keys(req.body),
         });
       }
-      console.error("Server error:", error);
+      console.error("Server error creating article:", error);
       
-      // Check for database errors
-      if (error.code === '23505' && error.constraint === 'articles_slug_unique') {
-        return res.status(400).json({ 
-          message: "An article with this slug already exists. Please choose a different slug.",
-          detail: error.detail
-        });
+      // Enhanced database error handling
+      if (error.code === '23505') {
+        // Handle all unique constraint violations
+        if (error.constraint === 'articles_slug_unique') {
+          return res.status(400).json({ 
+            message: "slug already exists",
+            error: "An article with this slug already exists. Please choose a different slug.",
+            detail: error.detail,
+            code: "DUPLICATE_SLUG"
+          });
+        } else {
+          return res.status(400).json({
+            message: "Unique constraint violation",
+            error: error.detail || "A duplicate value was found in the database",
+            code: "UNIQUE_CONSTRAINT_VIOLATION"
+          });
+        }
       }
       
-      res.status(500).json({ message: "Error creating article" });
+      res.status(500).json({ 
+        message: "Error creating article", 
+        error: error.message || "Unknown server error" 
+      });
     }
   });
   
