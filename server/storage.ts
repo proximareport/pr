@@ -37,6 +37,14 @@ export interface IStorage {
   updateUserMembership(id: number, tier: 'free' | 'supporter' | 'pro'): Promise<User | undefined>;
   updateUserStripeInfo(id: number, stripeData: { stripeCustomerId: string, stripeSubscriptionId: string }): Promise<User | undefined>;
   
+  // API Key operations
+  createApiKey(userId: number, name: string, permissions: string[]): Promise<ApiKey>;
+  getApiKeysByUser(userId: number): Promise<ApiKey[]>;
+  getApiKey(id: number): Promise<ApiKey | undefined>;
+  getApiKeyByValue(key: string): Promise<ApiKey | undefined>;
+  deleteApiKey(id: number): Promise<boolean>;
+  updateApiKeyLastUsed(id: number): Promise<void>;
+  
   // Article operations
   getArticles(limit?: number, offset?: number): Promise<Article[]>;
   getArticleBySlug(slug: string): Promise<Article | undefined>;
@@ -140,6 +148,64 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return user;
+  }
+  
+  // API Key implementations
+  async createApiKey(userId: number, name: string, permissions: string[]): Promise<ApiKey> {
+    // Generate a random API key (UUID + random string)
+    const key = `pk_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 15)}`;
+    
+    const [apiKey] = await db
+      .insert(apiKeys)
+      .values({
+        userId,
+        name,
+        key,
+        permissions,
+        createdAt: new Date(),
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365) // 1 year expiry by default
+      })
+      .returning();
+    
+    return apiKey;
+  }
+  
+  async getApiKeysByUser(userId: number): Promise<ApiKey[]> {
+    return await db
+      .select()
+      .from(apiKeys)
+      .where(eq(apiKeys.userId, userId))
+      .orderBy(desc(apiKeys.createdAt));
+  }
+  
+  async getApiKey(id: number): Promise<ApiKey | undefined> {
+    const [apiKey] = await db
+      .select()
+      .from(apiKeys)
+      .where(eq(apiKeys.id, id));
+    return apiKey;
+  }
+  
+  async getApiKeyByValue(key: string): Promise<ApiKey | undefined> {
+    const [apiKey] = await db
+      .select()
+      .from(apiKeys)
+      .where(eq(apiKeys.key, key));
+    return apiKey;
+  }
+  
+  async deleteApiKey(id: number): Promise<boolean> {
+    const result = await db
+      .delete(apiKeys)
+      .where(eq(apiKeys.id, id));
+    return !!result;
+  }
+  
+  async updateApiKeyLastUsed(id: number): Promise<void> {
+    await db
+      .update(apiKeys)
+      .set({ lastUsed: new Date() })
+      .where(eq(apiKeys.id, id));
   }
 
   // Article operations

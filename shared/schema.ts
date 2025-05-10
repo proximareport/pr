@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, uniqueIndex, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, uniqueIndex, pgEnum, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
@@ -139,12 +139,25 @@ export const emergencyBanners = pgTable("emergency_banners", {
 });
 
 // Relations
+// API Keys for external applications
+export const apiKeys = pgTable("api_keys", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  key: text("key").notNull().unique(),
+  permissions: text("permissions").array().default([]).notNull(),
+  lastUsed: timestamp("last_used"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"),
+});
+
 export const usersRelations = relations(users, ({ many }) => ({
   articles: many(articles),
   comments: many(comments),
   astronomyPhotos: many(astronomyPhotos),
   jobListings: many(jobListings),
   advertisements: many(advertisements),
+  apiKeys: many(apiKeys),
 }));
 
 export const articlesRelations = relations(articles, ({ one, many }) => ({
@@ -252,6 +265,13 @@ export const insertAdvertisementSchema = createInsertSchema(advertisements).omit
   clicks: true,
 });
 
+export const insertApiKeySchema = createInsertSchema(apiKeys).omit({
+  id: true,
+  createdAt: true,
+  lastUsed: true,
+  key: true // We'll generate this
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type Article = typeof articles.$inferSelect;
@@ -262,6 +282,7 @@ export type Advertisement = typeof advertisements.$inferSelect;
 export type EmergencyBanner = typeof emergencyBanners.$inferSelect;
 export type Category = typeof categories.$inferSelect;
 export type Vote = typeof votes.$inferSelect;
+export type ApiKey = typeof apiKeys.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertArticle = z.infer<typeof insertArticleSchema>;
@@ -269,3 +290,4 @@ export type InsertComment = z.infer<typeof insertCommentSchema>;
 export type InsertAstronomyPhoto = z.infer<typeof insertAstronomyPhotoSchema>;
 export type InsertJobListing = z.infer<typeof insertJobListingSchema>;
 export type InsertAdvertisement = z.infer<typeof insertAdvertisementSchema>;
+export type InsertApiKey = z.infer<typeof insertApiKeySchema>;

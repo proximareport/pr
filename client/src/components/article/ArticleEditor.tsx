@@ -83,7 +83,7 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
     "mathematics", "research", "discovery", "innovation"
   ]);
   const [content, setContent] = useState<any[]>(initialArticle?.content?.blocks || []);
-  const [isDraft, setIsDraft] = useState(initialArticle?.status === "draft" || true);
+  const [isDraft, setIsDraft] = useState<boolean>(initialArticle?.status === "draft" || true);
   const [previewMode, setPreviewMode] = useState(false);
   const [activeBlockIndex, setActiveBlockIndex] = useState<number | null>(null);
   
@@ -185,7 +185,7 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
   };
 
   // Create an empty block of the specified type
-  const createEmptyBlock = (type: string) => {
+  const createEmptyBlock = (type: string): any => {
     const blockId = nanoid(8);
     
     switch (type) {
@@ -217,13 +217,13 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
       case "embed":
         return { id: blockId, type: "embed", html: "", caption: "" };
       case "youtube":
-        return { id: blockId, type: "embed", html: "", videoId: "", caption: "" };
+        return { id: blockId, type: "youtube", html: "", videoId: "", caption: "" };
       case "chart":
-        return { id: blockId, type: "chart", data: { labels: [], datasets: [] }, options: {}, type: "bar" };
+        return { id: blockId, type: "chart", data: { labels: [], datasets: [] }, options: {}, chartType: "bar" };
       case "map":
         return { id: blockId, type: "map", lat: 0, lng: 0, zoom: 10, caption: "" };
       case "callout":
-        return { id: blockId, type: "callout", content: "", type: "info" };
+        return { id: blockId, type: "callout", content: "", calloutType: "info" };
       case "poll":
         return { 
           id: blockId, 
@@ -1905,7 +1905,7 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
                 <Checkbox
                   id="isDraft"
                   checked={isDraft}
-                  onCheckedChange={(checked) => setIsDraft(!!checked)}
+                  onCheckedChange={(checked: boolean | "indeterminate") => setIsDraft(checked === true)}
                 />
                 <label
                   htmlFor="isDraft"
