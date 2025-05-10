@@ -61,14 +61,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           formats={formats}
           placeholder={placeholder}
           className="wysiwyg-editor"
-          style={{ 
-            height: '400px',
-            backgroundColor: '#0A0A15', 
-          }}
         />
       </div>
-      
-
     </Card>
   );
 };

@@ -478,7 +478,7 @@ function AdminArticleEditor() {
 
   // Create sidebar content with publishing options and tags
   const sidebarContent = (
-    <>
+    <div className="flex flex-col space-y-6">
       <EditorSideCard
         title="Publishing Options"
         description={
@@ -816,7 +816,7 @@ function AdminArticleEditor() {
           )}
         </div>
       </EditorSideCard>
-    </>
+    </div>
   );
 
   return (
