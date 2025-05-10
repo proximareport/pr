@@ -73,13 +73,18 @@ function ArticleCard({ article }: ArticleCardProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <Avatar className="h-8 w-8 border border-purple-700/30">
-              <AvatarImage src={article.author.profilePicture} alt={article.author.username} />
+              <AvatarImage 
+                src={article.author?.profilePicture || ''} 
+                alt={article.author?.username || 'Author'} 
+              />
               <AvatarFallback className="bg-purple-900 text-white text-xs">
-                {article.author.username.substring(0, 2).toUpperCase()}
+                {article.author?.username 
+                  ? article.author.username.substring(0, 2).toUpperCase() 
+                  : 'AU'}
               </AvatarFallback>
             </Avatar>
             <div className="ml-2">
-              <p className="text-white/90 text-sm">{article.author.username}</p>
+              <p className="text-white/90 text-sm">{article.author?.username || 'Anonymous'}</p>
             </div>
           </div>
           <span className="text-white/60 text-sm">{article.readTime} min read</span>
