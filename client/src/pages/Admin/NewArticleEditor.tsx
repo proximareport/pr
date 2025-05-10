@@ -47,6 +47,11 @@ function AdminArticleEditor() {
   const [isCollaborative, setIsCollaborative] = useState(false);
   const [coauthors, setCoauthors] = useState<Array<{id: number, username: string, role: string}>>([]);
   const [selectedCoauthorId, setSelectedCoauthorId] = useState<number | null>(null);
+  
+  // Autosave related state
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [autosaveError, setAutosaveError] = useState<string | null>(null);
+  const autosaveTimeoutRef = useRef<number | null>(null);
   const [availableUsers, setAvailableUsers] = useState<Array<{id: number, username: string, profilePicture?: string}>>([]);
   // Fetch available users for coauthor selection
   const { data: fetchedUsers } = useQuery({
@@ -80,6 +85,9 @@ function AdminArticleEditor() {
       
       setSlug(uniqueSlug);
     }
+    
+    // Schedule autosave after title change
+    scheduleAutosave();
   };
   
   const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,6 +154,31 @@ function AdminArticleEditor() {
         description: `Failed to ${isEditing ? 'update' : 'create'} article: ${error.message}`,
         variant: 'destructive',
       });
+    },
+  });
+  
+  // Autosave mutation - doesn't show toasts, doesn't redirect
+  const { mutate: autosave, isPending: isAutosaving } = useMutation({
+    mutationFn: async (articleData: any) => {
+      if (isEditing) {
+        return apiRequest('PATCH', `/api/articles/${id}`, articleData).then(r => r.json());
+      } else {
+        return apiRequest('POST', '/api/articles', articleData).then(r => r.json());
+      }
+    },
+    onSuccess: (data) => {
+      // Silent success - just update article ID if needed
+      if (!isEditing && data.id) {
+        setLastSaved(new Date());
+        window.history.replaceState(null, '', `/admin/articles/${data.id}/edit`);
+      } else {
+        setLastSaved(new Date());
+      }
+      queryClient.invalidateQueries({ queryKey: ['/api/articles'] });
+    },
+    onError: (error: any) => {
+      console.error('Autosave error:', error);
+      setAutosaveError(error.message || 'Failed to autosave');
     },
   });
 
