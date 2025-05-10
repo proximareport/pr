@@ -1442,77 +1442,108 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
 
                 <div className="mb-4">
                   <label className="text-sm text-white/70 mb-1 block">Content</label>
+                  <div className="mb-6">
+                    <Tabs defaultValue="basic" className="w-full">
+                      <TabsList className="w-full grid grid-cols-3">
+                        <TabsTrigger value="basic">Basic</TabsTrigger>
+                        <TabsTrigger value="media">Media & Interactive</TabsTrigger>
+                        <TabsTrigger value="advanced">Advanced</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="basic" className="pt-4 flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addBlock("paragraph")}
+                        >
+                          <Type className="h-4 w-4 mr-1" /> Text
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addBlock("heading")}
+                        >
+                          <Heading2 className="h-4 w-4 mr-1" /> Heading
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addBlock("list")}
+                        >
+                          <List className="h-4 w-4 mr-1" /> List
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addBlock("quote")}
+                        >
+                          <Quote className="h-4 w-4 mr-1" /> Quote
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addBlock("divider")}
+                        >
+                          <SeparatorHorizontal className="h-4 w-4 mr-1" /> Divider
+                        </Button>
+                      </TabsContent>
+                      <TabsContent value="media" className="pt-4 flex flex-wrap gap-2">
+                        <Button
+                          variant="default"
+                          className="bg-purple-700 hover:bg-purple-800"
+                          size="sm"
+                          onClick={() => addBlock("image")}
+                        >
+                          <ImageIcon className="h-4 w-4 mr-1" /> Add Image
+                        </Button>
+                        <Button
+                          variant="default"
+                          className="bg-purple-700 hover:bg-purple-800"
+                          size="sm"
+                          onClick={() => addBlock("poll")}
+                        >
+                          <BarChart2 className="h-4 w-4 mr-1" /> Add Poll
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addBlock("callout")}
+                        >
+                          <AlertCircle className="h-4 w-4 mr-1" /> Callout
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addBlock("html")}
+                        >
+                          <FileCode className="h-4 w-4 mr-1" /> HTML
+                        </Button>
+                      </TabsContent>
+                      <TabsContent value="advanced" className="pt-4 flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addBlock("code")}
+                        >
+                          <Code className="h-4 w-4 mr-1" /> Code
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addBlock("toc")}
+                        >
+                          <List className="h-4 w-4 mr-1" /> Table of Contents
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addBlock("columns")}
+                        >
+                          <Columns className="h-4 w-4 mr-1" /> Columns
+                        </Button>
+                      </TabsContent>
+                    </Tabs>
+                  </div>
                   <div className="mb-2 flex flex-wrap gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addBlock("paragraph")}
-                    >
-                      <Type className="h-4 w-4 mr-1" /> Text
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addBlock("heading")}
-                    >
-                      <Heading2 className="h-4 w-4 mr-1" /> Heading
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addBlock("image")}
-                    >
-                      <ImageIcon className="h-4 w-4 mr-1" /> Image
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addBlock("code")}
-                    >
-                      <Code className="h-4 w-4 mr-1" /> Code
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addBlock("list")}
-                    >
-                      <List className="h-4 w-4 mr-1" /> List
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addBlock("quote")}
-                    >
-                      <Quote className="h-4 w-4 mr-1" /> Quote
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addBlock("html")}
-                    >
-                      <FileCode className="h-4 w-4 mr-1" /> HTML
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addBlock("poll")}
-                    >
-                      <BarChart2 className="h-4 w-4 mr-1" /> Poll
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addBlock("toc")}
-                    >
-                      <List className="h-4 w-4 mr-1" /> Table of Contents
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addBlock("columns")}
-                    >
-                      <Columns className="h-4 w-4 mr-1" /> Columns
-                    </Button>
                     <Button
                       variant="outline"
                       size="sm"

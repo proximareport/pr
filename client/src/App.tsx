@@ -1,3 +1,4 @@
+import React from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -35,7 +36,14 @@ function Router() {
       <Route path="/admin/articles/new" component={AdminArticleEditor} />
       <Route path="/admin/articles/edit/:id" component={AdminArticleEditor} />
       <Route path="/admin/users" component={AdminUserManagement} />
-      <Route path="/admin/categories-tags" component={import('./pages/Admin/CategoriesAndTags').then(m => m.default)} />
+      <Route path="/admin/categories-tags" component={() => {
+        const CategoriesAndTagsPage = React.lazy(() => import('./pages/Admin/CategoriesAndTags'));
+        return (
+          <React.Suspense fallback={<div>Loading...</div>}>
+            <CategoriesAndTagsPage />
+          </React.Suspense>
+        );
+      }} />
       <Route component={NotFound} />
     </Switch>
   );

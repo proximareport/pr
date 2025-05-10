@@ -166,6 +166,14 @@ function AdminDashboard() {
                   <Button
                     variant="outline"
                     className="h-auto py-4 flex flex-col items-center justify-center"
+                    onClick={() => navigate('/admin/categories-tags')}
+                  >
+                    <TagIcon className="h-5 w-5 mb-2" />
+                    <span>Tags & Categories</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-auto py-4 flex flex-col items-center justify-center"
                     onClick={() => navigate('/admin/emergency-banner')}
                   >
                     <AlertOctagonIcon className="h-5 w-5 mb-2" />
