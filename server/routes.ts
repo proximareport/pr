@@ -352,7 +352,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = parseInt(req.query.limit as string) || 10;
       const offset = parseInt(req.query.offset as string) || 0;
       const articles = await storage.getArticles(limit, offset);
-      res.json(articles);
+      
+      // Enhance collaborative articles with author information
+      const enhancedArticles = await Promise.all(articles.map(async (article) => {
+        if (article.isCollaborative) {
+          // Fetch authors for collaborative articles
+          const authors = await storage.getArticleAuthors(article.id);
+          // Map to a simplified author structure
+          const authorData = authors.map(authorRecord => ({
+            id: authorRecord.user.id,
+            username: authorRecord.user.username,
+            profilePicture: authorRecord.user.profilePicture,
+            role: authorRecord.role
+          }));
+          
+          return {
+            ...article,
+            authors: authorData
+          };
+        }
+        return article;
+      }));
+      
+      res.json(enhancedArticles);
     } catch (error) {
       console.error("Error fetching articles:", error);
       // More detailed error logging
@@ -369,8 +391,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const limit = parseInt(req.query.limit as string) || 5;
       const featuredArticles = await storage.getFeaturedArticles(limit);
-      res.json(featuredArticles);
+      
+      // Enhance collaborative articles with author information
+      const enhancedArticles = await Promise.all(featuredArticles.map(async (article) => {
+        if (article.isCollaborative) {
+          // Fetch authors for collaborative articles
+          const authors = await storage.getArticleAuthors(article.id);
+          // Map to a simplified author structure
+          const authorData = authors.map(authorRecord => ({
+            id: authorRecord.user.id,
+            username: authorRecord.user.username,
+            profilePicture: authorRecord.user.profilePicture,
+            role: authorRecord.role
+          }));
+          
+          return {
+            ...article,
+            authors: authorData
+          };
+        }
+        return article;
+      }));
+      
+      res.json(enhancedArticles);
     } catch (error) {
+      console.error("Error fetching featured articles:", error);
       res.status(500).json({ message: "Error fetching featured articles" });
     }
   });
