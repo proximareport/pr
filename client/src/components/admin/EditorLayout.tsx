@@ -43,7 +43,7 @@ export function EditorLayout({ title, subtitle, mainContent, sidebarContent, isL
             {mainContent}
           </div>
           
-          <div className="lg:col-span-4">
+          <div className="lg:col-span-4 space-y-6">
             {sidebarContent}
           </div>
         </div>
@@ -86,12 +86,12 @@ export function EditorSideCard({
   footer?: React.ReactNode;
 }) {
   return (
-    <Card className="border-white/10 bg-[#14141E] shadow-lg sticky top-6">
+    <Card className="border-white/10 bg-[#14141E] shadow-lg mb-6">
       <CardHeader className="border-b border-white/10 bg-[#1E1E2D]">
         <CardTitle className="text-xl">{title}</CardTitle>
         {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
-      <CardContent className="space-y-6 p-6">
+      <CardContent className="space-y-6 p-6 max-h-[60vh] overflow-y-auto">
         {children}
       </CardContent>
       {footer && (

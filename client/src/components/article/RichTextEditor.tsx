@@ -68,59 +68,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         />
       </div>
       
-      <style>{`
-        .quill-editor-container {
-          height: 440px;
-        }
-        
-        .ql-toolbar {
-          background-color: #1A1A27;
-          border-color: rgba(255, 255, 255, 0.1) !important;
-          border-top-left-radius: 0.5rem;
-          border-top-right-radius: 0.5rem;
-        }
-        
-        .ql-container {
-          border-color: rgba(255, 255, 255, 0.1) !important;
-          background-color: #0A0A15;
-          font-size: 16px;
-          font-family: inherit;
-          height: 380px;
-          border-bottom-left-radius: 0.5rem;
-          border-bottom-right-radius: 0.5rem;
-        }
-        
-        .ql-editor {
-          padding: 1rem;
-          height: 100%;
-          overflow-y: auto;
-        }
-        
-        .ql-editor p {
-          margin-bottom: 1rem;
-        }
-        
-        .ql-snow .ql-stroke, 
-        .ql-snow .ql-fill {
-          stroke: #fff;
-        }
-        
-        .ql-snow .ql-picker {
-          color: #fff;
-        }
-        
-        .ql-snow .ql-picker-options {
-          background-color: #1A1A27;
-          border-color: rgba(255, 255, 255, 0.1);
-        }
-        
-        .ql-snow.ql-toolbar button:hover, 
-        .ql-snow .ql-toolbar button:hover, 
-        .ql-snow.ql-toolbar button.ql-active, 
-        .ql-snow .ql-toolbar button.ql-active {
-          background-color: rgba(255, 255, 255, 0.1);
-        }
-      `}</style>
+
     </Card>
   );
 };
