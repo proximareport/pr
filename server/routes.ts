@@ -1512,6 +1512,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.get("/api/stripe/verify-session", requireAuth, async (req, res) => {
+    try {
+      const { session_id } = req.query;
+      
+      if (!session_id) {
+        return res.status(400).json({ success: false, message: "Session ID is required" });
+      }
+      
+      // Retrieve session from Stripe
+      const session = await stripe.checkout.sessions.retrieve(session_id as string);
+      
+      if (!session) {
+        return res.status(404).json({ success: false, message: "Session not found" });
+      }
+      
+      // Check if the session was successful
+      if (session.payment_status !== "paid") {
+        return res.status(400).json({ success: false, message: "Payment not completed" });
+      }
+      
+      // Get the subscription from the session
+      const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
+      
+      // Determine the tier based on the price ID
+      const priceId = subscription.items.data[0].price.id;
+      let tier: "supporter" | "pro" = "supporter";
+      
+      if (priceId === SUBSCRIPTION_PRICES.pro) {
+        tier = "pro";
+      }
+      
+      // Update the user's membership tier if not already updated by webhook
+      const userId = req.session.userId!;
+      const user = await storage.getUser(userId);
+      
+      if (user && user.membershipTier !== tier) {
+        await storage.updateUserMembership(userId, tier);
+        
+        // Update or set stripe info
+        if (!user.stripeCustomerId || !user.stripeSubscriptionId) {
+          await storage.updateUserStripeInfo(userId, {
+            stripeCustomerId: session.customer as string,
+            stripeSubscriptionId: session.subscription as string
+          });
+        }
+      }
+      
+      res.json({ 
+        success: true, 
+        tier,
+        customerId: session.customer,
+        subscriptionId: session.subscription
+      });
+    } catch (error: any) {
+      console.error("Error verifying session:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Error verifying subscription", 
+        error: error.message 
+      });
+    }
+  });
+  
   app.post("/api/stripe/create-checkout-session", requireAuth, async (req, res) => {
     try {
       const { priceId } = req.body;
