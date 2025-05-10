@@ -1651,9 +1651,83 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
                     className="bg-[#14141E] border border-white/10 rounded-lg p-3 min-h-[400px]"
                   >
                     {content.length > 0 ? (
-                      content.map((block, index) => (
-                        <div key={block.id || index}>{renderBlockEditor(block, index)}</div>
-                      ))
+                      <DragDropContext onDragEnd={handleDragEnd}>
+                        <Droppable droppableId="article-content">
+                          {(provided) => (
+                            <div
+                              {...provided.droppableProps}
+                              ref={provided.innerRef}
+                              className="space-y-3"
+                            >
+                              {content.map((block, index) => (
+                                <Draggable 
+                                  key={block.id || `block-${index}`} 
+                                  draggableId={block.id || `block-${index}`} 
+                                  index={index}
+                                >
+                                  {(provided, snapshot) => (
+                                    <div
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      className={`relative group ${snapshot.isDragging ? 'opacity-70' : ''}`}
+                                    >
+                                      <div 
+                                        {...provided.dragHandleProps}
+                                        className="absolute left-0 top-0 h-full w-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-move"
+                                      >
+                                        <div className="w-1 h-10 rounded-full bg-white/20"></div>
+                                      </div>
+                                      <div className="pl-6">
+                                        {renderBlockEditor(block, index)}
+                                        
+                                        {/* Control bar */}
+                                        <div className="flex items-center justify-end mt-1 space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6 text-white/40 hover:text-white hover:bg-white/10"
+                                            onClick={() => {
+                                              const newContent = [...content];
+                                              newContent.splice(index, 1);
+                                              setContent(newContent);
+                                              if (activeBlockIndex === index) {
+                                                setActiveBlockIndex(null);
+                                              } else if (activeBlockIndex && activeBlockIndex > index) {
+                                                setActiveBlockIndex(activeBlockIndex - 1);
+                                              }
+                                            }}
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </Button>
+                                          
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6 text-white/40 hover:text-white hover:bg-white/10"
+                                            onClick={() => {
+                                              const newBlock = block.type === "poll" 
+                                                ? createEmptyBlock("paragraph") 
+                                                : createEmptyBlock(block.type);
+                                              
+                                              const newContent = [...content];
+                                              newContent.splice(index + 1, 0, newBlock);
+                                              setContent(newContent);
+                                              setActiveBlockIndex(index + 1);
+                                            }}
+                                          >
+                                            <Plus className="h-3 w-3" />
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                </Draggable>
+                              ))}
+                              {provided.placeholder}
+                            </div>
+                          )}
+                        </Droppable>
+                      </DragDropContext>
                     ) : (
                       <div
                         className="flex flex-col items-center justify-center h-40 text-white/40 cursor-pointer"
