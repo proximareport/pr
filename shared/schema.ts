@@ -329,9 +329,11 @@ export type EmergencyBanner = typeof emergencyBanners.$inferSelect;
 export type Category = typeof categories.$inferSelect;
 export type Vote = typeof votes.$inferSelect;
 export type ApiKey = typeof apiKeys.$inferSelect;
+export type ArticleAuthor = typeof articleAuthors.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertArticle = z.infer<typeof insertArticleSchema>;
+export type InsertArticleAuthor = z.infer<typeof insertArticleAuthorSchema>;
 export type InsertComment = z.infer<typeof insertCommentSchema>;
 export type InsertAstronomyPhoto = z.infer<typeof insertAstronomyPhotoSchema>;
 export type InsertJobListing = z.infer<typeof insertJobListingSchema>;

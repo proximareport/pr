@@ -9,6 +9,7 @@ import {
   votes,
   categories,
   apiKeys,
+  articleAuthors,
   type User, 
   type InsertUser, 
   type Article, 
@@ -23,7 +24,9 @@ import {
   type InsertAdvertisement, 
   type EmergencyBanner,
   type ApiKey,
-  type InsertApiKey
+  type InsertApiKey,
+  type ArticleAuthor,
+  type InsertArticleAuthor
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, isNull, desc, sql, or, like, not } from "drizzle-orm";
@@ -59,6 +62,12 @@ export interface IStorage {
   getArticlesByCategory(category: string): Promise<Article[]>;
   getFeaturedArticles(limit?: number): Promise<Article[]>;
   searchArticles(query: string): Promise<Article[]>;
+  
+  // Article Author operations
+  addAuthorToArticle(articleId: number, userId: number, role?: string): Promise<ArticleAuthor>;
+  removeAuthorFromArticle(articleId: number, userId: number): Promise<boolean>;
+  getArticleAuthors(articleId: number): Promise<(ArticleAuthor & { user: User })[]>;
+  getAuthoredArticles(userId: number): Promise<(ArticleAuthor & { article: Article })[]>;
   
   // Comment operations
   getCommentsByArticle(articleId: number): Promise<Comment[]>;
@@ -234,21 +243,85 @@ export class DatabaseStorage implements IStorage {
 
   async createArticle(article: InsertArticle): Promise<Article> {
     const [newArticle] = await db.insert(articles).values(article).returning();
+    
+    // If this is a collaborative article, add the primary author to the article_authors table
+    if (article.isCollaborative) {
+      await this.addAuthorToArticle(newArticle.id, newArticle.primaryAuthorId);
+    }
+    
     return newArticle;
   }
 
   async updateArticle(id: number, data: Partial<Article>): Promise<Article | undefined> {
     const [article] = await db
       .update(articles)
-      .set({ ...data, updatedAt: new Date() })
+      .set({ 
+        ...data, 
+        updatedAt: new Date(),
+        // If lastEditedBy is provided, also update lastEditedAt
+        ...(data.lastEditedBy ? { lastEditedAt: new Date() } : {})
+      })
       .where(eq(articles.id, id))
       .returning();
     return article;
   }
 
   async deleteArticle(id: number): Promise<boolean> {
+    // First delete all author associations
+    await db.delete(articleAuthors).where(eq(articleAuthors.articleId, id));
+    
+    // Then delete the article
     const result = await db.delete(articles).where(eq(articles.id, id));
     return true;
+  }
+  
+  // Article Author operations
+  async addAuthorToArticle(articleId: number, userId: number, role = "author"): Promise<ArticleAuthor> {
+    const [authorRecord] = await db.insert(articleAuthors)
+      .values({ articleId, userId, role })
+      .returning();
+    
+    return authorRecord;
+  }
+
+  async removeAuthorFromArticle(articleId: number, userId: number): Promise<boolean> {
+    await db.delete(articleAuthors)
+      .where(and(
+        eq(articleAuthors.articleId, articleId),
+        eq(articleAuthors.userId, userId)
+      ));
+    
+    return true;
+  }
+
+  async getArticleAuthors(articleId: number): Promise<(ArticleAuthor & { user: User })[]> {
+    const authors = await db.select({
+      articleAuthor: articleAuthors,
+      user: users
+    })
+    .from(articleAuthors)
+    .innerJoin(users, eq(articleAuthors.userId, users.id))
+    .where(eq(articleAuthors.articleId, articleId));
+    
+    return authors.map(row => ({
+      ...row.articleAuthor,
+      user: row.user
+    }));
+  }
+
+  async getAuthoredArticles(userId: number): Promise<(ArticleAuthor & { article: Article })[]> {
+    const authoredArticles = await db.select({
+      articleAuthor: articleAuthors,
+      article: articles
+    })
+    .from(articleAuthors)
+    .innerJoin(articles, eq(articleAuthors.articleId, articles.id))
+    .where(eq(articleAuthors.userId, userId));
+    
+    return authoredArticles.map(row => ({
+      ...row.articleAuthor,
+      article: row.article
+    }));
   }
 
   async getArticlesByAuthor(authorId: number): Promise<Article[]> {
