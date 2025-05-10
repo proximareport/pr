@@ -1,0 +1,1270 @@
+import { useState, useRef, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { 
+  Type, 
+  ImageIcon, 
+  Code, 
+  Heading1, 
+  Heading2, 
+  Heading3, 
+  ListOrdered, 
+  List, 
+  Quote, 
+  SeparatorHorizontal,
+  LockIcon,
+  Youtube,
+  Map,
+  BarChart4,
+  ExternalLink,
+  InfoIcon,
+  AlertTriangle,
+  Save,
+  Eye
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useDropzone } from "react-dropzone";
+import { nanoid } from "nanoid";
+import { apiRequest } from "@/lib/queryClient";
+
+interface ArticleEditorProps {
+  initialArticle?: any;
+  onSave: (article: any) => void;
+}
+
+function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
+  const { toast } = useToast();
+  const [title, setTitle] = useState(initialArticle?.title || "");
+  const [slug, setSlug] = useState(initialArticle?.slug || "");
+  const [summary, setSummary] = useState(initialArticle?.summary || "");
+  const [category, setCategory] = useState(initialArticle?.category || "space");
+  const [featuredImage, setFeaturedImage] = useState(initialArticle?.featuredImage || "");
+  const [isBreaking, setIsBreaking] = useState(initialArticle?.isBreaking || false);
+  const [readTime, setReadTime] = useState(initialArticle?.readTime || 5);
+  const [tags, setTags] = useState<string[]>(initialArticle?.tags || []);
+  const [tagInput, setTagInput] = useState("");
+  const [content, setContent] = useState<any[]>(initialArticle?.content?.blocks || []);
+  const [isDraft, setIsDraft] = useState(initialArticle?.status === "draft" || true);
+  const [previewMode, setPreviewMode] = useState(false);
+  const [activeBlockIndex, setActiveBlockIndex] = useState<number | null>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  // Dropzone for featured image
+  const onFeaturedImageDrop = useCallback((acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (file) {
+      // In a real app, you would upload the file to a server and get a URL back
+      // For this example, we'll create a data URL
+      const reader = new FileReader();
+      reader.onload = () => {
+        setFeaturedImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  }, []);
+
+  const { getRootProps: getFeaturedImageRootProps, getInputProps: getFeaturedImageInputProps } = useDropzone({
+    onDrop: onFeaturedImageDrop,
+    accept: {
+      'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp']
+    },
+    maxFiles: 1
+  });
+
+  // Auto-generate slug from title
+  const generateSlug = () => {
+    const slugified = title
+      .toLowerCase()
+      .replace(/[^\w\s]/gi, "")
+      .replace(/\s+/g, "-");
+    setSlug(slugified);
+  };
+
+  // Add a tag
+  const addTag = () => {
+    if (tagInput && !tags.includes(tagInput)) {
+      setTags([...tags, tagInput]);
+      setTagInput("");
+    }
+  };
+
+  // Remove a tag
+  const removeTag = (tagToRemove: string) => {
+    setTags(tags.filter(tag => tag !== tagToRemove));
+  };
+
+  // Add a new content block
+  const addBlock = (type: string) => {
+    const newBlock = createEmptyBlock(type);
+    
+    // Insert at active index or append to end
+    if (activeBlockIndex !== null) {
+      const newContent = [...content];
+      newContent.splice(activeBlockIndex + 1, 0, newBlock);
+      setContent(newContent);
+      setActiveBlockIndex(activeBlockIndex + 1);
+    } else {
+      setContent([...content, newBlock]);
+      setActiveBlockIndex(content.length);
+    }
+  };
+
+  // Create an empty block of the specified type
+  const createEmptyBlock = (type: string) => {
+    const blockId = nanoid(8);
+    
+    switch (type) {
+      case "paragraph":
+        return { id: blockId, type: "paragraph", content: "" };
+      case "heading":
+        return { id: blockId, type: "heading", content: "", level: 2 };
+      case "image":
+        return { id: blockId, type: "image", url: "", alt: "", caption: "" };
+      case "code":
+        return { id: blockId, type: "code", content: "", language: "javascript" };
+      case "list":
+        return { id: blockId, type: "list", items: [""], ordered: false };
+      case "quote":
+        return { id: blockId, type: "quote", content: "", author: "" };
+      case "divider":
+        return { id: blockId, type: "divider" };
+      case "premium":
+        return { id: blockId, type: "premium", content: { type: "paragraph", content: "" } };
+      case "embed":
+        return { id: blockId, type: "embed", html: "", caption: "" };
+      case "youtube":
+        return { id: blockId, type: "embed", html: "", videoId: "", caption: "" };
+      case "chart":
+        return { id: blockId, type: "chart", data: { labels: [], datasets: [] }, options: {}, type: "bar" };
+      case "map":
+        return { id: blockId, type: "map", lat: 0, lng: 0, zoom: 10, caption: "" };
+      case "callout":
+        return { id: blockId, type: "callout", content: "", type: "info" };
+      default:
+        return { id: blockId, type: "paragraph", content: "" };
+    }
+  };
+
+  // Update a block's content
+  const updateBlock = (index: number, updatedBlock: any) => {
+    const newContent = [...content];
+    newContent[index] = { ...newContent[index], ...updatedBlock };
+    setContent(newContent);
+  };
+
+  // Remove a block
+  const removeBlock = (index: number) => {
+    const newContent = [...content];
+    newContent.splice(index, 1);
+    setContent(newContent);
+    if (activeBlockIndex === index) {
+      setActiveBlockIndex(null);
+    } else if (activeBlockIndex !== null && activeBlockIndex > index) {
+      setActiveBlockIndex(activeBlockIndex - 1);
+    }
+  };
+
+  // Move block up or down
+  const moveBlock = (index: number, direction: "up" | "down") => {
+    if ((direction === "up" && index === 0) || 
+        (direction === "down" && index === content.length - 1)) {
+      return;
+    }
+
+    const newContent = [...content];
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    
+    // Swap blocks
+    [newContent[index], newContent[targetIndex]] = [newContent[targetIndex], newContent[index]];
+    
+    setContent(newContent);
+    setActiveBlockIndex(targetIndex);
+  };
+
+  // Convert YouTube URL to embed HTML
+  const getYoutubeEmbed = (url: string) => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    
+    if (match && match[2].length === 11) {
+      const videoId = match[2];
+      return {
+        html: `<iframe width="100%" height="315" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`,
+        videoId,
+      };
+    }
+    
+    return { html: "", videoId: "" };
+  };
+
+  // Save the article
+  const saveArticle = async (publish: boolean = false) => {
+    // Basic validation
+    if (!title.trim()) {
+      toast({
+        title: "Missing Title",
+        description: "Please provide a title for your article.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!summary.trim()) {
+      toast({
+        title: "Missing Summary",
+        description: "Please provide a summary for your article.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (content.length === 0) {
+      toast({
+        title: "No Content",
+        description: "Please add some content to your article.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!featuredImage) {
+      toast({
+        title: "Missing Featured Image",
+        description: "Please upload a featured image for your article.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Prepare data
+    const articleData = {
+      title,
+      slug: slug || title.toLowerCase().replace(/[^\w\s]/gi, "").replace(/\s+/g, "-"),
+      summary,
+      content: { blocks: content },
+      category,
+      featuredImage,
+      isBreaking,
+      readTime: parseInt(readTime.toString()),
+      tags,
+      status: publish ? "published" : "draft",
+      publishedAt: publish ? new Date().toISOString() : null,
+    };
+
+    // Update or create
+    try {
+      if (initialArticle?.id) {
+        // Update existing article
+        const response = await apiRequest("PUT", `/api/articles/${initialArticle.id}`, articleData);
+        toast({
+          title: publish ? "Article Published" : "Draft Saved",
+          description: publish 
+            ? "Your article has been published successfully."
+            : "Your draft has been saved successfully.",
+        });
+      } else {
+        // Create new article
+        const response = await apiRequest("POST", "/api/articles", articleData);
+        toast({
+          title: publish ? "Article Published" : "Draft Saved",
+          description: publish 
+            ? "Your article has been published successfully."
+            : "Your draft has been saved successfully.",
+        });
+      }
+      
+      // Call the onSave callback
+      onSave(articleData);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save article. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Render a block editor based on its type
+  const renderBlockEditor = (block: any, index: number) => {
+    const isActive = activeBlockIndex === index;
+
+    const commonProps = {
+      className: `relative p-4 my-2 rounded-lg border ${
+        isActive ? "border-purple-500" : "border-white/10"
+      } group transition-all`,
+    };
+
+    const blockControls = (
+      <div className={`absolute right-2 top-2 flex space-x-1 ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity`}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 bg-black/20 hover:bg-black/40 backdrop-blur-sm"
+          onClick={() => moveBlock(index, "up")}
+          disabled={index === 0}
+        >
+          <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M7 14l5-5 5 5z" />
+          </svg>
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 bg-black/20 hover:bg-black/40 backdrop-blur-sm"
+          onClick={() => moveBlock(index, "down")}
+          disabled={index === content.length - 1}
+        >
+          <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M7 10l5 5 5-5z" />
+          </svg>
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 bg-black/20 hover:bg-black/40 backdrop-blur-sm text-red-500"
+          onClick={() => removeBlock(index)}
+        >
+          <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+          </svg>
+        </Button>
+      </div>
+    );
+
+    switch (block.type) {
+      case "paragraph":
+        return (
+          <div
+            {...commonProps}
+            onClick={() => setActiveBlockIndex(index)}
+          >
+            {blockControls}
+            <Type className="h-4 w-4 absolute left-2 top-2 text-purple-500/70" />
+            <Textarea
+              value={block.content}
+              onChange={(e) => updateBlock(index, { content: e.target.value })}
+              placeholder="Start writing..."
+              className="resize-none border-none bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0 mt-3 mb-0"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        );
+        
+      case "heading":
+        return (
+          <div
+            {...commonProps}
+            onClick={() => setActiveBlockIndex(index)}
+          >
+            {blockControls}
+            <div className="flex items-center gap-2 mb-2">
+              <Heading2 className="h-4 w-4 text-purple-500/70" />
+              <Select
+                value={block.level.toString()}
+                onValueChange={(value) => updateBlock(index, { level: parseInt(value) })}
+              >
+                <SelectTrigger className="w-[100px] h-8">
+                  <SelectValue placeholder="Level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="2">H2</SelectItem>
+                  <SelectItem value="3">H3</SelectItem>
+                  <SelectItem value="4">H4</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Input
+              value={block.content}
+              onChange={(e) => updateBlock(index, { content: e.target.value })}
+              placeholder={`Heading ${block.level}`}
+              className="border-none bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0 font-space font-bold text-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        );
+        
+      case "image":
+        return (
+          <div
+            {...commonProps}
+            onClick={() => setActiveBlockIndex(index)}
+          >
+            {blockControls}
+            <ImageIcon className="h-4 w-4 absolute left-2 top-2 text-purple-500/70" />
+            <div className="space-y-2">
+              <Input
+                value={block.url}
+                onChange={(e) => updateBlock(index, { url: e.target.value })}
+                placeholder="Image URL"
+                className="mb-2"
+                onClick={(e) => e.stopPropagation()}
+              />
+              <Input
+                value={block.alt}
+                onChange={(e) => updateBlock(index, { alt: e.target.value })}
+                placeholder="Alt text"
+                className="mb-2"
+                onClick={(e) => e.stopPropagation()}
+              />
+              <Input
+                value={block.caption}
+                onChange={(e) => updateBlock(index, { caption: e.target.value })}
+                placeholder="Caption (optional)"
+                onClick={(e) => e.stopPropagation()}
+              />
+              {block.url && (
+                <img
+                  src={block.url}
+                  alt={block.alt}
+                  className="mt-2 max-h-64 mx-auto rounded"
+                />
+              )}
+            </div>
+          </div>
+        );
+        
+      case "code":
+        return (
+          <div
+            {...commonProps}
+            onClick={() => setActiveBlockIndex(index)}
+          >
+            {blockControls}
+            <Code className="h-4 w-4 absolute left-2 top-2 text-purple-500/70" />
+            <div className="space-y-2">
+              <Select
+                value={block.language}
+                onValueChange={(value) => updateBlock(index, { language: value })}
+              >
+                <SelectTrigger className="w-[140px] h-8">
+                  <SelectValue placeholder="Language" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="javascript">JavaScript</SelectItem>
+                  <SelectItem value="typescript">TypeScript</SelectItem>
+                  <SelectItem value="html">HTML</SelectItem>
+                  <SelectItem value="css">CSS</SelectItem>
+                  <SelectItem value="python">Python</SelectItem>
+                  <SelectItem value="java">Java</SelectItem>
+                  <SelectItem value="c">C</SelectItem>
+                  <SelectItem value="cpp">C++</SelectItem>
+                  <SelectItem value="csharp">C#</SelectItem>
+                  <SelectItem value="go">Go</SelectItem>
+                  <SelectItem value="ruby">Ruby</SelectItem>
+                  <SelectItem value="rust">Rust</SelectItem>
+                  <SelectItem value="swift">Swift</SelectItem>
+                  <SelectItem value="bash">Bash</SelectItem>
+                  <SelectItem value="json">JSON</SelectItem>
+                </SelectContent>
+              </Select>
+              <Textarea
+                value={block.content}
+                onChange={(e) => updateBlock(index, { content: e.target.value })}
+                placeholder="// Enter your code here"
+                className="font-mono resize-none min-h-[150px]"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          </div>
+        );
+        
+      case "list":
+        return (
+          <div
+            {...commonProps}
+            onClick={() => setActiveBlockIndex(index)}
+          >
+            {blockControls}
+            <div className="flex items-center gap-2 mb-2">
+              {block.ordered ? (
+                <ListOrdered className="h-4 w-4 text-purple-500/70" />
+              ) : (
+                <List className="h-4 w-4 text-purple-500/70" />
+              )}
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={block.ordered}
+                  onCheckedChange={(checked) => updateBlock(index, { ordered: !!checked })}
+                  id={`list-ordered-${index}`}
+                />
+                <label
+                  htmlFor={`list-ordered-${index}`}
+                  className="text-sm text-white/70"
+                >
+                  Ordered list
+                </label>
+              </div>
+            </div>
+            {block.items.map((item: string, i: number) => (
+              <div key={i} className="flex items-center gap-2 mb-2">
+                <div className="w-6 text-center text-white/50">
+                  {block.ordered ? `${i + 1}.` : '•'}
+                </div>
+                <Input
+                  value={item}
+                  onChange={(e) => {
+                    const newItems = [...block.items];
+                    newItems[i] = e.target.value;
+                    updateBlock(index, { items: newItems });
+                  }}
+                  className="border-none bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                  onClick={(e) => e.stopPropagation()}
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 shrink-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const newItems = block.items.filter((_: any, idx: number) => idx !== i);
+                    updateBlock(index, { items: newItems.length ? newItems : [""] });
+                  }}
+                >
+                  <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                  </svg>
+                </Button>
+              </div>
+            ))}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-purple-500 mt-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                updateBlock(index, { items: [...block.items, ""] });
+              }}
+            >
+              + Add item
+            </Button>
+          </div>
+        );
+        
+      case "quote":
+        return (
+          <div
+            {...commonProps}
+            onClick={() => setActiveBlockIndex(index)}
+          >
+            {blockControls}
+            <Quote className="h-4 w-4 absolute left-2 top-2 text-purple-500/70" />
+            <div className="space-y-2">
+              <Textarea
+                value={block.content}
+                onChange={(e) => updateBlock(index, { content: e.target.value })}
+                placeholder="Quote text"
+                className="resize-none"
+                onClick={(e) => e.stopPropagation()}
+              />
+              <Input
+                value={block.author}
+                onChange={(e) => updateBlock(index, { author: e.target.value })}
+                placeholder="Author (optional)"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          </div>
+        );
+        
+      case "divider":
+        return (
+          <div
+            {...commonProps}
+            onClick={() => setActiveBlockIndex(index)}
+          >
+            {blockControls}
+            <div className="flex justify-center items-center py-2">
+              <SeparatorHorizontal className="h-4 w-4 text-purple-500/70" />
+              <div className="text-white/50 text-sm ml-2">Page break / Divider</div>
+            </div>
+          </div>
+        );
+        
+      case "premium":
+        return (
+          <div
+            {...commonProps}
+            onClick={() => setActiveBlockIndex(index)}
+          >
+            {blockControls}
+            <div className="flex items-center gap-2 mb-2">
+              <LockIcon className="h-4 w-4 text-purple-500/70" />
+              <span className="text-purple-500">Premium Content</span>
+            </div>
+            <div className="border border-purple-500/30 rounded-lg p-4 bg-purple-500/5">
+              <Textarea
+                value={block.content.content}
+                onChange={(e) => updateBlock(index, { content: { ...block.content, content: e.target.value } })}
+                placeholder="Enter premium content here"
+                className="resize-none border-none bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          </div>
+        );
+        
+      case "embed":
+        return (
+          <div
+            {...commonProps}
+            onClick={() => setActiveBlockIndex(index)}
+          >
+            {blockControls}
+            <ExternalLink className="h-4 w-4 absolute left-2 top-2 text-purple-500/70" />
+            <div className="space-y-2">
+              <Input
+                value={block.html}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Check if it's a YouTube URL and convert it
+                  if (value.includes("youtube.com") || value.includes("youtu.be")) {
+                    const { html, videoId } = getYoutubeEmbed(value);
+                    updateBlock(index, { html, videoId });
+                  } else {
+                    updateBlock(index, { html: value });
+                  }
+                }}
+                placeholder="HTML embed code or YouTube URL"
+                onClick={(e) => e.stopPropagation()}
+              />
+              <Input
+                value={block.caption}
+                onChange={(e) => updateBlock(index, { caption: e.target.value })}
+                placeholder="Caption (optional)"
+                onClick={(e) => e.stopPropagation()}
+              />
+              {block.html && (
+                <div className="mt-2 border border-white/10 rounded-lg p-3 bg-black/20">
+                  <div dangerouslySetInnerHTML={{ __html: block.html }} />
+                </div>
+              )}
+            </div>
+          </div>
+        );
+        
+      case "callout":
+        return (
+          <div
+            {...commonProps}
+            onClick={() => setActiveBlockIndex(index)}
+          >
+            {blockControls}
+            <div className="flex items-center gap-2 mb-2">
+              {block.type === "info" ? (
+                <InfoIcon className="h-4 w-4 text-blue-500" />
+              ) : block.type === "warning" ? (
+                <AlertTriangle className="h-4 w-4 text-amber-500" />
+              ) : (
+                <InfoIcon className="h-4 w-4 text-purple-500" />
+              )}
+              <Select
+                value={block.type}
+                onValueChange={(value) => updateBlock(index, { type: value })}
+              >
+                <SelectTrigger className="w-[100px] h-8">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="info">Info</SelectItem>
+                  <SelectItem value="warning">Warning</SelectItem>
+                  <SelectItem value="tip">Tip</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Textarea
+              value={block.content}
+              onChange={(e) => updateBlock(index, { content: e.target.value })}
+              placeholder="Callout text"
+              className="resize-none border-none p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        );
+        
+      default:
+        return (
+          <div
+            {...commonProps}
+            onClick={() => setActiveBlockIndex(index)}
+          >
+            {blockControls}
+            <div className="p-4 text-white/70 text-center">
+              Unknown block type: {block.type}
+            </div>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="flex flex-col md:flex-row gap-6">
+      {/* Editor */}
+      <div className="w-full md:w-2/3 space-y-4">
+        <Card className="bg-[#14141E] border-white/10">
+          <CardContent className="p-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="font-space font-bold text-xl text-white">
+                {initialArticle?.id ? "Edit Article" : "New Article"}
+              </h2>
+              <div className="flex items-center space-x-2">
+                <Button variant="outline" onClick={() => setPreviewMode(!previewMode)}>
+                  {previewMode ? (
+                    <>
+                      <Type className="h-4 w-4 mr-2" /> Edit
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="h-4 w-4 mr-2" /> Preview
+                    </>
+                  )}
+                </Button>
+                <Button variant="outline" onClick={() => saveArticle(false)}>
+                  <Save className="h-4 w-4 mr-2" /> Save Draft
+                </Button>
+                <Button className="bg-purple-800 hover:bg-purple-700" onClick={() => saveArticle(true)}>
+                  Publish
+                </Button>
+              </div>
+            </div>
+
+            {!previewMode ? (
+              <div>
+                <div className="mb-4">
+                  <label className="text-sm text-white/70 mb-1 block">Article Title</label>
+                  <Input
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    onBlur={generateSlug}
+                    placeholder="Enter article title"
+                    className="bg-[#1E1E2D] border-white/10"
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="text-sm text-white/70 mb-1 block">URL Slug</label>
+                  <Input
+                    value={slug}
+                    onChange={(e) => setSlug(e.target.value)}
+                    placeholder="article-url-slug"
+                    className="bg-[#1E1E2D] border-white/10"
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="text-sm text-white/70 mb-1 block">Summary</label>
+                  <Textarea
+                    value={summary}
+                    onChange={(e) => setSummary(e.target.value)}
+                    placeholder="Brief summary of the article (appears in previews)"
+                    className="bg-[#1E1E2D] border-white/10 min-h-[80px]"
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="text-sm text-white/70 mb-1 block">Tags</label>
+                  <div className="flex items-center mb-2">
+                    <Input
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      placeholder="Add a tag"
+                      className="bg-[#1E1E2D] border-white/10 mr-2"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addTag();
+                        }
+                      }}
+                    />
+                    <Button variant="outline" type="button" onClick={addTag}>
+                      Add
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {tags.map((tag) => (
+                      <div
+                        key={tag}
+                        className="flex items-center bg-[#1E1E2D] px-3 py-1 rounded-full text-sm"
+                      >
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => removeTag(tag)}
+                          className="ml-2 text-white/60 hover:text-white"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="text-sm text-white/70 mb-1 block">Category</label>
+                    <Select
+                      value={category}
+                      onValueChange={setCategory}
+                    >
+                      <SelectTrigger className="bg-[#1E1E2D] border-white/10">
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="space">Space</SelectItem>
+                        <SelectItem value="astronomy">Astronomy</SelectItem>
+                        <SelectItem value="science">Science</SelectItem>
+                        <SelectItem value="technology">Technology</SelectItem>
+                        <SelectItem value="physics">Physics</SelectItem>
+                        <SelectItem value="biology">Biology</SelectItem>
+                        <SelectItem value="chemistry">Chemistry</SelectItem>
+                        <SelectItem value="engineering">Engineering</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm text-white/70 mb-1 block">Est. Read Time (min)</label>
+                    <Input
+                      type="number"
+                      value={readTime}
+                      onChange={(e) => setReadTime(parseInt(e.target.value) || 1)}
+                      min="1"
+                      max="60"
+                      className="bg-[#1E1E2D] border-white/10"
+                    />
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <div className="flex items-center">
+                    <Checkbox
+                      id="breaking-news"
+                      checked={isBreaking}
+                      onCheckedChange={(checked) => setIsBreaking(!!checked)}
+                    />
+                    <label
+                      htmlFor="breaking-news"
+                      className="ml-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      Mark as Breaking News
+                    </label>
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <label className="text-sm text-white/70 mb-1 block">Featured Image</label>
+                  <div
+                    {...getFeaturedImageRootProps()}
+                    className={`cursor-pointer bg-[#1E1E2D] border border-dashed border-white/20 rounded-lg p-4 hover:border-purple-500/50 transition-colors ${
+                      featuredImage ? "py-2" : "py-8"
+                    }`}
+                  >
+                    <input {...getFeaturedImageInputProps()} />
+                    {featuredImage ? (
+                      <div className="space-y-2">
+                        <div className="relative">
+                          <img 
+                            src={featuredImage} 
+                            alt="Featured" 
+                            className="h-40 object-cover rounded mx-auto"
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="absolute top-2 right-2 h-7 w-7 p-0 rounded-full bg-black/50 hover:bg-black/70"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFeaturedImage("");
+                            }}
+                          >
+                            ×
+                          </Button>
+                        </div>
+                        <p className="text-center text-sm text-white/70">
+                          Click to replace or drag a new image
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <ImageIcon className="h-10 w-10 mx-auto mb-2 text-white/40" />
+                        <p className="text-white/70">
+                          Drag and drop an image here, or click to select
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <label className="text-sm text-white/70 mb-1 block">Content</label>
+                  <div className="mb-2 flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => addBlock("paragraph")}
+                    >
+                      <Type className="h-4 w-4 mr-1" /> Text
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => addBlock("heading")}
+                    >
+                      <Heading2 className="h-4 w-4 mr-1" /> Heading
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => addBlock("image")}
+                    >
+                      <ImageIcon className="h-4 w-4 mr-1" /> Image
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => addBlock("code")}
+                    >
+                      <Code className="h-4 w-4 mr-1" /> Code
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => addBlock("list")}
+                    >
+                      <List className="h-4 w-4 mr-1" /> List
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => addBlock("quote")}
+                    >
+                      <Quote className="h-4 w-4 mr-1" /> Quote
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => addBlock("divider")}
+                    >
+                      <SeparatorHorizontal className="h-4 w-4 mr-1" /> Divider
+                    </Button>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <ExternalLink className="h-4 w-4 mr-1" /> More Blocks
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="bg-[#14141E] border-white/10">
+                        <DialogHeader>
+                          <DialogTitle>Insert Special Block</DialogTitle>
+                        </DialogHeader>
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              addBlock("premium");
+                              document.body.click(); // Close dialog
+                            }}
+                          >
+                            <LockIcon className="h-4 w-4 mr-2" /> Premium Content
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              addBlock("embed");
+                              document.body.click(); // Close dialog
+                            }}
+                          >
+                            <ExternalLink className="h-4 w-4 mr-2" /> Embed
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              addBlock("youtube");
+                              document.body.click(); // Close dialog
+                            }}
+                          >
+                            <Youtube className="h-4 w-4 mr-2" /> YouTube
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              addBlock("chart");
+                              document.body.click(); // Close dialog
+                            }}
+                          >
+                            <BarChart4 className="h-4 w-4 mr-2" /> Chart
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              addBlock("map");
+                              document.body.click(); // Close dialog
+                            }}
+                          >
+                            <Map className="h-4 w-4 mr-2" /> Map
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              addBlock("callout");
+                              document.body.click(); // Close dialog
+                            }}
+                          >
+                            <InfoIcon className="h-4 w-4 mr-2" /> Callout
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+
+                  <div
+                    ref={editorRef}
+                    className="bg-[#14141E] border border-white/10 rounded-lg p-3 min-h-[400px]"
+                  >
+                    {content.length > 0 ? (
+                      content.map((block, index) => (
+                        <div key={block.id || index}>{renderBlockEditor(block, index)}</div>
+                      ))
+                    ) : (
+                      <div
+                        className="flex flex-col items-center justify-center h-40 text-white/40 cursor-pointer"
+                        onClick={() => addBlock("paragraph")}
+                      >
+                        <Type className="h-8 w-8 mb-2" />
+                        <p>Click a block type above to start writing</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="article-preview">
+                <h1 className="font-space font-bold text-3xl mb-4">{title}</h1>
+                <div className="mb-6 text-white/70">{summary}</div>
+                
+                <div className="mb-6">
+                  {featuredImage && (
+                    <img
+                      src={featuredImage}
+                      alt={title}
+                      className="w-full h-auto rounded-lg mb-4"
+                    />
+                  )}
+                </div>
+                
+                <div className="space-y-4">
+                  {content.map((block, index) => {
+                    switch (block.type) {
+                      case "paragraph":
+                        return <p key={index} className="text-white/90">{block.content}</p>;
+                      case "heading":
+                        const HeadingTag = `h${block.level}` as keyof JSX.IntrinsicElements;
+                        return (
+                          <HeadingTag
+                            key={index}
+                            className={`font-space font-bold text-white ${
+                              block.level === 2 ? "text-2xl" : block.level === 3 ? "text-xl" : "text-lg"
+                            }`}
+                          >
+                            {block.content}
+                          </HeadingTag>
+                        );
+                      case "image":
+                        return (
+                          <figure key={index}>
+                            <img
+                              src={block.url}
+                              alt={block.alt || "Article image"}
+                              className="w-full h-auto rounded-lg"
+                            />
+                            {block.caption && (
+                              <figcaption className="text-center text-white/60 text-sm mt-2">
+                                {block.caption}
+                              </figcaption>
+                            )}
+                          </figure>
+                        );
+                      case "code":
+                        return (
+                          <div key={index}>
+                            <pre className="bg-[#1a1a2e] p-4 rounded-lg overflow-x-auto font-mono text-sm text-white/90 border border-white/10">
+                              <code>{block.content}</code>
+                            </pre>
+                          </div>
+                        );
+                      case "list":
+                        const ListTag = block.ordered ? "ol" : "ul";
+                        return (
+                          <ListTag
+                            key={index}
+                            className={`ml-6 text-white/90 ${
+                              block.ordered ? "list-decimal" : "list-disc"
+                            }`}
+                          >
+                            {block.items.map((item: string, i: number) => (
+                              <li key={i} className="mb-2">
+                                {item}
+                              </li>
+                            ))}
+                          </ListTag>
+                        );
+                      case "quote":
+                        return (
+                          <blockquote
+                            key={index}
+                            className="border-l-4 border-purple-500 pl-4 italic text-white/80"
+                          >
+                            <p>{block.content}</p>
+                            {block.author && (
+                              <footer className="text-white/60 mt-2 text-sm">— {block.author}</footer>
+                            )}
+                          </blockquote>
+                        );
+                      case "divider":
+                        return <hr key={index} className="my-8 border-white/10" />;
+                      case "premium":
+                        return (
+                          <div
+                            key={index}
+                            className="premium-content my-10 bg-[#14141E] border border-white/10 rounded-lg p-6"
+                          >
+                            <div className="relative z-10 text-center">
+                              <LockIcon className="mx-auto text-purple-500 h-6 w-6 mb-2" />
+                              <h3 className="font-space font-bold text-xl mb-2">Premium Content</h3>
+                              <p className="text-white/80 mb-4">
+                                This content is available to Supporter and Pro subscribers.
+                              </p>
+                              <Button className="bg-purple-800 hover:bg-purple-700">
+                                Upgrade to Pro
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      case "embed":
+                        return (
+                          <div key={index}>
+                            <div
+                              className="rounded-lg overflow-hidden"
+                              dangerouslySetInnerHTML={{ __html: block.html }}
+                            />
+                            {block.caption && (
+                              <p className="text-center text-white/60 text-sm mt-2">{block.caption}</p>
+                            )}
+                          </div>
+                        );
+                      case "callout":
+                        return (
+                          <div
+                            key={index}
+                            className={`p-4 rounded-lg ${
+                              block.type === "info"
+                                ? "bg-blue-900/20 border border-blue-700/30"
+                                : block.type === "warning"
+                                ? "bg-amber-900/20 border border-amber-700/30"
+                                : "bg-purple-900/20 border border-purple-700/30"
+                            }`}
+                          >
+                            <p className="text-white/90">{block.content}</p>
+                          </div>
+                        );
+                      default:
+                        return null;
+                    }
+                  })}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Metadata & Settings */}
+      <div className="w-full md:w-1/3 space-y-4">
+        <Card className="bg-[#14141E] border-white/10">
+          <CardContent className="p-4">
+            <h3 className="font-space font-bold text-lg mb-3">Article Status</h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between px-3 py-2 bg-[#1E1E2D] rounded-md">
+                <span className="text-white/70">Status</span>
+                <span className={isDraft ? "text-amber-500" : "text-green-500"}>
+                  {isDraft ? "Draft" : "Published"}
+                </span>
+              </div>
+              
+              {initialArticle?.id && (
+                <>
+                  <div className="flex items-center justify-between px-3 py-2 bg-[#1E1E2D] rounded-md">
+                    <span className="text-white/70">Created</span>
+                    <span className="text-white/90">
+                      {new Date(initialArticle.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  
+                  {initialArticle.publishedAt && (
+                    <div className="flex items-center justify-between px-3 py-2 bg-[#1E1E2D] rounded-md">
+                      <span className="text-white/70">Published</span>
+                      <span className="text-white/90">
+                        {new Date(initialArticle.publishedAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center justify-between px-3 py-2 bg-[#1E1E2D] rounded-md">
+                    <span className="text-white/70">Last Modified</span>
+                    <span className="text-white/90">
+                      {new Date(initialArticle.updatedAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                </>
+              )}
+
+              <div className="flex items-center mt-4">
+                <Checkbox
+                  id="isDraft"
+                  checked={isDraft}
+                  onCheckedChange={(checked) => setIsDraft(!!checked)}
+                />
+                <label
+                  htmlFor="isDraft"
+                  className="ml-2 text-sm font-medium leading-none"
+                >
+                  Save as draft
+                </label>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-[#14141E] border-white/10">
+          <CardContent className="p-4">
+            <h3 className="font-space font-bold text-lg mb-3">Quick Tips</h3>
+            <ul className="space-y-2 text-white/70 text-sm list-disc pl-5">
+              <li>Add a compelling featured image to grab attention</li>
+              <li>Use headings to organize content for better readability</li>
+              <li>Premium content blocks are only visible to paid subscribers</li>
+              <li>Engage readers with embedded content like videos and charts</li>
+              <li>Include a clear call to action at the end of your article</li>
+            </ul>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+export default ArticleEditor;
