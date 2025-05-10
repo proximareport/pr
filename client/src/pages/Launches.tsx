@@ -33,10 +33,21 @@ import {
   ArrowUpRight,
   BuildingIcon,
   BookmarkIcon,
+  UserIcon,
+  UsersIcon,
+  ImageIcon,
+  MoonIcon,
+  SunIcon,
+  CloudIcon,
+  CloudLightningIcon,
+  LucideGlobe,
+  Satellite,
 } from "lucide-react";
 import LaunchCountdown from "@/components/article/LaunchCountdown";
 import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/queryClient";
+import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
 
 // SpaceX Launch Interface
 interface SpaceXLaunch {
@@ -154,10 +165,41 @@ interface CombinedLaunch {
   };
 }
 
+// New interface for ISS data
+interface ISSPosition {
+  message: string;
+  timestamp: number;
+  iss_position: {
+    latitude: string;
+    longitude: string;
+  };
+}
+
+// Interface for astronauts in space
+interface PeopleInSpace {
+  message: string;
+  number: number;
+  people: {
+    name: string;
+    craft: string;
+  }[];
+}
+
+// NASA APOD interface
+interface NASAAPOD {
+  date: string;
+  explanation: string;
+  hdurl: string;
+  media_type: string;
+  service_version: string;
+  title: string;
+  url: string;
+}
+
 function Launches() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterAgency, setFilterAgency] = useState("all");
-  const [activeTab, setActiveTab] = useState("upcoming");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [combinedUpcomingLaunches, setCombinedUpcomingLaunches] = useState<CombinedLaunch[]>([]);
   
   // Fetch SpaceX upcoming launches
@@ -165,14 +207,31 @@ function Launches() {
     queryKey: ['/api/spacex/upcoming'],
   });
   
-  // Fetch The Space Devs upcoming launches
+  // Fetch The Space Devs upcoming launches (directly from the source)
   const { data: tsdUpcomingData, isLoading: isLoadingTSD } = useQuery({
-    queryKey: ['/api/launches/upcoming'],
+    queryKey: ['/api/thespacedevs/launch/upcoming'],
   });
   
   // Fetch past launches from SpaceX
   const { data: pastLaunches, isLoading: isLoadingPast } = useQuery<SpaceXLaunch[]>({
     queryKey: ['/api/spacex/launches'],
+  });
+  
+  // Fetch ISS location data
+  const { data: issData, isLoading: isLoadingISS } = useQuery<ISSPosition>({
+    queryKey: ['/api/iss/location'],
+    // Refresh every 30 seconds
+    refetchInterval: 30000,
+  });
+  
+  // Fetch people in space data
+  const { data: peopleInSpace, isLoading: isLoadingPeople } = useQuery<PeopleInSpace>({
+    queryKey: ['/api/space/people'],
+  });
+  
+  // Fetch NASA APOD data
+  const { data: apodData, isLoading: isLoadingAPOD } = useQuery<NASAAPOD>({
+    queryKey: ['/api/nasa/apod'],
   });
   
   // Get a list of unique agencies from all launches
@@ -193,9 +252,6 @@ function Launches() {
   useEffect(() => {
     const combined: CombinedLaunch[] = [];
     
-    console.log("Debug SpaceX data:", spacexUpcomingLaunches);
-    console.log("Debug TSD data:", tsdUpcomingData);
-    
     // Add SpaceX data
     if (spacexUpcomingLaunches) {
       spacexUpcomingLaunches.forEach(launch => {
@@ -215,11 +271,11 @@ function Launches() {
             locality: launch.launchpad?.locality,
             country: launch.launchpad?.region,
           },
-          image: launch.links.patch.small,
+          image: launch.links?.patch?.small,
           links: {
-            webcast: launch.links.webcast,
-            wiki: launch.links.wikipedia,
-            article: launch.links.article,
+            webcast: launch.links?.webcast,
+            wiki: launch.links?.wikipedia,
+            article: launch.links?.article,
           }
         });
       });
@@ -227,7 +283,7 @@ function Launches() {
     
     // Add The Space Devs data, filtering out SpaceX launches to avoid duplicates
     if (tsdUpcomingData && (tsdUpcomingData as any).results) {
-      (tsdUpcomingData as any).results.forEach((launch: TSDLaunch) => {
+      (tsdUpcomingData as any).results.forEach((launch: any) => {
         // Skip if it's a SpaceX launch (to avoid duplicates)
         if (launch.rocket?.configuration?.manufacturer?.name === "SpaceX") {
           return;
@@ -268,7 +324,6 @@ function Launches() {
       return new Date(a.date).getTime() - new Date(b.date).getTime();
     });
     
-    console.log("Combined launches:", combined.length, combined.slice(0, 2));
     setCombinedUpcomingLaunches(combined);
   }, [spacexUpcomingLaunches, tsdUpcomingData]);
   
@@ -359,14 +414,306 @@ function Launches() {
       {/* Next Launch Countdown */}
       <LaunchCountdown />
       
-      <div className="container mx-auto px-4 py-12">
-        <h1 className="text-3xl font-space font-bold mb-8">Launch Schedule</h1>
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-space font-bold mb-8">Space Data Hub</h1>
         
-        <Tabs defaultValue="upcoming" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs defaultValue="dashboard" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-[#14141E]">
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="upcoming">Upcoming Launches</TabsTrigger>
             <TabsTrigger value="past">Past Launches</TabsTrigger>
           </TabsList>
+          
+          {/* Space Dashboard */}
+          <TabsContent value="dashboard">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* People in Space */}
+              <Card className="bg-[#14141E] border-white/10 hover:border-purple-500/30 transition-colors col-span-1">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2">
+                    <UsersIcon className="h-5 w-5 text-purple-400" />
+                    People in Space
+                  </CardTitle>
+                  <CardDescription>Currently in Earth orbit</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {isLoadingPeople ? (
+                    <div className="flex justify-center p-6">
+                      <div className="animate-spin h-8 w-8 border-4 border-purple-500 border-t-transparent rounded-full"></div>
+                    </div>
+                  ) : peopleInSpace ? (
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-white/80">Total astronauts</span>
+                        <Badge className="text-xl bg-purple-900/20 text-purple-300 border-purple-500/20">
+                          {peopleInSpace.number}
+                        </Badge>
+                      </div>
+                      <div className="space-y-2">
+                        {peopleInSpace.people.map((person, index) => (
+                          <div 
+                            key={index} 
+                            className="flex justify-between items-center p-2 rounded-md bg-[#1E1E2D]"
+                          >
+                            <div className="flex items-center">
+                              <UserIcon className="h-4 w-4 mr-2 text-white/70" />
+                              <span>{person.name}</span>
+                            </div>
+                            <Badge variant="outline">{person.craft}</Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 text-white/60">
+                      <p>Unable to load astronaut data</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+              
+              {/* ISS Tracking */}
+              <Card className="bg-[#14141E] border-white/10 hover:border-purple-500/30 transition-colors col-span-1">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2">
+                    <Satellite className="h-5 w-5 text-purple-400" />
+                    ISS Tracker
+                  </CardTitle>
+                  <CardDescription>International Space Station location</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {isLoadingISS ? (
+                    <div className="flex justify-center p-6">
+                      <div className="animate-spin h-8 w-8 border-4 border-purple-500 border-t-transparent rounded-full"></div>
+                    </div>
+                  ) : issData ? (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-[#1E1E2D] p-3 rounded-md">
+                          <div className="text-xs text-white/60 mb-1">Latitude</div>
+                          <div className="text-xl font-semibold">{parseFloat(issData.iss_position.latitude).toFixed(4)}°</div>
+                        </div>
+                        <div className="bg-[#1E1E2D] p-3 rounded-md">
+                          <div className="text-xs text-white/60 mb-1">Longitude</div>
+                          <div className="text-xl font-semibold">{parseFloat(issData.iss_position.longitude).toFixed(4)}°</div>
+                        </div>
+                      </div>
+                      <div className="bg-[#1E1E2D] p-3 rounded-md">
+                        <div className="text-xs text-white/60 mb-1">Velocity</div>
+                        <div className="text-xl font-semibold">7.66 km/s</div>
+                        <div className="text-xs text-white/60">27,576 km/h (17,134 mph)</div>
+                      </div>
+                      <div className="bg-[#1E1E2D] p-3 rounded-md">
+                        <div className="text-xs text-white/60 mb-1">Altitude</div>
+                        <div className="text-xl font-semibold">408 km</div>
+                        <div className="text-xs text-white/60">254 miles</div>
+                      </div>
+                      <div className="text-center text-xs text-white/60">
+                        Last updated: {new Date(issData.timestamp * 1000).toLocaleTimeString()}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 text-white/60">
+                      <p>Unable to load ISS tracking data</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+              
+              {/* NASA APOD */}
+              <Card className="bg-[#14141E] border-white/10 hover:border-purple-500/30 transition-colors col-span-1 lg:row-span-2">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2">
+                    <ImageIcon className="h-5 w-5 text-purple-400" />
+                    Astronomy Picture of the Day
+                  </CardTitle>
+                  <CardDescription>NASA's daily space image</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {isLoadingAPOD ? (
+                    <div className="flex justify-center py-12">
+                      <div className="animate-spin h-8 w-8 border-4 border-purple-500 border-t-transparent rounded-full"></div>
+                    </div>
+                  ) : apodData ? (
+                    <>
+                      <div className="relative aspect-video overflow-hidden rounded-md">
+                        <img 
+                          src={apodData.url} 
+                          alt={apodData.title}
+                          className="object-cover w-full h-full"
+                        />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold">{apodData.title}</h3>
+                        <p className="text-sm text-white/60">{apodData.date}</p>
+                        <p className="text-sm text-white/80 mt-2 line-clamp-6">{apodData.explanation}</p>
+                      </div>
+                      <div>
+                        <a 
+                          href={apodData.hdurl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-sm text-purple-400 hover:text-purple-300 flex items-center"
+                        >
+                          <ExternalLinkIcon className="h-3 w-3 mr-1" />
+                          View high-resolution image
+                        </a>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-12 text-white/60">
+                      <ImageIcon className="h-12 w-12 mx-auto mb-4 text-white/30" />
+                      <p>NASA Astronomy Picture of the Day unavailable</p>
+                      <p className="text-xs mt-2">The NASA API may be experiencing issues</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+              
+              {/* Next Launch */}
+              <Card className="bg-[#14141E] border-white/10 hover:border-purple-500/30 transition-colors col-span-1 md:col-span-2 lg:col-span-2">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2">
+                    <RocketIcon className="h-5 w-5 text-purple-400" />
+                    Next Launch
+                  </CardTitle>
+                  <CardDescription>Upcoming mission details</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {isLoadingSpaceX && isLoadingTSD ? (
+                    <div className="flex justify-center p-6">
+                      <div className="animate-spin h-8 w-8 border-4 border-purple-500 border-t-transparent rounded-full"></div>
+                    </div>
+                  ) : combinedUpcomingLaunches.length > 0 ? (
+                    <div className="space-y-4">
+                      <div className="flex flex-col md:flex-row gap-4">
+                        <div className="md:w-1/3">
+                          {combinedUpcomingLaunches[0].image ? (
+                            <img 
+                              src={combinedUpcomingLaunches[0].image} 
+                              alt={`${combinedUpcomingLaunches[0].name} mission patch`}
+                              className="h-32 w-full object-contain rounded-md bg-black/20 p-2"
+                            />
+                          ) : (
+                            <div className="h-32 w-full rounded-md bg-purple-900/20 flex items-center justify-center">
+                              <RocketIcon className="h-16 w-16 text-purple-500/50" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="md:w-2/3 space-y-2">
+                          <div>
+                            <h3 className="text-xl font-semibold">{combinedUpcomingLaunches[0].name}</h3>
+                            <p className="text-white/60">
+                              {combinedUpcomingLaunches[0].agency || 'Unknown Agency'} • {formatLaunchDate(combinedUpcomingLaunches[0].date)}
+                            </p>
+                          </div>
+                          <div className="text-white/80">
+                            {combinedUpcomingLaunches[0].details || combinedUpcomingLaunches[0].mission?.name || "No mission details available."}
+                          </div>
+                          <div className="grid grid-cols-2 gap-3 pt-2">
+                            <div className="flex items-center">
+                              <Rocket className="h-4 w-4 mr-2 text-white/70" />
+                              <span>{combinedUpcomingLaunches[0].rocket?.name || "Unknown rocket"}</span>
+                            </div>
+                            <div className="flex items-center">
+                              <MapPinIcon className="h-4 w-4 mr-2 text-white/70" />
+                              <span>{combinedUpcomingLaunches[0].location?.name || "Unknown location"}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        {combinedUpcomingLaunches[0].links?.webcast && (
+                          <a 
+                            href={combinedUpcomingLaunches[0].links.webcast} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md flex items-center"
+                          >
+                            <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M21.543 6.498C22 8.28 22 12 22 12s0 3.72-.457 5.502c-.254.985-.997 1.76-1.938 2.022C17.896 20 12 20 12 20s-5.893 0-7.605-.476c-.945-.266-1.687-1.04-1.938-2.022C2 15.72 2 12 2 12s0-3.72.457-5.502c.254-.985.997-1.76 1.938-2.022C6.107 4 12 4 12 4s5.896 0 7.605.476c.945.266 1.687 1.04 1.938 2.022zM10 15.5l6-3.5-6-3.5v7z" />
+                            </svg>
+                            Watch Live
+                          </a>
+                        )}
+                        {combinedUpcomingLaunches[0].links?.wiki && (
+                          <a 
+                            href={combinedUpcomingLaunches[0].links.wiki} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="px-4 py-2 bg-[#1E1E2D] hover:bg-[#282838] text-white rounded-md flex items-center"
+                          >
+                            <InfoIcon className="h-4 w-4 mr-2" />
+                            More Info
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 text-white/60">
+                      <RocketIcon className="h-12 w-12 mx-auto mb-4 text-white/30" />
+                      <p>No upcoming launches found</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+              
+              {/* Launch Statistics */}
+              <Card className="bg-[#14141E] border-white/10 hover:border-purple-500/30 transition-colors col-span-1 md:col-span-2 lg:col-span-2">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2">
+                    <LucideGlobe className="h-5 w-5 text-purple-400" />
+                    Launch Statistics
+                  </CardTitle>
+                  <CardDescription>Global spaceflight metrics</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-[#1E1E2D] p-4 rounded-md text-center">
+                      <div className="text-3xl font-bold">{combinedUpcomingLaunches.length}</div>
+                      <div className="text-xs text-white/60 mt-1">Upcoming Launches</div>
+                    </div>
+                    <div className="bg-[#1E1E2D] p-4 rounded-md text-center">
+                      <div className="text-3xl font-bold">{pastLaunches?.filter(l => l.success === true).length || 0}</div>
+                      <div className="text-xs text-white/60 mt-1">Successful Launches</div>
+                    </div>
+                    <div className="bg-[#1E1E2D] p-4 rounded-md text-center">
+                      <div className="text-3xl font-bold">{peopleInSpace?.number || 0}</div>
+                      <div className="text-xs text-white/60 mt-1">People in Space</div>
+                    </div>
+                    <div className="bg-[#1E1E2D] p-4 rounded-md text-center">
+                      <div className="text-3xl font-bold">{(pastLaunches?.length || 0) + (combinedUpcomingLaunches.length)}</div>
+                      <div className="text-xs text-white/60 mt-1">Total Tracked</div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6">
+                    <h3 className="text-sm font-medium mb-2 text-white/70">Upcoming Launches by Agency</h3>
+                    <div className="space-y-4">
+                      {agencies.slice(0, 5).map(agency => {
+                        const count = combinedUpcomingLaunches.filter(l => 
+                          l.agency?.toLowerCase().includes(agency.id.toLowerCase())
+                        ).length;
+                        const percentage = combinedUpcomingLaunches.length > 0 
+                          ? (count / combinedUpcomingLaunches.length) * 100 
+                          : 0;
+                          
+                        return (
+                          <div key={agency.id} className="space-y-1">
+                            <div className="flex justify-between text-sm">
+                              <span>{agency.name}</span>
+                              <span>{count} launches</span>
+                            </div>
+                            <Progress value={percentage} className="h-2" />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
           
           {/* Upcoming Launches */}
           <TabsContent value="upcoming">

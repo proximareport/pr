@@ -1635,7 +1635,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // ISS Current Location API
+  app.get("/api/iss/location", async (req, res) => {
+    try {
+      const cacheKey = '/api/iss/location';
+      const now = Date.now();
+      
+      // Cache for a shorter period since ISS position changes frequently
+      const ISS_CACHE_TTL = 30 * 1000; // 30 seconds
+      
+      // Check if we have a cached response that's still valid
+      if (apiCache[cacheKey] && now - apiCache[cacheKey].timestamp < ISS_CACHE_TTL) {
+        return res.json(apiCache[cacheKey].data);
+      }
+      
+      // Otherwise, fetch fresh data
+      const response = await axios.get('http://api.open-notify.org/iss-now.json');
+      
+      // Cache the response
+      apiCache[cacheKey] = {
+        data: response.data,
+        timestamp: now
+      };
+      
+      res.json(response.data);
+    } catch (error) {
+      console.error("Error fetching ISS location:", error);
+      res.status(500).json({ message: "Error fetching ISS location" });
+    }
+  });
+  
+  // People in Space API
+  app.get("/api/space/people", async (req, res) => {
+    try {
+      const cacheKey = '/api/space/people';
+      const now = Date.now();
+      
+      // Cache for a day as astronaut info doesn't change that often
+      const PEOPLE_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+      
+      // Check if we have a cached response that's still valid
+      if (apiCache[cacheKey] && now - apiCache[cacheKey].timestamp < PEOPLE_CACHE_TTL) {
+        return res.json(apiCache[cacheKey].data);
+      }
+      
+      // Otherwise, fetch fresh data
+      const response = await axios.get('http://api.open-notify.org/astros.json');
+      
+      // Cache the response
+      apiCache[cacheKey] = {
+        data: response.data,
+        timestamp: now
+      };
+      
+      res.json(response.data);
+    } catch (error) {
+      console.error("Error fetching people in space:", error);
+      res.status(500).json({ message: "Error fetching people in space" });
+    }
+  });
+  
+  // Direct access to The Space Devs API 
+  app.get("/api/thespacedevs/:endpoint", async (req, res) => {
+    try {
+      const { endpoint } = req.params;
+      const cacheKey = `/api/thespacedevs/${endpoint}`;
+      const now = Date.now();
+      
+      // Check if we have a cached response that's still valid
+      if (apiCache[cacheKey] && now - apiCache[cacheKey].timestamp < CACHE_TTL) {
+        return res.json(apiCache[cacheKey].data);
+      }
+      
+      // Otherwise, fetch fresh data
+      const response = await axios.get(`https://ll.thespacedevs.com/2.2.0/${endpoint}`, {
+        headers: {
+          'User-Agent': 'Proxima-Report/1.0'
+        },
+        params: req.query
+      });
+      
+      // Cache the response
+      apiCache[cacheKey] = {
+        data: response.data,
+        timestamp: now
+      };
+      
+      res.json(response.data);
+    } catch (error) {
+      console.error(`Error fetching from The Space Devs API (${req.params.endpoint}):`, error);
+      res.status(500).json({ message: "Error fetching data from The Space Devs API" });
+    }
+  });
+  
   // NASA API route
+  // NASA APOD (Astronomy Picture of the Day) API
   app.get("/api/nasa/apod", async (req, res) => {
     try {
       const cacheKey = '/api/nasa/apod';
@@ -1646,8 +1740,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(apiCache[cacheKey].data);
       }
       
+      // Use the DEMO_KEY if no API key is provided
+      const nasa_api_key = process.env.NASA_API_KEY || 'DEMO_KEY';
+      
       // Otherwise, fetch fresh data
-      const nasa_api_key = process.env.NASA_API_KEY || '';
       const response = await axios.get(`https://api.nasa.gov/planetary/apod?api_key=${nasa_api_key}`);
       
       // Cache the response
@@ -1658,7 +1754,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(response.data);
     } catch (error) {
+      console.error("Error fetching NASA APOD:", error);
       res.status(500).json({ message: "Error fetching NASA data" });
+    }
+  });
+  
+  // NASA Earth Imagery API
+  app.get("/api/nasa/earth", async (req, res) => {
+    try {
+      const { lat, lon } = req.query;
+      
+      if (!lat || !lon) {
+        return res.status(400).json({ message: "Latitude and longitude are required" });
+      }
+      
+      const cacheKey = `/api/nasa/earth?lat=${lat}&lon=${lon}`;
+      const now = Date.now();
+      
+      // Check if we have a cached response that's still valid
+      if (apiCache[cacheKey] && now - apiCache[cacheKey].timestamp < CACHE_TTL) {
+        return res.json(apiCache[cacheKey].data);
+      }
+      
+      // Use the DEMO_KEY if no API key is provided
+      const nasa_api_key = process.env.NASA_API_KEY || 'DEMO_KEY';
+      
+      // Fetch data from NASA API
+      const response = await axios.get(
+        `https://api.nasa.gov/planetary/earth/imagery?lon=${lon}&lat=${lat}&date=2022-01-01&dim=0.15&api_key=${nasa_api_key}`
+      );
+      
+      // Cache the response
+      apiCache[cacheKey] = {
+        data: response.data,
+        timestamp: now
+      };
+      
+      res.json(response.data);
+    } catch (error) {
+      console.error("Error fetching NASA Earth imagery:", error);
+      res.status(500).json({ message: "Error fetching NASA Earth imagery" });
+    }
+  });
+  
+  // NASA Epic API (Earth Polychromatic Imaging Camera)
+  app.get("/api/nasa/epic", async (req, res) => {
+    try {
+      const cacheKey = '/api/nasa/epic';
+      const now = Date.now();
+      
+      // Check if we have a cached response that's still valid
+      if (apiCache[cacheKey] && now - apiCache[cacheKey].timestamp < CACHE_TTL) {
+        return res.json(apiCache[cacheKey].data);
+      }
+      
+      // Use the DEMO_KEY if no API key is provided
+      const nasa_api_key = process.env.NASA_API_KEY || 'DEMO_KEY';
+      
+      // Fetch the latest natural color images
+      const response = await axios.get(
+        `https://api.nasa.gov/EPIC/api/natural?api_key=${nasa_api_key}`
+      );
+      
+      // Cache the response
+      apiCache[cacheKey] = {
+        data: response.data,
+        timestamp: now
+      };
+      
+      res.json(response.data);
+    } catch (error) {
+      console.error("Error fetching NASA EPIC data:", error);
+      res.status(500).json({ message: "Error fetching NASA EPIC data" });
     }
   });
   
