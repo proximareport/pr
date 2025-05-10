@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { SaveIcon, ImageIcon, UploadIcon, ArrowLeft as ArrowLeftIcon } from 'lucide-react';
-import ArticleEditor from '@/components/article/ArticleEditorSimple';
+import ArticleEditor from '@/components/article/GoogleDocsEditor';
 import { EditorLayout, EditorMainCard, EditorSideCard } from '@/components/admin/EditorLayout';
 import { 
   TextFormField, 
@@ -341,11 +341,7 @@ function AdminArticleEditor() {
           <div className="bg-[#1E1E2D] border border-white/10 rounded-lg p-6 shadow-lg">
             <div className="min-h-[700px]">
               <ArticleEditor 
-                initialArticle={{
-                  content: {
-                    blocks: Array.isArray(content) ? content : []
-                  }
-                }}
+                initialContent={Array.isArray(content) ? content : []}
                 onSave={(updatedBlocks) => {
                   console.log("Content blocks updated:", updatedBlocks);
                   setContent(updatedBlocks);
