@@ -38,7 +38,7 @@ function AdminArticleEditor() {
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
   const [summary, setSummary] = useState('');
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState<any[]>([]);
   const [category, setCategory] = useState('');
   const [isBreaking, setIsBreaking] = useState(false);
   const [readTime, setReadTime] = useState(5);
@@ -223,17 +223,17 @@ function AdminArticleEditor() {
       if (article.content) {
         if (typeof article.content === 'object' && article.content.blocks) {
           // Handle structured content with blocks
-          setContent(article.content.blocks as any);
+          setContent(article.content.blocks || []);
         } else if (Array.isArray(article.content)) {
           // Handle direct array of blocks
-          setContent(article.content as any);
+          setContent(article.content);
         } else {
           // Default to empty blocks array if content is in unexpected format
           console.warn("Article content format unexpected:", article.content);
-          setContent([] as any);
+          setContent([]);
         }
       } else {
-        setContent([] as any);
+        setContent([]);
       }
       
       setCategory(article.category || '');
