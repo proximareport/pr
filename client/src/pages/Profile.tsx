@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useAuth } from "@/lib/AuthContext";
 import UserProfile from "@/components/profile/UserProfile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,10 +25,16 @@ function Profile({ params }: ProfileProps) {
     const hash = window.location.hash.replace("#", "");
     if (hash && ["profile", "notifications", "subscription", "security"].includes(hash)) {
       setActiveTab(hash);
+    } else if (isSettings && !window.location.hash) {
+      // Set default hash if on settings page without hash
+      window.history.replaceState(null, '', '#profile');
+      setActiveTab("profile");
     }
-  }, [location]);
+  }, [location, isSettings]);
 
   // Only the current user can access settings
+  const [, setLocation] = useLocation();
+  
   useEffect(() => {
     if (isSettings && (!user || (params.username && params.username !== user?.username))) {
       toast({
@@ -37,9 +43,9 @@ function Profile({ params }: ProfileProps) {
         variant: "destructive",
       });
       // Redirect to home page
-      window.location.href = "/";
+      setLocation("/");
     }
-  }, [isSettings, user, params.username, toast]);
+  }, [isSettings, user, params.username, toast, setLocation]);
 
   return (
     <div className="bg-[#0D0D17] min-h-screen pt-8 pb-16">
@@ -114,12 +120,11 @@ function Profile({ params }: ProfileProps) {
                     </div>
                     
                     {user?.membershipTier === "free" ? (
-                      <button 
-                        onClick={() => window.location.href = "/subscribe"}
-                        className="mt-2 sm:mt-0 px-4 py-2 bg-purple-800 hover:bg-purple-700 text-white rounded-md"
-                      >
-                        Upgrade
-                      </button>
+                      <Link href="/subscribe">
+                        <a className="mt-2 sm:mt-0 px-4 py-2 bg-purple-800 hover:bg-purple-700 text-white rounded-md inline-block">
+                          Upgrade
+                        </a>
+                      </Link>
                     ) : (
                       <div className="bg-green-900/20 text-green-500 px-3 py-1 rounded text-sm mt-2 sm:mt-0">
                         Active
@@ -152,12 +157,11 @@ function Profile({ params }: ProfileProps) {
                       Get access to full profile customization, ad-free experience, 
                       priority comment placement, and more for just $2 more per month.
                     </p>
-                    <button 
-                      onClick={() => window.location.href = "/subscribe?tier=pro"}
-                      className="inline-block px-4 py-2 bg-purple-800 hover:bg-purple-700 text-white rounded-md text-sm"
-                    >
-                      Upgrade to Pro
-                    </button>
+                    <Link href="/subscribe?tier=pro">
+                      <a className="inline-block px-4 py-2 bg-purple-800 hover:bg-purple-700 text-white rounded-md text-sm">
+                        Upgrade to Pro
+                      </a>
+                    </Link>
                   </div>
                 )}
               </div>
