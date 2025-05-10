@@ -51,21 +51,34 @@ function AdminArticleEditor() {
     
     // Auto-generate slug if empty
     if (!isEditing || (!initialArticle && slug === '')) {
-      const slugValue = newTitle
+      // Create base slug from title
+      const baseSlug = newTitle
         .toLowerCase()
         .replace(/[^\w\s-]/g, '')
         .replace(/[\s_-]+/g, '-')
         .replace(/^-+|-+$/g, '');
-      setSlug(slugValue);
+      
+      // Add timestamp to ensure uniqueness
+      const timestamp = new Date().getTime().toString().slice(-5);
+      const uniqueSlug = baseSlug ? `${baseSlug}-${timestamp}` : '';
+      
+      setSlug(uniqueSlug);
     }
   };
   
   const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const slugValue = e.target.value
+    let slugValue = e.target.value
       .toLowerCase()
       .replace(/[^\w\s-]/g, '')
       .replace(/[\s_-]+/g, '-')
       .replace(/^-+|-+$/g, '');
+    
+    // Preserve uniqueness by adding timestamp if needed
+    if (!slugValue.match(/-\d{5}$/)) {
+      const timestamp = new Date().getTime().toString().slice(-5);
+      slugValue = slugValue ? `${slugValue}-${timestamp}` : '';
+    }
+    
     setSlug(slugValue);
   };
 
