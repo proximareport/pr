@@ -26,6 +26,7 @@ interface ArticleContentProps {
     };
     category: string;
     readTime: number;
+    tags?: string[];
   };
 }
 
