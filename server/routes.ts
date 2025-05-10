@@ -40,12 +40,13 @@ declare module 'express-serve-static-core' {
 // Configure session middleware
 // Note: For production, you'd use a more robust session store
 const sessionConfig = {
-  secret: process.env.SESSION_SECRET || 'proxima_report_secret',
+  secret: process.env.SESSION_SECRET || 'proxima_report_secret_key_for_development_only',
   resave: false,
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+    sameSite: 'lax' as const // Helps with CSRF protection
   }
 };
 
@@ -120,6 +121,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Login attempt for:", req.body.email);
       const { email, password } = req.body;
       
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+      
       // Find user
       const user = await storage.getUserByEmail(email);
       if (!user) {
@@ -134,13 +139,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Stored hash type:", typeof user.password);
       console.log("Stored hash length:", user.password?.length);
       
-      // Check password
-      const isMatch = await bcrypt.compare(password, user.password);
+      // Check if the password has been hashed (should start with $2a$ or $2b$ for bcrypt)
+      if (!user.password.startsWith('$2a$') && !user.password.startsWith('$2b$')) {
+        console.log("WARNING: Password doesn't appear to be properly hashed!");
+        return res.status(500).json({ message: "Server error: invalid password format" });
+      }
       
-      console.log("Password match result:", isMatch);
+      // Normalize the password - trim whitespace to handle copy-paste issues
+      const normalizedPassword = password.trim();
+      
+      // Check password with extra error handling
+      let isMatch = false;
+      try {
+        isMatch = await bcrypt.compare(normalizedPassword, user.password);
+        console.log("Password match result:", isMatch);
+      } catch (compareError) {
+        console.error("bcrypt.compare error:", compareError);
+        return res.status(500).json({ message: "Error verifying password" });
+      }
       
       if (!isMatch) {
-        return res.status(400).json({ message: "Invalid credentials" });
+        // If the login fails, try with the raw password as fallback (for fixing cross-device issues)
+        try {
+          isMatch = await bcrypt.compare(password, user.password);
+          console.log("Fallback password match result:", isMatch);
+        } catch (fallbackError) {
+          console.error("Fallback bcrypt.compare error:", fallbackError);
+        }
+        
+        if (!isMatch) {
+          return res.status(400).json({ message: "Invalid credentials" });
+        }
       }
       
       // Update last login
