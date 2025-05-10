@@ -84,7 +84,9 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
     "jupiter", "galaxy", "climate", "science", "technology", "engineering", 
     "mathematics", "research", "discovery", "innovation"
   ]);
-  const [content, setContent] = useState<any[]>(initialArticle?.content?.blocks || []);
+  const [content, setContent] = useState<any[]>(
+    ensureBlockIds(initialArticle?.content?.blocks || [])
+  );
   const [isDraft, setIsDraft] = useState<boolean>(initialArticle?.status === "draft" || true);
   const [previewMode, setPreviewMode] = useState(false);
   const [activeBlockIndex, setActiveBlockIndex] = useState<number | null>(null);
@@ -190,6 +192,16 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
       setContent([...content, newBlock]);
       setActiveBlockIndex(content.length);
     }
+  };
+  
+  // Ensure all content blocks have unique IDs
+  const ensureBlockIds = (blocks: any[]) => {
+    return blocks.map(block => {
+      if (!block.id) {
+        return {...block, id: nanoid(8)};
+      }
+      return block;
+    });
   };
 
   // Create an empty block of the specified type
