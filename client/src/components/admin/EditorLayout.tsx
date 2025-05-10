@@ -6,26 +6,31 @@ import { useLocation } from 'wouter';
 
 interface EditorLayoutProps {
   title: string;
+  subtitle?: string;
   mainContent: React.ReactNode;
   sidebarContent: React.ReactNode;
+  isLoading?: boolean;
 }
 
-export function EditorLayout({ title, mainContent, sidebarContent }: EditorLayoutProps) {
+export function EditorLayout({ title, subtitle, mainContent, sidebarContent, isLoading = false }: EditorLayoutProps) {
   const [, navigate] = useLocation();
 
   return (
     <div className="container max-w-7xl mx-auto py-10">
-      <div className="flex items-center mb-8 border-b border-white/10 pb-4">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="mr-4 hover:bg-white/10"
-          onClick={() => navigate('/admin')}
-        >
-          <ArrowLeftIcon className="h-5 w-5 mr-2" />
-          Back
-        </Button>
-        <h1 className="text-4xl font-bold tracking-tight">{title}</h1>
+      <div className="flex flex-col mb-8 border-b border-white/10 pb-4">
+        <div className="flex items-center mb-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="mr-4 hover:bg-white/10"
+            onClick={() => navigate('/admin')}
+          >
+            <ArrowLeftIcon className="h-5 w-5 mr-2" />
+            Back
+          </Button>
+          <h1 className="text-4xl font-bold tracking-tight">{title}</h1>
+        </div>
+        {subtitle && <p className="text-white/60 ml-14 text-sm">{subtitle}</p>}
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

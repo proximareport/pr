@@ -273,6 +273,7 @@ function AdminArticleEditor() {
       ...coauthors
     ];
     
+    // The backend expects primaryAuthorId as a separate field
     return {
       title,
       slug,
@@ -286,7 +287,8 @@ function AdminArticleEditor() {
       isBreaking,
       isFeatured,
       isCollaborative,
-      authors
+      primaryAuthorId: user?.id, // Add the required field
+      authors // We'll keep this for any frontend processing
     };
   }, [title, slug, summary, content, category, tags, featuredImage, readTime, isBreaking, isFeatured, isCollaborative, coauthors, user?.id]);
 
