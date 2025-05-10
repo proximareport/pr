@@ -49,7 +49,8 @@ import {
   Layout,
   Columns,
   Plus,
-  AlertCircle
+  AlertCircle,
+  X
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
@@ -170,6 +171,12 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
 
   // Add a new content block
   const addBlock = (type: string) => {
+    // For polls, open the poll dialog instead of directly adding the block
+    if (type === "poll") {
+      setPollDialogOpen(true);
+      return;
+    }
+    
     const newBlock = createEmptyBlock(type);
     
     // Insert at active index or append to end
@@ -1931,6 +1938,113 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Poll Creation Dialog */}
+      <Dialog open={pollDialogOpen} onOpenChange={setPollDialogOpen}>
+        <DialogContent className="bg-[#14141E] border-white/10">
+          <DialogHeader>
+            <DialogTitle>Create Poll</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="poll-question">Poll Question</Label>
+              <Input
+                id="poll-question"
+                value={currentPollQuestion}
+                onChange={(e) => setCurrentPollQuestion(e.target.value)}
+                placeholder="Ask a question..."
+                className="bg-[#1E1E2D] border-white/10"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Poll Options</Label>
+              {currentPollOptions.map((option, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <Input
+                    value={option}
+                    onChange={(e) => {
+                      const newOptions = [...currentPollOptions];
+                      newOptions[index] = e.target.value;
+                      setCurrentPollOptions(newOptions);
+                    }}
+                    placeholder={`Option ${index + 1}`}
+                    className="bg-[#1E1E2D] border-white/10"
+                  />
+                  {currentPollOptions.length > 2 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        const newOptions = currentPollOptions.filter((_, i) => i !== index);
+                        setCurrentPollOptions(newOptions);
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              
+              {currentPollOptions.length < 6 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPollOptions([...currentPollOptions, ""])}
+                  className="mt-2"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Option
+                </Button>
+              )}
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="allow-multiple"
+                  checked={currentPollMultipleChoice}
+                  onCheckedChange={(checked) => setCurrentPollMultipleChoice(checked === true)}
+                />
+                <Label htmlFor="allow-multiple">Allow multiple choices</Label>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPollDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => {
+              // Create a poll block and add it to the content
+              const pollBlock = createEmptyBlock("poll");
+              pollBlock.question = currentPollQuestion;
+              pollBlock.options = currentPollOptions.filter(opt => opt.trim() !== "");
+              pollBlock.allowMultiple = currentPollMultipleChoice;
+              
+              // Insert at active index or append to end
+              if (activeBlockIndex !== null) {
+                const newContent = [...content];
+                newContent.splice(activeBlockIndex + 1, 0, pollBlock);
+                setContent(newContent);
+                setActiveBlockIndex(activeBlockIndex + 1);
+              } else {
+                setContent([...content, pollBlock]);
+                setActiveBlockIndex(content.length);
+              }
+              
+              // Reset form and close dialog
+              setCurrentPollQuestion("");
+              setCurrentPollOptions([""]);
+              setCurrentPollMultipleChoice(false);
+              setPollDialogOpen(false);
+            }}>
+              Add Poll
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
