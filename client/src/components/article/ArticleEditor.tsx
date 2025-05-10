@@ -74,10 +74,48 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
   const [readTime, setReadTime] = useState(initialArticle?.readTime || 5);
   const [tags, setTags] = useState<string[]>(initialArticle?.tags || []);
   const [tagInput, setTagInput] = useState("");
+  const [availableTags, setAvailableTags] = useState<string[]>([
+    "mars", "space", "astronomy", "physics", "spacex", "nasa", "iss", 
+    "satellite", "exoplanet", "telescope", "blackhole", "rocket", "moon", 
+    "jupiter", "galaxy", "climate", "science", "technology", "engineering", 
+    "mathematics", "research", "discovery", "innovation"
+  ]);
   const [content, setContent] = useState<any[]>(initialArticle?.content?.blocks || []);
   const [isDraft, setIsDraft] = useState(initialArticle?.status === "draft" || true);
   const [previewMode, setPreviewMode] = useState(false);
   const [activeBlockIndex, setActiveBlockIndex] = useState<number | null>(null);
+  
+  // Tag management functions
+  const addTag = () => {
+    if (!tagInput.trim()) return;
+    
+    const newTag = tagInput.trim().toLowerCase();
+    
+    // Don't add duplicates
+    if (tags.includes(newTag)) {
+      toast({
+        title: "Tag already exists",
+        description: "This tag has already been added to the article.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Add to article tags
+    setTags([...tags, newTag]);
+    
+    // Add to available tags if it's not already there
+    if (!availableTags.includes(newTag)) {
+      setAvailableTags([...availableTags, newTag]);
+    }
+    
+    // Clear input
+    setTagInput("");
+  };
+  
+  const removeTag = (tagToRemove: string) => {
+    setTags(tags.filter(tag => tag !== tagToRemove));
+  };
   const editorRef = useRef<HTMLDivElement>(null);
 
   // New state variables for enhanced features
@@ -1726,6 +1764,83 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
 
       {/* Metadata & Settings */}
       <div className="w-full md:w-1/3 space-y-4">
+        <Card className="bg-[#14141E] border-white/10">
+          <CardContent className="p-4">
+            <h3 className="font-space font-bold text-lg mb-3">Article Tags</h3>
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2 mb-3">
+                {tags.map((tag) => (
+                  <Badge 
+                    key={tag} 
+                    className="bg-purple-800 hover:bg-purple-700 flex items-center gap-1 px-3 py-1"
+                  >
+                    <span>{tag}</span>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-4 w-4 p-0 text-white/80 hover:text-white hover:bg-transparent"
+                      onClick={() => removeTag(tag)}
+                    >
+                      <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                      </svg>
+                    </Button>
+                  </Badge>
+                ))}
+                {tags.length === 0 && (
+                  <p className="text-white/60 text-sm">No tags added yet</p>
+                )}
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Input
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  placeholder="Add a tag"
+                  className="flex-1 bg-[#1E1E2D] border-white/10"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addTag();
+                    }
+                  }}
+                />
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={addTag}
+                  disabled={!tagInput.trim()}
+                >
+                  Add
+                </Button>
+              </div>
+              
+              {availableTags.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-sm text-white/70 mb-2">Popular tags:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {availableTags.slice(0, 10).map(tag => (
+                      <Button
+                        key={tag}
+                        variant="outline"
+                        size="sm"
+                        className="py-0 h-6 text-xs"
+                        onClick={() => {
+                          if (!tags.includes(tag)) {
+                            setTags([...tags, tag]);
+                          }
+                        }}
+                      >
+                        {tag}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+        
         <Card className="bg-[#14141E] border-white/10">
           <CardContent className="p-4">
             <h3 className="font-space font-bold text-lg mb-3">Article Status</h3>
