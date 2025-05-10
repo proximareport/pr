@@ -608,6 +608,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Article not found" });
       }
       
+      // Check if preview mode is requested and if article is a draft
+      const isPreview = req.query.preview === 'true';
+      const isDraft = article.status === 'draft';
+      
+      // If article is a draft, enforce access control
+      if (isDraft) {
+        // Check if this is a preview request, otherwise reject
+        if (!isPreview) {
+          return res.status(404).json({ message: "Article not found" });
+        }
+        
+        // For preview mode, check authentication through session
+        if (!req.session || !req.session.userId) {
+          return res.status(401).json({ message: "Authentication required to preview drafts" });
+        }
+        
+        // Check user permissions for viewing drafts
+        const userId = req.session.userId;
+        if (!userId) {
+          return res.status(401).json({ message: "Authentication required to preview drafts" });
+        }
+        
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(401).json({ message: "User not found" });
+        }
+        
+        // Only admins, editors, or the article's authors can view drafts
+        const isAdmin = user.role === 'admin';
+        const isEditor = user.role === 'editor';
+        const isAuthor = user.role === 'author';
+        
+        // If the user is an author, check if they are one of the article's authors
+        let isArticleAuthor = false;
+        if (isAuthor) {
+          const authors = await storage.getArticleAuthors(article.id);
+          isArticleAuthor = authors.some(author => author.user.id === userId);
+        }
+        
+        // If not authorized to view draft, return 403
+        if (!(isAdmin || isEditor || (isAuthor && isArticleAuthor))) {
+          return res.status(403).json({ 
+            message: "You don't have permission to view this draft article" 
+          });
+        }
+      }
+      
       // If article is collaborative, fetch all authors
       if (article.isCollaborative) {
         const authors = await storage.getArticleAuthors(article.id);

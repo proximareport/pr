@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/AuthContext";
 import ArticleContent from "@/components/article/ArticleContent";
 import GoogleDocsArticleContent from "@/components/article/GoogleDocsArticleContent";
 import TableOfContents from "@/components/article/TableOfContents";
@@ -19,10 +20,30 @@ function Article({ params }: ArticleProps) {
   const [, setLocation] = useLocation();
   const [activeHeadingId, setActiveHeadingId] = useState<string | null>(null);
   const [headings, setHeadings] = useState<Array<{ id: string; content: string; level: number }>>([]);
+  const { user } = useAuth();
   
-  // Fetch article data
+  // Check if we're in preview mode
+  const searchParams = new URLSearchParams(window.location.search);
+  const isPreview = searchParams.get('preview') === 'true';
+  
+  // Fetch article data (with preview parameter if applicable)
   const { data: article, isLoading, error } = useQuery({
-    queryKey: [`/api/articles/${slug}`],
+    queryKey: [`/api/articles/${slug}`, isPreview],
+    queryFn: async () => {
+      const url = `/api/articles/${slug}${isPreview ? '?preview=true' : ''}`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Article not found');
+        } else if (response.status === 403) {
+          throw new Error('You don\'t have permission to view this draft article');
+        } else if (response.status === 401) {
+          throw new Error('Authentication required to preview drafts');
+        }
+        throw new Error('Failed to fetch article');
+      }
+      return response.json();
+    }
   });
   
   // Fetch comments for this article
