@@ -463,10 +463,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Extract authors data from the request if present
+      const { authors } = req.body;
+      
       const newArticle = await storage.createArticle({
         ...articleData,
         publishedAt,
         primaryAuthorId: req.session.userId!,
+        // Pass authors array to the storage method if it exists
+        authors: authors && Array.isArray(authors) ? authors : undefined
       });
       
       res.status(201).json(newArticle);
@@ -556,10 +561,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Extract authors data
+      const { authors } = req.body;
+      
+      // First update the article in the database
       const updatedArticle = await storage.updateArticle(articleId, {
         ...updateData,
         publishedAt,
       });
+      
+      // If this is a collaborative article and there are authors, update the authors
+      if (updatedArticle && updatedArticle.isCollaborative && authors && Array.isArray(authors)) {
+        // First remove all existing authors to avoid duplicates
+        // Don't worry about removing the primary author, they'll be added back
+        const existingAuthors = await storage.getArticleAuthors(articleId);
+        for (const author of existingAuthors) {
+          await storage.removeAuthorFromArticle(articleId, author.userId);
+        }
+        
+        // Now add the primary author and all coauthors
+        await storage.addAuthorToArticle(articleId, updatedArticle.primaryAuthorId, "primary");
+        
+        // Add all coauthors
+        for (const author of authors) {
+          if (author.id !== updatedArticle.primaryAuthorId) {
+            await storage.addAuthorToArticle(articleId, author.id, author.role || "coauthor");
+          }
+        }
+      }
       
       if (!updatedArticle) {
         return res.status(404).json({ message: "Article not found" });

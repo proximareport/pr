@@ -268,15 +268,26 @@ export const insertUserSchema = createInsertSchema(users).omit({
   role: true,
 });
 
-export const insertArticleSchema = createInsertSchema(articles).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  viewCount: true,
-  lastEditedAt: true,
-  lastEditedBy: true,
-  collaborativeSessionId: true,
-});
+export const insertArticleSchema = createInsertSchema(articles)
+  .omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true,
+    viewCount: true,
+    lastEditedAt: true,
+    lastEditedBy: true,
+    collaborativeSessionId: true,
+  })
+  // Add extra fields that aren't in the table but are needed for the API
+  .extend({
+    // Support for multiple authors in the request
+    authors: z.array(
+      z.object({
+        id: z.number(),
+        role: z.string().optional(),
+      })
+    ).optional(),
+  });
 
 export const insertArticleAuthorSchema = createInsertSchema(articleAuthors).omit({
   id: true,
