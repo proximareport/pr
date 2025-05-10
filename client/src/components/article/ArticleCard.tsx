@@ -13,6 +13,7 @@ interface ArticleCardProps {
     isBreaking: boolean;
     readTime: number;
     publishedAt: string;
+    tags?: string[];
     author: {
       id: number;
       username: string;
@@ -47,7 +48,28 @@ function ArticleCard({ article }: ArticleCardProps) {
             {article.title}
           </h3>
         </Link>
-        <p className="text-white/70 mb-4 line-clamp-2">{article.summary}</p>
+        <p className="text-white/70 mb-3 line-clamp-2">{article.summary}</p>
+        
+        {/* Tags */}
+        {article.tags && article.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-4">
+            {article.tags.slice(0, 3).map((tag) => (
+              <Link key={tag} href={`/tag/${tag}`}>
+                <Badge 
+                  className="bg-purple-800/50 hover:bg-purple-700 text-xs py-0 h-5"
+                >
+                  {tag}
+                </Badge>
+              </Link>
+            ))}
+            {article.tags.length > 3 && (
+              <Badge className="bg-transparent border border-purple-800/50 text-white/70 text-xs py-0 h-5">
+                +{article.tags.length - 3} more
+              </Badge>
+            )}
+          </div>
+        )}
+        
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <Avatar className="h-8 w-8 border border-purple-700/30">

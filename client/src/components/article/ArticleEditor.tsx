@@ -164,18 +164,7 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
     setSlug(slugified);
   };
 
-  // Add a tag
-  const addTag = () => {
-    if (tagInput && !tags.includes(tagInput)) {
-      setTags([...tags, tagInput]);
-      setTagInput("");
-    }
-  };
-
-  // Remove a tag
-  const removeTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
-  };
+  // Using the addTag and removeTag functions from above
 
   // Add a new content block
   const addBlock = (type: string) => {
