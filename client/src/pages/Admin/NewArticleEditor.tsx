@@ -273,7 +273,6 @@ function AdminArticleEditor() {
       ...coauthors
     ];
     
-    // The backend expects primaryAuthorId as a separate field
     return {
       title,
       slug,
@@ -287,8 +286,7 @@ function AdminArticleEditor() {
       isBreaking,
       isFeatured,
       isCollaborative,
-      primaryAuthorId: user?.id, // Add the required field
-      authors // We'll keep this for any frontend processing
+      authors
     };
   }, [title, slug, summary, content, category, tags, featuredImage, readTime, isBreaking, isFeatured, isCollaborative, coauthors, user?.id]);
 
@@ -464,7 +462,7 @@ function AdminArticleEditor() {
         title="Article Content"
         description="Create your article using the rich editor below"
       >
-        <div className="border border-white/10 rounded-md overflow-hidden bg-[#0A0A15]" style={{ height: '600px', maxHeight: '70vh', display: 'flex', flexDirection: 'column' }}>
+        <div className="border border-white/10 rounded-md overflow-hidden bg-[#0A0A15]">
           <ArticleEditor 
             initialContent={content}
             onSave={(newContent) => {
