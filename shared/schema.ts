@@ -33,7 +33,7 @@ export const articles = pgTable("articles", {
   slug: text("slug").notNull().unique(),
   summary: text("summary").notNull(),
   content: jsonb("content").notNull(),
-  authorId: integer("author_id").notNull().references(() => users.id),
+  primaryAuthorId: integer("primary_author_id").notNull().references(() => users.id),
   publishedAt: timestamp("published_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -44,6 +44,23 @@ export const articles = pgTable("articles", {
   tags: text("tags").array(),
   category: text("category").notNull(),
   status: text("status").default("draft").notNull(),
+  lastEditedBy: integer("last_edited_by").references(() => users.id),
+  lastEditedAt: timestamp("last_edited_at"),
+  isCollaborative: boolean("is_collaborative").default(false),
+  collaborativeSessionId: text("collaborative_session_id"),
+});
+
+// Article Authors (many-to-many table for multiple authors per article)
+export const articleAuthors = pgTable("article_authors", {
+  id: serial("id").primaryKey(),
+  articleId: integer("article_id").notNull().references(() => articles.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  role: text("role").default("author").notNull(), // "author", "editor", "contributor"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => {
+  return {
+    articleUserIdx: uniqueIndex("article_user_idx").on(table.articleId, table.userId),
+  };
 });
 
 // Categories
@@ -151,21 +168,42 @@ export const apiKeys = pgTable("api_keys", {
   expiresAt: timestamp("expires_at"),
 });
 
-export const usersRelations = relations(users, ({ many }) => ({
-  articles: many(articles),
+export const usersRelations = relations(users, ({ many, one }) => ({
+  primaryAuthorArticles: many(articles, { relationName: "primaryAuthor" }),
+  authoredArticles: many(articleAuthors, { relationName: "articleAuthor" }),
   comments: many(comments),
   astronomyPhotos: many(astronomyPhotos),
   jobListings: many(jobListings),
   advertisements: many(advertisements),
   apiKeys: many(apiKeys),
+  lastEditedArticles: many(articles, { relationName: "lastEditor" }),
 }));
 
 export const articlesRelations = relations(articles, ({ one, many }) => ({
-  author: one(users, {
-    fields: [articles.authorId],
+  primaryAuthor: one(users, {
+    fields: [articles.primaryAuthorId],
     references: [users.id],
+    relationName: "primaryAuthor",
   }),
+  lastEditor: one(users, {
+    fields: [articles.lastEditedBy],
+    references: [users.id],
+    relationName: "lastEditor",
+  }),
+  authors: many(articleAuthors),
   comments: many(comments),
+}));
+
+export const articleAuthorsRelations = relations(articleAuthors, ({ one }) => ({
+  article: one(articles, {
+    fields: [articleAuthors.articleId],
+    references: [articles.id],
+  }),
+  user: one(users, {
+    fields: [articleAuthors.userId],
+    references: [users.id],
+    relationName: "articleAuthor",
+  }),
 }));
 
 export const commentsRelations = relations(comments, ({ one, many }) => ({
@@ -235,6 +273,14 @@ export const insertArticleSchema = createInsertSchema(articles).omit({
   createdAt: true,
   updatedAt: true,
   viewCount: true,
+  lastEditedAt: true,
+  lastEditedBy: true,
+  collaborativeSessionId: true,
+});
+
+export const insertArticleAuthorSchema = createInsertSchema(articleAuthors).omit({
+  id: true,
+  createdAt: true,
 });
 
 export const insertCommentSchema = createInsertSchema(comments).omit({
