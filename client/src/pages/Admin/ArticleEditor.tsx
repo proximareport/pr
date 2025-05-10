@@ -135,6 +135,15 @@ function AdminArticleEditor() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!title || !slug || !summary) {
+      toast({
+        title: "Missing required fields",
+        description: "Please fill in all required fields before publishing.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Upload image if selected
     let imageUrl = featuredImage;
     if (selectedFile) {
@@ -146,28 +155,48 @@ function AdminArticleEditor() {
           method: 'POST',
           body: formData
         });
+        
+        if (!uploadResponse.ok) {
+          throw new Error(`Upload failed with status: ${uploadResponse.status}`);
+        }
+        
         const uploadResult = await uploadResponse.json();
-        imageUrl = uploadResult.url;
+        imageUrl = uploadResult.url || uploadResult.imageUrl;
       } catch (error) {
+        console.error("Image upload error:", error);
         toast({
           title: "Image upload failed",
-          description: "Failed to upload the featured image.",
+          description: "Failed to upload the featured image. Please try again.",
           variant: "destructive",
         });
         return;
       }
     }
     
+    // Ensure content is properly formatted
+    const formattedContent = Array.isArray(content) ? content : [];
+    
+    // Log the data being sent
+    console.log("Submitting article data:", {
+      title,
+      slug,
+      summary,
+      content: { blocks: formattedContent },
+      category, 
+      isBreaking,
+      readTime
+    });
+    
     const articleData = {
       title,
       slug,
       summary,
       content: {
-        blocks: Array.isArray(content) ? content : []
+        blocks: formattedContent
       },
-      category,
+      category: category || "general",
       isBreaking,
-      readTime: Number(readTime),
+      readTime: Number(readTime) || 5,
       featuredImage: imageUrl,
       authorId: user?.id,
     };
@@ -292,29 +321,13 @@ function AdminArticleEditor() {
             <div className="min-h-[700px]">
               <ArticleEditor 
                 initialArticle={{
-                  title,
-                  slug,
-                  summary,
-                  category,
-                  isBreaking,
-                  readTime,
-                  featuredImage: previewUrl || featuredImage,
-                  tags: [],
                   content: {
-                    blocks: typeof content === 'string' ? [] : content
+                    blocks: Array.isArray(content) ? content : []
                   }
                 }}
-                onSave={(articleData) => {
-                  // Update our form state with the new content
-                  if (articleData.content?.blocks) {
-                    setContent(articleData.content.blocks);
-                  }
-                  // Update other fields as well
-                  setTitle(articleData.title);
-                  setSlug(articleData.slug);
-                  setSummary(articleData.summary);
-                  setCategory(articleData.category);
-                  setIsBreaking(articleData.isBreaking);
+                onSave={(updatedBlocks) => {
+                  console.log("Content blocks updated:", updatedBlocks);
+                  setContent(updatedBlocks);
                   setReadTime(articleData.readTime);
                   if (articleData.featuredImage) {
                     setFeaturedImage(articleData.featuredImage);

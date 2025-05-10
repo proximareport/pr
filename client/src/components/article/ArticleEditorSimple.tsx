@@ -202,15 +202,15 @@ function ArticleEditorSimple({ initialArticle, onSave }: ArticleEditorProps) {
   
   // Save the article
   const saveArticle = () => {
-    if (initialArticle) {
-      onSave({
-        ...initialArticle,
-        content: {
-          blocks
-        }
-      });
-    }
+    // Don't need this anymore since we removed the save button
+    // But keeping the function for future reference
+    onSave(blocks);
   };
+  
+  // Update parent component with current blocks whenever they change
+  useEffect(() => {
+    onSave(blocks);
+  }, [blocks, onSave]);
   
   // Render block controls
   const renderBlockControls = (index: number, block: Block) => (
@@ -409,14 +409,7 @@ function ArticleEditorSimple({ initialArticle, onSave }: ArticleEditorProps) {
             >
               <Quote className="h-4 w-4 mr-1" /> Quote
             </Button>
-            <div className="ml-auto">
-              <Button 
-                onClick={saveArticle}
-                className="bg-primary hover:bg-primary/90"
-              >
-                Save
-              </Button>
-            </div>
+            {/* Removed duplicate save button */}
           </div>
         </CardContent>
       </Card>
