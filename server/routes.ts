@@ -1400,6 +1400,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // External API Routes with caching
   
   // SpaceX API route for launch data
+  // SpaceX API routes
   app.get("/api/spacex/launches", async (req, res) => {
     try {
       const cacheKey = '/api/spacex/launches';
@@ -1411,16 +1412,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Otherwise, fetch fresh data
-      const response = await axios.get('https://api.spacexdata.com/v4/launches');
+      const response = await axios.get('https://api.spacexdata.com/v5/launches/past');
+      
+      // Enhance response with rocket and launchpad data where needed
+      const enhancedData = await Promise.all(
+        response.data.map(async (launch: any) => {
+          // If we need additional data for this launch
+          if (!launch.rocket?.name && launch.rocket) {
+            try {
+              const rocketResponse = await axios.get(`https://api.spacexdata.com/v4/rockets/${launch.rocket}`);
+              launch.rocket = { id: launch.rocket, name: rocketResponse.data.name };
+            } catch (err) {
+              console.error("Error fetching rocket data:", err);
+            }
+          }
+          
+          if (!launch.launchpad?.name && launch.launchpad) {
+            try {
+              const launchpadResponse = await axios.get(`https://api.spacexdata.com/v4/launchpads/${launch.launchpad}`);
+              launch.launchpad = { 
+                id: launch.launchpad, 
+                name: launchpadResponse.data.name,
+                locality: launchpadResponse.data.locality,
+                region: launchpadResponse.data.region
+              };
+            } catch (err) {
+              console.error("Error fetching launchpad data:", err);
+            }
+          }
+          
+          return launch;
+        })
+      );
       
       // Cache the response
       apiCache[cacheKey] = {
-        data: response.data,
+        data: enhancedData,
         timestamp: now
       };
       
-      res.json(response.data);
+      res.json(enhancedData);
     } catch (error) {
+      console.error("Error fetching SpaceX launch data:", error);
       res.status(500).json({ message: "Error fetching SpaceX launch data" });
     }
   });
@@ -1437,16 +1470,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Otherwise, fetch fresh data
-      const response = await axios.get(`https://api.spacexdata.com/v4/launches/${id}`);
+      const response = await axios.get(`https://api.spacexdata.com/v5/launches/${id}`);
+      const launch = response.data;
+      
+      // Enhance with rocket and launchpad data
+      if (launch.rocket) {
+        try {
+          const rocketResponse = await axios.get(`https://api.spacexdata.com/v4/rockets/${launch.rocket}`);
+          launch.rocket = { 
+            id: launch.rocket, 
+            name: rocketResponse.data.name,
+            type: rocketResponse.data.type,
+            company: rocketResponse.data.company,
+            height: rocketResponse.data.height,
+            diameter: rocketResponse.data.diameter
+          };
+        } catch (err) {
+          console.error("Error fetching rocket data:", err);
+        }
+      }
+      
+      if (launch.launchpad) {
+        try {
+          const launchpadResponse = await axios.get(`https://api.spacexdata.com/v4/launchpads/${launch.launchpad}`);
+          launch.launchpad = { 
+            id: launch.launchpad, 
+            name: launchpadResponse.data.name,
+            full_name: launchpadResponse.data.full_name,
+            locality: launchpadResponse.data.locality,
+            region: launchpadResponse.data.region,
+            latitude: launchpadResponse.data.latitude,
+            longitude: launchpadResponse.data.longitude
+          };
+        } catch (err) {
+          console.error("Error fetching launchpad data:", err);
+        }
+      }
       
       // Cache the response
       apiCache[cacheKey] = {
-        data: response.data,
+        data: launch,
         timestamp: now
       };
       
-      res.json(response.data);
+      res.json(launch);
     } catch (error) {
+      console.error("Error fetching SpaceX launch:", error);
       res.status(500).json({ message: "Error fetching SpaceX launch" });
     }
   });
@@ -1462,7 +1531,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Otherwise, fetch fresh data
-      const response = await axios.get('https://api.spacexdata.com/v4/launches/upcoming');
+      const response = await axios.get('https://api.spacexdata.com/v5/launches/upcoming');
+      
+      // Enhance response with rocket and launchpad data
+      const enhancedData = await Promise.all(
+        response.data.map(async (launch: any) => {
+          // If we need additional data for this launch
+          if (!launch.rocket?.name && launch.rocket) {
+            try {
+              const rocketResponse = await axios.get(`https://api.spacexdata.com/v4/rockets/${launch.rocket}`);
+              launch.rocket = { id: launch.rocket, name: rocketResponse.data.name };
+            } catch (err) {
+              console.error("Error fetching rocket data:", err);
+            }
+          }
+          
+          if (!launch.launchpad?.name && launch.launchpad) {
+            try {
+              const launchpadResponse = await axios.get(`https://api.spacexdata.com/v4/launchpads/${launch.launchpad}`);
+              launch.launchpad = { 
+                id: launch.launchpad, 
+                name: launchpadResponse.data.name,
+                locality: launchpadResponse.data.locality,
+                region: launchpadResponse.data.region
+              };
+            } catch (err) {
+              console.error("Error fetching launchpad data:", err);
+            }
+          }
+          
+          return launch;
+        })
+      );
+      
+      // Cache the response
+      apiCache[cacheKey] = {
+        data: enhancedData,
+        timestamp: now
+      };
+      
+      res.json(enhancedData);
+    } catch (error) {
+      console.error("Error fetching upcoming SpaceX launches:", error);
+      res.status(500).json({ message: "Error fetching upcoming SpaceX launches" });
+    }
+  });
+  
+  // Fetch SpaceX rockets
+  app.get("/api/spacex/rockets", async (req, res) => {
+    try {
+      const cacheKey = '/api/spacex/rockets';
+      const now = Date.now();
+      
+      // Check if we have a cached response that's still valid
+      if (apiCache[cacheKey] && now - apiCache[cacheKey].timestamp < CACHE_TTL) {
+        return res.json(apiCache[cacheKey].data);
+      }
+      
+      // Otherwise, fetch fresh data
+      const response = await axios.get('https://api.spacexdata.com/v4/rockets');
       
       // Cache the response
       apiCache[cacheKey] = {
@@ -1472,7 +1599,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(response.data);
     } catch (error) {
-      res.status(500).json({ message: "Error fetching upcoming SpaceX launches" });
+      console.error("Error fetching SpaceX rockets:", error);
+      res.status(500).json({ message: "Error fetching SpaceX rockets" });
+    }
+  });
+  
+  // The Space Devs Launch Library API - Get all upcoming launches
+  app.get("/api/launches/upcoming", async (req, res) => {
+    try {
+      const cacheKey = '/api/launches/upcoming';
+      const now = Date.now();
+      
+      // Check if we have a cached response that's still valid
+      if (apiCache[cacheKey] && now - apiCache[cacheKey].timestamp < CACHE_TTL) {
+        return res.json(apiCache[cacheKey].data);
+      }
+      
+      // Otherwise, fetch fresh data
+      const response = await axios.get('https://ll.thespacedevs.com/2.2.0/launch/upcoming/', {
+        headers: {
+          'User-Agent': 'Proxima-Report/1.0'
+        }
+      });
+      
+      // Cache the response
+      apiCache[cacheKey] = {
+        data: response.data,
+        timestamp: now
+      };
+      
+      res.json(response.data);
+    } catch (error) {
+      console.error("Error fetching upcoming launches from The Space Devs:", error);
+      res.status(500).json({ message: "Error fetching upcoming launches" });
     }
   });
   

@@ -8,6 +8,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import {
   Table,
@@ -26,10 +27,19 @@ import {
   CheckCircleIcon,
   TimerIcon,
   FilterIcon,
+  GlobeIcon,
+  InfoIcon,
+  Rocket,
+  ArrowUpRight,
+  BuildingIcon,
+  BookmarkIcon,
 } from "lucide-react";
 import LaunchCountdown from "@/components/article/LaunchCountdown";
+import { Badge } from "@/components/ui/badge";
+import { apiRequest } from "@/lib/queryClient";
 
-interface Launch {
+// SpaceX Launch Interface
+interface SpaceXLaunch {
   id: string;
   name: string;
   date_utc: string;
@@ -45,26 +55,225 @@ interface Launch {
     article: string;
   };
   rocket: {
+    id?: string;
     name: string;
   };
   launchpad: {
+    id?: string;
     name: string;
     locality: string;
     region: string;
   };
 }
 
+// The Space Devs Launch Interface
+interface TSDLaunch {
+  id: string;
+  name: string;
+  status: {
+    name: string;
+    abbrev: string;
+    description: string;
+  };
+  net: string; // Launch date
+  window_start: string;
+  window_end: string;
+  mission?: {
+    name: string;
+    description: string;
+    type: string;
+  };
+  rocket: {
+    configuration: {
+      name: string;
+      family: string;
+      full_name: string;
+      manufacturer: {
+        name: string;
+      };
+    };
+  };
+  pad: {
+    name: string;
+    location: {
+      name: string;
+      country_code: string;
+    };
+  };
+  image: string;
+  webcast_live: boolean;
+  vidURLs: {
+    url: string;
+    priority: number;
+  }[];
+  infoURLs: {
+    url: string;
+    priority: number;
+  }[];
+}
+
+// Agency Interface
+interface Agency {
+  id: string;
+  name: string;
+  type: string;
+  logo_url?: string;
+  country_code: string;
+  featured: boolean;
+}
+
+// Combined launch data interface to handle both APIs
+interface CombinedLaunch {
+  id: string;
+  source: 'spacex' | 'thespacedevs';
+  name: string;
+  date: string;
+  details?: string;
+  upcoming: boolean;
+  success?: boolean;
+  agency?: string;
+  rocket: {
+    name: string;
+    manufacturer?: string;
+  };
+  location: {
+    name: string;
+    locality?: string;
+    country?: string;
+  };
+  mission?: {
+    name?: string;
+    type?: string;
+  };
+  image?: string;
+  links: {
+    webcast?: string;
+    wiki?: string;
+    article?: string;
+    info?: string;
+  };
+}
+
 function Launches() {
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterAgency, setFilterAgency] = useState("all");
+  const [activeTab, setActiveTab] = useState("upcoming");
+  const [combinedUpcomingLaunches, setCombinedUpcomingLaunches] = useState<CombinedLaunch[]>([]);
   
-  // Fetch upcoming launches
-  const { data: upcomingLaunches, isLoading: isLoadingUpcoming } = useQuery<Launch[]>({
+  // Fetch SpaceX upcoming launches
+  const { data: spacexUpcomingLaunches, isLoading: isLoadingSpaceX } = useQuery<SpaceXLaunch[]>({
     queryKey: ['/api/spacex/upcoming'],
   });
   
-  // Fetch past launches
-  const { data: pastLaunches, isLoading: isLoadingPast } = useQuery<Launch[]>({
+  // Fetch The Space Devs upcoming launches
+  const { data: tsdUpcomingData, isLoading: isLoadingTSD } = useQuery({
+    queryKey: ['/api/launches/upcoming'],
+  });
+  
+  // Fetch past launches from SpaceX
+  const { data: pastLaunches, isLoading: isLoadingPast } = useQuery<SpaceXLaunch[]>({
     queryKey: ['/api/spacex/launches'],
+  });
+  
+  // Get a list of unique agencies from all launches
+  const agencies = [
+    { id: 'spacex', name: 'SpaceX' },
+    { id: 'nasa', name: 'NASA' },
+    { id: 'esa', name: 'European Space Agency' },
+    { id: 'roscosmos', name: 'Roscosmos' },
+    { id: 'rocket-lab', name: 'Rocket Lab' },
+    { id: 'ula', name: 'United Launch Alliance' },
+    { id: 'blue-origin', name: 'Blue Origin' },
+    { id: 'arianespace', name: 'Arianespace' },
+    { id: 'isro', name: 'Indian Space Research Organisation' },
+    { id: 'jaxa', name: 'JAXA' },
+  ];
+  
+  // Combine launch data from multiple sources
+  useEffect(() => {
+    const combined: CombinedLaunch[] = [];
+    
+    // Add SpaceX data
+    if (spacexUpcomingLaunches) {
+      spacexUpcomingLaunches.forEach(launch => {
+        combined.push({
+          id: launch.id,
+          source: 'spacex',
+          name: launch.name,
+          date: launch.date_utc,
+          details: launch.details,
+          upcoming: true,
+          agency: 'SpaceX',
+          rocket: {
+            name: launch.rocket?.name || 'Unknown Rocket',
+          },
+          location: {
+            name: launch.launchpad?.name || 'Unknown Location',
+            locality: launch.launchpad?.locality,
+            country: launch.launchpad?.region,
+          },
+          image: launch.links.patch.small,
+          links: {
+            webcast: launch.links.webcast,
+            wiki: launch.links.wikipedia,
+            article: launch.links.article,
+          }
+        });
+      });
+    }
+    
+    // Add The Space Devs data, filtering out SpaceX launches to avoid duplicates
+    if (tsdUpcomingData && tsdUpcomingData.results) {
+      tsdUpcomingData.results.forEach((launch: TSDLaunch) => {
+        // Skip if it's a SpaceX launch (to avoid duplicates)
+        if (launch.rocket.configuration.manufacturer?.name === "SpaceX") {
+          return;
+        }
+        
+        combined.push({
+          id: launch.id,
+          source: 'thespacedevs',
+          name: launch.name,
+          date: launch.net,
+          details: launch.mission?.description,
+          upcoming: true,
+          agency: launch.rocket.configuration.manufacturer?.name,
+          rocket: {
+            name: launch.rocket.configuration.full_name || launch.rocket.configuration.name,
+            manufacturer: launch.rocket.configuration.manufacturer?.name,
+          },
+          location: {
+            name: launch.pad.name,
+            locality: launch.pad.location.name,
+            country: launch.pad.location.country_code,
+          },
+          mission: {
+            name: launch.mission?.name,
+            type: launch.mission?.type,
+          },
+          image: launch.image,
+          links: {
+            webcast: launch.vidURLs?.length > 0 ? launch.vidURLs[0].url : undefined,
+            info: launch.infoURLs?.length > 0 ? launch.infoURLs[0].url : undefined,
+          }
+        });
+      });
+    }
+    
+    // Sort by date (closest first)
+    combined.sort((a, b) => {
+      return new Date(a.date).getTime() - new Date(b.date).getTime();
+    });
+    
+    setCombinedUpcomingLaunches(combined);
+  }, [spacexUpcomingLaunches, tsdUpcomingData]);
+  
+  // Filter combined upcoming launches by agency
+  const filteredUpcomingLaunches = combinedUpcomingLaunches.filter(launch => {
+    if (filterAgency === "all") return true;
+    
+    // Check if agency name contains filter string (case insensitive)
+    return launch.agency?.toLowerCase().includes(filterAgency.toLowerCase());
   });
   
   // Sort and filter past launches
@@ -114,6 +323,31 @@ function Launches() {
     if (hours > 0) return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
     if (minutes > 0) return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
     return `${seconds} second${seconds !== 1 ? 's' : ''} ago`;
+  };
+  
+  // Calculate time to launch
+  const getTimeToLaunch = (dateString: string) => {
+    const launchDate = new Date(dateString);
+    const now = new Date();
+    
+    if (launchDate <= now) {
+      return "Launched";
+    }
+    
+    const difference = launchDate.getTime() - now.getTime();
+    const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+    
+    if (days > 0) {
+      return `T-${days} day${days !== 1 ? 's' : ''}`;
+    }
+    
+    const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    if (hours > 0) {
+      return `T-${hours} hour${hours !== 1 ? 's' : ''}`;
+    }
+    
+    const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+    return `T-${minutes} minute${minutes !== 1 ? 's' : ''}`;
   };
 
   return (
