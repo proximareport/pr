@@ -358,7 +358,7 @@ function Launches() {
       <div className="container mx-auto px-4 py-12">
         <h1 className="text-3xl font-space font-bold mb-8">Launch Schedule</h1>
         
-        <Tabs defaultValue="upcoming" className="space-y-6">
+        <Tabs defaultValue="upcoming" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-[#14141E]">
             <TabsTrigger value="upcoming">Upcoming Launches</TabsTrigger>
             <TabsTrigger value="past">Past Launches</TabsTrigger>
@@ -366,25 +366,47 @@ function Launches() {
           
           {/* Upcoming Launches */}
           <TabsContent value="upcoming">
-            {isLoadingUpcoming ? (
+            <div className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <h2 className="text-xl font-space font-medium">Global Launch Schedule</h2>
+              <div className="flex items-center space-x-2">
+                <select 
+                  value={filterAgency}
+                  onChange={(e) => setFilterAgency(e.target.value)}
+                  className="bg-[#1E1E2D] border border-white/10 rounded p-1.5 text-sm"
+                  aria-label="Filter by agency"
+                >
+                  <option value="all">All Agencies</option>
+                  {agencies.map(agency => (
+                    <option key={agency.id} value={agency.id}>{agency.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            
+            {isLoadingSpaceX && isLoadingTSD ? (
               <div className="text-center py-12">
                 <div className="animate-spin h-10 w-10 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p className="text-white/70">Loading upcoming launches...</p>
+                <p className="text-white/70">Loading upcoming launches from multiple agencies...</p>
               </div>
-            ) : upcomingLaunches && upcomingLaunches.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {upcomingLaunches.map(launch => (
-                  <Card key={launch.id} className="bg-[#14141E] border-white/10 hover:border-purple-500/30 transition-colors">
-                    <CardHeader className="relative pb-2">
+            ) : filteredUpcomingLaunches.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredUpcomingLaunches.map(launch => (
+                  <Card key={launch.id} className="bg-[#14141E] border-white/10 hover:border-purple-500/30 transition-colors flex flex-col">
+                    <CardHeader className="relative pb-2 flex-shrink-0">
+                      <div className="absolute top-3 right-3">
+                        <Badge variant="outline" className="bg-purple-900/20 text-purple-300 border-purple-500/20">
+                          {getTimeToLaunch(launch.date)}
+                        </Badge>
+                      </div>
                       <div className="flex items-start gap-4">
-                        {launch.links.patch.small ? (
+                        {launch.image ? (
                           <img 
-                            src={launch.links.patch.small} 
+                            src={launch.image} 
                             alt={`${launch.name} mission patch`}
-                            className="h-16 w-16 object-contain"
+                            className="h-16 w-16 object-contain rounded-md"
                           />
                         ) : (
-                          <div className="h-16 w-16 rounded-full bg-purple-900/20 flex items-center justify-center">
+                          <div className="h-16 w-16 rounded-md bg-purple-900/20 flex items-center justify-center">
                             <RocketIcon className="h-8 w-8 text-purple-500" />
                           </div>
                         )}
@@ -392,14 +414,21 @@ function Launches() {
                           <CardTitle className="text-xl mb-1">{launch.name}</CardTitle>
                           <div className="flex items-center text-white/60 text-sm">
                             <CalendarIcon className="h-4 w-4 mr-1" />
-                            {formatLaunchDate(launch.date_utc)}
+                            {formatLaunchDate(launch.date)}
                           </div>
+                          {launch.agency && (
+                            <div className="flex items-center mt-1">
+                              <Badge variant="secondary" className="text-xs">
+                                {launch.agency}
+                              </Badge>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="pt-2">
+                    <CardContent className="pt-2 flex-grow">
                       <p className="text-white/80 mb-4 line-clamp-3">
-                        {launch.details || "No details available for this mission."}
+                        {launch.details || launch.mission?.name || "No details available for this mission."}
                       </p>
                       <div className="grid grid-cols-1 gap-2">
                         <div className="flex items-center text-white/70 text-sm">
@@ -408,43 +437,69 @@ function Launches() {
                         </div>
                         <div className="flex items-center text-white/70 text-sm">
                           <MapPinIcon className="h-4 w-4 mr-2" />
-                          {launch.launchpad?.name || "Unknown location"}
-                          {launch.launchpad?.locality && `, ${launch.launchpad.locality}`}
+                          {launch.location?.name || "Unknown location"}
+                          {launch.location?.locality && `, ${launch.location.locality}`}
                         </div>
                       </div>
-                      <div className="mt-4 flex items-center space-x-2">
+                    </CardContent>
+                    <CardFooter className="pt-0 pb-4 flex-shrink-0">
+                      <div className="flex flex-wrap gap-2">
                         {launch.links.webcast && (
                           <a 
                             href={launch.links.webcast} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="text-sm text-purple-400 hover:text-purple-300 flex items-center"
+                            className="px-3 py-1.5 text-xs bg-[#1E1E2D] text-purple-400 hover:text-purple-300 rounded-full flex items-center"
                           >
-                            <ExternalLinkIcon className="h-3 w-3 mr-1" /> Webcast
+                            <svg className="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M21.543 6.498C22 8.28 22 12 22 12s0 3.72-.457 5.502c-.254.985-.997 1.76-1.938 2.022C17.896 20 12 20 12 20s-5.893 0-7.605-.476c-.945-.266-1.687-1.04-1.938-2.022C2 15.72 2 12 2 12s0-3.72.457-5.502c.254-.985.997-1.76 1.938-2.022C6.107 4 12 4 12 4s5.896 0 7.605.476c.945.266 1.687 1.04 1.938 2.022zM10 15.5l6-3.5-6-3.5v7z" />
+                            </svg>
+                            Watch
                           </a>
                         )}
-                        {launch.links.wikipedia && (
-                          <>
-                            <span className="text-white/30">|</span>
-                            <a 
-                              href={launch.links.wikipedia} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-sm text-purple-400 hover:text-purple-300 flex items-center"
-                            >
-                              <ExternalLinkIcon className="h-3 w-3 mr-1" /> Wiki
-                            </a>
-                          </>
+                        {launch.links.wiki && (
+                          <a 
+                            href={launch.links.wiki} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 text-xs bg-[#1E1E2D] text-purple-400 hover:text-purple-300 rounded-full flex items-center"
+                          >
+                            <InfoIcon className="h-3 w-3 mr-1" /> Wiki
+                          </a>
+                        )}
+                        {launch.links.article && (
+                          <a 
+                            href={launch.links.article} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 text-xs bg-[#1E1E2D] text-purple-400 hover:text-purple-300 rounded-full flex items-center"
+                          >
+                            <svg className="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
+                              <path d="M14 17H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
+                            </svg>
+                            Article
+                          </a>
+                        )}
+                        {launch.links.info && (
+                          <a 
+                            href={launch.links.info} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 text-xs bg-[#1E1E2D] text-purple-400 hover:text-purple-300 rounded-full flex items-center"
+                          >
+                            <ExternalLinkIcon className="h-3 w-3 mr-1" /> More Info
+                          </a>
                         )}
                       </div>
-                    </CardContent>
+                    </CardFooter>
                   </Card>
                 ))}
               </div>
             ) : (
               <div className="text-center py-12 bg-[#14141E] rounded-lg border border-white/10">
                 <RocketIcon className="h-12 w-12 mx-auto mb-4 text-white/30" />
-                <p className="text-white/70">No upcoming launches at the moment</p>
+                <p className="text-white/70">No upcoming launches matching your filters</p>
               </div>
             )}
           </TabsContent>
@@ -571,7 +626,7 @@ function Launches() {
                                 title="Wikipedia"
                               >
                                 <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M12.09 13.119c-.936 1.932-2.217 4.548-2.853 5.728-.616 1.074-1.127.931-1.532.029-1.406-3.321-4.293-9.144-5.651-12.409-.251-.601-.441-.987-.619-1.139-.181-.15-.554-.24-1.122-.271C.103 5.033 0 4.982 0 4.898v-.455l.052-.045c.924-.005 5.401 0 5.401 0l.051.045v.434c0 .084-.103.135-.208.157-.966.135-1.103.223-1.103.511 0 .271.208.623.464 1.227.258.603 3.101 7.218 3.101 7.218l4.353-9.855.191-.155h1.51l.123.096c-.206 2.223-.498 5.607-.498 5.607l-.353.096s-.429.135-.528.135-.799-1.922-1.103-2.748c-.251-.622-.459-1.128-.564-1.304-.289-.511-.448-.622-.997-.73-.103-.023-.204-.096-.204-.181v-.434l.051-.045h4.611l.051.045v.434c0 .084-.102.135-.207.157-.904.146-1.05.25-1.05.522 0 .35.858 2.132 2.621 6.1.958 2.135 1.85 3.699 2.359 4.745l.437-.937s3.954-8.252 5.501-11.55c.193-.394.257-.665.257-.861 0-.2-.039-.382-.742-.572-.206-.056-.308-.093-.308-.176v-.455l.052-.045h5.401l.051.045v.434c0 .084-.104.157-.207.18-.966.12-1.493.421-1.995 1.352-.929 1.716-5.401 11.36-7.235 15.486-.586 1.328-.927 1.094-1.548.072l-4.677-9.883z"/>
+                                  <path d="M12.09 13.119c-.936 1.932-2.217 4.548-2.853 5.728-.616 1.074-1.127.931-1.532.029-1.406-3.321-4.293-9.144-5.651-12.409-.251-.601-.441-.987-.619-1.139-.181-.15-.554-.24-1.122-.271C.103 5.033 0 4.982 0 4.898v-.455l.052-.045c.924-.005 5.401 0 5.401 0l.051.045v.434c0 .084-.103.135-.208.157-.966.135-1.103.223-1.103.511 0 .271.208.623.464 1.227.258.603 3.101 7.218 3.101 7.218l4.353-9.855.191-.155h1.51l.123.096c-.206 2.223-.498 5.607-.498 5.607l-.353.096s-.429.135-.528.135-.799-1.922-1.103-2.748c-.251-.622-.459-1.128-.564-1.304-.289-.511-.44-.714-1.251-.82-.126-.018-.185-.063-.185-.151v-.437l.06-.045h4.083l.075.045v.436c0 .085-.041.141-.101.162-.58.009-.131.029-.184.061v.435c0 .12.044.178.076.225.248.359.677 1.072 1.226 2.219.396.837.716 1.504.864 1.857l4.328-10.172.236-.153h1.514l.068.049c-.084 1.118-.171 3.094-.171 3.094l-.222.046s-1.808 4.336-2.548 5.992c-.307.694-.411.84-.411 1.013 0 .21.185.404.298.404.096 0 .308-.062.308-.062l.136.414-.721.31c-.422.18-.982.486-1.548.486-.713 0-1.16-.276-1.16-1.274 0-.589.202-1.219.821-2.816l-2.201 5.073-.218.339-2.646-.04-.078-.4.158-.151 1.974-4.622c-1.604-3.568-2.519-5.636-4.166-9.212-.52-1.125-.941-1.136-1.179-1.153-.104-.009-.199-.068-.199-.178v-.434l.059-.045h5.528l.068.049a59.7 59.7 0 0 0-.073 1.038c0 .16.059.234.095.235a138.25 138.25 0 0 0 .89-1.305l4.636.001" />
                                 </svg>
                               </a>
                             )}
@@ -585,15 +640,7 @@ function Launches() {
             ) : (
               <div className="text-center py-12 bg-[#14141E] rounded-lg border border-white/10">
                 <RocketIcon className="h-12 w-12 mx-auto mb-4 text-white/30" />
-                <p className="text-white/70">No launch data available</p>
-              </div>
-            )}
-            
-            {filteredPastLaunches.length > 15 && (
-              <div className="text-center mt-6">
-                <Button variant="outline">
-                  Load More Launches
-                </Button>
+                <p className="text-white/70">No past launches found</p>
               </div>
             )}
           </TabsContent>
