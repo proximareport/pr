@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -274,6 +275,21 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
       default:
         return { id: blockId, type: "paragraph", content: "" };
     }
+  };
+  
+  // Handle the drag end event 
+  const handleDragEnd = (result: DropResult) => {
+    // If not dropped in a droppable area or dropped in same position, do nothing
+    if (!result.destination) return;
+    if (result.destination.index === result.source.index) return;
+    
+    // Create a new array with the reordered blocks
+    const reorderedBlocks = Array.from(content);
+    const [removed] = reorderedBlocks.splice(result.source.index, 1);
+    reorderedBlocks.splice(result.destination.index, 0, removed);
+    
+    // Update the content state
+    setContent(reorderedBlocks);
   };
   
   // Generate table of contents from headings
