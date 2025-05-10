@@ -140,6 +140,10 @@ export default function GoogleDocsEditor({
   // Element refs for focusing
   const elementRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   
+  // State for drag and drop functionality
+  const [draggedElement, setDraggedElement] = useState<{id: string, index: number} | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  
   // State for image dialog
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
@@ -673,6 +677,43 @@ export default function GoogleDocsEditor({
     };
     
     const positionClass = element.position ? positionClasses[element.position] : 'w-full';
+    
+    // Element controls for dragging and deleting
+    const elementControls = !readOnly && isFocused ? (
+      <div className="absolute -left-10 top-1 flex flex-col items-center space-y-1">
+        <Button 
+          variant="ghost" 
+          size="icon"
+          className="h-6 w-6 bg-slate-800 hover:bg-slate-700 cursor-move"
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            // Store the element being dragged
+            setDraggedElement({id: element.id, index});
+          }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="7" cy="7" r="1" />
+            <circle cx="17" cy="7" r="1" />
+            <circle cx="7" cy="17" r="1" />
+            <circle cx="17" cy="17" r="1" />
+          </svg>
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="icon"
+          className="h-6 w-6 bg-red-900 hover:bg-red-800"
+          onClick={(e) => {
+            e.stopPropagation();
+            deleteElement(element.id);
+          }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+          </svg>
+        </Button>
+      </div>
+    ) : null;
     
     // Render different elements based on their type
     switch (element.type) {
