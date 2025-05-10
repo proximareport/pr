@@ -284,11 +284,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createArticle(article: InsertArticle): Promise<Article> {
-    const [newArticle] = await db.insert(articles).values(article).returning();
+    // Extract authors data if present
+    const { authors, ...articleData } = article as any;
     
-    // If this is a collaborative article, add the primary author to the article_authors table
+    // Create the article
+    const [newArticle] = await db.insert(articles).values(articleData).returning();
+    
+    // Add authors if it's a collaborative article
     if (article.isCollaborative) {
-      await this.addAuthorToArticle(newArticle.id, newArticle.primaryAuthorId);
+      // Always add primary author
+      await this.addAuthorToArticle(newArticle.id, newArticle.primaryAuthorId, "primary");
+      
+      // Add coauthors if provided
+      if (authors && Array.isArray(authors)) {
+        for (const author of authors) {
+          // Skip the primary author as we already added them
+          if (author.id !== newArticle.primaryAuthorId) {
+            await this.addAuthorToArticle(newArticle.id, author.id, author.role || "coauthor");
+          }
+        }
+      }
     }
     
     return newArticle;
