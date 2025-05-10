@@ -36,6 +36,100 @@ function ArticleContent({ article }: ArticleContentProps) {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [visibleSections, setVisibleSections] = useState<string[]>([]);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+  const [pollVotes, setPollVotes] = useState<Record<number, number[]>>({});
+  const [pollResults, setPollResults] = useState<Record<number, number[]>>({});
+
+  // In a real implementation, this would fetch poll results from the server
+  useEffect(() => {
+    // This simulates polls having some initial votes
+    // In a real implementation, we would fetch this data from the API
+    const initialResults: Record<number, number[]> = {};
+    
+    // Find all poll blocks in the article content
+    article.content.forEach((block: any, index: number) => {
+      if (block.type === 'poll' && block.options && Array.isArray(block.options)) {
+        // Generate some random votes for each option (between 0-10 votes per option)
+        initialResults[index] = block.options.map((_: any) => Math.floor(Math.random() * 10));
+      }
+    });
+    
+    setPollResults(initialResults);
+  }, [article.content]);
+
+  // Handle voting on polls
+  const handlePollVote = (blockIndex: number, optionIndex: number, allowMultiple: boolean) => {
+    if (!user) {
+      // If user is not logged in, show a message
+      return;
+    }
+    
+    // Update local vote state
+    setPollVotes(prevVotes => {
+      let newVotes;
+      const blockVotes = prevVotes[blockIndex] || [];
+      
+      if (allowMultiple) {
+        // For multiple choice polls
+        if (blockVotes.includes(optionIndex)) {
+          // Remove vote if already selected
+          newVotes = {
+            ...prevVotes,
+            [blockIndex]: blockVotes.filter(v => v !== optionIndex)
+          };
+        } else {
+          // Add vote
+          newVotes = {
+            ...prevVotes,
+            [blockIndex]: [...blockVotes, optionIndex]
+          };
+        }
+      } else {
+        // For single choice polls
+        if (blockVotes.length === 1 && blockVotes[0] === optionIndex) {
+          // Remove vote if clicking the same option
+          newVotes = {
+            ...prevVotes,
+            [blockIndex]: []
+          };
+        } else {
+          // Replace with new vote
+          newVotes = {
+            ...prevVotes,
+            [blockIndex]: [optionIndex]
+          };
+        }
+      }
+      
+      // Update poll results based on the vote change
+      setPollResults(prevResults => {
+        const results = {...prevResults};
+        const blockResults = [...(results[blockIndex] || [])];
+        
+        // Make sure we have an array of the correct length
+        while (blockResults.length < article.content[blockIndex].options.length) {
+          blockResults.push(0);
+        }
+        
+        // Increment/decrement vote counts based on changes
+        // This is a simplified implementation
+        if (newVotes[blockIndex].includes(optionIndex)) {
+          blockResults[optionIndex] += 1;
+        } else {
+          blockResults[optionIndex] = Math.max(0, blockResults[optionIndex] - 1);
+        }
+        
+        results[blockIndex] = blockResults;
+        return results;
+      });
+      
+      // In a real implementation, we would send the vote to the server here
+      // apiRequest("POST", `/api/articles/${article.id}/polls/${blockIndex}/vote`, { 
+      //   options: newVotes[blockIndex]
+      // });
+      
+      return newVotes;
+    });
+  };
 
   // Function to render different types of content blocks
   const renderContentBlock = (block: any, index: number) => {
@@ -164,6 +258,57 @@ function ArticleContent({ article }: ArticleContentProps) {
         );
       case "divider":
         return <hr key={index} className="my-8 border-white/10" />;
+      case "poll":
+        // Get current votes for this poll
+        const currentVotes = pollVotes[index] || [];
+        
+        return (
+          <div key={index} className="mb-8 rounded-lg overflow-hidden">
+            <div 
+              className="p-6 rounded-lg" 
+              style={{
+                backgroundColor: block.backgroundColor || "#1e1e2d",
+                color: block.textColor || "#ffffff"
+              }}
+            >
+              <h3 className="text-lg font-semibold mb-4">{block.question}</h3>
+              <div className="space-y-3">
+                {block.options.map((option: string, optIndex: number) => {
+                  const isSelected = currentVotes.includes(optIndex);
+                  
+                  return (
+                    <div 
+                      key={optIndex}
+                      className={`flex items-center gap-3 p-3 rounded-md hover:bg-black/20 cursor-pointer transition-colors ${isSelected ? 'bg-black/20' : ''}`}
+                      onClick={() => handlePollVote(index, optIndex, block.allowMultiple)}
+                    >
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-blue-500' : 'border-white/40'}`}>
+                        {isSelected && (
+                          <div className="w-3 h-3 rounded-full bg-blue-500" />
+                        )}
+                      </div>
+                      <span>{option}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {!user && (
+                <div className="mt-4 p-2 text-sm bg-white/10 rounded-md text-center">
+                  Please <Link to="/login" className="text-blue-400 hover:underline">log in</Link> to vote
+                </div>
+              )}
+              
+              {user && (
+                <div className="mt-4 text-sm opacity-70">
+                  {block.allowMultiple 
+                    ? "You can select multiple options" 
+                    : "Select one option"}
+                </div>
+              )}
+            </div>
+          </div>
+        );
       default:
         return null;
     }
