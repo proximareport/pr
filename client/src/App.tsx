@@ -28,8 +28,8 @@ function Router() {
       <Route path="/article/:slug" component={Article} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/profile/settings" component={Profile} />
       <Route path="/profile/:username?" component={Profile} />
-      <Route path="/profile/settings/:username?" component={Profile} />
       <Route path="/launches" component={Launches} />
       <Route path="/astronomy" component={Astronomy} />
       <Route path="/subscribe" component={Subscribe} />

@@ -36,16 +36,17 @@ function Profile({ params }: ProfileProps) {
   const [, setLocation] = useLocation();
   
   useEffect(() => {
-    if (isSettings && (!user || (params.username && params.username !== user?.username))) {
+    // Only check if we're on the settings page and user is not logged in
+    if (isSettings && !user) {
       toast({
         title: "Unauthorized",
-        description: "You don't have permission to access these settings.",
+        description: "You need to log in to access settings.",
         variant: "destructive",
       });
       // Redirect to home page
       setLocation("/");
     }
-  }, [isSettings, user, params.username, toast, setLocation]);
+  }, [isSettings, user, toast, setLocation]);
 
   return (
     <div className="bg-[#0D0D17] min-h-screen pt-8 pb-16">
