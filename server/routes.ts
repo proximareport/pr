@@ -317,6 +317,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const articles = await storage.getArticles(limit, offset);
       res.json(articles);
     } catch (error) {
+      console.error("Error fetching articles:", error);
+      // More detailed error logging
+      if (error instanceof Error) {
+        console.error("Error name:", error.name);
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      }
       res.status(500).json({ message: "Error fetching articles" });
     }
   });
@@ -622,7 +629,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const newComment = await storage.createComment({
         ...commentData,
-        authorId: req.session.userId!,
+        userId: req.session.userId!, // Using userId instead of authorId
       });
       
       res.status(201).json(newComment);

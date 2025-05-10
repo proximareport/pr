@@ -77,7 +77,7 @@ export const categories = pgTable("categories", {
 export const comments = pgTable("comments", {
   id: serial("id").primaryKey(),
   content: text("content").notNull(),
-  authorId: integer("author_id").notNull().references(() => users.id),
+  userId: integer("user_id").notNull().references(() => users.id),
   articleId: integer("article_id").notNull().references(() => articles.id),
   parentId: integer("parent_id").references(() => comments.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -207,8 +207,8 @@ export const articleAuthorsRelations = relations(articleAuthors, ({ one }) => ({
 }));
 
 export const commentsRelations = relations(comments, ({ one, many }) => ({
-  author: one(users, {
-    fields: [comments.authorId],
+  user: one(users, {
+    fields: [comments.userId],
     references: [users.id],
   }),
   article: one(articles, {

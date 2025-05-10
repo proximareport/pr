@@ -222,13 +222,26 @@ export class DatabaseStorage implements IStorage {
 
   // Article operations
   async getArticles(limit = 10, offset = 0): Promise<Article[]> {
-    return await db
-      .select()
-      .from(articles)
-      .where(not(isNull(articles.publishedAt)))
-      .orderBy(desc(articles.publishedAt))
-      .limit(limit)
-      .offset(offset);
+    try {
+      // First, get a list of all the columns in the articles table
+      const articleColumns = Object.keys(articles);
+      
+      return await db
+        .select()
+        .from(articles)
+        .where(not(isNull(articles.publishedAt)))
+        .orderBy(desc(articles.publishedAt))
+        .limit(limit)
+        .offset(offset);
+    } catch (error) {
+      console.error("Error in getArticles:", error);
+      if (error instanceof Error) {
+        console.error("Error name:", error.name);
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      }
+      throw error;
+    }
   }
 
   async getArticleBySlug(slug: string): Promise<Article | undefined> {
@@ -325,11 +338,43 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getArticlesByAuthor(authorId: number): Promise<Article[]> {
-    return await db
-      .select()
-      .from(articles)
-      .where(eq(articles.authorId, authorId))
-      .orderBy(desc(articles.publishedAt));
+    try {
+      // Method 1: Find articles where the user is the primary author
+      const primaryAuthorArticles = await db
+        .select()
+        .from(articles)
+        .where(eq(articles.primaryAuthorId, authorId))
+        .orderBy(desc(articles.publishedAt));
+      
+      // Method 2: Find articles where the user is a collaborative author
+      const authoredArticlesResult = await this.getAuthoredArticles(authorId);
+      const collaborativeArticles = authoredArticlesResult.map(record => record.article);
+      
+      // Combine results, ensuring no duplicates
+      const allArticles = [...primaryAuthorArticles];
+      
+      // Add collaborative articles that aren't already in the list
+      for (const article of collaborativeArticles) {
+        if (!allArticles.some(a => a.id === article.id)) {
+          allArticles.push(article);
+        }
+      }
+      
+      // Sort by publishedAt date, most recent first
+      return allArticles.sort((a, b) => {
+        const dateA = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
+        const dateB = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
+        return dateB - dateA;
+      });
+    } catch (error) {
+      console.error("Error in getArticlesByAuthor:", error);
+      if (error instanceof Error) {
+        console.error("Error name:", error.name);
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      }
+      throw error;
+    }
   }
 
   async getArticlesByCategory(category: string): Promise<Article[]> {
