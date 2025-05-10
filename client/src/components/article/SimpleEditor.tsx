@@ -170,7 +170,7 @@ const SimpleEditor: React.FC<SimpleEditorProps> = ({
           <li>![Alt text](image-url)</li>
           <li>- Bullet list item</li>
           <li>1. Numbered list item</li>
-          <li>> Blockquote</li>
+          <li>{'>'} Blockquote</li>
           <li>```code block```</li>
         </ul>
       </div>
