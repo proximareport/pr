@@ -379,9 +379,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         z.record(z.any()), // Accept object format for other editors
       ]);
       
-      // Create a modified schema that accepts our content formats
+      // Create a modified schema that accepts our content formats and properly handles date fields
       const modifiedSchema = insertArticleSchema.extend({
         content: contentValidator,
+        publishedAt: z.string().transform(str => str ? new Date(str) : null).optional(),
       });
       
       // Parse and validate
@@ -427,6 +428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         summary: z.string().optional(),
         content: contentValidator,
         featuredImage: z.string().optional(),
+        publishedAt: z.string().transform(str => str ? new Date(str) : null).optional(),
         isBreaking: z.boolean().optional(),
         readTime: z.number().optional(),
         tags: z.array(z.string()).optional(),

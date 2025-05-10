@@ -195,7 +195,7 @@ function AdminArticleEditor() {
       readTime: Number(readTime) || 5,
       featuredImage: imageUrl,
       status: "published", // Explicitly set published status
-      publishedAt: new Date(), // Set publish date to now
+      publishedAt: new Date().toISOString(), // Set publish date to now in ISO format
       authorId: user?.id,
     };
     
