@@ -16,7 +16,7 @@ import Astronomy from "@/pages/Astronomy";
 import Subscribe from "@/pages/Subscribe";
 import TagView from "@/pages/TagView";
 import AdminDashboard from "@/pages/Admin/Dashboard";
-import AdminArticleEditor from "@/pages/Admin/ArticleEditor";
+import AdminArticleEditor from "@/pages/Admin/NewArticleEditor";
 import AdminUserManagement from "@/pages/Admin/UserManagement";
 import { AuthProvider } from "@/lib/AuthContext";
 

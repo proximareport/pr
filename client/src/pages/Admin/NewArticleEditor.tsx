@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { SaveIcon, UploadIcon, PlusIcon, XIcon } from 'lucide-react';
-import ArticleEditor from '@/components/article/ArticleEditor';
+import ArticleEditor from '@/components/article/GoogleDocsEditor';
 import { EditorLayout, EditorMainCard, EditorSideCard } from '@/components/admin/EditorLayout';
 import { 
   TextFormField, 
@@ -117,8 +117,8 @@ function AdminArticleEditor() {
     queryFn: () => apiRequest('GET', '/api/tags').then(r => r.json()),
   });
   
-  // Fetch available users for coauthor selection
-  const { data: availableUsers = [] } = useQuery({
+  // Fetch all users (used for coauthor selection)
+  const { data: allUsers = [] } = useQuery({
     queryKey: ['/api/users'],
     queryFn: () => apiRequest('GET', '/api/users').then(r => r.json()),
   });
@@ -191,7 +191,7 @@ function AdminArticleEditor() {
     }
     
     // Find user info
-    const selectedUser = availableUsers.find((u: {id: number, username: string}) => u.id === selectedCoauthorId);
+    const selectedUser = allUsers.find((u: {id: number, username: string}) => u.id === selectedCoauthorId);
     if (!selectedUser) return;
     
     // Add to coauthors
@@ -271,9 +271,7 @@ function AdminArticleEditor() {
     formData.append('image', file);
 
     try {
-      const response = await apiRequest('POST', '/api/upload', formData, { 
-        isFormData: true,
-      });
+      const response = await apiRequest('POST', '/api/upload', formData);
       const data = await response.json();
       setFeaturedImage(data.imageUrl);
       toast({
@@ -463,7 +461,7 @@ function AdminArticleEditor() {
                     value={selectedCoauthorId || ''}
                   >
                     <option value="">Select a user</option>
-                    {availableUsers
+                    {allUsers
                       .filter((u: {id: number, username: string}) => u.id !== user?.id) // Filter out current user
                       .filter((u: {id: number, username: string}) => !coauthors.some(author => author.id === u.id)) // Filter out already added
                       .map((u: {id: number, username: string}) => (
