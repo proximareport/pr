@@ -338,8 +338,8 @@ function ApiKeyManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {apiKeys.length > 0 ? (
-                  apiKeys.map((apiKey: ApiKey) => (
+                {(apiKeys as ApiKey[]).length > 0 ? (
+                  (apiKeys as ApiKey[]).map((apiKey) => (
                     <TableRow key={apiKey.id}>
                       <TableCell className="font-medium">{apiKey.name}</TableCell>
                       <TableCell className="font-mono text-xs">{apiKey.key}</TableCell>

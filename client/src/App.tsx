@@ -44,6 +44,14 @@ function Router() {
           </React.Suspense>
         );
       }} />
+      <Route path="/admin/api-keys" component={() => {
+        const ApiKeyManagementPage = React.lazy(() => import('./pages/Admin/ApiKeyManagement'));
+        return (
+          <React.Suspense fallback={<div>Loading...</div>}>
+            <ApiKeyManagementPage />
+          </React.Suspense>
+        );
+      }} />
       <Route component={NotFound} />
     </Switch>
   );

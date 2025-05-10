@@ -30,12 +30,10 @@ const upload = multer({
 });
 
 // Extend Request type to include API key data
-declare global {
-  namespace Express {
-    interface Request {
-      apiKeyUserId?: number;
-      apiKeyPermissions?: string[];
-    }
+declare module 'express-serve-static-core' {
+  interface Request {
+    apiKeyUserId?: number;
+    apiKeyPermissions?: string[];
   }
 }
 
