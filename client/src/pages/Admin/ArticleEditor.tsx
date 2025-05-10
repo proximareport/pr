@@ -214,7 +214,24 @@ function AdminArticleEditor() {
       setTitle(article.title || '');
       setSlug(article.slug || '');
       setSummary(article.summary || '');
-      setContent(article.content || '');
+      
+      // Handle content properly based on its structure
+      if (article.content) {
+        if (typeof article.content === 'object' && article.content.blocks) {
+          // Handle structured content with blocks
+          setContent(article.content.blocks);
+        } else if (Array.isArray(article.content)) {
+          // Handle direct array of blocks
+          setContent(article.content);
+        } else {
+          // Default to empty blocks array if content is in unexpected format
+          console.warn("Article content format unexpected:", article.content);
+          setContent([]);
+        }
+      } else {
+        setContent([]);
+      }
+      
       setCategory(article.category || '');
       setIsBreaking(article.isBreaking || false);
       setReadTime(article.readTime || 5);
@@ -328,11 +345,6 @@ function AdminArticleEditor() {
                 onSave={(updatedBlocks) => {
                   console.log("Content blocks updated:", updatedBlocks);
                   setContent(updatedBlocks);
-                  setReadTime(articleData.readTime);
-                  if (articleData.featuredImage) {
-                    setFeaturedImage(articleData.featuredImage);
-                    setPreviewUrl(articleData.featuredImage);
-                  }
                 }}
               />
             </div>
