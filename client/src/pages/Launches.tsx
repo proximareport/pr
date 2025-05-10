@@ -387,6 +387,14 @@ function Launches() {
               </div>
             </div>
             
+            {/* Debug info */}
+            <div className="mb-4 p-4 bg-black/50 text-xs font-mono overflow-auto">
+              <p>SpaceX API status: {isLoadingSpaceX ? 'Loading' : spacexUpcomingLaunches ? `Loaded ${spacexUpcomingLaunches.length} launches` : 'Failed'}</p>
+              <p>Space Devs API status: {isLoadingTSD ? 'Loading' : tsdUpcomingData ? 'Loaded' : 'Failed'}</p>
+              <p>Combined launches: {combinedUpcomingLaunches.length}</p>
+              <p>Filtered launches: {filteredUpcomingLaunches.length}</p>
+            </div>
+            
             {isLoadingSpaceX && isLoadingTSD ? (
               <div className="text-center py-12">
                 <div className="animate-spin h-10 w-10 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
