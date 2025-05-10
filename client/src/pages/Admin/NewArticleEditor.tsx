@@ -292,7 +292,7 @@ function AdminArticleEditor() {
     autosaveTimeoutRef.current = window.setTimeout(() => {
       performAutosave();
     }, 5000);
-  }, [title]);
+  }, [title, performAutosave, autosaveTimeoutRef]);
   
   // Autosave mutation - doesn't show toasts, doesn't redirect
   const { mutate: autosaveArticle, isPending: isAutosaving } = useMutation({
@@ -325,7 +325,7 @@ function AdminArticleEditor() {
     
     const articleData = prepareArticleData(false); // Always save as draft
     autosaveArticle(articleData);
-  }, [title, prepareArticleData, autosaveArticle]);
+  }, [title, prepareArticleData, autosaveArticle, isEditing]);
   
   // Format the last saved time
   const formatLastSavedTime = (date: Date) => {
@@ -469,7 +469,10 @@ function AdminArticleEditor() {
         <div className="border border-white/10 rounded-md overflow-hidden bg-[#0A0A15]">
           <ArticleEditor 
             initialContent={content}
-            onSave={(newContent) => setContent(newContent)}
+            onSave={(newContent) => {
+              setContent(newContent);
+              scheduleAutosave();
+            }}
           />
         </div>
       </EditorMainCard>
