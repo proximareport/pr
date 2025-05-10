@@ -1,0 +1,331 @@
+Project Name: Proxima Report – STEM/Space News Platform
+ Stack: Next.js + Custom CMS + PostgreSQL + Stripe + APIs
+
+Core Features to Build:
+1. Membership System
+Three tiers: Free / $2 / $4 monthly
+
+
+Free: Profile picture, short bio (150 characters), basic site access
+
+
+$2: Choose 5 color themes, animated avatar frame, "Supporter" badge
+
+
+$4: Full profile customization (custom RGB + animated background), ad-free experience, priority comment placement
+
+
+Stripe integration for payments
+
+
+Use Stripe webhooks to update user roles in database
+
+
+
+2. Custom Article System (CMS) – Built Into Admin Panel
+Write, edit, publish articles from admin dashboard
+
+
+Save articles as structured JSON (block format) in PostgreSQL
+
+
+Drag-and-drop rich editor with live preview
+
+
+Article Content Features:
+Auto-embed YouTube, Vimeo, Twitter, TikTok, Instagram, Spotify, SoundCloud
+
+
+Code blocks with syntax highlighting and line numbers
+
+
+Custom HTML blocks (with optional sandboxing)
+
+
+Upload images, GIFs, PDF/doc/zip files
+
+
+Captions, alt text, alignment (left, center, right), lightbox support
+
+
+Interactive chart blocks (Chart.js or similar)
+
+
+Google Maps embed
+
+
+Custom React/JSX/JSON blocks to render special components (e.g., Mars mission stats)
+
+
+"View in AR" button on compatible devices
+
+
+Article Styling & Layout Tools:
+Font customization (family, size, color) per block
+
+
+Text highlight with glowing purple, yellow, red, etc.
+
+
+Drop caps for first paragraph
+
+
+Page break marker for article previews
+
+
+Sticky Table of Contents auto-generated from headers
+
+
+Anchor links to sections (e.g., #launch-schedule)
+
+
+2-column layout options, image+text side-by-side
+
+
+Tip boxes, callouts, FAQs, collapsible sections
+
+
+Locked content blocks for premium users
+
+
+Auto-expiring blocks (hide after a set date)
+
+
+Countdown timers (e.g., to a rocket launch)
+
+
+Dark/light mode-aware content and images
+
+
+
+3. Homepage Article Feed
+Responsive grid layout: 3 → 2 → 1 columns
+
+
+Article card shows: image, title (2 lines max), author, date, read time
+
+
+Purple "Breaking" badge for urgent stories
+
+
+Support lazy loading and pagination
+
+
+
+4. Article Pages
+Fullscreen parallax header image
+
+
+Sticky Table of Contents
+
+
+Rich content blocks from above
+
+
+Related articles shown at the bottom
+
+
+Share and save options
+
+
+Comment section below (nested, 5 levels)
+
+
+
+5. Comments System
+Logged-in users can comment
+
+
+Nested replies (up to 5 levels)
+
+
+Voting system (+1 / -1)
+
+
+Pro users ($4) get pinned to top of comment threads
+
+
+Display earned badges under names
+
+
+
+6. Profiles & User Tools
+Public profile pages show:
+
+
+Avatar, name, short bio
+
+
+Activity (comments, article likes)
+
+
+Membership tier badge
+
+
+Earned badges (e.g., “Galaxy Explorer”)
+
+
+Settings: profile customization, theme selection, manage subscription
+
+
+
+7. Special Sections
+/launches
+
+
+Live SpaceX & NASA API data
+
+
+Countdown to next launch
+
+
+Archive of past launches with filter (success/failed)
+
+
+/astronomy
+
+
+Stellarium API viewer for night sky
+
+
+Submit astronomy photos (admin approves)
+
+
+Showcase gallery
+
+
+
+8. Admin Panel
+Write/edit articles
+
+
+Manage users (upgrade, ban, demote)
+
+
+Ad approval dashboard
+
+
+Emergency banner editor (site-wide notice system)
+
+
+Edit Terms of Service, Privacy Policy, and other legal docs
+
+
+Approve astronomy photo submissions
+
+
+View and resolve flagged comments
+
+
+Monitor Stripe activity and sync role changes
+
+
+
+9. Monetization Tools
+Job board for space/STEM jobs
+
+
+Companies can pay to post listings
+
+
+Filter by role, location, salary
+
+
+Self-service ad portal
+
+
+Upload image/text ads
+
+
+Choose placement (homepage, sidebar, inline article)
+
+
+Pay via Stripe
+
+
+Admin approval required
+
+
+
+10. Design Rules
+Dark mode default
+
+
+Background: #0D0D17
+
+
+Accent color: #5A189A (purple)
+
+
+Subtle purple glow on all interactive elements (hover/focus)
+
+
+Mobile-first responsive design
+
+
+Sticky nav and footer
+
+
+
+11. APIs to Connect
+Stripe (payments)
+
+
+SpaceX API (launch data)
+
+
+NASA Launch Library (optional backup)
+
+
+Stellarium API (night sky viewer)
+
+
+Cloud storage API (daily backups)
+
+
+
+12. Performance + Safety
+Cache all API responses for 1 hour
+
+
+Sanitize all custom HTML blocks
+
+
+Autosave article drafts
+
+
+Backup user data daily to cloud
+
+
+Enable SSL and HTTPS site-wide
+
+
+Use rate-limiting and spam filters on comments
+
+
+
+13. Testing Requirements
+Verify membership perks per tier
+
+
+Ensure $4 users see no ads
+
+
+Test responsive layout on mobile/tablet/desktop
+
+
+Validate all embeds and content types load properly
+
+
+Confirm emergency banner works on all devices
+
+
+Test role updates from Stripe webhook
+
+
+
+
+
+
+
+
