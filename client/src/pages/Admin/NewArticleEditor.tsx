@@ -512,7 +512,7 @@ function AdminArticleEditor() {
             disabled={isSubmitting}
           >
             <SaveIcon className="h-4 w-4 mr-2" />
-            {isPending ? 'Saving...' : isEditing ? 'Update Article' : 'Publish Article'}
+            {isSubmitting ? 'Saving...' : isEditing ? 'Update Article' : 'Publish Article'}
           </Button>
         }
       >
