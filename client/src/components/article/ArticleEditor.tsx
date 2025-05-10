@@ -101,6 +101,40 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
   const [isDraft, setIsDraft] = useState<boolean>(initialArticle?.status === "draft" || true);
   const [previewMode, setPreviewMode] = useState(false);
   const [activeBlockIndex, setActiveBlockIndex] = useState<number | null>(null);
+  const [isAutosaving, setIsAutosaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const autosaveTimeoutRef = useRef<number | null>(null);
+  
+  // Autosave function
+  const autosaveArticle = useCallback(() => {
+    if (!title) return; // Don't autosave if title is empty
+    
+    setIsAutosaving(true);
+    
+    const articleData = {
+      title,
+      slug: slug || title.toLowerCase().replace(/[^\w\s]/gi, '').replace(/\s+/g, '-'),
+      summary,
+      content: { blocks: content },
+      category,
+      featuredImage,
+      isBreaking,
+      readTime,
+      tags,
+      status: 'draft'
+    };
+    
+    // Call the onSave function with the article data and draft status
+    onSave(articleData, true)
+      .then(() => {
+        setLastSaved(new Date());
+        setIsAutosaving(false);
+      })
+      .catch((error) => {
+        console.error('Error autosaving article:', error);
+        setIsAutosaving(false);
+      });
+  }, [title, slug, summary, content, category, featuredImage, isBreaking, readTime, tags, onSave]);
   
   // Tag management functions
   const addTag = () => {
