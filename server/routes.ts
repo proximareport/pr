@@ -456,6 +456,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get all draft articles - requires admin or editor role
+  app.get("/api/articles/drafts", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const user = await storage.getUser(userId);
+      
+      if (!user || (user.role !== 'admin' && user.role !== 'editor')) {
+        return res.status(403).json({ message: "Only admins and editors can view all drafts" });
+      }
+      
+      const drafts = await storage.getArticlesByStatus('draft');
+      
+      // Enhance drafts with author information
+      const enhancedDrafts = await Promise.all(drafts.map(async (draft) => {
+        // Fetch authors for all drafts
+        const authors = await storage.getArticleAuthors(draft.id);
+        // Map to a simplified author structure
+        const authorData = authors.map(authorRecord => ({
+          id: authorRecord.user.id,
+          username: authorRecord.user.username,
+          profilePicture: authorRecord.user.profilePicture,
+          role: authorRecord.role
+        }));
+        
+        return {
+          ...draft,
+          authors: authorData
+        };
+      }));
+      
+      res.json(enhancedDrafts);
+    } catch (error) {
+      console.error("Error fetching draft articles:", error);
+      res.status(500).json({ message: "Error fetching draft articles" });
+    }
+  });
+  
+  // Get current user's draft articles - works for any authenticated user
+  app.get("/api/articles/drafts/me", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      
+      // Authors can only see their own drafts
+      const drafts = await storage.getAuthorDrafts(userId);
+      
+      // Enhance drafts with author information
+      const enhancedDrafts = await Promise.all(drafts.map(async (draft) => {
+        // Fetch authors for all drafts
+        const authors = await storage.getArticleAuthors(draft.id);
+        // Map to a simplified author structure
+        const authorData = authors.map(authorRecord => ({
+          id: authorRecord.user.id,
+          username: authorRecord.user.username,
+          profilePicture: authorRecord.user.profilePicture,
+          role: authorRecord.role
+        }));
+        
+        return {
+          ...draft,
+          authors: authorData
+        };
+      }));
+      
+      res.json(enhancedDrafts);
+    } catch (error) {
+      console.error("Error fetching your draft articles:", error);
+      res.status(500).json({ message: "Error fetching your draft articles" });
+    }
+  });
+  
   app.get("/api/articles/featured", async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 5;
@@ -725,6 +795,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Parse and validate (without publishedAt)
       const updateData = updateSchema.parse(req.body);
       
+      // Prepare final update data - we'll add publishedAt after validation
+      const finalUpdateData: { 
+        [key: string]: any; 
+        publishedAt?: Date;
+      } = { ...updateData };
+      
       // Check if trying to publish an article
       if (updateData.status === 'published' && article.status !== 'published') {
         // Only editors and admins can publish
@@ -736,7 +812,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Set publishedAt date when article is being published
-        updateData.publishedAt = new Date();
+        const publishedAt = new Date();
+        finalUpdateData.publishedAt = publishedAt;
       } else {
         // Handle publishedAt separately - convert from ISO string to Date
         let publishedAt = undefined;
@@ -747,16 +824,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.error("Invalid publishedAt date:", e);
           }
         }
-        updateData.publishedAt = publishedAt;
+        
+        if (publishedAt) {
+          finalUpdateData.publishedAt = publishedAt;
+        }
       }
       
       // Extract authors data
       const { authors } = req.body;
       
-      // First update the article in the database
-      const updatedArticle = await storage.updateArticle(articleId, {
-        ...updateData,
-      });
+      // Update the article in the database with our final data
+      const updatedArticle = await storage.updateArticle(articleId, finalUpdateData);
       
       // If this is a collaborative article and there are authors, update the authors
       // Only editors and admins can manage authors

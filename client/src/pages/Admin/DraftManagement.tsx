@@ -32,20 +32,35 @@ export function DraftManagement() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedDraftId, setSelectedDraftId] = useState<number | null>(null);
 
+  // Define article type
+  interface ArticleDraft {
+    id: number;
+    title: string;
+    slug: string;
+    status: string;
+    updatedAt: string;
+    authors?: Array<{
+      id: number;
+      username: string;
+      profilePicture?: string;
+      role: string;
+    }>;
+  }
+
   // Fetch draft articles based on user role
-  const { data: drafts = [], isLoading, error } = useQuery({
+  const { data: drafts = [], isLoading, error } = useQuery<ArticleDraft[]>({
     queryKey: ['/api/articles/drafts'],
-    enabled: !!user,
+    enabled: !!user && (user.role === 'admin' || user.role === 'editor'),
   });
 
   // Fetch user's draft articles if they're an author
-  const { data: myDrafts = [] } = useQuery({
+  const { data: myDrafts = [] } = useQuery<ArticleDraft[]>({
     queryKey: ['/api/articles/drafts/me'],
-    enabled: !!user && user.role === 'author',
+    enabled: !!user,
   });
 
   // Determine which drafts to display based on user role
-  const displayDrafts = user?.role === 'author' ? myDrafts : drafts;
+  const displayDrafts: ArticleDraft[] = user?.role === 'author' ? myDrafts : drafts;
 
   const handleEdit = (id: number) => {
     navigate(`/admin/articles/edit/${id}`);
@@ -176,11 +191,11 @@ export function DraftManagement() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {displayDrafts.map((draft: any) => (
+              {displayDrafts.map((draft) => (
                 <TableRow key={draft.id}>
                   <TableCell className="font-medium">{draft.title || 'Untitled Draft'}</TableCell>
                   <TableCell>
-                    {draft.authors?.map((author: any) => author.user.username).join(', ') || 'Unknown'}
+                    {draft.authors?.map((author) => author.username).join(', ') || 'Unknown'}
                   </TableCell>
                   <TableCell>
                     {draft.updatedAt 
