@@ -55,6 +55,7 @@ function AdminArticleEditor() {
   const [autosaveError, setAutosaveError] = useState<string | null>(null);
   const autosaveTimeoutRef = useRef<number | null>(null);
   const [availableUsers, setAvailableUsers] = useState<Array<{id: number, username: string, profilePicture?: string}>>([]);
+  
   // Fetch available users for coauthor selection
   const { data: fetchedUsers } = useQuery({
     queryKey: ['/api/users'],
@@ -163,8 +164,7 @@ function AdminArticleEditor() {
   });
   
   // Autosave mutation - doesn't show toasts, doesn't redirect
-  // This is the primary save mutation
-  const { mutate: autosave, isPending: isSaving } = useMutation({
+  const { mutate: autosaveArticleMutation, isPending: isAutosaving } = useMutation({
     mutationFn: async (articleData: any) => {
       if (isEditing) {
         return apiRequest('PATCH', `/api/articles/${id}`, articleData).then(r => r.json());
@@ -173,13 +173,19 @@ function AdminArticleEditor() {
       }
     },
     onSuccess: (data) => {
-      // Silent success - just update article ID if needed
-      if (!isEditing && data.id) {
-        setLastSaved(new Date());
+      // If we're creating a new article and get an ID back, update the state
+      if (!isEditing && data?.id) {
+        setArticleId(data.id);
         window.history.replaceState(null, '', `/admin/articles/${data.id}/edit`);
-      } else {
-        setLastSaved(new Date());
       }
+      
+      // Set last saved time
+      setLastSaved(new Date());
+      
+      // Clear any autosave error
+      setAutosaveError(null);
+      
+      // Invalidate the articles query
       queryClient.invalidateQueries({ queryKey: ['/api/articles'] });
     },
     onError: (error: any) => {
@@ -283,33 +289,6 @@ function AdminArticleEditor() {
       authors
     };
   }, [title, slug, summary, content, category, tags, featuredImage, readTime, isBreaking, isFeatured, isCollaborative, coauthors, user?.id]);
-  
-  // Autosave mutation - doesn't show toasts, doesn't redirect
-  const { mutate: autosaveArticleMutation, isPending: isAutosaving } = useMutation({
-    mutationFn: async (articleData: any) => {
-      if (isEditing) {
-        return apiRequest('PATCH', `/api/articles/${id}`, articleData).then(r => r.json());
-      } else {
-        return apiRequest('POST', '/api/articles', articleData).then(r => r.json());
-      }
-    },
-    onSuccess: (data) => {
-      // If we're creating a new article and get an ID back, update the state
-      if (!isEditing && data?.id) {
-        setArticleId(data.id);
-      }
-      
-      // Set last saved time
-      setLastSaved(new Date());
-      
-      // Clear any autosave error
-      setAutosaveError(null);
-    },
-    onError: (error: any) => {
-      console.error('Autosave error:', error);
-      setAutosaveError(error.message || 'Failed to autosave');
-    },
-  });
 
   // Function definitions for autosave
   const doAutosave = useCallback(() => {
@@ -337,29 +316,6 @@ function AdminArticleEditor() {
       doAutosave();
     }, 3000);
   }, [title, doAutosave]);
-    mutationFn: async (articleData: any) => {
-      if (isEditing) {
-        return apiRequest('PATCH', `/api/articles/${id}`, articleData).then(r => r.json());
-      } else {
-        return apiRequest('POST', '/api/articles', articleData).then(r => r.json());
-      }
-    },
-    onSuccess: (data) => {
-      // Silent success - just update article ID if needed
-      if (!isEditing && data.id) {
-        setLastSaved(new Date());
-        window.history.replaceState(null, '', `/admin/articles/${data.id}/edit`);
-        setArticleId(data.id);
-      } else {
-        setLastSaved(new Date());
-      }
-      setAutosaveError(null);
-    },
-    onError: (error: any) => {
-      console.error('Autosave error:', error);
-      setAutosaveError(error.message || 'Failed to autosave');
-    }
-  });
   
   // Format the last saved time
   const formatLastSavedTime = (date: Date) => {
@@ -376,7 +332,7 @@ function AdminArticleEditor() {
         window.clearTimeout(autosaveTimeoutRef.current);
       }
     };
-  }, [title, summary, content, category, tags, featuredImage, readTime, isBreaking, isFeatured, isCollaborative, coauthors]);
+  }, [title, summary, content, category, tags, featuredImage, readTime, isBreaking, isFeatured, isCollaborative, coauthors, scheduleAutosave]);
   
   // Effect to handle page unload
   useEffect(() => {
@@ -518,8 +474,8 @@ function AdminArticleEditor() {
       </EditorMainCard>
     </form>
   );
-  
-  // Create sidebar content
+
+  // Create sidebar content with publishing options and tags
   const sidebarContent = (
     <>
       <EditorSideCard
@@ -597,6 +553,7 @@ function AdminArticleEditor() {
               scheduleAutosave();
             }}
             description="Show on homepage hero section"
+            highlightBox
           />
           
           <SelectFormField
@@ -636,15 +593,11 @@ function AdminArticleEditor() {
         title="Collaboration Options"
         description="Manage article co-authors and collaboration settings"
       >
-        <div className="space-y-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
             <div>
-              <h4 className="font-medium">Collaborative Mode</h4>
-              <p className="text-xs text-white/60">
-                {isCollaborative 
-                  ? 'Multiple authors can collaborate on this article' 
-                  : 'Standard single-author article'}
-              </p>
+              <h4 className="font-medium">Enable Collaboration</h4>
+              <p className="text-xs text-white/60">Allow multiple authors to work on this article</p>
             </div>
             <Switch 
               checked={isCollaborative} 
@@ -657,174 +610,207 @@ function AdminArticleEditor() {
           
           {isCollaborative && (
             <div>
-              <div className="mb-4">
-                <label className="text-sm font-medium mb-1 block">Add Co-authors</label>
-                <div className="flex items-center gap-2">
-                  <select 
-                    className="flex-1 bg-[#0A0A15] border border-white/10 rounded-md p-2 text-sm"
-                    onChange={(e) => setSelectedCoauthorId(parseInt(e.target.value))}
-                    value={selectedCoauthorId || ''}
-                  >
-                    <option value="">Select a user</option>
-                    {allUsers
-                      .filter((u: {id: number, username: string}) => u.id !== user?.id) // Filter out current user
-                      .filter((u: {id: number, username: string}) => !coauthors.some(author => author.id === u.id)) // Filter out already added
-                      .map((u: {id: number, username: string}) => (
-                        <option key={u.id} value={u.id}>{u.username}</option>
-                      ))
-                    }
-                  </select>
-                  <Button
-                    size="sm"
-                    onClick={handleAddCoauthor}
-                    disabled={!selectedCoauthorId}
-                    className="px-3"
-                  >
-                    <PlusIcon className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+              <h4 className="text-sm font-medium mb-2">Coauthors</h4>
               
-              {/* Co-authors list */}
-              <div>
-                <h4 className="text-sm font-medium mb-2">Current Co-authors</h4>
-                {coauthors.length === 0 ? (
-                  <p className="text-xs text-white/60 italic">No co-authors yet. Add someone above.</p>
+              {/* Current coauthors */}
+              <div className="space-y-2 mb-4">
+                {coauthors.length > 0 ? (
+                  coauthors.map((author) => (
+                    <div key={author.id} className="flex items-center justify-between bg-gray-800/50 p-2 rounded">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm">{author.username}</span>
+                        <select 
+                          value={author.role} 
+                          onChange={(e) => handleCoauthorRoleChange(author.id, e.target.value)}
+                          className="bg-transparent border border-white/10 rounded-md text-xs p-1"
+                        >
+                          <option value="coauthor">Co-author</option>
+                          <option value="editor">Editor</option>
+                          <option value="contributor">Contributor</option>
+                        </select>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCoauthor(author.id)}
+                        className="text-white/60 hover:text-white"
+                      >
+                        <XIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))
                 ) : (
-                  <ul className="space-y-2">
-                    {coauthors.map(author => (
-                      <li key={author.id} className="flex items-center justify-between bg-[#0A0A15] rounded-md p-2 text-sm border border-white/10">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-purple-900 flex items-center justify-center text-xs">
-                            {author.username.substring(0, 2).toUpperCase()}
-                          </div>
-                          <span>{author.username}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <select
-                            value={author.role}
-                            onChange={(e) => handleCoauthorRoleChange(author.id, e.target.value)}
-                            className="bg-transparent border border-white/10 rounded-md text-xs p-1"
-                          >
-                            <option value="coauthor">Co-author</option>
-                            <option value="editor">Editor</option>
-                            <option value="contributor">Contributor</option>
-                          </select>
-                          <button
-                            onClick={() => handleRemoveCoauthor(author.id)}
-                            className="text-red-400 hover:text-red-300"
-                            title="Remove co-author"
-                          >
-                            <XIcon className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                  <p className="text-xs text-white/60">No coauthors added yet.</p>
                 )}
               </div>
-            </div>
-          )}
-        </div>
-      </EditorSideCard>
-      
-      <EditorSideCard
-        title="Featured Image"
-        description="Upload a high-quality image"
-      >
-        <div className="space-y-4">
-          {featuredImage ? (
-            <div className="relative rounded-md overflow-hidden">
-              <img 
-                src={featuredImage} 
-                alt="Featured" 
-                className="w-full aspect-video object-cover" 
-              />
-              <Button
-                size="sm"
-                variant="destructive"
-                className="absolute top-2 right-2"
-                onClick={() => setFeaturedImage('')}
-              >
-                <XIcon className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <div className="border-2 border-dashed border-white/20 rounded-md p-8 text-center">
-              <div className="flex flex-col items-center">
-                <UploadIcon className="h-10 w-10 text-white/40 mb-3" />
-                <p className="text-white/60 mb-4">Upload a featured image</p>
-                <label className="cursor-pointer">
-                  <Button disabled={imageUploading}>
-                    {imageUploading ? 'Uploading...' : 'Browse Files'}
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      disabled={imageUploading}
-                    />
-                  </Button>
-                </label>
+              
+              {/* Add coauthor */}
+              <div className="flex items-center space-x-2">
+                <select
+                  className="flex-grow bg-gray-800/50 rounded-md border border-white/10 p-2 text-sm"
+                  value={selectedCoauthorId || ""}
+                  onChange={(e) => setSelectedCoauthorId(e.target.value ? Number(e.target.value) : null)}
+                >
+                  <option value="">Select a user...</option>
+                  {allUsers
+                    .filter((u: any) => u.id !== user?.id && !coauthors.some(a => a.id === u.id))
+                    .map((u: any) => (
+                      <option key={u.id} value={u.id}>{u.username}</option>
+                    ))}
+                </select>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleAddCoauthor}
+                  disabled={!selectedCoauthorId}
+                >
+                  <PlusIcon className="h-4 w-4" />
+                </Button>
               </div>
             </div>
           )}
         </div>
       </EditorSideCard>
       
+      {/* Tags */}
       <EditorSideCard
-        title="Tags"
-        description="Add relevant topic tags"
+        title="Article Tags"
+        description="Add tags to make your article more discoverable"
       >
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
-            {tags.map((tag) => (
-              <Badge key={tag} className="group transition flex items-center gap-1 py-1 px-2">
-                {tag}
-                <XIcon 
-                  className="h-3 w-3 cursor-pointer opacity-70 group-hover:opacity-100" 
-                  onClick={() => removeTag(tag)} 
-                />
+            {tags.map((tag, i) => (
+              <Badge key={i} variant="secondary" className="flex items-center space-x-1">
+                <span>{tag}</span>
+                <button 
+                  type="button" 
+                  onClick={() => removeTag(tag)}
+                  className="ml-1 hover:text-white/90"
+                >
+                  <XIcon className="h-3 w-3" />
+                </button>
               </Badge>
             ))}
             {tags.length === 0 && (
-              <p className="text-sm text-white/60">No tags added yet</p>
+              <p className="text-xs text-white/60">No tags added yet.</p>
             )}
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center space-x-2">
             <Input
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={handleTagInputKeyDown}
-              placeholder="Enter a tag name"
-              className="flex-1 border-white/10 bg-[#1A1A27]"
+              placeholder="Add a tag..."
+              className="flex-grow"
             />
             <Button 
+              type="button" 
+              variant="outline" 
               size="sm"
               onClick={() => addTag(tagInput)}
-              disabled={!tagInput}
-              type="button"
+              disabled={!tagInput.trim()}
             >
               <PlusIcon className="h-4 w-4" />
             </Button>
           </div>
           
-          {availableTags && availableTags.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Suggested tags:</p>
-              <div className="flex flex-wrap gap-1">
-                {availableTags.slice(0, 10).map((tag: any) => (
-                  <Badge 
-                    key={tag.name}
-                    variant="outline" 
-                    className="cursor-pointer hover:bg-white/10"
-                    onClick={() => addTag(tag.name)}
-                  >
-                    {tag.name}
-                  </Badge>
-                ))}
+          {availableTags.length > 0 && (
+            <div>
+              <h4 className="text-sm font-medium mb-2">Popular tags</h4>
+              <div className="flex flex-wrap gap-2">
+                {availableTags
+                  .filter((tag: string) => !tags.includes(tag))
+                  .slice(0, 6)
+                  .map((tag: string, i: number) => (
+                    <Badge 
+                      key={i} 
+                      variant="outline" 
+                      className="cursor-pointer hover:bg-white/10"
+                      onClick={() => {
+                        addTag(tag);
+                      }}
+                    >
+                      {tag}
+                    </Badge>
+                  ))}
               </div>
+            </div>
+          )}
+        </div>
+      </EditorSideCard>
+      
+      {/* Featured Image */}
+      <EditorSideCard
+        title="Featured Image"
+        description="Upload an image to display with your article"
+      >
+        <div className="space-y-4">
+          {featuredImage ? (
+            <div className="space-y-2">
+              <div className="relative aspect-video rounded-md overflow-hidden bg-gray-800/50">
+                <img 
+                  src={featuredImage} 
+                  alt="Featured" 
+                  className="object-cover w-full h-full" 
+                />
+              </div>
+              <div className="flex justify-between">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setFeaturedImage('');
+                    scheduleAutosave();
+                  }}
+                >
+                  Remove
+                </Button>
+                <label className="inline-flex cursor-pointer">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="cursor-pointer"
+                    disabled={imageUploading}
+                  >
+                    <UploadIcon className="h-4 w-4 mr-2" />
+                    {imageUploading ? 'Uploading...' : 'Replace'}
+                  </Button>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={imageUploading}
+                  />
+                </label>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex justify-center items-center aspect-video rounded-md border border-dashed border-white/20 bg-gray-800/50">
+                <label className="cursor-pointer">
+                  <div className="flex flex-col items-center space-y-2 p-4">
+                    <UploadIcon className="h-8 w-8 text-white/60" />
+                    <span className="text-sm font-medium">Upload Image</span>
+                    <span className="text-xs text-white/60">Click to browse or drop your file</span>
+                  </div>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={imageUploading}
+                  />
+                </label>
+              </div>
+              {imageUploading && (
+                <div className="w-full bg-gray-700 rounded-full h-2.5">
+                  <div className="bg-blue-600 h-2.5 rounded-full w-full animate-pulse"></div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -834,9 +820,11 @@ function AdminArticleEditor() {
 
   return (
     <EditorLayout
-      title={isEditing ? 'Edit Article' : 'New Article'}
+      title={isEditing ? "Edit Article" : "Create New Article"}
+      subtitle={isEditing ? `Editing ${initialArticle?.title || 'article'}` : "Create a new article for your publication"}
       mainContent={mainContent}
       sidebarContent={sidebarContent}
+      isLoading={isLoadingArticle && isEditing}
     />
   );
 }
