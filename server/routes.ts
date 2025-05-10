@@ -373,7 +373,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Only admins can create articles" });
       }
       
-      const articleData = insertArticleSchema.parse(req.body);
+      // Custom validation for the content field to handle different formats
+      const contentValidator = z.union([
+        z.array(z.any()), // Accept array format for Google Docs-style editor
+        z.record(z.any()), // Accept object format for other editors
+      ]);
+      
+      // Create a modified schema that accepts our content formats
+      const modifiedSchema = insertArticleSchema.extend({
+        content: contentValidator,
+      });
+      
+      // Parse and validate
+      const articleData = modifiedSchema.parse(req.body);
+      
       const newArticle = await storage.createArticle({
         ...articleData,
         authorId: req.session.userId!,

@@ -776,8 +776,13 @@ export default function GoogleDocsEditor({
         return (
           <div 
             key={element.id} 
-            className={`${classList} ${positionClass} mb-4`}
+            className={`${classList} ${positionClass} mb-4 ${dragOverIndex === index ? 'border-t-2 border-blue-500' : ''}`}
+            onDragOver={(e) => handleDragOver(e, index)}
+            onDrop={(e) => handleDrop(e, index)}
+            onDragEnd={handleDragEnd}
+            onClick={() => handleFocus(element.id)}
           >
+            {elementControls}
             <ContentEditable
               innerRef={el => { elementRefs.current[element.id] = el; }}
               html={textElement.content}
@@ -786,7 +791,6 @@ export default function GoogleDocsEditor({
               onKeyDown={e => handleKeyDown(e, element.id)}
               onFocus={() => handleFocus(element.id)}
               className={`${typeClasses[textElement.type]} outline-none ${styleClasses}`}
-              // placeholder={`Type ${textElement.type} here...`}
               data-placeholder={`Type ${textElement.type} here...`}
             />
           </div>
