@@ -6,7 +6,7 @@ import type { Request, Response } from "express";
 // Initialize Stripe with a dummy key if no real key provided
 // This allows the server to start without a valid API key
 // In production, you should always use a valid API key
-let stripe: Stripe;
+export let stripe: Stripe;
 try {
   stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
     apiVersion: "2023-10-16",

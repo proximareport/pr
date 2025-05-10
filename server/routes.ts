@@ -9,9 +9,10 @@ import {
   insertAstronomyPhotoSchema,
   insertJobListingSchema,
   insertAdvertisementSchema,
+  type User
 } from "@shared/schema";
 import bcrypt from "bcryptjs";
-import { handleStripeWebhook, createStripeCheckoutSession } from "./stripe";
+import { handleStripeWebhook, createStripeCheckoutSession, stripe, SUBSCRIPTION_PRICES } from "./stripe";
 import session from "express-session";
 import { z } from "zod";
 import axios from "axios";
