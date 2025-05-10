@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { formatDistanceToNow } from 'date-fns';
 import { useLocation, useParams } from 'wouter';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -248,16 +249,15 @@ function AdminArticleEditor() {
     ));
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    
+  // Function to prepare article data for saving
+  const prepareArticleData = useCallback((forPublishing = false) => {
     // All articles need at least the current user as author
     const authors = [
       { id: user?.id, role: "primary" },
       ...coauthors
     ];
     
-    const articleData = {
+    return {
       title,
       slug,
       summary,
@@ -266,13 +266,74 @@ function AdminArticleEditor() {
       tags,
       featuredImage,
       readTime: Number(readTime),
-      status: isDraft ? 'draft' : 'published',
+      status: forPublishing ? 'published' : 'draft',
       isBreaking,
       isFeatured,
       isCollaborative,
       authors
     };
+  }, [title, slug, summary, content, category, tags, featuredImage, readTime, isBreaking, isFeatured, isCollaborative, coauthors, user?.id]);
+  
+  // Autosave logic
+  const scheduleAutosave = useCallback(() => {
+    // Clear any existing timeout
+    if (autosaveTimeoutRef.current) {
+      window.clearTimeout(autosaveTimeoutRef.current);
+    }
     
+    // Don't autosave if title is empty
+    if (!title.trim()) {
+      return;
+    }
+    
+    // Set a new timeout for autosave (5 seconds after last change)
+    autosaveTimeoutRef.current = window.setTimeout(() => {
+      performAutosave();
+    }, 5000);
+  }, [title]);
+  
+  const performAutosave = useCallback(() => {
+    if (!title.trim()) return;
+    
+    const articleData = prepareArticleData(false); // Always save as draft
+    autosave(articleData);
+  }, [title, prepareArticleData, autosave]);
+  
+  // Format the last saved time
+  const formatLastSavedTime = (date: Date) => {
+    return formatDistanceToNow(date, { addSuffix: true });
+  };
+  
+  // Effect to autosave when content changes
+  useEffect(() => {
+    scheduleAutosave();
+    
+    // Cleanup on unmount
+    return () => {
+      if (autosaveTimeoutRef.current) {
+        window.clearTimeout(autosaveTimeoutRef.current);
+      }
+    };
+  }, [title, summary, content, category, tags, featuredImage, readTime, isBreaking, isFeatured, isCollaborative, coauthors, scheduleAutosave]);
+  
+  // Effect to handle page unload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (title) {
+        performAutosave();
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [title, performAutosave]);
+  
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    const articleData = prepareArticleData(!isDraft);
     mutate(articleData);
   };
 
