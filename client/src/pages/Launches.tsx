@@ -193,6 +193,9 @@ function Launches() {
   useEffect(() => {
     const combined: CombinedLaunch[] = [];
     
+    console.log("Debug SpaceX data:", spacexUpcomingLaunches);
+    console.log("Debug TSD data:", tsdUpcomingData);
+    
     // Add SpaceX data
     if (spacexUpcomingLaunches) {
       spacexUpcomingLaunches.forEach(launch => {
@@ -223,10 +226,10 @@ function Launches() {
     }
     
     // Add The Space Devs data, filtering out SpaceX launches to avoid duplicates
-    if (tsdUpcomingData && tsdUpcomingData.results) {
-      tsdUpcomingData.results.forEach((launch: TSDLaunch) => {
+    if (tsdUpcomingData && (tsdUpcomingData as any).results) {
+      (tsdUpcomingData as any).results.forEach((launch: TSDLaunch) => {
         // Skip if it's a SpaceX launch (to avoid duplicates)
-        if (launch.rocket.configuration.manufacturer?.name === "SpaceX") {
+        if (launch.rocket?.configuration?.manufacturer?.name === "SpaceX") {
           return;
         }
         
@@ -237,15 +240,15 @@ function Launches() {
           date: launch.net,
           details: launch.mission?.description,
           upcoming: true,
-          agency: launch.rocket.configuration.manufacturer?.name,
+          agency: launch.rocket?.configuration?.manufacturer?.name,
           rocket: {
-            name: launch.rocket.configuration.full_name || launch.rocket.configuration.name,
-            manufacturer: launch.rocket.configuration.manufacturer?.name,
+            name: launch.rocket?.configuration?.full_name || launch.rocket?.configuration?.name || "Unknown Rocket",
+            manufacturer: launch.rocket?.configuration?.manufacturer?.name,
           },
           location: {
-            name: launch.pad.name,
-            locality: launch.pad.location.name,
-            country: launch.pad.location.country_code,
+            name: launch.pad?.name || "Unknown Location",
+            locality: launch.pad?.location?.name,
+            country: launch.pad?.location?.country_code,
           },
           mission: {
             name: launch.mission?.name,
@@ -265,6 +268,7 @@ function Launches() {
       return new Date(a.date).getTime() - new Date(b.date).getTime();
     });
     
+    console.log("Combined launches:", combined.length, combined.slice(0, 2));
     setCombinedUpcomingLaunches(combined);
   }, [spacexUpcomingLaunches, tsdUpcomingData]);
   
