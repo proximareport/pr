@@ -67,6 +67,16 @@ interface ArticleEditorProps {
   onSave: (article: any) => void;
 }
 
+// Ensure all content blocks have unique IDs
+const ensureBlockIds = (blocks: any[]) => {
+  return blocks.map(block => {
+    if (!block.id) {
+      return {...block, id: nanoid(8)};
+    }
+    return block;
+  });
+};
+
 function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
   const { toast } = useToast();
   const [title, setTitle] = useState(initialArticle?.title || "");
@@ -192,16 +202,6 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
       setContent([...content, newBlock]);
       setActiveBlockIndex(content.length);
     }
-  };
-  
-  // Ensure all content blocks have unique IDs
-  const ensureBlockIds = (blocks: any[]) => {
-    return blocks.map(block => {
-      if (!block.id) {
-        return {...block, id: nanoid(8)};
-      }
-      return block;
-    });
   };
 
   // Create an empty block of the specified type

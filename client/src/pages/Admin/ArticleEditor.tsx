@@ -13,6 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeftIcon, SaveIcon, ImageIcon, UploadIcon } from 'lucide-react';
+import ArticleEditor from '@/components/article/ArticleEditor';
 
 interface ArticleParams {
   id?: string;
@@ -133,7 +134,10 @@ function AdminArticleEditor() {
       formData.append('image', selectedFile);
       
       try {
-        const uploadResponse = await apiRequest('POST', '/api/upload', formData, false);
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
         const uploadResult = await uploadResponse.json();
         imageUrl = uploadResult.url;
       } catch (error) {
@@ -150,7 +154,9 @@ function AdminArticleEditor() {
       title,
       slug,
       summary,
-      content,
+      content: {
+        blocks: Array.isArray(content) ? content : []
+      },
       category,
       isBreaking,
       readTime: Number(readTime),
@@ -251,33 +257,42 @@ function AdminArticleEditor() {
                   />
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="content">Content</Label>
-                  <Tabs defaultValue="write" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="write">Write</TabsTrigger>
-                      <TabsTrigger value="preview">Preview</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="write">
-                      <Textarea 
-                        id="content" 
-                        value={content} 
-                        onChange={(e) => setContent(e.target.value)}
-                        placeholder="Write your article content here..."
-                        className="min-h-[400px]"
-                        required
-                      />
-                    </TabsContent>
-                    <TabsContent value="preview">
-                      <div className="border rounded-md p-4 min-h-[400px] prose max-w-none">
-                        {content ? (
-                          <div dangerouslySetInnerHTML={{ __html: content }} />
-                        ) : (
-                          <p className="text-gray-400">No content to preview</p>
-                        )}
-                      </div>
-                    </TabsContent>
-                  </Tabs>
+                <div>
+                  <Label htmlFor="content" className="mb-2 block">Content</Label>
+                  <div className="min-h-[600px]">
+                    <ArticleEditor 
+                      initialArticle={{
+                        title,
+                        slug,
+                        summary,
+                        category,
+                        isBreaking,
+                        readTime,
+                        featuredImage: previewUrl || featuredImage,
+                        tags: [],
+                        content: {
+                          blocks: typeof content === 'string' ? [] : content
+                        }
+                      }}
+                      onSave={(articleData) => {
+                        // Update our form state with the new content
+                        if (articleData.content?.blocks) {
+                          setContent(articleData.content.blocks);
+                        }
+                        // Update other fields as well
+                        setTitle(articleData.title);
+                        setSlug(articleData.slug);
+                        setSummary(articleData.summary);
+                        setCategory(articleData.category);
+                        setIsBreaking(articleData.isBreaking);
+                        setReadTime(articleData.readTime);
+                        if (articleData.featuredImage) {
+                          setFeaturedImage(articleData.featuredImage);
+                          setPreviewUrl(articleData.featuredImage);
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
