@@ -47,6 +47,13 @@ function AdminArticleEditor() {
   const [isCollaborative, setIsCollaborative] = useState(false);
   const [coauthors, setCoauthors] = useState<Array<{id: number, username: string, role: string}>>([]);
   const [selectedCoauthorId, setSelectedCoauthorId] = useState<number | null>(null);
+  const [availableUsers, setAvailableUsers] = useState<Array<{id: number, username: string}>>([]);
+  
+  // Fetch available users for coauthor selection
+  useQuery({
+    queryKey: ['/api/users'],
+    onSuccess: (data) => setAvailableUsers(data || [])
+  });
   
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
@@ -150,11 +157,67 @@ function AdminArticleEditor() {
       setIsDraft(initialArticle.status === 'draft');
       setIsBreaking(initialArticle.isBreaking || false);
       setIsFeatured(initialArticle.isFeatured || false);
+      setIsCollaborative(initialArticle.isCollaborative || false);
+      
+      // Handle authors
+      if (initialArticle.authors && initialArticle.authors.length > 0) {
+        // Filter out the current user (primary author) from coauthors list
+        const coauthorsList = initialArticle.authors.filter((author: {id: number, username: string, role: string}) => 
+          author.id !== user?.id
+        );
+        setCoauthors(coauthorsList);
+      }
     }
-  }, [initialArticle]);
+  }, [initialArticle, user?.id]);
+
+  // Coauthor management
+  const handleAddCoauthor = () => {
+    if (!selectedCoauthorId) return;
+    
+    // Check if already added
+    if (coauthors.some(author => author.id === selectedCoauthorId)) {
+      toast({
+        title: "Already added",
+        description: "This user is already a coauthor",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Find user info
+    const selectedUser = availableUsers.find((u: {id: number, username: string}) => u.id === selectedCoauthorId);
+    if (!selectedUser) return;
+    
+    // Add to coauthors
+    setCoauthors([...coauthors, {
+      id: selectedUser.id,
+      username: selectedUser.username,
+      role: "coauthor" // Default role
+    }]);
+    
+    // Reset selection
+    setSelectedCoauthorId(null);
+  };
+  
+  const handleRemoveCoauthor = (id: number) => {
+    setCoauthors(coauthors.filter(author => author.id !== id));
+  };
+  
+  const handleCoauthorRoleChange = (id: number, role: string) => {
+    setCoauthors(coauthors.map(author => 
+      author.id === id ? { ...author, role } : author
+    ));
+  };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    // All articles need at least the current user as author
+    const authors = [
+      { id: user?.id, role: "primary" },
+      ...coauthors
+    ];
+    
     const articleData = {
       title,
       slug,
@@ -167,8 +230,10 @@ function AdminArticleEditor() {
       status: isDraft ? 'draft' : 'published',
       isBreaking,
       isFeatured,
-      authorId: user?.id,
+      isCollaborative,
+      authors
     };
+    
     mutate(articleData);
   };
 
@@ -357,6 +422,100 @@ function AdminArticleEditor() {
             placeholder="5"
             hint="Estimated time to read the article"
           />
+        </div>
+      </EditorSideCard>
+      
+      {/* Collaboration Options */}
+      <EditorSideCard
+        title="Collaboration Options"
+        description="Manage article co-authors and collaboration settings"
+      >
+        <div className="space-y-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h4 className="font-medium">Collaborative Mode</h4>
+              <p className="text-xs text-white/60">
+                {isCollaborative 
+                  ? 'Multiple authors can collaborate on this article' 
+                  : 'Standard single-author article'}
+              </p>
+            </div>
+            <Switch 
+              checked={isCollaborative} 
+              onCheckedChange={setIsCollaborative}
+            />
+          </div>
+          
+          {isCollaborative && (
+            <div>
+              <div className="mb-4">
+                <label className="text-sm font-medium mb-1 block">Add Co-authors</label>
+                <div className="flex items-center gap-2">
+                  <select 
+                    className="flex-1 bg-[#0A0A15] border border-white/10 rounded-md p-2 text-sm"
+                    onChange={(e) => setSelectedCoauthorId(parseInt(e.target.value))}
+                    value={selectedCoauthorId || ''}
+                  >
+                    <option value="">Select a user</option>
+                    {availableUsers
+                      .filter((u: {id: number, username: string}) => u.id !== user?.id) // Filter out current user
+                      .filter((u: {id: number, username: string}) => !coauthors.some(author => author.id === u.id)) // Filter out already added
+                      .map((u: {id: number, username: string}) => (
+                        <option key={u.id} value={u.id}>{u.username}</option>
+                      ))
+                    }
+                  </select>
+                  <Button
+                    size="sm"
+                    onClick={handleAddCoauthor}
+                    disabled={!selectedCoauthorId}
+                    className="px-3"
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Co-authors list */}
+              <div>
+                <h4 className="text-sm font-medium mb-2">Current Co-authors</h4>
+                {coauthors.length === 0 ? (
+                  <p className="text-xs text-white/60 italic">No co-authors yet. Add someone above.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {coauthors.map(author => (
+                      <li key={author.id} className="flex items-center justify-between bg-[#0A0A15] rounded-md p-2 text-sm border border-white/10">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-purple-900 flex items-center justify-center text-xs">
+                            {author.username.substring(0, 2).toUpperCase()}
+                          </div>
+                          <span>{author.username}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={author.role}
+                            onChange={(e) => handleCoauthorRoleChange(author.id, e.target.value)}
+                            className="bg-transparent border border-white/10 rounded-md text-xs p-1"
+                          >
+                            <option value="coauthor">Co-author</option>
+                            <option value="editor">Editor</option>
+                            <option value="contributor">Contributor</option>
+                          </select>
+                          <button
+                            onClick={() => handleRemoveCoauthor(author.id)}
+                            className="text-red-400 hover:text-red-300"
+                            title="Remove co-author"
+                          >
+                            <XIcon className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </EditorSideCard>
       
