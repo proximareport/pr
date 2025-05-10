@@ -295,6 +295,41 @@ export default function GoogleDocsEditor({
     setFocusedId(id);
   };
   
+  // Drag and drop handlers
+  const handleDragStart = useCallback((e: React.DragEvent, id: string, index: number) => {
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedElement({ id, index });
+  }, []);
+  
+  const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedElement === null) return;
+    if (dragOverIndex === index) return;
+    
+    setDragOverIndex(index);
+  }, [draggedElement, dragOverIndex]);
+  
+  const handleDrop = useCallback((e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedElement === null) return;
+    
+    // Reorder the elements
+    setElements(prevElements => {
+      const newElements = [...prevElements];
+      const [movedElement] = newElements.splice(draggedElement.index, 1);
+      newElements.splice(index, 0, movedElement);
+      return newElements;
+    });
+    
+    setDraggedElement(null);
+    setDragOverIndex(null);
+  }, [draggedElement]);
+  
+  const handleDragEnd = useCallback(() => {
+    setDraggedElement(null);
+    setDragOverIndex(null);
+  }, []);
+  
   // Format text (bold, italic, etc.)
   const formatText = (format: 'bold' | 'italic' | 'underline') => {
     if (!focusedId) return;
@@ -686,11 +721,8 @@ export default function GoogleDocsEditor({
           size="icon"
           className="h-6 w-6 bg-slate-800 hover:bg-slate-700 cursor-move"
           onClick={(e) => e.stopPropagation()}
-          onMouseDown={(e) => {
-            e.stopPropagation();
-            // Store the element being dragged
-            setDraggedElement({id: element.id, index});
-          }}
+          draggable
+          onDragStart={(e) => handleDragStart(e, element.id, index)}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="7" cy="7" r="1" />
