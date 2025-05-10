@@ -29,14 +29,17 @@ function Profile({ params }: ProfileProps) {
   }, [location]);
 
   // Only the current user can access settings
-  if (isSettings && (!user || (params.username && params.username !== user.username))) {
-    toast({
-      title: "Unauthorized",
-      description: "You don't have permission to access these settings.",
-      variant: "destructive",
-    });
-    // Redirect would happen here
-  }
+  useEffect(() => {
+    if (isSettings && (!user || (params.username && params.username !== user?.username))) {
+      toast({
+        title: "Unauthorized",
+        description: "You don't have permission to access these settings.",
+        variant: "destructive",
+      });
+      // Redirect to home page
+      window.location.href = "/";
+    }
+  }, [isSettings, user, params.username, toast]);
 
   return (
     <div className="bg-[#0D0D17] min-h-screen pt-8 pb-16">
@@ -46,16 +49,24 @@ function Profile({ params }: ProfileProps) {
           
           <Tabs defaultValue="profile" value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-8 bg-[#14141E] p-1 border border-white/10 rounded-lg grid grid-cols-2 md:grid-cols-4">
-              <TabsTrigger value="profile" onClick={() => window.location.hash = "profile"}>
+              <TabsTrigger value="profile" onClick={() => {
+                window.history.replaceState(null, '', '#profile');
+              }}>
                 Profile
               </TabsTrigger>
-              <TabsTrigger value="notifications" onClick={() => window.location.hash = "notifications"}>
+              <TabsTrigger value="notifications" onClick={() => {
+                window.history.replaceState(null, '', '#notifications');
+              }}>
                 Notifications
               </TabsTrigger>
-              <TabsTrigger value="subscription" onClick={() => window.location.hash = "subscription"}>
+              <TabsTrigger value="subscription" onClick={() => {
+                window.history.replaceState(null, '', '#subscription');
+              }}>
                 Subscription
               </TabsTrigger>
-              <TabsTrigger value="security" onClick={() => window.location.hash = "security"}>
+              <TabsTrigger value="security" onClick={() => {
+                window.history.replaceState(null, '', '#security');
+              }}>
                 Security
               </TabsTrigger>
             </TabsList>
@@ -103,12 +114,12 @@ function Profile({ params }: ProfileProps) {
                     </div>
                     
                     {user?.membershipTier === "free" ? (
-                      <a 
-                        href="/subscribe" 
+                      <button 
+                        onClick={() => window.location.href = "/subscribe"}
                         className="mt-2 sm:mt-0 px-4 py-2 bg-purple-800 hover:bg-purple-700 text-white rounded-md"
                       >
                         Upgrade
-                      </a>
+                      </button>
                     ) : (
                       <div className="bg-green-900/20 text-green-500 px-3 py-1 rounded text-sm mt-2 sm:mt-0">
                         Active
@@ -141,12 +152,12 @@ function Profile({ params }: ProfileProps) {
                       Get access to full profile customization, ad-free experience, 
                       priority comment placement, and more for just $2 more per month.
                     </p>
-                    <a 
-                      href="/subscribe?tier=pro" 
+                    <button 
+                      onClick={() => window.location.href = "/subscribe?tier=pro"}
                       className="inline-block px-4 py-2 bg-purple-800 hover:bg-purple-700 text-white rounded-md text-sm"
                     >
                       Upgrade to Pro
-                    </a>
+                    </button>
                   </div>
                 )}
               </div>
