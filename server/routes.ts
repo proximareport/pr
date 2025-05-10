@@ -29,6 +29,16 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB
 });
 
+// Extend Request type to include API key data
+declare global {
+  namespace Express {
+    interface Request {
+      apiKeyUserId?: number;
+      apiKeyPermissions?: string[];
+    }
+  }
+}
+
 // Configure session middleware
 // Note: For production, you'd use a more robust session store
 const sessionConfig = {
@@ -194,6 +204,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Server error updating profile" });
     }
   });
+  
+  // API Key Routes
+  app.get("/api/api-keys", requireAuth, async (req, res) => {
+    try {
+      const apiKeys = await storage.getApiKeysByUser(req.session.userId!);
+      // Don't return the actual key values for security
+      const safeKeys = apiKeys.map(key => ({
+        ...key,
+        key: key.key.substring(0, 8) + "..." + key.key.substring(key.key.length - 4)
+      }));
+      res.json(safeKeys);
+    } catch (error) {
+      console.error("Error fetching API keys:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  app.post("/api/api-keys", requireAuth, async (req, res) => {
+    try {
+      const { name, permissions } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ message: "API key name is required" });
+      }
+      
+      const apiKey = await storage.createApiKey(
+        req.session.userId!, 
+        name, 
+        permissions || ["read:articles"]
+      );
+      
+      // Return the full key only once at creation time
+      res.status(201).json(apiKey);
+    } catch (error) {
+      console.error("Error creating API key:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  app.delete("/api/api-keys/:id", requireAuth, async (req, res) => {
+    try {
+      const apiKey = await storage.getApiKey(parseInt(req.params.id));
+      
+      if (!apiKey) {
+        return res.status(404).json({ message: "API key not found" });
+      }
+      
+      if (apiKey.userId !== req.session.userId && !req.session.isAdmin) {
+        return res.status(403).json({ message: "You don't have permission to delete this API key" });
+      }
+      
+      await storage.deleteApiKey(parseInt(req.params.id));
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting API key:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // API Endpoint authentication middleware with API key
+  const apiKeyAuth = async (req: Request, res: Response, next: NextFunction) => {
+    const apiKey = req.headers["x-api-key"] as string;
+    
+    if (!apiKey) {
+      return next(); // Continue to session auth if no API key
+    }
+    
+    try {
+      const storedKey = await storage.getApiKeyByValue(apiKey);
+      
+      if (!storedKey) {
+        return res.status(401).json({ message: "Invalid API key" });
+      }
+      
+      // Update last used timestamp
+      await storage.updateApiKeyLastUsed(storedKey.id);
+      
+      // Attach user ID and permissions to request
+      req.apiKeyUserId = storedKey.userId;
+      req.apiKeyPermissions = storedKey.permissions;
+      
+      return next();
+    } catch (error) {
+      console.error("API key authentication error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  };
   
   // Article Routes
   app.get("/api/articles", async (req, res) => {

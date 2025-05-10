@@ -8,6 +8,7 @@ import {
   emergencyBanners, 
   votes,
   categories,
+  apiKeys,
   type User, 
   type InsertUser, 
   type Article, 
@@ -20,7 +21,9 @@ import {
   type InsertJobListing, 
   type Advertisement, 
   type InsertAdvertisement, 
-  type EmergencyBanner
+  type EmergencyBanner,
+  type ApiKey,
+  type InsertApiKey
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, isNull, desc, sql, or, like, not } from "drizzle-orm";
