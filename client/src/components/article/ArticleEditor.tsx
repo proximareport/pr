@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { formatDistanceToNow } from "date-fns";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -172,6 +173,11 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [autosaveArticle, title]);
+  
+  // Function to format the last saved time
+  const formatLastSavedTime = (date: Date) => {
+    return formatDistanceToNow(date, { addSuffix: true });
+  };
   
   // Tag management functions
   const addTag = () => {
@@ -1401,9 +1407,23 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
         <Card className="bg-[#14141E] border-white/10">
           <CardContent className="p-4">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="font-space font-bold text-xl text-white">
-                {initialArticle?.id ? "Edit Article" : "New Article"}
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="font-space font-bold text-xl text-white">
+                  {initialArticle?.id ? "Edit Article" : "New Article"}
+                </h2>
+                {isAutosaving && (
+                  <span className="text-xs text-yellow-400 animate-pulse flex items-center">
+                    <span className="inline-block h-2 w-2 bg-yellow-400 rounded-full mr-1"></span>
+                    Saving...
+                  </span>
+                )}
+                {lastSaved && !isAutosaving && (
+                  <span className="text-xs text-green-400 flex items-center">
+                    <span className="inline-block h-2 w-2 bg-green-400 rounded-full mr-1"></span>
+                    Last saved {formatLastSavedTime(lastSaved)}
+                  </span>
+                )}
+              </div>
               <div className="flex items-center space-x-2">
                 <Button variant="outline" onClick={() => setPreviewMode(!previewMode)}>
                   {previewMode ? (
