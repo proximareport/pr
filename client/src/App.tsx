@@ -13,6 +13,7 @@ import Profile from "@/pages/Profile";
 import Launches from "@/pages/Launches";
 import Astronomy from "@/pages/Astronomy";
 import Subscribe from "@/pages/Subscribe";
+import TagView from "@/pages/TagView";
 import AdminDashboard from "@/pages/Admin/Dashboard";
 import AdminArticleEditor from "@/pages/Admin/ArticleEditor";
 import AdminUserManagement from "@/pages/Admin/UserManagement";
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/launches" component={Launches} />
       <Route path="/astronomy" component={Astronomy} />
       <Route path="/subscribe" component={Subscribe} />
+      <Route path="/tag/:tagName" component={TagView} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/articles/new" component={AdminArticleEditor} />
       <Route path="/admin/articles/edit/:id" component={AdminArticleEditor} />

@@ -227,6 +227,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.get("/api/articles/tag/:tag", async (req, res) => {
+    try {
+      const { tag } = req.params;
+      const allArticles = await storage.getArticles(100); // Get a reasonably large set
+      
+      // Filter articles that have the specified tag
+      const filteredArticles = allArticles.filter(article => 
+        article.tags && Array.isArray(article.tags) && article.tags.includes(tag)
+      );
+      
+      res.json(filteredArticles);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching articles by tag" });
+    }
+  });
+  
   app.get("/api/articles/search", async (req, res) => {
     try {
       const query = req.query.q as string;

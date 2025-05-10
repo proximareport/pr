@@ -4,6 +4,7 @@ import ArticleCard from "@/components/article/ArticleCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tag } from "lucide-react";
+import { Link } from "wouter";
 
 interface TagViewProps {
   params: {
@@ -15,7 +16,7 @@ function TagView({ params }: TagViewProps) {
   const { tagName } = params;
   const decodedTagName = decodeURIComponent(tagName);
 
-  const { data: articles, isLoading } = useQuery({
+  const { data: articles = [], isLoading } = useQuery({
     queryKey: ["/api/articles/tag", decodedTagName],
     enabled: !!decodedTagName,
   });
@@ -58,9 +59,11 @@ function TagView({ params }: TagViewProps) {
               <p className="text-white/70 mb-8">
                 We couldn't find any articles with the tag "{decodedTagName}".
               </p>
-              <Button href="/" variant="default" className="bg-purple-700 hover:bg-purple-600">
-                Back to Home
-              </Button>
+              <Link href="/">
+                <Button variant="default" className="bg-purple-700 hover:bg-purple-600">
+                  Back to Home
+                </Button>
+              </Link>
             </div>
           )}
         </>
