@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { SaveIcon, UploadIcon, PlusIcon, XIcon } from 'lucide-react';
-import ArticleEditor from '@/components/article/GoogleDocsEditor';
+import ArticleEditor from '@/components/article/ArticleEditorSimple';
 import { EditorLayout, EditorMainCard, EditorSideCard } from '@/components/admin/EditorLayout';
 import { 
   TextFormField, 

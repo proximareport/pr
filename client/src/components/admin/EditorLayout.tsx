@@ -4,39 +4,50 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft as ArrowLeftIcon } from 'lucide-react';
 import { useLocation } from 'wouter';
 
-interface EditorLayoutProps {
+export interface EditorLayoutProps {
   title: string;
+  subtitle?: string;
   mainContent: React.ReactNode;
   sidebarContent: React.ReactNode;
+  isLoading?: boolean;
 }
 
-export function EditorLayout({ title, mainContent, sidebarContent }: EditorLayoutProps) {
+export function EditorLayout({ title, subtitle, mainContent, sidebarContent, isLoading = false }: EditorLayoutProps) {
   const [, navigate] = useLocation();
 
   return (
     <div className="container max-w-7xl mx-auto py-10">
-      <div className="flex items-center mb-8 border-b border-white/10 pb-4">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="mr-4 hover:bg-white/10"
-          onClick={() => navigate('/admin')}
-        >
-          <ArrowLeftIcon className="h-5 w-5 mr-2" />
-          Back
-        </Button>
-        <h1 className="text-4xl font-bold tracking-tight">{title}</h1>
+      <div className="flex flex-col mb-8 border-b border-white/10 pb-4">
+        <div className="flex items-center mb-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="mr-4 hover:bg-white/10"
+            onClick={() => navigate('/admin')}
+          >
+            <ArrowLeftIcon className="h-5 w-5 mr-2" />
+            Back
+          </Button>
+          <h1 className="text-4xl font-bold tracking-tight">{title}</h1>
+        </div>
+        {subtitle && <p className="text-white/60 pl-12">{subtitle}</p>}
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-8">
-          {mainContent}
+      {isLoading ? (
+        <div className="flex items-center justify-center h-60">
+          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
         </div>
-        
-        <div className="lg:col-span-4">
-          {sidebarContent}
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-8">
+            {mainContent}
+          </div>
+          
+          <div className="lg:col-span-4">
+            {sidebarContent}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
