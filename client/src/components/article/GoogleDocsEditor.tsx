@@ -734,14 +734,16 @@ export default function GoogleDocsEditor({
         <Button 
           variant="ghost" 
           size="icon"
-          className="h-6 w-6 bg-red-900 hover:bg-red-800"
+          className="h-6 w-6 bg-red-800 hover:bg-red-700 text-white"
           onClick={(e) => {
             e.stopPropagation();
             deleteElement(element.id);
           }}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+            <path d="M3 6h18" />
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
           </svg>
         </Button>
       </div>
@@ -802,12 +804,16 @@ export default function GoogleDocsEditor({
         return (
           <div 
             key={element.id} 
-            className={`${classList} ${positionClass} mb-6`}
+            className={`${classList} ${positionClass} mb-6 ${dragOverIndex === index ? 'border-t-2 border-blue-500' : ''}`}
             onClick={() => handleFocus(element.id)}
             tabIndex={0}
             ref={el => { elementRefs.current[element.id] = el; }}
             onKeyDown={e => handleKeyDown(e, element.id)}
+            onDragOver={(e) => handleDragOver(e, index)}
+            onDrop={(e) => handleDrop(e, index)}
+            onDragEnd={handleDragEnd}
           >
+            {elementControls}
             <div className="max-w-3xl mx-auto">
               <img 
                 src={imageElement.src} 
@@ -827,12 +833,16 @@ export default function GoogleDocsEditor({
         return (
           <div 
             key={element.id} 
-            className={`${classList} ${positionClass} mb-6`}
+            className={`${classList} ${positionClass} mb-6 ${dragOverIndex === index ? 'border-t-2 border-blue-500' : ''}`}
             onClick={() => handleFocus(element.id)}
             tabIndex={0}
             ref={el => { elementRefs.current[element.id] = el; }}
             onKeyDown={e => handleKeyDown(e, element.id)}
+            onDragOver={(e) => handleDragOver(e, index)}
+            onDrop={(e) => handleDrop(e, index)}
+            onDragEnd={handleDragEnd}
           >
+            {elementControls}
             <div className="max-w-3xl mx-auto">
               <div className="aspect-w-16 aspect-h-9">
                 <iframe

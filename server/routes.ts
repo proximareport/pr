@@ -415,11 +415,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Article not found" });
       }
       
+      // Custom validator for content that accepts both array and object formats
+      const contentValidator = z.union([
+        z.array(z.any()),  // For Google Docs-style editor
+        z.record(z.any()), // For legacy editors
+      ]).optional();
+      
       const updateSchema = z.object({
         title: z.string().optional(),
         slug: z.string().optional(),
         summary: z.string().optional(),
-        content: z.record(z.any()).optional(),
+        content: contentValidator,
         featuredImage: z.string().optional(),
         isBreaking: z.boolean().optional(),
         readTime: z.number().optional(),
