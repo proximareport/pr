@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { LockIcon, Share2Icon, BookmarkIcon, EyeIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { formatDistance } from "date-fns";
 import {
   Tooltip,
@@ -236,6 +237,21 @@ function ArticleContent({ article }: ArticleContentProps) {
             </p>
           </div>
         </div>
+
+        {/* Article tags */}
+        {article.tags && article.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-6 mt-4">
+            {article.tags.map((tag) => (
+              <Link key={tag} href={`/tag/${tag}`}>
+                <Badge 
+                  className="bg-purple-800 hover:bg-purple-700 px-3 py-1 cursor-pointer"
+                >
+                  {tag}
+                </Badge>
+              </Link>
+            ))}
+          </div>
+        )}
 
         {/* Article sharing tools */}
         <div className="flex space-x-2 mb-8">

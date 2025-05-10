@@ -125,7 +125,7 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
   const [manualToc, setManualToc] = useState<{title: string, anchor: string}[]>(initialArticle?.manualToc || []);
   const [tocTitle, setTocTitle] = useState(initialArticle?.tocTitle || "Table of Contents");
   const [imageUploadDialogOpen, setImageUploadDialogOpen] = useState(false);
-  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  // availableTags already declared above
   const [pollDialogOpen, setPollDialogOpen] = useState(false);
   const [currentPollOptions, setCurrentPollOptions] = useState<string[]>([""]);
   const [currentPollQuestion, setCurrentPollQuestion] = useState("");
