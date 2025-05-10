@@ -65,7 +65,7 @@ import { Badge } from "@/components/ui/badge";
 
 interface ArticleEditorProps {
   initialArticle?: any;
-  onSave: (article: any) => void;
+  onSave: (article: any, isDraft?: boolean) => Promise<void>;
 }
 
 // Ensure all content blocks have unique IDs
@@ -135,6 +135,43 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
         setIsAutosaving(false);
       });
   }, [title, slug, summary, content, category, featuredImage, isBreaking, readTime, tags, onSave]);
+  
+  // Schedule autosave when content changes
+  useEffect(() => {
+    // Clear any existing timeout
+    if (autosaveTimeoutRef.current) {
+      window.clearTimeout(autosaveTimeoutRef.current);
+    }
+    
+    // Set a new timeout for autosave (3 seconds after last change)
+    autosaveTimeoutRef.current = window.setTimeout(() => {
+      if (title) {
+        autosaveArticle();
+      }
+    }, 3000);
+    
+    // Cleanup function
+    return () => {
+      if (autosaveTimeoutRef.current) {
+        window.clearTimeout(autosaveTimeoutRef.current);
+      }
+    };
+  }, [title, slug, summary, content, category, featuredImage, isBreaking, readTime, tags, autosaveArticle]);
+  
+  // Autosave when user leaves the page
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (title) {
+        autosaveArticle();
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [autosaveArticle, title]);
   
   // Tag management functions
   const addTag = () => {
@@ -474,42 +511,51 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
   };
   
   // Save the article
-  const saveArticle = async (publish: boolean = false) => {
-    // Basic validation
-    if (!title.trim()) {
-      toast({
-        title: "Missing Title",
-        description: "Please provide a title for your article.",
-        variant: "destructive",
-      });
-      return;
+  const saveArticle = async (publish: boolean = false): Promise<void> => {
+    // For autosave, don't perform validation checks and allow partial data
+    if (!publish && title.trim() === '') {
+      // Don't save without at least a title
+      return Promise.reject(new Error('Title is required'));
     }
+    
+    // For manual saves and publishing, perform full validation
+    if (publish) {
+      // Basic validation
+      if (!title.trim()) {
+        toast({
+          title: "Missing Title",
+          description: "Please provide a title for your article.",
+          variant: "destructive",
+        });
+        return Promise.reject(new Error('Title is required'));
+      }
 
-    if (!summary.trim()) {
-      toast({
-        title: "Missing Summary",
-        description: "Please provide a summary for your article.",
-        variant: "destructive",
-      });
-      return;
-    }
+      if (!summary.trim()) {
+        toast({
+          title: "Missing Summary",
+          description: "Please provide a summary for your article.",
+          variant: "destructive",
+        });
+        return Promise.reject(new Error('Summary is required'));
+      }
 
-    if (content.length === 0) {
-      toast({
-        title: "No Content",
-        description: "Please add some content to your article.",
-        variant: "destructive",
-      });
-      return;
-    }
+      if (content.length === 0) {
+        toast({
+          title: "No Content",
+          description: "Please add some content to your article.",
+          variant: "destructive",
+        });
+        return Promise.reject(new Error('Content is required'));
+      }
 
-    if (!featuredImage) {
-      toast({
-        title: "Missing Featured Image",
-        description: "Please upload a featured image for your article.",
-        variant: "destructive",
-      });
-      return;
+      if (!featuredImage) {
+        toast({
+          title: "Missing Featured Image",
+          description: "Please upload a featured image for your article.",
+          variant: "destructive",
+        });
+        return Promise.reject(new Error('Featured image is required'));
+      }
     }
 
     // Prepare data
@@ -536,26 +582,35 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
     try {
       if (initialArticle?.id) {
         // Update existing article
-        const response = await apiRequest("PUT", `/api/articles/${initialArticle.id}`, articleData);
-        toast({
-          title: publish ? "Article Published" : "Draft Saved",
-          description: publish 
-            ? "Your article has been published successfully."
-            : "Your draft has been saved successfully.",
-        });
+        await apiRequest("PUT", `/api/articles/${initialArticle.id}`, articleData);
+        
+        // Skip toast notifications for autosave
+        if (!isAutosaving) {
+          toast({
+            title: publish ? "Article Published" : "Draft Saved",
+            description: publish 
+              ? "Your article has been published successfully."
+              : "Your draft has been saved successfully.",
+          });
+        }
       } else {
         // Create new article
         const response = await apiRequest("POST", "/api/articles", articleData);
-        toast({
-          title: publish ? "Article Published" : "Draft Saved",
-          description: publish 
-            ? "Your article has been published successfully."
-            : "Your draft has been saved successfully.",
-        });
+        
+        // Skip toast notifications for autosave
+        if (!isAutosaving) {
+          toast({
+            title: publish ? "Article Published" : "Draft Saved",
+            description: publish 
+              ? "Your article has been published successfully."
+              : "Your draft has been saved successfully.",
+          });
+        }
       }
       
       // Call the onSave callback
-      onSave(articleData);
+      await onSave(articleData, !publish);
+      return Promise.resolve();
     } catch (error: any) {
       console.error("Article save error:", error);
       
@@ -565,18 +620,22 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
         const timestamp = Date.now().toString().slice(-6);
         setSlug(`${slug}-${timestamp}`);
         
-        toast({
-          title: "Duplicate Slug",
-          description: "An article with this slug already exists. We've updated your slug to make it unique. Please try saving again.",
-          variant: "destructive",
-        });
-      } else {
+        if (!isAutosaving) {
+          toast({
+            title: "Duplicate Slug",
+            description: "An article with this slug already exists. We've updated your slug to make it unique. Please try saving again.",
+            variant: "destructive",
+          });
+        }
+      } else if (!isAutosaving) {
         toast({
           title: "Error",
           description: error.message || "Failed to save article. Please try again.",
           variant: "destructive",
         });
       }
+      
+      return Promise.reject(error);
     }
   };
 
