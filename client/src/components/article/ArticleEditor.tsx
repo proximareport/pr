@@ -172,13 +172,18 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
     maxFiles: 1
   });
 
-  // Auto-generate slug from title
+  // Auto-generate slug from title with unique timestamp
   const generateSlug = () => {
-    const slugified = title
+    const baseSlug = title
       .toLowerCase()
       .replace(/[^\w\s]/gi, "")
       .replace(/\s+/g, "-");
-    setSlug(slugified);
+    
+    // Add a unique suffix (last 4 digits of timestamp) to prevent duplicates
+    const uniqueSuffix = Date.now().toString().slice(-4);
+    const uniqueSlug = `${baseSlug}-${uniqueSuffix}`;
+    
+    setSlug(uniqueSlug);
   };
 
   // Using the addTag and removeTag functions from above
@@ -517,12 +522,27 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
       
       // Call the onSave callback
       onSave(articleData);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save article. Please try again.",
-        variant: "destructive",
-      });
+    } catch (error: any) {
+      console.error("Article save error:", error);
+      
+      // Check if this is a slug uniqueness error
+      if (error.message?.includes("slug already exists")) {
+        // Generate a unique slug by adding a timestamp
+        const timestamp = Date.now().toString().slice(-6);
+        setSlug(`${slug}-${timestamp}`);
+        
+        toast({
+          title: "Duplicate Slug",
+          description: "An article with this slug already exists. We've updated your slug to make it unique. Please try saving again.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to save article. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 

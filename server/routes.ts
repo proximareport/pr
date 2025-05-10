@@ -407,7 +407,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       res.status(201).json(newArticle);
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof ZodError) {
         console.error("Validation error:", error.issues);
         console.error("Full request body:", req.body);
@@ -419,6 +419,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       console.error("Server error:", error);
+      
+      // Check for database errors
+      if (error.code === '23505' && error.constraint === 'articles_slug_unique') {
+        return res.status(400).json({ 
+          message: "An article with this slug already exists. Please choose a different slug.",
+          detail: error.detail
+        });
+      }
+      
       res.status(500).json({ message: "Error creating article" });
     }
   });
