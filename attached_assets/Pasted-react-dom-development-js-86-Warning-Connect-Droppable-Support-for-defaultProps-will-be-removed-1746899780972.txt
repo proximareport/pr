@@ -1,0 +1,53 @@
+react-dom.development.js:86 
+ Warning: Connect(Droppable): Support for defaultProps will be removed from memo components in a future major release. Use JavaScript default parameters instead.
+    at Provider (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.repli…workspace/node_modules/.vite/deps/react-beautiful-dnd.js?v=c9d18c04:964:20)
+    at App (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.repli…orkspace/node_modules/.vite/deps/react-beautiful-dnd.js?v=c9d18c04:7507:25)
+    at ErrorBoundary2 (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.repli…orkspace/node_modules/.vite/deps/react-beautiful-dnd.js?v=c9d18c04:2004:35)
+    at DragDropContext (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.repli…orkspace/node_modules/.vite/deps/react-beautiful-dnd.js?v=c9d18c04:7627:19)
+    at div
+    at div
+    at ArticleEditorSimple (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/components/article/ArticleEditorSimple.tsx?t=1746899291066:38:32)
+    at div
+    at div
+    at div
+    at div
+    at _c9 (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/components/ui/card.tsx:114:12)
+    at div
+    at _c (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/components/ui/card.tsx:20:11)
+    at EditorMainCard (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/components/admin/EditorLayout.tsx:91:3)
+    at form
+    at div
+    at div
+    at div
+    at AdminArticleEditor (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/pages/Admin/ArticleEditor.tsx?t=1746899324411:38:29)
+    at Route (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.repli…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=c9d18c04:323:16)
+    at Switch (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.repli…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=c9d18c04:379:17)
+    at Router
+    at main
+    at div
+    at Provider (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.repli…unner/workspace/node_modules/.vite/deps/chunk-5AJU3CG7.js?v=c9d18c04:38:15)
+    at TooltipProvider (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.repli…rkspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=c9d18c04:61:5)
+    at AuthProvider (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/lib/AuthContext.tsx:23:32)
+    at QueryClientProvider (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.repli…rkspace/node_modules/.vite/deps/@tanstack_react-query.js?v=c9d18c04:2805:3)
+    at App
+    at V (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.repli…e/runner/workspace/node_modules/.vite/deps/next-themes.js?v=c9d18c04:44:25)
+    at J (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.repli…e/runner/workspace/node_modules/.vite/deps/next-themes.js?v=c9d18c04:42:18)
+    at ThemeProvider (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/components/ThemeProvider.tsx:19:33)
+Grammarly.js:2 
+ grm ERROR [iterable] ░░ Not supported: in app messages from Iterable
+dialog.tsx:542 
+ Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+2
+Grammarly.js:2 
+ grm ERROR [iterable] ░░ Not supported: in app messages from Iterable
+dialog.tsx:542 
+ Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+Grammarly.js:2 
+ grm ERROR [iterable] ░░ Not supported: in app messages from Iterable
+api/articles:1 
+ 
+ Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+
+ Microsoft Edge is moving towards a new experience that allows users to choose to browse without third-party cookies.
+﻿
+
