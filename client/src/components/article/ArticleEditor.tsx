@@ -88,6 +88,12 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
   const [previewMode, setPreviewMode] = useState(false);
   const [activeBlockIndex, setActiveBlockIndex] = useState<number | null>(null);
   
+  // Poll state variables
+  const [pollDialogOpen, setPollDialogOpen] = useState(false);
+  const [currentPollQuestion, setCurrentPollQuestion] = useState("");
+  const [currentPollOptions, setCurrentPollOptions] = useState<string[]>(["", ""]);
+  const [currentPollMultipleChoice, setCurrentPollMultipleChoice] = useState(false);
+  
   // Tag management functions
   const addTag = () => {
     if (!tagInput.trim()) return;

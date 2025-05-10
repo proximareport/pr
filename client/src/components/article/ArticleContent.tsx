@@ -261,6 +261,10 @@ function ArticleContent({ article }: ArticleContentProps) {
       case "poll":
         // Get current votes for this poll
         const currentVotes = pollVotes[index] || [];
+        const results = pollResults[index] || [];
+        
+        // Calculate total votes for percentage
+        const totalVotes = results.reduce((sum, count) => sum + count, 0);
         
         return (
           <div key={index} className="mb-8 rounded-lg overflow-hidden">
@@ -275,19 +279,42 @@ function ArticleContent({ article }: ArticleContentProps) {
               <div className="space-y-3">
                 {block.options.map((option: string, optIndex: number) => {
                   const isSelected = currentVotes.includes(optIndex);
+                  const voteCount = results[optIndex] || 0;
+                  const percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
                   
                   return (
-                    <div 
-                      key={optIndex}
-                      className={`flex items-center gap-3 p-3 rounded-md hover:bg-black/20 cursor-pointer transition-colors ${isSelected ? 'bg-black/20' : ''}`}
-                      onClick={() => handlePollVote(index, optIndex, block.allowMultiple)}
-                    >
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-blue-500' : 'border-white/40'}`}>
-                        {isSelected && (
-                          <div className="w-3 h-3 rounded-full bg-blue-500" />
+                    <div key={optIndex} className="space-y-1">
+                      <div 
+                        className={`flex items-center gap-3 p-3 rounded-md hover:bg-black/20 cursor-pointer transition-colors ${isSelected ? 'bg-black/20' : ''}`}
+                        onClick={() => handlePollVote(index, optIndex, block.allowMultiple)}
+                      >
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-blue-500' : 'border-white/40'}`}>
+                          {isSelected && (
+                            <div className="w-3 h-3 rounded-full bg-blue-500" />
+                          )}
+                        </div>
+                        <span className="flex-grow">{option}</span>
+                        {totalVotes > 0 && (
+                          <span className="text-sm opacity-70">{voteCount} votes</span>
                         )}
                       </div>
-                      <span>{option}</span>
+                      
+                      {/* Progress bar for results */}
+                      {totalVotes > 0 && (
+                        <div className="h-1.5 w-full bg-black/20 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-blue-500 rounded-full"
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                      )}
+                      
+                      {/* Percentage display */}
+                      {totalVotes > 0 && (
+                        <div className="text-xs text-right opacity-70">
+                          {percentage}%
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -300,10 +327,13 @@ function ArticleContent({ article }: ArticleContentProps) {
               )}
               
               {user && (
-                <div className="mt-4 text-sm opacity-70">
-                  {block.allowMultiple 
-                    ? "You can select multiple options" 
-                    : "Select one option"}
+                <div className="mt-4 text-sm opacity-70 flex justify-between items-center">
+                  <span>
+                    {block.allowMultiple 
+                      ? "You can select multiple options" 
+                      : "Select one option"}
+                  </span>
+                  <span>{totalVotes} total votes</span>
                 </div>
               )}
             </div>
