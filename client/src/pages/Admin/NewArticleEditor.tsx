@@ -459,7 +459,10 @@ function AdminArticleEditor() {
           id="summary"
           label="Summary"
           value={summary}
-          onChange={(e) => setSummary(e.target.value)}
+          onChange={(e) => {
+            setSummary(e.target.value);
+            scheduleAutosave();
+          }}
           placeholder="Write a brief summary of the article content"
           hint="Will appear in article previews and social media shares"
           required
@@ -534,7 +537,10 @@ function AdminArticleEditor() {
             </div>
             <Switch 
               checked={isDraft} 
-              onCheckedChange={setIsDraft}
+              onCheckedChange={(value) => {
+                setIsDraft(value);
+                scheduleAutosave();
+              }}
             />
           </div>
           
@@ -542,7 +548,10 @@ function AdminArticleEditor() {
             id="isBreaking"
             label="Breaking News"
             checked={isBreaking}
-            onChange={setIsBreaking}
+            onChange={(value) => {
+              setIsBreaking(value);
+              scheduleAutosave();
+            }}
             description="Mark this article as breaking news"
             highlightBox
           />
@@ -551,7 +560,10 @@ function AdminArticleEditor() {
             id="isFeatured"
             label="Featured Article"
             checked={isFeatured}
-            onChange={setIsFeatured}
+            onChange={(value) => {
+              setIsFeatured(value);
+              scheduleAutosave();
+            }}
             description="Show on homepage hero section"
           />
           
@@ -559,7 +571,10 @@ function AdminArticleEditor() {
             id="category"
             label="Category"
             value={category}
-            onChange={setCategory}
+            onChange={(value) => {
+              setCategory(value);
+              scheduleAutosave();
+            }}
             options={[
               { label: 'Space Exploration', value: 'space-exploration' },
               { label: 'Astronomy', value: 'astronomy' },
@@ -574,7 +589,10 @@ function AdminArticleEditor() {
             id="readTime"
             label="Read Time (minutes)"
             value={readTime.toString()}
-            onChange={(e) => setReadTime(parseInt(e.target.value) || 1)}
+            onChange={(e) => {
+              setReadTime(parseInt(e.target.value) || 1);
+              scheduleAutosave();
+            }}
             placeholder="5"
             hint="Estimated time to read the article"
           />
@@ -598,7 +616,10 @@ function AdminArticleEditor() {
             </div>
             <Switch 
               checked={isCollaborative} 
-              onCheckedChange={setIsCollaborative}
+              onCheckedChange={(value) => {
+                setIsCollaborative(value);
+                scheduleAutosave();
+              }}
             />
           </div>
           
