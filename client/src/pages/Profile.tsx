@@ -3,6 +3,8 @@ import { useLocation, Link } from "wouter";
 import { useAuth } from "@/lib/AuthContext";
 import UserProfile from "@/components/profile/UserProfile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
 interface ProfileProps {
@@ -23,12 +25,12 @@ function Profile({ params }: ProfileProps) {
   useEffect(() => {
     // Set active tab based on URL hash
     const hash = window.location.hash.replace("#", "");
-    if (hash && ["profile", "notifications", "subscription", "security"].includes(hash)) {
+    if (hash && ["privacy", "comments", "notifications", "subscription", "security", "data"].includes(hash)) {
       setActiveTab(hash);
     } else if (isSettings && !window.location.hash) {
       // Set default hash if on settings page without hash
-      window.history.replaceState(null, '', '#profile');
-      setActiveTab("profile");
+      window.history.replaceState(null, '', '#privacy');
+      setActiveTab("privacy");
     }
   }, [location, isSettings]);
 
@@ -54,17 +56,22 @@ function Profile({ params }: ProfileProps) {
         <div className="container mx-auto px-4">
           <h1 className="text-2xl font-space font-bold mb-6">Account Settings</h1>
           
-          <Tabs defaultValue="profile" value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-8 bg-[#14141E] p-1 border border-white/10 rounded-lg grid grid-cols-2 md:grid-cols-4">
-              <TabsTrigger value="profile" onClick={() => {
-                window.history.replaceState(null, '', '#profile');
+          <Tabs defaultValue="privacy" value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="mb-8 bg-[#14141E] p-1 border border-white/10 rounded-lg grid grid-cols-3 md:grid-cols-6">
+              <TabsTrigger value="privacy" onClick={() => {
+                window.history.replaceState(null, '', '#privacy');
               }}>
-                Profile
+                Privacy
               </TabsTrigger>
               <TabsTrigger value="notifications" onClick={() => {
                 window.history.replaceState(null, '', '#notifications');
               }}>
                 Notifications
+              </TabsTrigger>
+              <TabsTrigger value="comments" onClick={() => {
+                window.history.replaceState(null, '', '#comments');
+              }}>
+                Comments
               </TabsTrigger>
               <TabsTrigger value="subscription" onClick={() => {
                 window.history.replaceState(null, '', '#subscription');
@@ -76,10 +83,152 @@ function Profile({ params }: ProfileProps) {
               }}>
                 Security
               </TabsTrigger>
+              <TabsTrigger value="data" onClick={() => {
+                window.history.replaceState(null, '', '#data');
+              }}>
+                Data
+              </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="profile">
-              <UserProfile isEditable={true} />
+            <TabsContent value="privacy">
+              <div className="bg-[#14141E] border border-white/10 rounded-lg p-6">
+                <h2 className="text-xl font-space font-bold mb-4">Privacy Settings</h2>
+                <p className="text-white/70 mb-6">
+                  Control how your information is used and who can see your activity
+                </p>
+                
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between py-3 border-b border-white/10">
+                    <div>
+                      <h3 className="font-medium">Profile Visibility</h3>
+                      <p className="text-sm text-white/60">Control who can see your profile information</p>
+                    </div>
+                    <select className="bg-[#1E1E2D] rounded border border-white/10 px-3 py-2">
+                      <option value="public">Public</option>
+                      <option value="members">Registered Members Only</option>
+                      <option value="private">Private</option>
+                    </select>
+                  </div>
+                  
+                  <div className="flex items-center justify-between py-3 border-b border-white/10">
+                    <div>
+                      <h3 className="font-medium">Activity Tracking</h3>
+                      <p className="text-sm text-white/60">Allow us to track your activity for better recommendations</p>
+                    </div>
+                    <Switch defaultChecked={true} />
+                  </div>
+                  
+                  <div className="flex items-center justify-between py-3 border-b border-white/10">
+                    <div>
+                      <h3 className="font-medium">Personalized Ads</h3>
+                      <p className="text-sm text-white/60">Show ads based on your interests and activity</p>
+                    </div>
+                    <Switch defaultChecked={true} />
+                  </div>
+                  
+                  <div className="flex items-center justify-between py-3">
+                    <div>
+                      <h3 className="font-medium">Email Sharing</h3>
+                      <p className="text-sm text-white/60">Allow partners to contact you with offers</p>
+                    </div>
+                    <Switch defaultChecked={false} />
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="comments">
+              <div className="bg-[#14141E] border border-white/10 rounded-lg p-6">
+                <h2 className="text-xl font-space font-bold mb-4">Comment Settings</h2>
+                <p className="text-white/70 mb-6">
+                  Manage how you interact with comments and discussions
+                </p>
+                
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between py-3 border-b border-white/10">
+                    <div>
+                      <h3 className="font-medium">Comment Notifications</h3>
+                      <p className="text-sm text-white/60">Get notified when someone replies to your comments</p>
+                    </div>
+                    <Switch defaultChecked={true} />
+                  </div>
+                  
+                  <div className="flex items-center justify-between py-3 border-b border-white/10">
+                    <div>
+                      <h3 className="font-medium">Default Comment Sorting</h3>
+                      <p className="text-sm text-white/60">How comments should be displayed by default</p>
+                    </div>
+                    <select className="bg-[#1E1E2D] rounded border border-white/10 px-3 py-2">
+                      <option value="newest">Newest First</option>
+                      <option value="oldest">Oldest First</option>
+                      <option value="popular">Most Popular</option>
+                    </select>
+                  </div>
+                  
+                  <div className="flex items-center justify-between py-3">
+                    <div>
+                      <h3 className="font-medium">Show Avatar in Comments</h3>
+                      <p className="text-sm text-white/60">Display your profile picture next to your comments</p>
+                    </div>
+                    <Switch defaultChecked={true} />
+                  </div>
+                  
+                  <Button className="mt-4 bg-purple-800 hover:bg-purple-700">
+                    Save Preferences
+                  </Button>
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="data">
+              <div className="bg-[#14141E] border border-white/10 rounded-lg p-6">
+                <h2 className="text-xl font-space font-bold mb-4">Data Management</h2>
+                <p className="text-white/70 mb-6">
+                  Control your personal data and account settings
+                </p>
+                
+                <div className="space-y-8">
+                  <div className="border border-white/10 rounded-lg p-5 bg-[#1A1A27]">
+                    <h3 className="text-lg font-medium mb-3">Export Your Data</h3>
+                    <p className="mb-4 text-sm text-white/70">
+                      Download a copy of all your data including profile information, comments, and activity history.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Button variant="outline">Export Profile Data</Button>
+                      <Button variant="outline">Export Activity History</Button>
+                    </div>
+                  </div>
+                  
+                  <div className="border border-white/10 rounded-lg p-5 bg-[#1A1A27]">
+                    <h3 className="text-lg font-medium mb-1 text-red-500">Danger Zone</h3>
+                    <p className="mb-4 text-sm text-white/70">
+                      These actions are permanent and cannot be undone.
+                    </p>
+                    
+                    <div className="space-y-4">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 border border-red-900/30 rounded-md bg-red-950/20">
+                        <div>
+                          <h4 className="font-medium">Delete All Comments</h4>
+                          <p className="text-xs text-white/60">Remove all your comments from articles and discussions</p>
+                        </div>
+                        <Button variant="destructive" className="mt-2 sm:mt-0">
+                          Delete Comments
+                        </Button>
+                      </div>
+                      
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 border border-red-900/30 rounded-md bg-red-950/20">
+                        <div>
+                          <h4 className="font-medium">Delete Account</h4>
+                          <p className="text-xs text-white/60">Permanently delete your account and all associated data</p>
+                        </div>
+                        <Button variant="destructive" className="mt-2 sm:mt-0">
+                          Delete Account
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </TabsContent>
             
             <TabsContent value="notifications">
