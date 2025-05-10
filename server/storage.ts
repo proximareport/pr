@@ -120,8 +120,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
+    // First try exact match
     const [user] = await db.select().from(users).where(eq(users.email, email));
-    return user;
+    
+    if (user) return user;
+    
+    // If no exact match, try case insensitive match
+    const results = await db.select()
+      .from(users)
+      .where(sql`LOWER(${users.email}) = LOWER(${email})`);
+    
+    return results[0];
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
