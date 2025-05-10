@@ -410,10 +410,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       if (error instanceof ZodError) {
         console.error("Validation error:", error.issues);
+        console.error("Full request body:", req.body);
         return res.status(400).json({ 
           message: "Invalid input", 
           errors: error.format(),
-          issues: error.issues 
+          issues: error.issues,
+          fields: Object.keys(req.body),
         });
       }
       console.error("Server error:", error);
@@ -447,16 +449,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         summary: z.string().optional(),
         content: contentValidator,
         featuredImage: z.string().optional(),
-        publishedAt: z.string().transform(str => str ? new Date(str) : null).optional(),
         isBreaking: z.boolean().optional(),
         readTime: z.number().optional(),
         tags: z.array(z.string()).optional(),
         category: z.string().optional(),
         status: z.string().optional(),
-        publishedAt: z.date().optional().nullable(),
       });
       
       const updateData = updateSchema.parse(req.body);
+      
+      // Handle publishedAt separately - convert from ISO string to Date
+      if (req.body.publishedAt) {
+        try {
+          // Use a type assertion to handle the extended property
+          (updateData as any).publishedAt = new Date(req.body.publishedAt);
+        } catch (e) {
+          console.error("Invalid publishedAt date:", e);
+        }
+      }
+      
       const updatedArticle = await storage.updateArticle(articleId, updateData);
       
       if (!updatedArticle) {
@@ -466,8 +477,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updatedArticle);
     } catch (error) {
       if (error instanceof ZodError) {
-        return res.status(400).json({ message: "Invalid input", errors: error.format() });
+        console.error("Validation error:", error.issues);
+        console.error("Full request body:", req.body);
+        return res.status(400).json({ 
+          message: "Invalid input", 
+          errors: error.format(),
+          issues: error.issues,
+          fields: Object.keys(req.body), 
+        });
       }
+      console.error("Server error:", error);
       res.status(500).json({ message: "Error updating article" });
     }
   });
