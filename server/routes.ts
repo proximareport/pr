@@ -422,7 +422,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newArticle = await storage.createArticle({
         ...articleData,
         publishedAt,
-        authorId: req.session.userId!,
+        primaryAuthorId: req.session.userId!,
       });
       
       res.status(201).json(newArticle);
