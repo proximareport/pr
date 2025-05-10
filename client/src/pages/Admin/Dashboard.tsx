@@ -12,7 +12,8 @@ import {
   BriefcaseIcon,
   PlusIcon,
   BarChart3Icon,
-  TagIcon
+  TagIcon,
+  KeyIcon
 } from 'lucide-react';
 
 function AdminDashboard() {
@@ -195,6 +196,14 @@ function AdminDashboard() {
                   >
                     <BriefcaseIcon className="h-5 w-5 mb-2" />
                     <span>Job Listings</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-auto py-4 flex flex-col items-center justify-center"
+                    onClick={() => navigate('/admin/api-keys')}
+                  >
+                    <KeyIcon className="h-5 w-5 mb-2" />
+                    <span>API Keys</span>
                   </Button>
                 </div>
               </CardContent>
