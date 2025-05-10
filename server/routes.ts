@@ -570,11 +570,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.session.userId!;
       const user = await storage.getUser(userId);
       
-      let articles;
-      if (user.role === 'admin' || user.role === 'editor') {
+      let articles: any[] = [];
+      if (user && (user.role === 'admin' || user.role === 'editor')) {
         // Admins and editors can see all drafts
         articles = await storage.getArticlesByStatus('draft');
-      } else {
+      } else if (user) {
         // Authors can only see their own drafts or articles they're collaborating on
         articles = await storage.getAuthorDrafts(userId);
       }
