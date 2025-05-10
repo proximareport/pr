@@ -76,6 +76,32 @@ const requireAdmin = async (req: Request, res: Response, next: NextFunction) => 
   next();
 };
 
+const requireAuthor = async (req: Request, res: Response, next: NextFunction) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  
+  const user = await storage.getUser(req.session.userId);
+  if (!user || (user.role !== 'author' && user.role !== 'editor' && user.role !== 'admin')) {
+    return res.status(403).json({ message: "Author permission required" });
+  }
+  
+  next();
+};
+
+const requireEditor = async (req: Request, res: Response, next: NextFunction) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  
+  const user = await storage.getUser(req.session.userId);
+  if (!user || (user.role !== 'editor' && user.role !== 'admin')) {
+    return res.status(403).json({ message: "Editor permission required" });
+  }
+  
+  next();
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Use session middleware
   app.use(session(sessionConfig));
@@ -538,7 +564,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/articles", requireAuth, async (req, res) => {
+  // Get draft articles (only for authors/editors/admins)
+  app.get("/api/articles/drafts", requireAuthor, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const user = await storage.getUser(userId);
+      
+      let articles;
+      if (user.role === 'admin' || user.role === 'editor') {
+        // Admins and editors can see all drafts
+        articles = await storage.getArticlesByStatus('draft');
+      } else {
+        // Authors can only see their own drafts or articles they're collaborating on
+        articles = await storage.getAuthorDrafts(userId);
+      }
+      
+      res.json(articles);
+    } catch (error) {
+      console.error("Error fetching draft articles:", error);
+      res.status(500).json({ message: "Error fetching draft articles" });
+    }
+  });
+  
+  app.post("/api/articles", requireAuthor, async (req, res) => {
     try {
       if (!req.session.isAdmin) {
         return res.status(403).json({ message: "Only admins can create articles" });

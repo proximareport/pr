@@ -4,7 +4,7 @@ import { relations } from "drizzle-orm";
 import { z } from "zod";
 
 // Enums for role and membership tiers
-export const roleEnum = pgEnum("role", ["user", "admin"]);
+export const roleEnum = pgEnum("role", ["user", "author", "editor", "admin"]);
 export const membershipTierEnum = pgEnum("membership_tier", ["free", "supporter", "pro"]);
 
 // Users
