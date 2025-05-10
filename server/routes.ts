@@ -424,8 +424,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Article not found" });
       }
       
-      res.json(article);
+      // If article is collaborative, fetch all authors
+      if (article.isCollaborative) {
+        const authors = await storage.getArticleAuthors(article.id);
+        // Map to a simplified author structure
+        const authorData = authors.map(authorRecord => ({
+          id: authorRecord.user.id,
+          username: authorRecord.user.username,
+          profilePicture: authorRecord.user.profilePicture,
+          role: authorRecord.role
+        }));
+        
+        // Return with authors data
+        res.json({
+          ...article,
+          authors: authorData
+        });
+      } else {
+        // Return standard article data
+        res.json(article);
+      }
     } catch (error) {
+      console.error("Error fetching article:", error);
       res.status(500).json({ message: "Error fetching article" });
     }
   });
