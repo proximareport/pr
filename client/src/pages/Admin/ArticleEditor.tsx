@@ -135,10 +135,21 @@ function AdminArticleEditor() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate required fields
     if (!title || !slug || !summary) {
       toast({
         title: "Missing required fields",
         description: "Please fill in all required fields before publishing.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validate content
+    if (!Array.isArray(content) || content.length === 0) {
+      toast({
+        title: "Missing content",
+        description: "Your article must include some content.",
         variant: "destructive",
       });
       return;
@@ -173,34 +184,27 @@ function AdminArticleEditor() {
       }
     }
     
-    // Ensure content is properly formatted
-    const formattedContent = Array.isArray(content) ? content : [];
-    
-    // Log the data being sent
-    console.log("Submitting article data:", {
-      title,
-      slug,
-      summary,
-      content: { blocks: formattedContent },
-      category, 
-      isBreaking,
-      readTime
-    });
-    
+    // Create article data object
     const articleData = {
       title,
       slug,
       summary,
       content: {
-        blocks: formattedContent
+        blocks: content
       },
       category: category || "general",
       isBreaking,
       readTime: Number(readTime) || 5,
       featuredImage: imageUrl,
+      status: "published", // Explicitly set published status
+      publishedAt: new Date(), // Set publish date to now
       authorId: user?.id,
     };
     
+    // Log for debugging
+    console.log("Submitting article data:", articleData);
+    
+    // Submit the article
     if (isEditing) {
       updateArticleMutation.mutate(articleData);
     } else {
@@ -219,17 +223,17 @@ function AdminArticleEditor() {
       if (article.content) {
         if (typeof article.content === 'object' && article.content.blocks) {
           // Handle structured content with blocks
-          setContent(article.content.blocks);
+          setContent(article.content.blocks as any);
         } else if (Array.isArray(article.content)) {
           // Handle direct array of blocks
-          setContent(article.content);
+          setContent(article.content as any);
         } else {
           // Default to empty blocks array if content is in unexpected format
           console.warn("Article content format unexpected:", article.content);
-          setContent([]);
+          setContent([] as any);
         }
       } else {
-        setContent([]);
+        setContent([] as any);
       }
       
       setCategory(article.category || '');
