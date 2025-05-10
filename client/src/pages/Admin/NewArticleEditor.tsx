@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { SaveIcon, UploadIcon, PlusIcon, XIcon } from 'lucide-react';
-import ArticleEditor from '@/components/article/ArticleEditorSimple';
+import ArticleEditor from '@/components/article/BasicArticleEditor';
 import { EditorLayout, EditorMainCard, EditorSideCard } from '@/components/admin/EditorLayout';
 import { 
   TextFormField, 
@@ -464,8 +464,8 @@ function AdminArticleEditor() {
       >
         <div className="border border-white/10 rounded-md overflow-hidden bg-[#0A0A15]">
           <ArticleEditor 
-            initialContent={content}
-            onSave={(newContent) => {
+            initialContent={Array.isArray(content) ? content : []}
+            onChange={(newContent: any) => {
               setContent(newContent);
               scheduleAutosave();
             }}
