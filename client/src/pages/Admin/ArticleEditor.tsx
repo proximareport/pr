@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { SaveIcon, ImageIcon, UploadIcon } from 'lucide-react';
+import { SaveIcon, ImageIcon, UploadIcon, ArrowLeft as ArrowLeftIcon } from 'lucide-react';
 import ArticleEditor from '@/components/article/ArticleEditorSimple';
 import { EditorLayout, EditorMainCard, EditorSideCard } from '@/components/admin/EditorLayout';
 import { 
@@ -452,11 +452,30 @@ function AdminArticleEditor() {
   );
 
   return (
-    <EditorLayout
-      title={isEditing ? 'Edit Article' : 'New Article'}
-      mainContent={mainContent}
-      sidebarContent={sidebarContent}
-    />
+    <div className="container max-w-[1400px] mx-auto py-10">
+      <div className="flex items-center mb-8 border-b border-white/10 pb-4">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="mr-4 hover:bg-white/10"
+          onClick={() => navigate('/admin')}
+        >
+          <ArrowLeftIcon className="h-5 w-5 mr-2" />
+          Back
+        </Button>
+        <h1 className="text-4xl font-bold tracking-tight">{isEditing ? 'Edit Article' : 'New Article'}</h1>
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+          {mainContent}
+        </div>
+        
+        <div className="lg:col-span-1">
+          {sidebarContent}
+        </div>
+      </div>
+    </div>
   );
 }
 

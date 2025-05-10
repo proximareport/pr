@@ -307,8 +307,9 @@ function ArticleEditorSimple({ initialArticle, onSave }: ArticleEditorProps) {
             value={block.content}
             onChange={(e) => updateBlock(index, { content: e.target.value })}
             placeholder="Type paragraph text here..."
-            className={`w-full resize-none min-h-[120px] bg-[#0F0F19] border border-white/10 rounded-lg text-${block.align}`}
+            className={`w-full resize-none min-h-[200px] bg-[#0F0F19] border border-white/10 rounded-lg text-${block.align}`}
             onFocus={() => setActiveBlockIndex(index)}
+            rows={10}
           />
         );
       
@@ -322,7 +323,7 @@ function ArticleEditorSimple({ initialArticle, onSave }: ArticleEditorProps) {
               block.level === 2 ? 'text-2xl font-bold' : 'text-xl font-semibold'
             } text-${block.align}`}
             onFocus={() => setActiveBlockIndex(index)}
-            rows={2}
+            rows={3}
           />
         );
       
@@ -420,57 +421,79 @@ function ArticleEditorSimple({ initialArticle, onSave }: ArticleEditorProps) {
         </CardContent>
       </Card>
       
-      {/* Content blocks */}
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <Droppable droppableId="article-blocks">
-          {(provided) => (
-            <div 
-              {...provided.droppableProps}
-              ref={provided.innerRef}
-              className="space-y-6"
-            >
-              {blocks.map((block, index) => (
-                <Draggable key={block.id} draggableId={block.id} index={index}>
-                  {(provided) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      className={`rounded-lg p-3 ${
-                        activeBlockIndex === index 
-                          ? 'ring-2 ring-primary/30 bg-[#0F0F19]' 
-                          : 'bg-[#14141E]'
-                      }`}
-                    >
-                      <div className="relative">
-                        <div 
-                          {...provided.dragHandleProps}
-                          className="absolute top-2 right-2 w-6 h-6 bg-[#1E1E2D] text-white/40 flex items-center justify-center rounded-full cursor-move z-10"
-                        >
-                          ⋮
+      {/* Content blocks - IMPROVED LAYOUT */}
+      <div className="bg-[#1A1A27] border border-white/10 rounded-lg p-6 shadow-lg min-h-[600px]">
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="article-blocks">
+            {(provided) => (
+              <div 
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+                className="space-y-8"
+              >
+                {blocks.map((block, index) => (
+                  <Draggable key={block.id} draggableId={block.id} index={index}>
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        className={`rounded-lg p-4 ${
+                          activeBlockIndex === index 
+                            ? 'ring-2 ring-primary/30 bg-[#14141E]' 
+                            : 'bg-[#14141E]'
+                        }`}
+                      >
+                        <div className="relative">
+                          <div 
+                            {...provided.dragHandleProps}
+                            className="absolute top-2 right-2 w-8 h-8 bg-[#1E1E2D] text-white/60 flex items-center justify-center rounded-md cursor-move z-10 hover:bg-primary/20 hover:text-primary"
+                          >
+                            ⋮⋮
+                          </div>
+                          
+                          {activeBlockIndex === index && renderBlockControls(index, block)}
+                          {renderBlock(block, index)}
                         </div>
-                        
-                        {activeBlockIndex === index && renderBlockControls(index, block)}
-                        {renderBlock(block, index)}
                       </div>
-                    </div>
-                  )}
-                </Draggable>
-              ))}
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>
-      </DragDropContext>
-      
-      {/* Add a block button at the end */}
-      <Button
-        variant="outline"
-        className="w-full border-dashed"
-        onClick={() => addBlock('text', blocks.length - 1)}
-      >
-        <PlusCircle className="h-4 w-4 mr-2" />
-        Add Content Block
-      </Button>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+                
+                {/* Add a block button inside the editor */}
+                <div className="flex justify-center mt-6">
+                  <div className="inline-flex space-x-2">
+                    <Button
+                      variant="outline"
+                      className="border-dashed"
+                      onClick={() => addBlock('text', blocks.length - 1)}
+                    >
+                      <PlusCircle className="h-4 w-4 mr-2" />
+                      Add Text
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="border-dashed"
+                      onClick={() => addBlock('heading', blocks.length - 1)}
+                    >
+                      <Type className="h-4 w-4 mr-2" />
+                      Add Heading
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="border-dashed"
+                      onClick={addImageBlock}
+                    >
+                      <ImageIcon className="h-4 w-4 mr-2" />
+                      Add Image
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+      </div>
       
       {/* Image dialog */}
       <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
