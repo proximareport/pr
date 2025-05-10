@@ -240,18 +240,23 @@ function AdminArticleEditor() {
       role: "coauthor" // Default role
     }]);
     
+    // Schedule autosave
+    scheduleAutosave();
+    
     // Reset selection
     setSelectedCoauthorId(null);
   };
   
   const handleRemoveCoauthor = (id: number) => {
     setCoauthors(coauthors.filter(author => author.id !== id));
+    scheduleAutosave();
   };
   
   const handleCoauthorRoleChange = (id: number, role: string) => {
     setCoauthors(coauthors.map(author => 
       author.id === id ? { ...author, role } : author
     ));
+    scheduleAutosave();
   };
 
   // Function to prepare article data for saving
@@ -373,12 +378,14 @@ function AdminArticleEditor() {
   const addTag = (tag: string) => {
     if (tag && !tags.includes(tag)) {
       setTags([...tags, tag]);
+      scheduleAutosave();
     }
     setTagInput('');
   };
 
   const removeTag = (tagToRemove: string) => {
     setTags(tags.filter(tag => tag !== tagToRemove));
+    scheduleAutosave();
   };
 
   const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -401,6 +408,7 @@ function AdminArticleEditor() {
       const response = await apiRequest('POST', '/api/upload', formData);
       const data = await response.json();
       setFeaturedImage(data.imageUrl);
+      scheduleAutosave();
       toast({
         title: 'Image uploaded',
         description: 'Your image has been uploaded successfully',
