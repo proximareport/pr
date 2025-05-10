@@ -35,9 +35,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Fetch current user data
   const { data: userData, isLoading, refetch } = useQuery({
-    queryKey: ['/api/auth/me'],
+    queryKey: ['/api/me'],
     queryFn: () => 
-      apiRequest('GET', '/api/auth/me')
+      apiRequest('GET', '/api/me')
         .then(res => res.json())
         .catch(err => {
           // If user is not logged in, return null without showing error
@@ -54,8 +54,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Login mutation
   const loginMutation = useMutation({
-    mutationFn: (credentials: { username: string; password: string }) =>
-      apiRequest('POST', '/api/auth/login', credentials).then(res => res.json()),
+    mutationFn: (credentials: { email: string; password: string }) =>
+      apiRequest('POST', '/api/login', credentials).then(res => res.json()),
     onSuccess: () => {
       refetch();
       toast({
@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     onError: (error: any) => {
       toast({
         title: "Login failed",
-        description: error.message || "Invalid username or password",
+        description: error.message || "Invalid email or password",
         variant: "destructive",
       });
     },
@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Register mutation
   const registerMutation = useMutation({
     mutationFn: (userData: { username: string; email: string; password: string }) =>
-      apiRequest('POST', '/api/auth/register', userData).then(res => res.json()),
+      apiRequest('POST', '/api/register', userData).then(res => res.json()),
     onSuccess: () => {
       refetch();
       toast({
@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Logout mutation
   const logoutMutation = useMutation({
-    mutationFn: () => apiRequest('POST', '/api/auth/logout').then(res => res.json()),
+    mutationFn: () => apiRequest('POST', '/api/logout').then(res => res.json()),
     onSuccess: () => {
       setUser(null);
       queryClient.clear();
@@ -115,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Update user mutation
   const updateUserMutation = useMutation({
     mutationFn: (userData: Partial<User>) =>
-      apiRequest('PATCH', '/api/auth/update-profile', userData).then(res => res.json()),
+      apiRequest('PUT', '/api/me', userData).then(res => res.json()),
     onSuccess: () => {
       refetch();
       toast({
