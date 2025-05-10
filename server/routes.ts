@@ -443,6 +443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         z.record(z.any()), // For legacy editors
       ]).optional();
       
+      // Update schema that excludes publishedAt for validation
       const updateSchema = z.object({
         title: z.string().optional(),
         slug: z.string().optional(),
@@ -456,19 +457,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: z.string().optional(),
       });
       
+      // Parse and validate (without publishedAt)
       const updateData = updateSchema.parse(req.body);
       
       // Handle publishedAt separately - convert from ISO string to Date
+      let publishedAt = undefined;
       if (req.body.publishedAt) {
         try {
-          // Use a type assertion to handle the extended property
-          (updateData as any).publishedAt = new Date(req.body.publishedAt);
+          publishedAt = new Date(req.body.publishedAt);
         } catch (e) {
           console.error("Invalid publishedAt date:", e);
         }
       }
       
-      const updatedArticle = await storage.updateArticle(articleId, updateData);
+      const updatedArticle = await storage.updateArticle(articleId, {
+        ...updateData,
+        publishedAt,
+      });
       
       if (!updatedArticle) {
         return res.status(404).json({ message: "Article not found" });
