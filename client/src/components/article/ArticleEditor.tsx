@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { 
   Select, 
   SelectContent, 
@@ -53,7 +54,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useDropzone } from "react-dropzone";
 import { nanoid } from "nanoid";
 import { apiRequest } from "@/lib/queryClient";
-import { HexColorPicker } from "react-color";
+import { ChromePicker } from "react-color";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
@@ -162,15 +163,24 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
       case "paragraph":
         return { id: blockId, type: "paragraph", content: "" };
       case "heading":
-        return { id: blockId, type: "heading", content: "", level: 2 };
+        return { id: blockId, type: "heading", content: "", level: 2, anchor: `section-${blockId}` };
       case "image":
-        return { id: blockId, type: "image", url: "", alt: "", caption: "" };
+        return { 
+          id: blockId, 
+          type: "image", 
+          url: "", 
+          alt: "", 
+          caption: "", 
+          alignment: "center", // new: left, center, right
+          width: 100, // percentage of container width
+          float: "none" // none, left, right (for text wrapping)
+        };
       case "code":
         return { id: blockId, type: "code", content: "", language: "javascript" };
       case "list":
         return { id: blockId, type: "list", items: [""], ordered: false };
       case "quote":
-        return { id: blockId, type: "quote", content: "", author: "" };
+        return { id: blockId, type: "quote", content: "", author: "", source: "" };
       case "divider":
         return { id: blockId, type: "divider" };
       case "premium":
@@ -185,9 +195,102 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
         return { id: blockId, type: "map", lat: 0, lng: 0, zoom: 10, caption: "" };
       case "callout":
         return { id: blockId, type: "callout", content: "", type: "info" };
+      case "poll":
+        return { 
+          id: blockId, 
+          type: "poll", 
+          question: "", 
+          options: ["", ""], 
+          allowMultiple: false,
+          expiresAt: null, // null for never expires
+          backgroundColor: "#1e1e2d", 
+          textColor: "#ffffff" 
+        };
+      case "html":
+        return { id: blockId, type: "html", content: "" };
+      case "table":
+        return { 
+          id: blockId, 
+          type: "table", 
+          rows: 2, 
+          columns: 2, 
+          data: [["Header 1", "Header 2"], ["", ""]], 
+          hasHeaderRow: true 
+        };
+      case "toc":
+        return { 
+          id: blockId, 
+          type: "toc", 
+          title: "Table of Contents", 
+          automatic: true, 
+          items: [] 
+        };
+      case "columns":
+        return {
+          id: blockId,
+          type: "columns",
+          columns: [
+            { blocks: [createEmptyBlock("paragraph")] },
+            { blocks: [createEmptyBlock("paragraph")] }
+          ],
+          ratio: "1:1" // 1:1, 1:2, 2:1, etc.
+        };
       default:
         return { id: blockId, type: "paragraph", content: "" };
     }
+  };
+  
+  // Generate table of contents from headings
+  const generateTableOfContents = () => {
+    const toc: {title: string, anchor: string, level: number}[] = [];
+    
+    content.forEach(block => {
+      if (block.type === "heading" && block.content.trim()) {
+        toc.push({
+          title: block.content,
+          anchor: block.anchor || `heading-${block.id}`,
+          level: block.level
+        });
+      }
+    });
+    
+    return toc;
+  };
+  
+  // Create poll function
+  const createPoll = () => {
+    const poll = {
+      question: currentPollQuestion,
+      options: currentPollOptions.filter(opt => opt.trim() !== ""),
+      allowMultiple: currentPollMultipleChoice,
+      backgroundColor: "#1e1e2d",
+      textColor: "#ffffff"
+    };
+    
+    // Add a new poll block
+    const pollBlock = createEmptyBlock("poll");
+    pollBlock.question = poll.question;
+    pollBlock.options = poll.options;
+    pollBlock.allowMultiple = poll.allowMultiple;
+    pollBlock.backgroundColor = poll.backgroundColor;
+    pollBlock.textColor = poll.textColor;
+    
+    // Insert at active index or append to end
+    if (activeBlockIndex !== null) {
+      const newContent = [...content];
+      newContent.splice(activeBlockIndex + 1, 0, pollBlock);
+      setContent(newContent);
+      setActiveBlockIndex(activeBlockIndex + 1);
+    } else {
+      setContent([...content, pollBlock]);
+      setActiveBlockIndex(content.length);
+    }
+    
+    // Reset poll state
+    setCurrentPollQuestion("");
+    setCurrentPollOptions([""]);
+    setCurrentPollMultipleChoice(false);
+    setPollDialogOpen(false);
   };
 
   // Update a block's content
@@ -242,6 +345,30 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
     return { html: "", videoId: "" };
   };
 
+  // Fetch available tags
+  useEffect(() => {
+    const fetchTags = async () => {
+      try {
+        const response = await apiRequest("GET", "/api/tags");
+        const data = await response.json();
+        setAvailableTags(data);
+      } catch (error) {
+        console.error("Failed to fetch tags:", error);
+        // No need to show error toast as tags are not critical
+      }
+    };
+    
+    fetchTags();
+  }, []);
+  
+  // Add TOC item to manual TOC
+  const addTocItem = () => {
+    if (newTocItem.title && newTocItem.anchor) {
+      setManualToc([...manualToc, newTocItem]);
+      setNewTocItem({ title: "", anchor: "" });
+    }
+  };
+  
   // Save the article
   const saveArticle = async (publish: boolean = false) => {
     // Basic validation
@@ -294,6 +421,11 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
       tags,
       status: publish ? "published" : "draft",
       publishedAt: publish ? new Date().toISOString() : null,
+      showTableOfContents,
+      tocPlacement,
+      tocAutomatic,
+      manualToc: tocAutomatic ? [] : manualToc,
+      tocTitle,
     };
 
     // Update or create
@@ -348,9 +480,7 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
           onClick={() => moveBlock(index, "up")}
           disabled={index === 0}
         >
-          <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M7 14l5-5 5 5z" />
-          </svg>
+          <ChevronUp className="h-3 w-3" />
         </Button>
         <Button
           variant="ghost"
@@ -359,9 +489,7 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
           onClick={() => moveBlock(index, "down")}
           disabled={index === content.length - 1}
         >
-          <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M7 10l5 5 5-5z" />
-          </svg>
+          <ChevronDown className="h-3 w-3" />
         </Button>
         <Button
           variant="ghost"
@@ -392,6 +520,281 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
               className="resize-none border-none bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0 mt-3 mb-0"
               onClick={(e) => e.stopPropagation()}
             />
+          </div>
+        );
+        
+      case "html":
+        return (
+          <div
+            {...commonProps}
+            onClick={() => setActiveBlockIndex(index)}
+          >
+            {blockControls}
+            <FileCode className="h-4 w-4 absolute left-2 top-2 text-purple-500/70" />
+            <div className="mt-2 mb-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-white/70">HTML Editor</span>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="text-xs"
+                  onClick={() => {
+                    // Toggle preview
+                    const updatedBlock = { ...block, preview: !block.preview };
+                    updateBlock(index, updatedBlock);
+                  }}
+                >
+                  {block.preview ? "Edit" : "Preview"}
+                </Button>
+              </div>
+              
+              {block.preview ? (
+                <div 
+                  className="mt-2 p-3 bg-black/30 rounded border border-white/10"
+                  dangerouslySetInnerHTML={{ __html: block.content }}
+                />
+              ) : (
+                <Textarea
+                  value={block.content}
+                  onChange={(e) => updateBlock(index, { content: e.target.value })}
+                  placeholder="<div class='example'>Write your HTML here</div>"
+                  className="mt-2 font-mono text-sm resize-y h-40 bg-black/30"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              )}
+            </div>
+          </div>
+        );
+        
+      case "poll":
+        return (
+          <div
+            {...commonProps}
+            onClick={() => setActiveBlockIndex(index)}
+          >
+            {blockControls}
+            <BarChart2 className="h-4 w-4 absolute left-2 top-2 text-purple-500/70" />
+            <div className="space-y-3 mt-2">
+              <div className="space-y-2">
+                <Label htmlFor={`poll-question-${block.id}`}>Poll Question</Label>
+                <Input
+                  id={`poll-question-${block.id}`}
+                  value={block.question}
+                  onChange={(e) => updateBlock(index, { question: e.target.value })}
+                  placeholder="Ask a question..."
+                  className="bg-black/30"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Options</Label>
+                {block.options.map((option: string, i: number) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Input
+                      value={option}
+                      onChange={(e) => {
+                        const newOptions = [...block.options];
+                        newOptions[i] = e.target.value;
+                        updateBlock(index, { options: newOptions });
+                      }}
+                      placeholder={`Option ${i + 1}`}
+                      className="bg-black/30"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    {block.options.length > 2 && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-red-500"
+                        onClick={() => {
+                          const newOptions = [...block.options];
+                          newOptions.splice(i, 1);
+                          updateBlock(index, { options: newOptions });
+                        }}
+                      >
+                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                        </svg>
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => {
+                    const newOptions = [...block.options, ""];
+                    updateBlock(index, { options: newOptions });
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" /> Add Option
+                </Button>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id={`poll-multiple-${block.id}`}
+                  checked={block.allowMultiple}
+                  onCheckedChange={(checked) => {
+                    updateBlock(index, { allowMultiple: checked === true });
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+                <Label
+                  htmlFor={`poll-multiple-${block.id}`}
+                  className="text-sm"
+                >
+                  Allow multiple answers
+                </Label>
+              </div>
+            </div>
+          </div>
+        );
+        
+      case "toc":
+        return (
+          <div
+            {...commonProps}
+            onClick={() => setActiveBlockIndex(index)}
+          >
+            {blockControls}
+            <List className="h-4 w-4 absolute left-2 top-2 text-purple-500/70" />
+            <div className="space-y-3 mt-2">
+              <div className="space-y-2">
+                <Label htmlFor={`toc-title-${block.id}`}>Table of Contents Title</Label>
+                <Input
+                  id={`toc-title-${block.id}`}
+                  value={block.title}
+                  onChange={(e) => updateBlock(index, { title: e.target.value })}
+                  placeholder="Table of Contents"
+                  className="bg-black/30"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id={`toc-auto-${block.id}`}
+                  checked={block.automatic}
+                  onCheckedChange={(checked) => {
+                    updateBlock(index, { automatic: checked === true });
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+                <Label 
+                  htmlFor={`toc-auto-${block.id}`}
+                  className="text-sm"
+                >
+                  Automatically generate from headings
+                </Label>
+              </div>
+              
+              {!block.automatic && (
+                <div className="space-y-2 border-t border-white/10 pt-3 mt-3">
+                  <Label>Manual Table of Contents Items</Label>
+                  {block.items.map((item: {title: string, anchor: string}, i: number) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <Input
+                        value={item.title}
+                        onChange={(e) => {
+                          const newItems = [...block.items];
+                          newItems[i] = { ...newItems[i], title: e.target.value };
+                          updateBlock(index, { items: newItems });
+                        }}
+                        placeholder="Section title"
+                        className="bg-black/30"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <Input
+                        value={item.anchor}
+                        onChange={(e) => {
+                          const newItems = [...block.items];
+                          newItems[i] = { ...newItems[i], anchor: e.target.value };
+                          updateBlock(index, { items: newItems });
+                        }}
+                        placeholder="section-id"
+                        className="bg-black/30"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-red-500"
+                        onClick={() => {
+                          const newItems = [...block.items];
+                          newItems.splice(i, 1);
+                          updateBlock(index, { items: newItems });
+                        }}
+                      >
+                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                        </svg>
+                      </Button>
+                    </div>
+                  ))}
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => {
+                      const newItems = [...block.items, { title: "", anchor: "" }];
+                      updateBlock(index, { items: newItems });
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" /> Add Item
+                  </Button>
+                </div>
+              )}
+              
+              <div className="bg-black/30 rounded p-3 border border-white/10">
+                <h3 className="font-bold mb-2">{block.title || "Table of Contents"}</h3>
+                {block.automatic ? (
+                  <>
+                    <p className="text-sm text-white/70 italic">
+                      Automatically generated from headings in the article
+                    </p>
+                    <div className="mt-2">
+                      {generateTableOfContents().length > 0 ? (
+                        <ul className="space-y-1 text-sm text-white/80">
+                          {generateTableOfContents().map((item, i) => (
+                            <li 
+                              key={i}
+                              className="hover:text-white transition-colors"
+                              style={{ marginLeft: `${(item.level - 2) * 16}px` }}
+                            >
+                              {item.title}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-white/60">No headings found in the article yet.</p>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {block.items.length > 0 ? (
+                      <ul className="space-y-1 text-sm text-white/80">
+                        {block.items.map((item: {title: string, anchor: string}, i: number) => (
+                          <li 
+                            key={i}
+                            className="hover:text-white transition-colors"
+                          >
+                            {item.title || 'Untitled section'}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-white/60">No items added yet.</p>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         );
         
@@ -436,33 +839,105 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
           >
             {blockControls}
             <ImageIcon className="h-4 w-4 absolute left-2 top-2 text-purple-500/70" />
-            <div className="space-y-2">
-              <Input
-                value={block.url}
-                onChange={(e) => updateBlock(index, { url: e.target.value })}
-                placeholder="Image URL"
-                className="mb-2"
-                onClick={(e) => e.stopPropagation()}
-              />
-              <Input
-                value={block.alt}
-                onChange={(e) => updateBlock(index, { alt: e.target.value })}
-                placeholder="Alt text"
-                className="mb-2"
-                onClick={(e) => e.stopPropagation()}
-              />
-              <Input
-                value={block.caption}
-                onChange={(e) => updateBlock(index, { caption: e.target.value })}
-                placeholder="Caption (optional)"
-                onClick={(e) => e.stopPropagation()}
-              />
-              {block.url && (
-                <img
-                  src={block.url}
-                  alt={block.alt}
-                  className="mt-2 max-h-64 mx-auto rounded"
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 gap-2">
+                <Input
+                  value={block.url}
+                  onChange={(e) => updateBlock(index, { url: e.target.value })}
+                  placeholder="Image URL"
+                  className="bg-black/30"
+                  onClick={(e) => e.stopPropagation()}
                 />
+                <Input
+                  value={block.alt}
+                  onChange={(e) => updateBlock(index, { alt: e.target.value })}
+                  placeholder="Alt text"
+                  className="bg-black/30"
+                  onClick={(e) => e.stopPropagation()}
+                />
+                <Input
+                  value={block.caption}
+                  onChange={(e) => updateBlock(index, { caption: e.target.value })}
+                  placeholder="Caption (optional)"
+                  className="bg-black/30"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+              
+              <div className="flex flex-wrap gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor={`image-align-${block.id}`}>Alignment</Label>
+                  <Select
+                    value={block.alignment || "center"}
+                    onValueChange={(value) => updateBlock(index, { alignment: value })}
+                  >
+                    <SelectTrigger id={`image-align-${block.id}`} className="w-[120px] bg-black/30">
+                      <SelectValue placeholder="Alignment" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="left">Left</SelectItem>
+                      <SelectItem value="center">Center</SelectItem>
+                      <SelectItem value="right">Right</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor={`image-width-${block.id}`}>Width (%)</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id={`image-width-${block.id}`}
+                      type="number"
+                      min="10"
+                      max="100"
+                      value={block.width || 100}
+                      onChange={(e) => updateBlock(index, { width: parseInt(e.target.value) || 100 })}
+                      className="w-20 bg-black/30"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <span className="text-white/70">%</span>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor={`image-float-${block.id}`}>Text Wrap</Label>
+                  <Select
+                    value={block.float || "none"}
+                    onValueChange={(value) => updateBlock(index, { float: value })}
+                  >
+                    <SelectTrigger id={`image-float-${block.id}`} className="w-[120px] bg-black/30">
+                      <SelectValue placeholder="Text Wrap" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="left">Float Left</SelectItem>
+                      <SelectItem value="right">Float Right</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              {block.url && (
+                <div 
+                  className="mt-3 relative border border-white/10 p-2 rounded bg-black/20"
+                  style={{
+                    textAlign: block.alignment || "center",
+                  }}
+                >
+                  <img
+                    src={block.url}
+                    alt={block.alt}
+                    className="rounded shadow-md"
+                    style={{
+                      maxHeight: "200px",
+                      width: `${block.width || 100}%`,
+                      display: "inline-block"
+                    }}
+                  />
+                  {block.caption && (
+                    <p className="mt-2 text-sm text-white/70 text-center">{block.caption}</p>
+                  )}
+                </div>
               )}
             </div>
           </div>
