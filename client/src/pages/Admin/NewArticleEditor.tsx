@@ -285,14 +285,14 @@ function AdminArticleEditor() {
   }, [title, slug, summary, content, category, tags, featuredImage, readTime, isBreaking, isFeatured, isCollaborative, coauthors, user?.id]);
   
   // Function definitions for autosave
-  function doAutosave() {
+  const doAutosave = useCallback(() => {
     if (!title.trim()) return;
     
     const articleData = prepareArticleData(false); // Always save as draft
     
     // Perform the autosave
     autosaveArticleMutation(articleData);
-  }
+  }, [title, prepareArticleData, autosaveArticleMutation]);
   
   function scheduleAutosave() {
     // Clear any existing timeout
@@ -305,10 +305,10 @@ function AdminArticleEditor() {
       return;
     }
     
-    // Set a new timeout for autosave (5 seconds after last change)
+    // Set a new timeout for autosave (3 seconds after last change)
     autosaveTimeoutRef.current = window.setTimeout(() => {
       doAutosave();
-    }, 5000);
+    }, 3000);
   }
 
   // Autosave mutation - doesn't show toasts, doesn't redirect
@@ -342,7 +342,7 @@ function AdminArticleEditor() {
     return formatDistanceToNow(date, { addSuffix: true });
   };
   
-  // Effect to autosave when content changes
+  // Effect to autosave when any article field changes
   useEffect(() => {
     scheduleAutosave();
     
@@ -366,7 +366,7 @@ function AdminArticleEditor() {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [title]);
+  }, [title, doAutosave]);
   
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
