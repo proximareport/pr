@@ -63,6 +63,8 @@ export interface IStorage {
   getArticlesByCategory(category: string): Promise<Article[]>;
   getFeaturedArticles(limit?: number): Promise<Article[]>;
   searchArticles(query: string): Promise<Article[]>;
+  getArticlesByStatus(status: string): Promise<Article[]>;
+  getAuthorDrafts(authorId: number): Promise<Article[]>;
   
   // Article Author operations
   addAuthorToArticle(articleId: number, userId: number, role?: string): Promise<ArticleAuthor>;
@@ -450,6 +452,55 @@ export class DatabaseStorage implements IStorage {
         )
       ))
       .orderBy(desc(articles.publishedAt));
+  }
+  
+  async getArticlesByStatus(status: string): Promise<Article[]> {
+    try {
+      // Use a direct SQL query during migration to avoid schema issues
+      const result = await db.execute(sql`
+        SELECT * FROM articles 
+        WHERE status = ${status}
+        ORDER BY updated_at DESC
+      `);
+      
+      return result.rows as Article[];
+    } catch (error) {
+      console.error("Error fetching articles by status:", error);
+      return [];
+    }
+  }
+  
+  async getAuthorDrafts(authorId: number): Promise<Article[]> {
+    try {
+      // First get all article IDs where the user is an author
+      const authoredArticlesResult = await db.execute(sql`
+        SELECT article_id FROM article_authors
+        WHERE user_id = ${authorId}
+      `);
+      
+      // Extract article IDs
+      const articleIds = authoredArticlesResult.rows.map(row => row.article_id);
+      
+      if (articleIds.length === 0) {
+        return [];
+      }
+      
+      // Format IDs for SQL IN clause
+      const idList = articleIds.join(',');
+      
+      // Get all draft articles where the user is an author
+      const result = await db.execute(sql`
+        SELECT * FROM articles 
+        WHERE id IN (${sql.raw(idList)}) 
+        AND status = 'draft'
+        ORDER BY updated_at DESC
+      `);
+      
+      return result.rows as Article[];
+    } catch (error) {
+      console.error("Error fetching author drafts:", error);
+      return [];
+    }
   }
 
   // Comment operations
