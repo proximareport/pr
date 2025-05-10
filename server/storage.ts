@@ -42,6 +42,7 @@ export interface IStorage {
   updateUser(id: number, data: Partial<User>): Promise<User | undefined>;
   updateUserMembership(id: number, tier: 'free' | 'supporter' | 'pro'): Promise<User | undefined>;
   updateUserStripeInfo(id: number, stripeData: { stripeCustomerId: string, stripeSubscriptionId: string }): Promise<User | undefined>;
+  getAllUsers(): Promise<User[]>;
   
   // API Key operations
   createApiKey(userId: number, name: string, permissions: string[]): Promise<ApiKey>;
@@ -160,6 +161,15 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return user;
+  }
+  
+  async getAllUsers(): Promise<User[]> {
+    try {
+      return await db.select().from(users).orderBy(users.username);
+    } catch (error) {
+      console.error("Error getting all users:", error);
+      return [];
+    }
   }
   
   // API Key implementations

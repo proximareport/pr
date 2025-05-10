@@ -222,6 +222,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get all users (for author selection in article editor)
+  app.get("/api/users", requireAdmin, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      
+      // Return users without passwords
+      const usersWithoutPasswords = users.map(user => {
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+      });
+      
+      res.json(usersWithoutPasswords);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Error fetching users" });
+    }
+  });
+  
   // API Key Routes
   app.get("/api/api-keys", requireAuth, async (req, res) => {
     try {

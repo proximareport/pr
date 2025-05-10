@@ -44,6 +44,9 @@ function AdminArticleEditor() {
   const [isBreaking, setIsBreaking] = useState(false);
   const [isFeatured, setIsFeatured] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
+  const [isCollaborative, setIsCollaborative] = useState(false);
+  const [coauthors, setCoauthors] = useState<Array<{id: number, username: string, role: string}>>([]);
+  const [selectedCoauthorId, setSelectedCoauthorId] = useState<number | null>(null);
   
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
@@ -99,6 +102,12 @@ function AdminArticleEditor() {
   const { data: availableTags = [] } = useQuery({
     queryKey: ['/api/tags'],
     queryFn: () => apiRequest('GET', '/api/tags').then(r => r.json()),
+  });
+  
+  // Fetch available users for coauthor selection
+  const { data: availableUsers = [] } = useQuery({
+    queryKey: ['/api/users'],
+    queryFn: () => apiRequest('GET', '/api/users').then(r => r.json()),
   });
 
   // Create/Update article mutation
