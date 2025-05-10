@@ -464,7 +464,7 @@ function AdminArticleEditor() {
         title="Article Content"
         description="Create your article using the rich editor below"
       >
-        <div className="border border-white/10 rounded-md overflow-hidden bg-[#0A0A15]">
+        <div className="border border-white/10 rounded-md overflow-hidden bg-[#0A0A15]" style={{ height: '600px', maxHeight: '70vh', display: 'flex', flexDirection: 'column' }}>
           <ArticleEditor 
             initialContent={content}
             onSave={(newContent) => {

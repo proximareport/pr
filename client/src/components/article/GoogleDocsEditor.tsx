@@ -918,10 +918,14 @@ export default function GoogleDocsEditor({
   };
   
   return (
-    <div className="bg-[#1E1E2D] text-white rounded-lg p-4">
-      {!readOnly && renderToolbar()}
+    <div className="bg-[#1E1E2D] text-white rounded-lg flex flex-col h-full">
+      {!readOnly && (
+        <div className="p-4 border-b border-white/10 sticky top-0 z-10 bg-[#1E1E2D]">
+          {renderToolbar()}
+        </div>
+      )}
       
-      <div className="mt-4 min-h-[500px]">
+      <div className="p-4 overflow-y-auto flex-grow" style={{ height: 'calc(100% - 60px)' }}>
         {elements.map((element, index) => renderElement(element, index))}
       </div>
       
