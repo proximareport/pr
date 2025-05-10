@@ -379,25 +379,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         z.record(z.any()), // Accept object format for other editors
       ]);
       
-      // Create a modified schema that accepts our content formats and properly handles date fields
-      const modifiedSchema = insertArticleSchema.extend({
-        content: contentValidator,
-        publishedAt: z.string().transform(str => str ? new Date(str) : null).optional(),
-      });
+      // Create a schema that completely ignores publishedAt in validation
+      // We'll handle it separately
+      const modifiedSchema = insertArticleSchema
+        .omit({ publishedAt: true })
+        .extend({
+          content: contentValidator,
+        });
       
-      // Parse and validate
+      // Parse and validate (without publishedAt)
       const articleData = modifiedSchema.parse(req.body);
+      
+      // Handle publishedAt separately - convert from ISO string to Date
+      let publishedAt = undefined;
+      if (req.body.publishedAt) {
+        try {
+          publishedAt = new Date(req.body.publishedAt);
+        } catch (e) {
+          console.error("Invalid publishedAt date:", e);
+        }
+      }
       
       const newArticle = await storage.createArticle({
         ...articleData,
+        publishedAt,
         authorId: req.session.userId!,
       });
       
       res.status(201).json(newArticle);
     } catch (error) {
       if (error instanceof ZodError) {
-        return res.status(400).json({ message: "Invalid input", errors: error.format() });
+        console.error("Validation error:", error.issues);
+        return res.status(400).json({ 
+          message: "Invalid input", 
+          errors: error.format(),
+          issues: error.issues 
+        });
       }
+      console.error("Server error:", error);
       res.status(500).json({ message: "Error creating article" });
     }
   });
