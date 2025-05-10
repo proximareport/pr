@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import ArticleContent from "@/components/article/ArticleContent";
+import GoogleDocsArticleContent from "@/components/article/GoogleDocsArticleContent";
 import TableOfContents from "@/components/article/TableOfContents";
 import CommentSection from "@/components/article/CommentSection";
 import { ChevronLeft } from "lucide-react";
@@ -148,7 +149,12 @@ function Article({ params }: ArticleProps) {
               
               {/* Article Content */}
               <div className="md:col-span-3 order-1 md:order-2">
-                <ArticleContent article={article} />
+                {/* Check content format and use appropriate component */}
+                {Array.isArray(article.content) || (article.content && typeof article.content === 'object' && !article.content.html) ? (
+                  <GoogleDocsArticleContent content={article.content} />
+                ) : (
+                  <ArticleContent article={article} />
+                )}
                 
                 {/* Comments */}
                 <CommentSection 

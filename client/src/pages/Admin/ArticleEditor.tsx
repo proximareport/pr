@@ -189,9 +189,7 @@ function AdminArticleEditor() {
       title,
       slug,
       summary,
-      content: {
-        blocks: content
-      },
+      content: content, // Direct content array for Google Docs-style editor
       category: category || "general",
       isBreaking,
       readTime: Number(readTime) || 5,
