@@ -1,13 +1,9 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import FeaturedArticle from "@/components/article/FeaturedArticle";
 import ArticleCard from "@/components/article/ArticleCard";
 import LaunchCountdown from "@/components/article/LaunchCountdown";
-import MembershipBanner from "@/components/layout/MembershipBanner";
-import AstronomyPortal from "@/components/astronomy/AstronomyPortal";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@/lib/AuthContext";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Article {
   id: number;
@@ -28,16 +24,9 @@ interface Article {
 }
 
 function Home() {
-  const { user } = useAuth();
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState("all");
-
-  // Get featured article (first breaking article or most recent)
-  const { data: featuredArticles } = useQuery<Article[]>({
-    queryKey: ["/api/articles/featured"],
-  });
-
-  const featuredArticle = featuredArticles?.[0];
+  const [showLaunch, setShowLaunch] = useState(true);
 
   // Get articles with pagination
   const { data: articles, isLoading, refetch } = useQuery<Article[]>({
@@ -61,21 +50,31 @@ function Home() {
   };
 
   return (
-    <>
-      {/* Featured Article */}
-      {featuredArticle && <FeaturedArticle article={featuredArticle} />}
-
-      {/* Membership Banner */}
-      {!user?.membershipTier || user.membershipTier === "free" ? <MembershipBanner /> : null}
-
-      {/* Launch Countdown */}
-      <LaunchCountdown />
+    <div className="bg-[#0D0D17] min-h-screen">
+      {/* Show Launch Countdown only occasionally */}
+      {showLaunch && (
+        <div className="py-4 bg-[#14141E] border-b border-white/10">
+          <div className="container mx-auto px-4">
+            <div className="flex justify-between items-center">
+              <LaunchCountdown compact={true} />
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowLaunch(false)}
+                className="text-white/60 hover:text-white"
+              >
+                ×
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Article Feed */}
-      <section className="py-12 bg-[#0D0D17]">
+      <section className="py-8">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="font-space text-2xl md:text-3xl font-bold">Latest Articles</h2>
+            <h1 className="font-space text-2xl md:text-3xl font-bold">Proxima Report</h1>
             
             <Tabs 
               value={selectedCategory} 
@@ -143,10 +142,7 @@ function Home() {
           )}
         </div>
       </section>
-      
-      {/* Astronomy Portal Section */}
-      <AstronomyPortal />
-    </>
+    </div>
   );
 }
 
