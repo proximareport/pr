@@ -203,6 +203,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get user profile by username
+  app.get("/api/users/profile/:username", async (req, res) => {
+    try {
+      const { username } = req.params;
+      const user = await storage.getUserByUsername(username);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Return user without password
+      const { password, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      res.status(500).json({ message: "Error fetching user profile" });
+    }
+  });
+  
   // API Key Routes
   app.get("/api/api-keys", requireAuth, async (req, res) => {
     try {

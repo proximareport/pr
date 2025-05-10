@@ -61,9 +61,24 @@ const UserProfile = ({ username, isEditable = false }: ProfileProps) => {
     const fetchUser = async () => {
       try {
         if (username) {
+          setIsLoading(true);
+          console.log("Fetching profile for:", username);
           const response = await fetch(`/api/users/profile/${username}`);
-          if (!response.ok) throw new Error("Failed to fetch profile");
+          
+          if (!response.ok) {
+            if (response.status === 404) {
+              toast({
+                title: "Profile Not Found",
+                description: `The user profile for "${username}" does not exist.`,
+                variant: "destructive",
+              });
+              return;
+            }
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+          }
+          
           const userData = await response.json();
+          console.log("Profile data:", userData);
           setUserData(userData);
           setIsCurrentUser(currentUser?.username === username);
           
@@ -106,21 +121,44 @@ const UserProfile = ({ username, isEditable = false }: ProfileProps) => {
           }
         }
       } catch (error) {
+        console.error("Profile fetch error:", error);
         toast({
-          title: "Error",
-          description: "Failed to load profile data.",
+          title: "Error Loading Profile",
+          description: error instanceof Error ? error.message : "Failed to load profile data.",
           variant: "destructive",
         });
+      } finally {
+        setIsLoading(false);
       }
     };
     
     fetchUser();
   }, [currentUser, username, toast]);
   
-  if (!user && !currentUser) {
+  if (isLoading) {
     return (
       <div className="text-center py-12">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
         <p className="text-white/70">Loading profile...</p>
+      </div>
+    );
+  }
+  
+  // Return error state if we couldn't load the profile
+  if (!user && !currentUser) {
+    return (
+      <div className="text-center py-12 max-w-md mx-auto">
+        <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-bold mb-2">Profile Not Found</h2>
+          <p className="text-white/70">
+            {username 
+              ? `We couldn't find a user profile for "${username}".` 
+              : "No profile information is available."}
+          </p>
+        </div>
+        <Button asChild className="bg-purple-800 hover:bg-purple-700">
+          <Link href="/">Return to Home</Link>
+        </Button>
       </div>
     );
   }
