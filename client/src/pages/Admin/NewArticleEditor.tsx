@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { SaveIcon, UploadIcon, PlusIcon, XIcon } from 'lucide-react';
-import SimpleEditor from '@/components/article/SimpleEditor';
+import PlainTextEditor from '@/components/article/PlainTextEditor';
 import { EditorLayout, EditorMainCard, EditorSideCard } from '@/components/admin/EditorLayout';
 import { 
   TextFormField, 
@@ -35,7 +35,7 @@ function AdminArticleEditor() {
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
   const [summary, setSummary] = useState('');
-  const [content, setContent] = useState<any[]>([]);
+  const [content, setContent] = useState<string>('');
   const [category, setCategory] = useState('space-exploration');
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
@@ -200,7 +200,7 @@ function AdminArticleEditor() {
       setTitle(initialArticle.title || '');
       setSlug(initialArticle.slug || '');
       setSummary(initialArticle.summary || '');
-      setContent(initialArticle.content || []);
+      setContent(typeof initialArticle.content === 'string' ? initialArticle.content : JSON.stringify(initialArticle.content));
       setCategory(initialArticle.category || 'space-exploration');
       setTags(initialArticle.tags || []);
       setFeaturedImage(initialArticle.featuredImage || '');
@@ -463,9 +463,10 @@ function AdminArticleEditor() {
         description="Create your article using the rich editor below"
       >
         <div className="border border-white/10 rounded-md overflow-hidden bg-[#0A0A15]">
-          <SimpleEditor 
-            initialValue={typeof content === 'string' ? content : JSON.stringify(content)}
+          <PlainTextEditor 
+            initialValue={typeof content === 'string' ? content : ''}
             onChange={(newContent: string) => {
+              // Store content as a string for simplicity
               setContent(newContent);
               scheduleAutosave();
             }}
