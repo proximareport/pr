@@ -340,6 +340,7 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({ initialContent = [], onCh
         <>
           <div className="border-r border-white/10 pr-2 flex space-x-1">
             <Button
+              type="button"
               variant="ghost"
               size="sm"
               className={`h-8 w-8 p-0 ${block.type === 'paragraph' ? 'bg-white/10' : ''}`}
