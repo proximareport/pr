@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { SaveIcon, UploadIcon, PlusIcon, XIcon } from 'lucide-react';
-import PlainTextEditor from '@/components/article/PlainTextEditor';
+import RichTextEditor from '@/components/article/RichTextEditor';
 import { EditorLayout, EditorMainCard, EditorSideCard } from '@/components/admin/EditorLayout';
 import { 
   TextFormField, 
@@ -463,10 +463,10 @@ function AdminArticleEditor() {
         description="Create your article using the rich editor below"
       >
         <div className="border border-white/10 rounded-md overflow-hidden bg-[#0A0A15]">
-          <PlainTextEditor 
+          <RichTextEditor 
             initialValue={typeof content === 'string' ? content : ''}
             onChange={(newContent: string) => {
-              // Store content as a string for simplicity
+              // Store content as a string
               setContent(newContent);
               scheduleAutosave();
             }}
