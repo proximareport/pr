@@ -34,7 +34,7 @@ function AdminArticleEditor() {
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
   const [summary, setSummary] = useState('');
-  const [content, setContent] = useState([]);
+  const [content, setContent] = useState<any[]>([]);
   const [category, setCategory] = useState('space-exploration');
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
@@ -347,7 +347,7 @@ function AdminArticleEditor() {
         <div className="border border-white/10 rounded-md overflow-hidden bg-[#0A0A15]">
           <ArticleEditor 
             initialContent={content}
-            onChange={setContent}
+            onSave={(newContent) => setContent(newContent)}
           />
         </div>
       </EditorMainCard>

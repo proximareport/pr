@@ -284,8 +284,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get all users (for author selection in article editor)
-  app.get("/api/users", requireAdmin, async (req, res) => {
+  // Get all users (for admin purposes)
+  app.get("/api/admin/users", requireAdmin, async (req, res) => {
     try {
       const users = await storage.getAllUsers();
       
