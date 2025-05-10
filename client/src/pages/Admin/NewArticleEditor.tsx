@@ -48,6 +48,7 @@ function AdminArticleEditor() {
   const [isCollaborative, setIsCollaborative] = useState(false);
   const [coauthors, setCoauthors] = useState<Array<{id: number, username: string, role: string}>>([]);
   const [selectedCoauthorId, setSelectedCoauthorId] = useState<number | null>(null);
+  const [articleId, setArticleId] = useState<number | undefined>(id ? parseInt(id) : undefined);
   
   // Autosave related state
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -133,7 +134,7 @@ function AdminArticleEditor() {
   });
 
   // Create/Update article mutation
-  const { mutate, isPending } = useMutation({
+  const { mutate, isPending: isSubmitting } = useMutation({
     mutationFn: async (articleData: any) => {
       if (isEditing) {
         return apiRequest('PATCH', `/api/articles/${id}`, articleData).then(r => r.json());
@@ -159,7 +160,8 @@ function AdminArticleEditor() {
   });
   
   // Autosave mutation - doesn't show toasts, doesn't redirect
-  const { mutate: autosave, isPending: isAutosaving } = useMutation({
+  // This is the primary save mutation
+  const { mutate: autosave, isPending: isSaving } = useMutation({
     mutationFn: async (articleData: any) => {
       if (isEditing) {
         return apiRequest('PATCH', `/api/articles/${id}`, articleData).then(r => r.json());
@@ -292,12 +294,38 @@ function AdminArticleEditor() {
     }, 5000);
   }, [title]);
   
+  // Autosave mutation - doesn't show toasts, doesn't redirect
+  const { mutate: autosaveArticle, isPending: isAutosaving } = useMutation({
+    mutationFn: async (articleData: any) => {
+      if (isEditing) {
+        return apiRequest('PATCH', `/api/articles/${id}`, articleData).then(r => r.json());
+      } else {
+        return apiRequest('POST', '/api/articles', articleData).then(r => r.json());
+      }
+    },
+    onSuccess: (data) => {
+      // Silent success - just update article ID if needed
+      if (!isEditing && data.id) {
+        setLastSaved(new Date());
+        window.history.replaceState(null, '', `/admin/articles/${data.id}/edit`);
+        setArticleId(data.id);
+      } else {
+        setLastSaved(new Date());
+      }
+      setAutosaveError(null);
+    },
+    onError: (error: any) => {
+      console.error('Autosave error:', error);
+      setAutosaveError(error.message || 'Failed to autosave');
+    }
+  });
+
   const performAutosave = useCallback(() => {
     if (!title.trim()) return;
     
     const articleData = prepareArticleData(false); // Always save as draft
-    autosave(articleData);
-  }, [title, prepareArticleData, autosave]);
+    autosaveArticle(articleData);
+  }, [title, prepareArticleData, autosaveArticle]);
   
   // Format the last saved time
   const formatLastSavedTime = (date: Date) => {
@@ -453,13 +481,35 @@ function AdminArticleEditor() {
     <>
       <EditorSideCard
         title="Publishing Options"
-        description="Configure how your article will be published"
+        description={
+          <div className="flex flex-col space-y-1">
+            <span>Configure how your article will be published</span>
+            {isAutosaving && (
+              <span className="text-xs text-yellow-400 flex items-center">
+                <span className="inline-block h-2 w-2 bg-yellow-400 rounded-full mr-1 animate-pulse"></span>
+                Autosaving...
+              </span>
+            )}
+            {lastSaved && !isAutosaving && (
+              <span className="text-xs text-green-400 flex items-center">
+                <span className="inline-block h-2 w-2 bg-green-400 rounded-full mr-1"></span>
+                Last saved {formatLastSavedTime(lastSaved)}
+              </span>
+            )}
+            {autosaveError && (
+              <span className="text-xs text-red-400 flex items-center">
+                <span className="inline-block h-2 w-2 bg-red-400 rounded-full mr-1"></span>
+                Error: {autosaveError}
+              </span>
+            )}
+          </div>
+        }
         footer={
           <Button 
             type="submit" 
             onClick={() => document.querySelector('form')?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }))}
             className="w-full"
-            disabled={isPending}
+            disabled={isSubmitting}
           >
             <SaveIcon className="h-4 w-4 mr-2" />
             {isPending ? 'Saving...' : isEditing ? 'Update Article' : 'Publish Article'}

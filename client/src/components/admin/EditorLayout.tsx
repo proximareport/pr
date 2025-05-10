@@ -47,7 +47,7 @@ export function EditorMainCard({
   children 
 }: { 
   title: string; 
-  description?: string; 
+  description?: string | React.ReactNode; 
   children: React.ReactNode 
 }) {
   return (
@@ -70,7 +70,7 @@ export function EditorSideCard({
   footer
 }: { 
   title: string; 
-  description?: string; 
+  description?: string | React.ReactNode; 
   children: React.ReactNode;
   footer?: React.ReactNode;
 }) {
