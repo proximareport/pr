@@ -43,15 +43,7 @@ function Login() {
     setIsLoading(true);
     
     try {
-      const response = await apiRequest("POST", "/api/login", { email, password });
-      const userData = await response.json();
-      
-      login(userData);
-      
-      toast({
-        title: "Welcome back!",
-        description: `You've successfully logged in as ${userData.username}.`,
-      });
+      await login({ email, password });
       
       // If there's a redirect URL in the query string, go there. Otherwise go to homepage.
       const params = new URLSearchParams(window.location.search);

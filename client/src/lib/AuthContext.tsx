@@ -21,8 +21,8 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAdmin: boolean;
-  login: (username: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
+  login: (userData: { email: string; password: string } | any) => Promise<void>;
+  register: (userData: { username: string; email: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (data: Partial<User>) => Promise<void>;
 }
@@ -142,13 +142,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [userData]);
 
   // Login function
-  const login = async (username: string, password: string) => {
-    await loginMutation.mutateAsync({ username, password });
+  const login = async (userData: any) => {
+    // If the user is already logged in from API call, just set the user state
+    if (userData && userData.id) {
+      setUser(userData);
+      return;
+    }
+    // Otherwise, call login mutation with email and password
+    if (typeof userData === 'object' && userData.email && userData.password) {
+      await loginMutation.mutateAsync({ 
+        email: userData.email, 
+        password: userData.password 
+      });
+    }
   };
 
   // Register function
-  const register = async (username: string, email: string, password: string) => {
-    await registerMutation.mutateAsync({ username, email, password });
+  const register = async (userData: { username: string; email: string; password: string }) => {
+    await registerMutation.mutateAsync(userData);
   };
 
   // Logout function

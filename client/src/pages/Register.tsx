@@ -11,7 +11,7 @@ import { apiRequest } from "@/lib/queryClient";
 
 function Register() {
   const [, navigate] = useLocation();
-  const { login } = useAuth();
+  const { register: registerUser, login } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [username, setUsername] = useState("");
@@ -59,17 +59,11 @@ function Register() {
     setIsLoading(true);
     
     try {
-      const response = await apiRequest("POST", "/api/register", { 
+      await registerUser({ 
         username, 
         email, 
-        password,
-        membershipTier: "free",
-        role: "user"
+        password
       });
-      
-      const userData = await response.json();
-      
-      login(userData);
       
       toast({
         title: "Registration successful!",
