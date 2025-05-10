@@ -42,6 +42,14 @@ interface ArticleEditorProps {
   onChange: (content: Block[]) => void;
 }
 
+// Helper function to create an empty content block
+const createEmptyBlock = (): Block => ({
+  id: uuidv4(),
+  type: 'paragraph',
+  content: '',
+  align: 'left',
+});
+
 const ArticleEditor: React.FC<ArticleEditorProps> = ({ initialContent = [], onChange }) => {
   const [content, setContent] = useState<Block[]>(initialContent.length > 0 ? initialContent : [createEmptyBlock()]);
   const [activeBlockIndex, setActiveBlockIndex] = useState(0);
@@ -62,13 +70,6 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({ initialContent = [], onCh
   useEffect(() => {
     onChange(content);
   }, [content, onChange]);
-
-  const createEmptyBlock = (): Block => ({
-    id: uuidv4(),
-    type: 'paragraph',
-    content: '',
-    align: 'left',
-  });
 
   const addBlock = (type: string, index: number) => {
     const newBlock = {
@@ -94,7 +95,8 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({ initialContent = [], onCh
   const removeBlock = (index: number) => {
     if (content.length === 1) {
       // Keep at least one block
-      setContent([createEmptyBlock()]);
+      const emptyBlock = createEmptyBlock();
+      setContent([emptyBlock]);
       return;
     }
     
@@ -166,9 +168,17 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({ initialContent = [], onCh
     formData.append('image', file);
 
     try {
-      const response = await apiRequest('POST', '/api/upload', formData, { 
-        isFormData: true,
+      // Use fetch directly for form data uploads
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
       });
+      
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+      
       const data = await response.json();
       setCurrentImageUrl(data.imageUrl);
       toast({
