@@ -106,6 +106,9 @@ function AdminArticleEditor() {
     }
     
     setSlug(slugValue);
+    
+    // Schedule autosave after slug change
+    scheduleAutosave();
   };
 
   // Fetch article data if editing
@@ -276,8 +279,17 @@ function AdminArticleEditor() {
     };
   }, [title, slug, summary, content, category, tags, featuredImage, readTime, isBreaking, isFeatured, isCollaborative, coauthors, user?.id]);
   
-  // Autosave logic
-  const scheduleAutosave = useCallback(() => {
+  // Function definitions for autosave
+  function doAutosave() {
+    if (!title.trim()) return;
+    
+    const articleData = prepareArticleData(false); // Always save as draft
+    
+    // Perform the autosave
+    autosaveArticleMutation(articleData);
+  }
+  
+  function scheduleAutosave() {
     // Clear any existing timeout
     if (autosaveTimeoutRef.current) {
       window.clearTimeout(autosaveTimeoutRef.current);
@@ -290,12 +302,12 @@ function AdminArticleEditor() {
     
     // Set a new timeout for autosave (5 seconds after last change)
     autosaveTimeoutRef.current = window.setTimeout(() => {
-      performAutosave();
+      doAutosave();
     }, 5000);
-  }, [title, performAutosave, autosaveTimeoutRef]);
-  
+  }
+
   // Autosave mutation - doesn't show toasts, doesn't redirect
-  const { mutate: autosaveArticle, isPending: isAutosaving } = useMutation({
+  const { mutate: autosaveArticleMutation, isPending: isAutosaving } = useMutation({
     mutationFn: async (articleData: any) => {
       if (isEditing) {
         return apiRequest('PATCH', `/api/articles/${id}`, articleData).then(r => r.json());
@@ -319,13 +331,6 @@ function AdminArticleEditor() {
       setAutosaveError(error.message || 'Failed to autosave');
     }
   });
-
-  const performAutosave = useCallback(() => {
-    if (!title.trim()) return;
-    
-    const articleData = prepareArticleData(false); // Always save as draft
-    autosaveArticle(articleData);
-  }, [title, prepareArticleData, autosaveArticle, isEditing]);
   
   // Format the last saved time
   const formatLastSavedTime = (date: Date) => {
@@ -342,13 +347,13 @@ function AdminArticleEditor() {
         window.clearTimeout(autosaveTimeoutRef.current);
       }
     };
-  }, [title, summary, content, category, tags, featuredImage, readTime, isBreaking, isFeatured, isCollaborative, coauthors, scheduleAutosave]);
+  }, [title, summary, content, category, tags, featuredImage, readTime, isBreaking, isFeatured, isCollaborative, coauthors]);
   
   // Effect to handle page unload
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (title) {
-        performAutosave();
+        doAutosave();
       }
     };
     
@@ -356,7 +361,7 @@ function AdminArticleEditor() {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [title, performAutosave]);
+  }, [title]);
   
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
