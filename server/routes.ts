@@ -174,6 +174,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get all users (for coauthor selection)
+  app.get("/api/users", requireAuth, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      
+      // Return simplified user data (only what's needed for UI)
+      const simplifiedUsers = users.map(user => ({
+        id: user.id,
+        username: user.username,
+        profilePicture: user.profilePicture
+      }));
+      
+      res.json(simplifiedUsers);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+  
   app.put("/api/me", requireAuth, async (req, res) => {
     try {
       const userId = req.session.userId!;

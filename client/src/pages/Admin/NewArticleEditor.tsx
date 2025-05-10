@@ -47,13 +47,19 @@ function AdminArticleEditor() {
   const [isCollaborative, setIsCollaborative] = useState(false);
   const [coauthors, setCoauthors] = useState<Array<{id: number, username: string, role: string}>>([]);
   const [selectedCoauthorId, setSelectedCoauthorId] = useState<number | null>(null);
-  const [availableUsers, setAvailableUsers] = useState<Array<{id: number, username: string}>>([]);
-  
+  const [availableUsers, setAvailableUsers] = useState<Array<{id: number, username: string, profilePicture?: string}>>([]);
   // Fetch available users for coauthor selection
-  useQuery({
+  const { data: fetchedUsers } = useQuery({
     queryKey: ['/api/users'],
-    onSuccess: (data) => setAvailableUsers(data || [])
+    enabled: isCollaborative
   });
+  
+  // Update available users when data is fetched
+  useEffect(() => {
+    if (fetchedUsers) {
+      setAvailableUsers(Array.isArray(fetchedUsers) ? fetchedUsers : []);
+    }
+  }, [fetchedUsers]);
   
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
