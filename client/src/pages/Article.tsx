@@ -134,6 +134,77 @@ function Article({ params }: ArticleProps) {
               <p className="text-xl text-white/80 mb-6">
                 {article.summary}
               </p>
+              
+              {/* Author information */}
+              <div className="flex flex-wrap items-center gap-4 mb-8 border-t border-b border-white/10 py-4">
+                {/* If there are multiple authors */}
+                {article.authors && article.authors.length > 0 ? (
+                  <div className="flex items-center">
+                    <div className="flex -space-x-2 mr-2">
+                      {article.authors.slice(0, 4).map((author) => (
+                        <div 
+                          key={author.id}
+                          className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-[#0D0D17]"
+                        >
+                          {author.profilePicture ? (
+                            <img 
+                              src={author.profilePicture} 
+                              alt={author.username} 
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-purple-800 text-white">
+                              {author.username.substring(0, 2).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <div>
+                      <div className="text-white font-medium">
+                        By {article.authors.map(a => a.username).join(', ')}
+                      </div>
+                      {article.isCollaborative && (
+                        <span className="text-xs inline-block bg-purple-800/30 text-purple-300 px-2 py-0.5 rounded-full">
+                          Collaborative Article
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  // Fallback to single author
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 rounded-full overflow-hidden mr-3">
+                      {article.author?.profilePicture ? (
+                        <img 
+                          src={article.author.profilePicture} 
+                          alt={article.author.username} 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-purple-800 text-white">
+                          {article.author?.username
+                            ? article.author.username.substring(0, 2).toUpperCase()
+                            : 'AU'}
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-white font-medium">
+                      By {article.author?.username || 'Anonymous'}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Article stats */}
+                <div className="flex items-center space-x-4 ml-auto text-white/60">
+                  <span>{article.readTime || '5'} min read</span>
+                  {article.status === 'draft' && (
+                    <span className="bg-amber-800/30 text-amber-300 px-2 py-0.5 rounded-full text-xs font-medium">
+                      Draft
+                    </span>
+                  )}
+                </div>
+              </div>
             </header>
             
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">

@@ -14,11 +14,24 @@ interface ArticleCardProps {
     readTime: number;
     publishedAt: string;
     tags?: string[];
-    author: {
+    // Support for both legacy schema and new schema
+    author?: {
       id: number;
       username: string;
       profilePicture?: string;
     };
+    // New schema - renamed field
+    author_id?: number;
+    // New schema - for multiple authors
+    authors?: Array<{
+      id: number;
+      username: string;
+      profilePicture?: string;
+      role?: string;
+    }>;
+    // New schema fields for collaborative editing
+    isCollaborative?: boolean;
+    primaryAuthorId?: number;
   };
 }
 
@@ -72,20 +85,51 @@ function ArticleCard({ article }: ArticleCardProps) {
         
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <Avatar className="h-8 w-8 border border-purple-700/30">
-              <AvatarImage 
-                src={article.author?.profilePicture || ''} 
-                alt={article.author?.username || 'Author'} 
-              />
-              <AvatarFallback className="bg-purple-900 text-white text-xs">
-                {article.author?.username 
-                  ? article.author.username.substring(0, 2).toUpperCase() 
-                  : 'AU'}
-              </AvatarFallback>
-            </Avatar>
-            <div className="ml-2">
-              <p className="text-white/90 text-sm">{article.author?.username || 'Anonymous'}</p>
-            </div>
+            {/* If there are multiple authors, show them */}
+            {article.authors && article.authors.length > 0 ? (
+              <div className="flex items-center">
+                <div className="flex -space-x-2 mr-2">
+                  {article.authors.slice(0, 3).map((author, index) => (
+                    <Avatar key={author.id} className="h-8 w-8 border-2 border-[#14141E]">
+                      <AvatarImage 
+                        src={author.profilePicture || ''} 
+                        alt={author.username} 
+                      />
+                      <AvatarFallback className="bg-purple-900 text-white text-xs">
+                        {author.username.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  ))}
+                </div>
+                <div>
+                  <p className="text-white/90 text-sm">
+                    {article.authors[0].username}
+                    {article.authors.length > 1 && ` + ${article.authors.length - 1} more`}
+                  </p>
+                  {article.isCollaborative && (
+                    <span className="text-xs text-purple-400">Collaborative</span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              // Fallback to use the original author field
+              <div className="flex items-center">
+                <Avatar className="h-8 w-8 border border-purple-700/30">
+                  <AvatarImage 
+                    src={article.author?.profilePicture || ''} 
+                    alt={article.author?.username || 'Author'} 
+                  />
+                  <AvatarFallback className="bg-purple-900 text-white text-xs">
+                    {article.author?.username 
+                      ? article.author.username.substring(0, 2).toUpperCase() 
+                      : 'AU'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="ml-2">
+                  <p className="text-white/90 text-sm">{article.author?.username || 'Anonymous'}</p>
+                </div>
+              </div>
+            )}
           </div>
           <span className="text-white/60 text-sm">{article.readTime} min read</span>
         </div>
