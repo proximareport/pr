@@ -36,6 +36,14 @@ function Router() {
       <Route path="/admin/articles/new" component={AdminArticleEditor} />
       <Route path="/admin/articles/edit/:id" component={AdminArticleEditor} />
       <Route path="/admin/users" component={AdminUserManagement} />
+      <Route path="/admin/drafts" component={() => {
+        const DraftManagementPage = React.lazy(() => import('./pages/Admin/DraftManagement'));
+        return (
+          <React.Suspense fallback={<div>Loading...</div>}>
+            <DraftManagementPage />
+          </React.Suspense>
+        );
+      }} />
       <Route path="/admin/categories-tags" component={() => {
         const CategoriesAndTagsPage = React.lazy(() => import('./pages/Admin/CategoriesAndTags'));
         return (

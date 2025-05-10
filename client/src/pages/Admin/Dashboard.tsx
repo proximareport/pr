@@ -13,8 +13,10 @@ import {
   PlusIcon,
   BarChart3Icon,
   TagIcon,
-  KeyIcon
+  KeyIcon,
+  FileEditIcon
 } from 'lucide-react';
+import DraftManagement from './DraftManagement';
 
 function AdminDashboard() {
   const { user, isAdmin } = useAuth();
@@ -212,15 +214,44 @@ function AdminDashboard() {
         </TabsContent>
         
         <TabsContent value="content" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Content Management</CardTitle>
-              <CardDescription>Manage all content</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Content management tab content will go here.</p>
-            </CardContent>
-          </Card>
+          <div className="space-y-6">
+            <DraftManagement />
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Content Management</CardTitle>
+                <CardDescription>Manage all content</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <Button 
+                    variant="outline" 
+                    className="h-auto py-4 flex flex-col items-center justify-center"
+                    onClick={() => navigate('/admin/articles/new')}
+                  >
+                    <FileTextIcon className="h-5 w-5 mb-2" />
+                    <span>New Article</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-auto py-4 flex flex-col items-center justify-center"
+                    onClick={() => navigate('/admin/categories-tags')}
+                  >
+                    <TagIcon className="h-5 w-5 mb-2" />
+                    <span>Tags & Categories</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-auto py-4 flex flex-col items-center justify-center"
+                    onClick={() => navigate('/admin/emergency-banner')}
+                  >
+                    <AlertOctagonIcon className="h-5 w-5 mb-2" />
+                    <span>Emergency Banner</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
         
         <TabsContent value="users" className="mt-6">
