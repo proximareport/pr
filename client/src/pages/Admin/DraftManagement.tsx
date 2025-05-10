@@ -1,90 +1,119 @@
-import React from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 import { useAuth } from '@/lib/AuthContext';
-import { apiRequest, queryClient } from '@/lib/queryClient';
-import { Link } from 'wouter';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  FileTextIcon, 
-  EditIcon, 
-  TrashIcon, 
-  EyeIcon,
-  CheckCircleIcon
-} from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { FileEditIcon, EyeIcon, TrashIcon, CheckSquareIcon } from 'lucide-react';
+import { formatDistance } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { apiRequest, queryClient } from '@/lib/queryClient';
 
 export function DraftManagement() {
   const { user } = useAuth();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedDraftId, setSelectedDraftId] = useState<number | null>(null);
 
-  const { data: drafts = [], isLoading, error, refetch } = useQuery({
+  // Fetch draft articles based on user role
+  const { data: drafts = [], isLoading, error } = useQuery({
     queryKey: ['/api/articles/drafts'],
-    queryFn: () => apiRequest('GET', '/api/articles/drafts').then(r => r.json()),
+    enabled: !!user,
   });
 
-  const publishMutation = useMutation({
-    mutationFn: async (id: number) => {
-      return apiRequest('PUT', `/api/articles/${id}`, { status: 'published' })
-        .then(r => r.json());
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Article published successfully",
+  // Fetch user's draft articles if they're an author
+  const { data: myDrafts = [] } = useQuery({
+    queryKey: ['/api/articles/drafts/me'],
+    enabled: !!user && user.role === 'author',
+  });
+
+  // Determine which drafts to display based on user role
+  const displayDrafts = user?.role === 'author' ? myDrafts : drafts;
+
+  const handleEdit = (id: number) => {
+    navigate(`/admin/articles/edit/${id}`);
+  };
+
+  const handlePreview = (slug: string) => {
+    window.open(`/article/${slug}?preview=true`, '_blank');
+  };
+
+  const handlePublish = async (id: number) => {
+    try {
+      // Get the current article data
+      const response = await apiRequest('GET', `/api/articles/${id}`);
+      const article = await response.json();
+
+      // Update to published status
+      await apiRequest('PUT', `/api/articles/${id}`, {
+        ...article,
+        status: 'published'
       });
+
+      toast({
+        title: 'Success',
+        description: 'Article published successfully',
+      });
+
+      // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['/api/articles/drafts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/articles/drafts/me'] });
       queryClient.invalidateQueries({ queryKey: ['/api/articles'] });
-    },
-    onError: (error) => {
+    } catch (error) {
+      console.error('Error publishing article:', error);
       toast({
-        title: "Error",
-        description: "Failed to publish article",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to publish article. Only editors and admins can publish.',
+        variant: 'destructive',
       });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      return apiRequest('DELETE', `/api/articles/${id}`)
-        .then(r => r.json());
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Draft deleted successfully",
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/articles/drafts'] });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to delete draft",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handlePublish = (id: number) => {
-    if (confirm('Are you sure you want to publish this article?')) {
-      publishMutation.mutate(id);
     }
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm('Are you sure you want to delete this draft? This action cannot be undone.')) {
-      deleteMutation.mutate(id);
+  const confirmDelete = (id: number) => {
+    setSelectedDraftId(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!selectedDraftId) return;
+    
+    try {
+      await apiRequest('DELETE', `/api/articles/${selectedDraftId}`);
+
+      toast({
+        title: 'Success',
+        description: 'Draft deleted successfully',
+      });
+
+      // Close modal and refresh data
+      setIsDeleteModalOpen(false);
+      setSelectedDraftId(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/articles/drafts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/articles/drafts/me'] });
+    } catch (error) {
+      console.error('Error deleting draft:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete draft',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -92,11 +121,12 @@ export function DraftManagement() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Draft Articles</CardTitle>
+          <CardTitle>Draft Management</CardTitle>
+          <CardDescription>Loading drafts...</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center h-60">
-            <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" aria-label="Loading"></div>
+          <div className="h-40 flex items-center justify-center">
+            <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
           </div>
         </CardContent>
       </Card>
@@ -107,10 +137,13 @@ export function DraftManagement() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Draft Articles</CardTitle>
+          <CardTitle>Draft Management</CardTitle>
+          <CardDescription>Error loading drafts</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-red-500">Error loading drafts. Please try again.</div>
+          <div className="text-red-500">
+            Failed to load drafts. Please try again later.
+          </div>
         </CardContent>
       </Card>
     );
@@ -119,19 +152,16 @@ export function DraftManagement() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex justify-between items-center">
-          <span>Draft Articles</span>
-          <Button size="sm" asChild>
-            <Link href="/admin/articles/new">
-              <FileTextIcon className="h-4 w-4 mr-2" />
-              New Article
-            </Link>
-          </Button>
-        </CardTitle>
+        <CardTitle>Draft Management</CardTitle>
+        <CardDescription>
+          {user?.role === 'author' 
+            ? 'Manage your article drafts before publishing' 
+            : 'Review and manage all article drafts'}
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        {drafts.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
+        {displayDrafts.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
             No draft articles found.
           </div>
         ) : (
@@ -139,70 +169,69 @@ export function DraftManagement() {
             <TableHeader>
               <TableRow>
                 <TableHead>Title</TableHead>
-                <TableHead>Author(s)</TableHead>
+                <TableHead>Author</TableHead>
                 <TableHead>Last Updated</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {drafts.map((draft: any) => (
+              {displayDrafts.map((draft: any) => (
                 <TableRow key={draft.id}>
+                  <TableCell className="font-medium">{draft.title || 'Untitled Draft'}</TableCell>
                   <TableCell>
-                    <div className="font-medium">{draft.title}</div>
-                    <div className="text-sm text-gray-500">
-                      {draft.category}
-                    </div>
+                    {draft.authors?.map((author: any) => author.user.username).join(', ') || 'Unknown'}
                   </TableCell>
                   <TableCell>
-                    {draft.authors && draft.authors.length > 0 ? (
-                      <div className="space-y-1">
-                        {draft.authors.map((author: any) => (
-                          <Badge key={author.id} variant="outline" className="mr-1">
-                            {author.username}
-                            {author.role && ` (${author.role})`}
-                          </Badge>
-                        ))}
-                      </div>
-                    ) : (
-                      <span className="text-gray-500">No authors</span>
-                    )}
+                    {draft.updatedAt 
+                      ? formatDistance(new Date(draft.updatedAt), new Date(), { addSuffix: true }) 
+                      : 'Unknown'}
                   </TableCell>
                   <TableCell>
-                    {draft.updatedAt ? (
-                      formatDistanceToNow(new Date(draft.updatedAt), { addSuffix: true })
-                    ) : (
-                      "Unknown"
-                    )}
+                    <Badge variant={draft.status === 'draft' ? 'outline' : 'default'}>
+                      {draft.status || 'draft'}
+                    </Badge>
                   </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button size="sm" variant="outline" asChild>
-                        <Link href={`/admin/articles/${draft.id}/edit`}>
-                          <EditIcon className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                      <Button size="sm" variant="outline" asChild>
-                        <Link href={`/article/${draft.slug}`}>
-                          <EyeIcon className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
+                  <TableCell className="text-right space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleEdit(draft.id)}
+                      title="Edit"
+                    >
+                      <FileEditIcon className="h-4 w-4" />
+                    </Button>
+                    
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handlePreview(draft.slug)}
+                      title="Preview"
+                      disabled={!draft.slug}
+                    >
+                      <EyeIcon className="h-4 w-4" />
+                    </Button>
+                    
+                    {(user?.role === 'admin' || user?.role === 'editor') && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => handlePublish(draft.id)}
-                        disabled={publishMutation.isPending}
+                        title="Publish"
                       >
-                        <CheckCircleIcon className="h-4 w-4 text-green-500" />
+                        <CheckSquareIcon className="h-4 w-4" />
                       </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => handleDelete(draft.id)}
-                        disabled={deleteMutation.isPending}
-                      >
-                        <TrashIcon className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </div>
+                    )}
+                    
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => confirmDelete(draft.id)}
+                      title="Delete"
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -210,6 +239,47 @@ export function DraftManagement() {
           </Table>
         )}
       </CardContent>
+      <CardFooter className="flex justify-between">
+        <Button 
+          variant="secondary"
+          onClick={() => navigate('/admin')}
+        >
+          Back to Dashboard
+        </Button>
+        <Button 
+          variant="default"
+          onClick={() => navigate('/admin/articles/new')}
+        >
+          Create New Article
+        </Button>
+      </CardFooter>
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded-lg w-96">
+            <h3 className="text-lg font-medium mb-4">Confirm Delete</h3>
+            <p>Are you sure you want to delete this draft? This action cannot be undone.</p>
+            <div className="mt-6 flex justify-end space-x-4">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setIsDeleteModalOpen(false);
+                  setSelectedDraftId(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={handleDelete}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }

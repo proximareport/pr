@@ -672,16 +672,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.put("/api/articles/:id", requireAuth, async (req, res) => {
     try {
-      if (!req.session.isAdmin) {
-        return res.status(403).json({ message: "Only admins can update articles" });
-      }
-      
       const { id } = req.params;
       const articleId = parseInt(id);
+      const userId = req.session.userId!;
       
       const article = await storage.getArticleById(articleId);
       if (!article) {
         return res.status(404).json({ message: "Article not found" });
+      }
+      
+      // Get user data to check role
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      // Get article authors to check if user is an author
+      const articleAuthors = await storage.getArticleAuthors(articleId);
+      const isArticleAuthor = articleAuthors.some(author => author.user.id === userId);
+      
+      // Determine if user has permission to edit this article
+      const canEdit = user.role === 'admin' || 
+                     user.role === 'editor' || 
+                     (user.role === 'author' && isArticleAuthor);
+      
+      if (!canEdit) {
+        return res.status(403).json({ 
+          message: "You don't have permission to edit this article. Only admins, editors, or the article's authors can edit it." 
+        });
       }
       
       // Custom validator for content that accepts both array and object formats
@@ -707,14 +725,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Parse and validate (without publishedAt)
       const updateData = updateSchema.parse(req.body);
       
-      // Handle publishedAt separately - convert from ISO string to Date
-      let publishedAt = undefined;
-      if (req.body.publishedAt) {
-        try {
-          publishedAt = new Date(req.body.publishedAt);
-        } catch (e) {
-          console.error("Invalid publishedAt date:", e);
+      // Check if trying to publish an article
+      if (updateData.status === 'published' && article.status !== 'published') {
+        // Only editors and admins can publish
+        const canPublish = user.role === 'admin' || user.role === 'editor';
+        if (!canPublish) {
+          return res.status(403).json({ 
+            message: "Only editors and admins can publish articles. Save as draft instead." 
+          });
         }
+        
+        // Set publishedAt date when article is being published
+        updateData.publishedAt = new Date();
+      } else {
+        // Handle publishedAt separately - convert from ISO string to Date
+        let publishedAt = undefined;
+        if (req.body.publishedAt) {
+          try {
+            publishedAt = new Date(req.body.publishedAt);
+          } catch (e) {
+            console.error("Invalid publishedAt date:", e);
+          }
+        }
+        updateData.publishedAt = publishedAt;
       }
       
       // Extract authors data
@@ -723,11 +756,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // First update the article in the database
       const updatedArticle = await storage.updateArticle(articleId, {
         ...updateData,
-        publishedAt,
       });
       
       // If this is a collaborative article and there are authors, update the authors
-      if (updatedArticle && updatedArticle.isCollaborative && authors && Array.isArray(authors)) {
+      // Only editors and admins can manage authors
+      if (updatedArticle && updatedArticle.isCollaborative && authors && Array.isArray(authors) && 
+          (user.role === 'admin' || user.role === 'editor')) {
         // First remove all existing authors to avoid duplicates
         // Don't worry about removing the primary author, they'll be added back
         const existingAuthors = await storage.getArticleAuthors(articleId);
@@ -743,6 +777,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (author.id !== updatedArticle.primaryAuthorId) {
             await storage.addAuthorToArticle(articleId, author.id, author.role || "coauthor");
           }
+        }
+      } else if (updatedArticle && updatedArticle.isCollaborative && authors && Array.isArray(authors)) {
+        // If authors are trying to update coauthors, inform them they don't have permission
+        if (user.role === 'author') {
+          console.log("Author attempting to update collaborators - not permitted");
+          // We don't return an error, we just don't update the authors list
         }
       }
       
