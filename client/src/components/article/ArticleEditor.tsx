@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { 
   Type, 
@@ -37,12 +38,24 @@ import {
   InfoIcon,
   AlertTriangle,
   Save,
-  Eye
+  Eye,
+  Hash,
+  ChevronDown,
+  ChevronUp,
+  FileCode,
+  BarChart2,
+  ListTodo,
+  Layout,
+  Columns,
+  Plus
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useDropzone } from "react-dropzone";
 import { nanoid } from "nanoid";
 import { apiRequest } from "@/lib/queryClient";
+import { HexColorPicker } from "react-color";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 interface ArticleEditorProps {
   initialArticle?: any;
@@ -65,6 +78,21 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
   const [previewMode, setPreviewMode] = useState(false);
   const [activeBlockIndex, setActiveBlockIndex] = useState<number | null>(null);
   const editorRef = useRef<HTMLDivElement>(null);
+
+  // New state variables for enhanced features
+  const [showTableOfContents, setShowTableOfContents] = useState(initialArticle?.showTableOfContents || true);
+  const [tocPlacement, setTocPlacement] = useState(initialArticle?.tocPlacement || "top"); // top, left, right
+  const [tocAutomatic, setTocAutomatic] = useState(initialArticle?.tocAutomatic || true);
+  const [manualToc, setManualToc] = useState<{title: string, anchor: string}[]>(initialArticle?.manualToc || []);
+  const [tocTitle, setTocTitle] = useState(initialArticle?.tocTitle || "Table of Contents");
+  const [imageUploadDialogOpen, setImageUploadDialogOpen] = useState(false);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [pollDialogOpen, setPollDialogOpen] = useState(false);
+  const [currentPollOptions, setCurrentPollOptions] = useState<string[]>([""]);
+  const [currentPollQuestion, setCurrentPollQuestion] = useState("");
+  const [currentPollMultipleChoice, setCurrentPollMultipleChoice] = useState(false);
+  const [htmlMode, setHtmlMode] = useState(false);
+  const [newTocItem, setNewTocItem] = useState({ title: "", anchor: "" });
 
   // Dropzone for featured image
   const onFeaturedImageDrop = useCallback((acceptedFiles: File[]) => {
