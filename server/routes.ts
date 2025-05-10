@@ -957,8 +957,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.delete("/api/articles/:id", requireAuth, async (req, res) => {
     try {
-      if (!req.session.isAdmin) {
-        return res.status(403).json({ message: "Only admins can delete articles" });
+      const userId = req.session.userId!;
+      
+      // Get the user to check their role
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
       }
       
       const { id } = req.params;
@@ -967,6 +971,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const article = await storage.getArticleById(articleId);
       if (!article) {
         return res.status(404).json({ message: "Article not found" });
+      }
+      
+      // Check if user has permission to delete this article
+      const isAdmin = user.role === 'admin';
+      const isEditor = user.role === 'editor';
+      
+      // If the user is an author, check if they are the article's author
+      let isArticleAuthor = false;
+      if (user.role === 'author') {
+        const authors = await storage.getArticleAuthors(article.id);
+        isArticleAuthor = authors.some(author => author.user.id === userId);
+      }
+      
+      // Determine if user has permission to delete
+      // Admins can delete any article
+      // Editors can delete any article
+      // Authors can only delete their own drafts, not published articles
+      const canDelete = isAdmin || 
+                       isEditor || 
+                       (user.role === 'author' && isArticleAuthor && article.status === 'draft');
+      
+      if (!canDelete) {
+        return res.status(403).json({ 
+          message: "You don't have permission to delete this article. Only admins, editors, or the article's authors (for drafts only) can delete it." 
+        });
       }
       
       await storage.deleteArticle(articleId);
