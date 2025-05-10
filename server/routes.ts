@@ -117,16 +117,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/login", async (req, res) => {
     try {
+      console.log("Login attempt for:", req.body.email);
       const { email, password } = req.body;
       
       // Find user
       const user = await storage.getUserByEmail(email);
       if (!user) {
+        console.log("User not found:", email);
         return res.status(400).json({ message: "Invalid credentials" });
       }
       
+      console.log("User found, checking password...");
+      
+      // Add this for debugging - log password length and hash format
+      console.log("Password length:", password?.length);
+      console.log("Stored hash type:", typeof user.password);
+      console.log("Stored hash length:", user.password?.length);
+      
       // Check password
       const isMatch = await bcrypt.compare(password, user.password);
+      
+      console.log("Password match result:", isMatch);
+      
       if (!isMatch) {
         return res.status(400).json({ message: "Invalid credentials" });
       }
@@ -140,8 +152,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Return user without password
       const { password: _, ...userWithoutPassword } = user;
+      console.log("Login successful for:", email);
       res.json(userWithoutPassword);
     } catch (error) {
+      console.error("Login error:", error);
       res.status(500).json({ message: "Server error during login" });
     }
   });
