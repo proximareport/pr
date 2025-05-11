@@ -473,31 +473,31 @@ function AdminDashboard() {
                     )}
                   </div>
                 </CardTitle>
-                <CardDescription className="text-base ml-[3.25rem]">
+                <CardDescription className="text-base ml-[3.25rem] text-gray-400">
                   Review and approve advertisement submissions
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-4">
                 {pendingAdsCount > 0 ? (
-                  <div className="flex items-center mb-6 bg-amber-50 p-4 rounded-lg border border-amber-100">
-                    <div className="p-3 rounded-full bg-amber-100 text-amber-600 mr-4 flex-shrink-0">
+                  <div className="flex items-center mb-6 bg-amber-900/30 p-4 rounded-lg border border-amber-800/50">
+                    <div className="p-3 rounded-full bg-amber-900/60 text-amber-400 mr-4 flex-shrink-0">
                       <AlertTriangleIcon className="h-6 w-6" />
                     </div>
                     <div>
-                      <h4 className="font-medium text-amber-800">Action Required</h4>
-                      <p className="text-amber-700 text-sm">
+                      <h4 className="font-medium text-amber-300">Action Required</h4>
+                      <p className="text-amber-400/90 text-sm">
                         You have {pendingAdsCount} advertisement{pendingAdsCount !== 1 ? 's' : ''} waiting for approval.
                       </p>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center mb-6 bg-emerald-50 p-4 rounded-lg border border-emerald-100">
-                    <div className="p-3 rounded-full bg-emerald-100 text-emerald-600 mr-4 flex-shrink-0">
+                  <div className="flex items-center mb-6 bg-emerald-900/30 p-4 rounded-lg border border-emerald-800/50">
+                    <div className="p-3 rounded-full bg-emerald-900/60 text-emerald-400 mr-4 flex-shrink-0">
                       <CheckCircleIcon className="h-6 w-6" />
                     </div>
                     <div>
-                      <h4 className="font-medium text-emerald-800">All Caught Up</h4>
-                      <p className="text-emerald-700 text-sm">
+                      <h4 className="font-medium text-emerald-300">All Caught Up</h4>
+                      <p className="text-emerald-400/90 text-sm">
                         No pending advertisements requiring your attention.
                       </p>
                     </div>
@@ -524,16 +524,16 @@ function AdminDashboard() {
             </Card>
             
             {/* Articles Card */}
-            <Card className="rounded-xl border border-gray-200 shadow-md overflow-hidden bg-white">
-              <div className="h-2 w-full bg-blue-500"></div>
+            <Card className="rounded-xl border border-gray-800 shadow-md overflow-hidden bg-gray-900">
+              <div className="h-2 w-full bg-blue-600"></div>
               <CardHeader className="pb-2 pt-5">
-                <CardTitle className="flex items-center text-xl">
-                  <div className="p-3 rounded-xl bg-blue-100 text-blue-600 mr-4 flex-shrink-0">
+                <CardTitle className="flex items-center text-xl text-gray-100">
+                  <div className="p-3 rounded-xl bg-blue-900/60 text-blue-400 mr-4 flex-shrink-0">
                     <FileTextIcon className="h-6 w-6" />
                   </div>
                   <div>Content Management</div>
                 </CardTitle>
-                <CardDescription className="text-base ml-[3.25rem]">
+                <CardDescription className="text-base ml-[3.25rem] text-gray-400">
                   Monitor and manage all site content
                 </CardDescription>
               </CardHeader>
@@ -867,7 +867,7 @@ function AdminDashboard() {
                     </div>
                   ) : (
                     <Tabs defaultValue="all" className="w-full">
-                      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-4">
+                      <div className="bg-gray-800 p-4 rounded-lg shadow mb-4 border border-gray-700">
                         <TabsList className="grid grid-cols-5 max-w-md mx-auto">
                           <TabsTrigger value="all">All</TabsTrigger>
                           <TabsTrigger value="needs_edits" className="flex gap-2 items-center">
