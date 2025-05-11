@@ -1,47 +1,42 @@
 import React from 'react';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle } from 'lucide-react';
 
-function AdvertiseSuccess() {
+export default function AdvertiseSuccess() {
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header />
-      <main className="flex-1 container mx-auto py-8 px-4">
-        <div className="max-w-md mx-auto text-center mt-12">
-          <div className="rounded-full bg-green-100 p-3 w-16 h-16 mx-auto mb-4">
-            <CheckCircle className="text-green-600 w-10 h-10" />
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight mb-4">Advertisement Submitted</h1>
-          <p className="text-gray-600 mb-8">
-            Thank you for your advertisement submission. Our team will review your request shortly.
-            You will receive a notification when your advertisement is approved.
-          </p>
-          <div className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-4 text-left">
-              <h3 className="font-medium text-blue-800">What happens next?</h3>
-              <ol className="mt-2 text-sm text-blue-700 list-decimal pl-5 space-y-1">
-                <li>Our team will review your advertisement within 1-2 business days</li>
-                <li>Once approved, your ad will run during the selected dates</li>
-                <li>You can track performance metrics in your account dashboard</li>
-              </ol>
+    <div className="container mx-auto py-16 px-4">
+      <div className="max-w-md mx-auto text-center">
+        <Card className="shadow-lg">
+          <CardHeader>
+            <div className="flex justify-center mb-2">
+              <CheckCircle className="h-16 w-16 text-green-500" />
             </div>
-            <div className="flex space-x-4 justify-center">
-              <Link href="/advertise">
-                <Button variant="outline">Submit Another Ad</Button>
-              </Link>
-              <Link href="/">
-                <Button>Return Home</Button>
-              </Link>
+            <CardTitle className="text-2xl">Advertisement Submitted!</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-gray-600">
+              Thank you for submitting your advertisement. Our team will review your submission and 
+              get back to you within 1-2 business days.
+            </p>
+            
+            <p className="text-gray-600">
+              If you have any questions or need to make changes to your submission, 
+              please contact our advertising team at ads@proximareport.com.
+            </p>
+            
+            <div className="flex justify-center gap-4 pt-2">
+              <Button asChild>
+                <Link href="/">Back to Home</Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/advertise">Submit Another Ad</Link>
+              </Button>
             </div>
-          </div>
-        </div>
-      </main>
-      <Footer />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
-
-export default AdvertiseSuccess;
