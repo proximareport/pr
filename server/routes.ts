@@ -1615,22 +1615,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(apiCache[cacheKey].data);
       }
       
-      // Otherwise, fetch fresh data
-      const response = await axios.get('https://ll.thespacedevs.com/2.2.0/launch/upcoming/', {
-        headers: {
-          'User-Agent': 'Proxima-Report/1.0'
-        }
-      });
-      
-      // Cache the response
-      apiCache[cacheKey] = {
-        data: response.data,
-        timestamp: now
-      };
-      
-      res.json(response.data);
+      // Otherwise, fetch fresh data with backup URL pattern
+      try {
+        console.log("Fetching upcoming launches from Space Devs");
+        const response = await axios.get('https://ll.thespacedevs.com/2.2.0/launch/upcoming/', {
+          headers: {
+            'User-Agent': 'Proxima-Report/1.0',
+            'Accept': 'application/json'
+          },
+          timeout: 10000 // 10 second timeout
+        });
+        
+        // Cache the response
+        apiCache[cacheKey] = {
+          data: response.data,
+          timestamp: now
+        };
+        
+        console.log(`Space Devs upcoming launches: Found ${response.data?.results?.length || 0} launches`);
+        res.json(response.data);
+      } catch (innerError) {
+        console.error("Failed with primary URL, trying alternative:", innerError);
+        
+        // Try alternative URL
+        const response = await axios.get('https://lldev.thespacedevs.com/2.2.0/launch/upcoming/', {
+          headers: {
+            'User-Agent': 'Proxima-Report/1.0',
+            'Accept': 'application/json'
+          },
+          timeout: 10000
+        });
+        
+        // Cache the response
+        apiCache[cacheKey] = {
+          data: response.data,
+          timestamp: now
+        };
+        
+        console.log(`Space Devs upcoming launches (alt URL): Found ${response.data?.results?.length || 0} launches`);
+        res.json(response.data);
+      }
     } catch (error) {
-      console.error("Error fetching upcoming launches from The Space Devs:", error);
+      const err = error as any;
+      console.error("Error fetching upcoming launches from The Space Devs:", 
+        err.response ? `Status: ${err.response.status}` : err.message);
       res.status(500).json({ message: "Error fetching upcoming launches" });
     }
   });
@@ -1646,22 +1674,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(apiCache[cacheKey].data);
       }
       
-      // Otherwise, fetch fresh data
-      const response = await axios.get('https://ll.thespacedevs.com/2.2.0/launch/previous/', {
-        headers: {
-          'User-Agent': 'Proxima-Report/1.0'
-        }
-      });
-      
-      // Cache the response
-      apiCache[cacheKey] = {
-        data: response.data,
-        timestamp: now
-      };
-      
-      res.json(response.data);
+      // Otherwise, fetch fresh data with backup URL pattern
+      try {
+        console.log("Fetching previous launches from Space Devs");
+        const response = await axios.get('https://ll.thespacedevs.com/2.2.0/launch/previous/', {
+          headers: {
+            'User-Agent': 'Proxima-Report/1.0',
+            'Accept': 'application/json'
+          },
+          timeout: 10000,
+          params: {
+            limit: 20 // Limit to 20 previous launches to improve performance
+          }
+        });
+        
+        // Cache the response
+        apiCache[cacheKey] = {
+          data: response.data,
+          timestamp: now
+        };
+        
+        console.log(`Space Devs previous launches: Found ${response.data?.results?.length || 0} launches`);
+        res.json(response.data);
+      } catch (innerError) {
+        console.error("Failed with primary URL, trying alternative:", innerError);
+        
+        // Try alternative URL
+        const response = await axios.get('https://lldev.thespacedevs.com/2.2.0/launch/previous/', {
+          headers: {
+            'User-Agent': 'Proxima-Report/1.0',
+            'Accept': 'application/json'
+          },
+          timeout: 10000,
+          params: {
+            limit: 20 // Limit to 20 previous launches to improve performance
+          }
+        });
+        
+        // Cache the response
+        apiCache[cacheKey] = {
+          data: response.data,
+          timestamp: now
+        };
+        
+        console.log(`Space Devs previous launches (alt URL): Found ${response.data?.results?.length || 0} launches`);
+        res.json(response.data);
+      }
     } catch (error) {
-      console.error("Error fetching previous launches from The Space Devs:", error);
+      const err = error as any;
+      console.error("Error fetching previous launches from The Space Devs:", 
+        err.response ? `Status: ${err.response.status}` : err.message);
       res.status(500).json({ message: "Error fetching previous launches" });
     }
   });
@@ -1770,13 +1832,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(apiCache[cacheKey].data);
       }
       
-      // Otherwise, fetch fresh data
-      const response = await axios.get(`https://ll.thespacedevs.com/2.2.0/${endpoint}`, {
+      // Determine complete URL with or without trailing slash
+      let url = `https://ll.thespacedevs.com/2.2.0/${endpoint}`;
+      if (!url.endsWith('/')) {
+        url += '/';
+      }
+      
+      console.log(`Fetching from Space Devs API: ${url}`);
+      
+      // Fetch with a longer timeout
+      const response = await axios.get(url, {
         headers: {
-          'User-Agent': 'Proxima-Report/1.0'
+          'User-Agent': 'Proxima-Report/1.0',
+          'Accept': 'application/json'
         },
-        params: req.query
+        params: req.query,
+        timeout: 10000 // 10 second timeout
       });
+      
+      // Log the response data shape for debugging
+      console.log(`Space Devs API response status: ${response.status}`);
+      console.log(`Space Devs API data shape:`, Object.keys(response.data));
       
       // Cache the response
       apiCache[cacheKey] = {
@@ -1786,7 +1862,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(response.data);
     } catch (error) {
-      console.error(`Error fetching from The Space Devs API (${req.params.endpoint}):`, error);
+      const err = error as any;  // Type assertion for TS compatibility
+      console.error(`Error fetching from The Space Devs API (${req.params.endpoint}):`, 
+        err.response ? `Status: ${err.response.status}, Data: ${JSON.stringify(err.response.data)}` : err.message);
       res.status(500).json({ message: "Error fetching data from The Space Devs API" });
     }
   });

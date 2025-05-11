@@ -197,9 +197,9 @@ function Launches() {
     queryKey: ['/api/spacex/upcoming'],
   });
   
-  // Fetch The Space Devs upcoming launches (directly from the source)
+  // Fetch The Space Devs upcoming launches via our API
   const { data: tsdUpcomingData, isLoading: isLoadingTSD } = useQuery({
-    queryKey: ['/api/thespacedevs/launch/upcoming'],
+    queryKey: ['/api/launches/upcoming'],
   });
   
   // Fetch past launches from SpaceX
