@@ -2908,6 +2908,217 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Media Library Routes
+  // Get all media items (with optional filtering by user)
+  app.get("/api/media", requireAuth, async (req, res) => {
+    try {
+      const { userId } = req.session;
+      const requestingUser = await storage.getUser(userId);
+      const isAdmin = requestingUser?.role === 'admin' || requestingUser?.role === 'editor';
+      
+      // Get query parameters
+      const type = req.query.type as string;
+      const search = req.query.search as string;
+      
+      let mediaItems: MediaLibraryItem[];
+      
+      // For regular users, only show their own uploads
+      // For admins and editors, show all media unless filtered by a specific user
+      const targetUserId = isAdmin && req.query.userId ? parseInt(req.query.userId as string) : userId;
+      
+      if (search) {
+        mediaItems = await storage.searchMediaLibrary(search, isAdmin ? undefined : targetUserId);
+      } else if (type) {
+        mediaItems = await storage.getMediaLibraryItemsByType(type, isAdmin ? undefined : targetUserId);
+      } else {
+        mediaItems = await storage.getMediaLibraryItems(isAdmin ? undefined : targetUserId);
+      }
+      
+      res.json(mediaItems);
+    } catch (error) {
+      console.error("Error fetching media items:", error);
+      res.status(500).json({ message: "Error fetching media items" });
+    }
+  });
+  
+  // Get a specific media item by ID
+  app.get("/api/media/:id", requireAuth, async (req, res) => {
+    try {
+      const itemId = parseInt(req.params.id);
+      const mediaItem = await storage.getMediaLibraryItemById(itemId);
+      
+      if (!mediaItem) {
+        return res.status(404).json({ message: "Media item not found" });
+      }
+      
+      // Check permissions - users can only access their own media unless they're admin/editor
+      const { userId } = req.session;
+      const requestingUser = await storage.getUser(userId);
+      
+      if (mediaItem.userId !== userId && !['admin', 'editor'].includes(requestingUser?.role || '')) {
+        return res.status(403).json({ message: "You don't have permission to access this media item" });
+      }
+      
+      res.json(mediaItem);
+    } catch (error) {
+      console.error("Error fetching media item:", error);
+      res.status(500).json({ message: "Error fetching media item" });
+    }
+  });
+  
+  // Upload new media file
+  app.post("/api/media/upload", requireAuth, upload.single("file"), async (req, res) => {
+    try {
+      const { userId } = req.session;
+      
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+      
+      // Extract file information
+      const file = req.file;
+      const originalName = file.originalname;
+      const fileExtension = path.extname(originalName);
+      const mimetype = file.mimetype;
+      const fileSize = file.size;
+      
+      // Determine file type based on mimetype
+      let fileType: string;
+      if (mimetype.startsWith('image/')) {
+        fileType = 'image';
+      } else if (mimetype.startsWith('video/')) {
+        fileType = 'video';
+      } else if (mimetype.startsWith('audio/')) {
+        fileType = 'audio';
+      } else {
+        fileType = 'document';
+      }
+      
+      // Generate unique filename
+      const fileName = `${uuidv4()}${fileExtension}`;
+      
+      // Ensure uploads directory exists
+      const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      
+      // Save file to disk
+      const filePath = path.join(uploadsDir, fileName);
+      const fileStream = fs.createWriteStream(filePath);
+      await pipeline(file.buffer, fileStream);
+      
+      // Generate file URL
+      const fileUrl = `/uploads/${fileName}`;
+      
+      // Get additional metadata from request body
+      const { altText, caption, isPublic, tags } = req.body;
+      const parsedTags = tags ? JSON.parse(tags) : undefined;
+      
+      // Create media item in database
+      const mediaItem = await storage.createMediaLibraryItem({
+        userId,
+        fileName: originalName,
+        fileUrl,
+        fileSize,
+        fileType: fileType as any,
+        mimeType: mimetype,
+        altText,
+        caption,
+        width: null,
+        height: null,
+        duration: null,
+        isPublic: isPublic === 'true',
+        tags: parsedTags
+      });
+      
+      res.status(201).json(mediaItem);
+    } catch (error) {
+      console.error("Error uploading media:", error);
+      res.status(500).json({ message: "Error uploading media" });
+    }
+  });
+  
+  // Update media item metadata
+  app.patch("/api/media/:id", requireAuth, async (req, res) => {
+    try {
+      const itemId = parseInt(req.params.id);
+      const { userId } = req.session;
+      
+      // Get the media item
+      const mediaItem = await storage.getMediaLibraryItemById(itemId);
+      
+      if (!mediaItem) {
+        return res.status(404).json({ message: "Media item not found" });
+      }
+      
+      // Check permissions - only the owner or admin/editor can update
+      const requestingUser = await storage.getUser(userId);
+      
+      if (mediaItem.userId !== userId && !['admin', 'editor'].includes(requestingUser?.role || '')) {
+        return res.status(403).json({ message: "You don't have permission to update this media item" });
+      }
+      
+      // Validate update data
+      const updateSchema = z.object({
+        altText: z.string().optional(),
+        caption: z.string().optional(),
+        isPublic: z.boolean().optional(),
+        tags: z.array(z.string()).optional()
+      });
+      
+      const updateData = updateSchema.parse(req.body);
+      
+      // Update the media item
+      const updatedItem = await storage.updateMediaLibraryItem(itemId, updateData);
+      
+      res.json(updatedItem);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: "Invalid update data", errors: error.errors });
+      }
+      
+      console.error("Error updating media item:", error);
+      res.status(500).json({ message: "Error updating media item" });
+    }
+  });
+  
+  // Delete media item
+  app.delete("/api/media/:id", requireAuth, async (req, res) => {
+    try {
+      const itemId = parseInt(req.params.id);
+      const { userId } = req.session;
+      
+      // Get the media item
+      const mediaItem = await storage.getMediaLibraryItemById(itemId);
+      
+      if (!mediaItem) {
+        return res.status(404).json({ message: "Media item not found" });
+      }
+      
+      // Check permissions - only the owner or admin can delete
+      const requestingUser = await storage.getUser(userId);
+      
+      if (mediaItem.userId !== userId && requestingUser?.role !== 'admin') {
+        return res.status(403).json({ message: "You don't have permission to delete this media item" });
+      }
+      
+      // Delete the file from disk
+      const filePath = path.join(process.cwd(), 'public', mediaItem.fileUrl);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+      
+      // Delete the media item from database
+      await storage.deleteMediaLibraryItem(itemId);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting media item:", error);
+      res.status(500).json({ message: "Error deleting media item" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
