@@ -244,22 +244,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get all users (for coauthor selection)
+  // Get all users (for coauthor selection or admin dashboard depending on query param)
   app.get("/api/users", requireAuth, async (req, res) => {
     try {
+      const { userId } = req.session;
+      const isForAdmin = req.query.admin === 'true';
       const users = await storage.getAllUsers();
       
-      // Return simplified user data (only what's needed for UI)
-      const simplifiedUsers = users.map(user => ({
-        id: user.id,
-        username: user.username,
-        profilePicture: user.profilePicture
-      }));
-      
-      res.json(simplifiedUsers);
+      if (isForAdmin) {
+        // Check if user is admin for detailed user info
+        const requestingUser = await storage.getUser(userId);
+        
+        if (requestingUser?.role !== 'admin') {
+          return res.status(403).json({ message: "Unauthorized: Admin access required" });
+        }
+        
+        // Return comprehensive user data for admin dashboard
+        const formattedUsers = users.map(user => ({
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          membershipTier: user.membershipTier,
+          profilePicture: user.profilePicture,
+          createdAt: user.createdAt,
+          lastLoginAt: user.lastLoginAt,
+          hasStripeAccount: !!user.stripeCustomerId
+        }));
+        
+        res.json(formattedUsers);
+      } else {
+        // Return simplified user data (only what's needed for coauthor UI)
+        const simplifiedUsers = users.map(user => ({
+          id: user.id,
+          username: user.username,
+          profilePicture: user.profilePicture
+        }));
+        
+        res.json(simplifiedUsers);
+      }
     } catch (error) {
       console.error('Error fetching users:', error);
       res.status(500).json({ message: "Server error" });
+    }
+  });
+  
+  // Update user role (admin only)
+  app.patch("/api/users/:userId/role", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { userId } = req.session;
+      const targetUserId = parseInt(req.params.userId);
+      const { role } = req.body;
+      
+      // Validate role
+      if (!['user', 'author', 'editor', 'admin'].includes(role)) {
+        return res.status(400).json({ message: "Invalid role" });
+      }
+      
+      // Prevent admins from downgrading themselves
+      if (userId === targetUserId && role !== 'admin') {
+        return res.status(400).json({ message: "Cannot downgrade your own admin role" });
+      }
+      
+      // Update user role
+      const updatedUser = await storage.updateUser(targetUserId, { role });
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json({ 
+        id: updatedUser.id,
+        username: updatedUser.username,
+        role: updatedUser.role 
+      });
+    } catch (error) {
+      console.error("Error updating user role:", error);
+      res.status(500).json({ message: "Error updating user role" });
+    }
+  });
+  
+  // Update user membership tier (admin only)
+  app.patch("/api/users/:userId/membership", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const targetUserId = parseInt(req.params.userId);
+      const { tier } = req.body;
+      
+      // Validate membership tier
+      if (!['free', 'supporter', 'pro'].includes(tier)) {
+        return res.status(400).json({ message: "Invalid membership tier" });
+      }
+      
+      // Update user membership
+      const updatedUser = await storage.updateUserMembership(targetUserId, tier as 'free' | 'supporter' | 'pro');
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json({ 
+        id: updatedUser.id,
+        username: updatedUser.username,
+        membershipTier: updatedUser.membershipTier 
+      });
+    } catch (error) {
+      console.error("Error updating user membership:", error);
+      res.status(500).json({ message: "Error updating user membership" });
     }
   });
   
