@@ -363,18 +363,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getArticleAuthors(articleId: number): Promise<(ArticleAuthor & { user: User })[]> {
-    const authors = await db.select({
-      articleAuthor: articleAuthors,
-      user: users
-    })
-    .from(articleAuthors)
-    .innerJoin(users, eq(articleAuthors.userId, users.id))
-    .where(eq(articleAuthors.articleId, articleId));
-    
-    return authors.map(row => ({
-      ...row.articleAuthor,
-      user: row.user
-    }));
+    try {
+      const authors = await db.select({
+        articleId: articleAuthors.articleId,
+        userId: articleAuthors.userId,
+        role: articleAuthors.role,
+        createdAt: articleAuthors.createdAt,
+        user: users
+      })
+      .from(articleAuthors)
+      .innerJoin(users, eq(articleAuthors.userId, users.id))
+      .where(eq(articleAuthors.articleId, articleId));
+      
+      return authors.map(row => ({
+        articleId: row.articleId,
+        userId: row.userId,
+        role: row.role,
+        createdAt: row.createdAt,
+        user: row.user
+      }));
+    } catch (error) {
+      console.error("Error fetching article authors:", error);
+      return [];
+    }
   }
 
   async getAuthoredArticles(userId: number): Promise<(ArticleAuthor & { article: Article })[]> {

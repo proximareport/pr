@@ -43,7 +43,7 @@ export const articles = pgTable("articles", {
   viewCount: integer("view_count").default(0),
   tags: text("tags").array(),
   category: text("category").notNull(),
-  status: text("status").default("draft").notNull(),
+  status: text("status").default("draft").notNull(), // "draft", "published", "needs_edits", "good_to_publish", "do_not_publish"
   lastEditedBy: integer("last_edited_by").references(() => users.id),
   lastEditedAt: timestamp("last_edited_at"),
   isCollaborative: boolean("is_collaborative").default(false),
