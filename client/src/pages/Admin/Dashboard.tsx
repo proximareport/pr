@@ -18,7 +18,8 @@ import {
   KeyIcon,
   FileEditIcon,
   DollarSignIcon,
-  BellIcon
+  BellIcon,
+  CheckCircleIcon
 } from 'lucide-react';
 import DraftManagement from './DraftManagement';
 import PublishedContent from './PublishedContent';
@@ -55,9 +56,18 @@ function AdminDashboard() {
       <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
       
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="content">Content</TabsTrigger>
+          <TabsTrigger value="advertisements" className="flex items-center">
+            <DollarSignIcon className="h-4 w-4 mr-1 text-green-600" />
+            Advertisements
+            {pendingAdsCount > 0 && (
+              <span className="ml-1.5 bg-red-100 text-red-800 text-xs font-semibold px-1.5 py-0.5 rounded-full">
+                {pendingAdsCount}
+              </span>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="media">Media</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -363,6 +373,87 @@ function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <p>User management tab content will go here.</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="advertisements" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <DollarSignIcon className="h-5 w-5 mr-2 text-green-600" />
+                Advertisement Management
+              </CardTitle>
+              <CardDescription>Review, approve, and manage advertisements</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <h3 className="font-semibold text-amber-800 flex items-center">
+                      <span className="bg-amber-200 p-2 rounded-full mr-2">
+                        <BellIcon className="h-5 w-5 text-amber-600" />
+                      </span>
+                      Pending Approval
+                    </h3>
+                    <p className="text-3xl font-bold mt-2">{pendingAdsCount}</p>
+                    <p className="text-sm text-amber-700 mt-1">Waiting for review</p>
+                  </div>
+                  
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h3 className="font-semibold text-green-800 flex items-center">
+                      <span className="bg-green-200 p-2 rounded-full mr-2">
+                        <CheckCircleIcon className="h-5 w-5 text-green-600" />
+                      </span>
+                      Active Ads
+                    </h3>
+                    <p className="text-3xl font-bold mt-2">
+                      {Array.isArray(advertisements) 
+                        ? advertisements.filter((ad: any) => ad.isApproved && new Date(ad.startDate) <= new Date() && new Date(ad.endDate) >= new Date()).length 
+                        : 0}
+                    </p>
+                    <p className="text-sm text-green-700 mt-1">Currently running</p>
+                  </div>
+                  
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 className="font-semibold text-blue-800 flex items-center">
+                      <span className="bg-blue-200 p-2 rounded-full mr-2">
+                        <BarChart3Icon className="h-5 w-5 text-blue-600" />
+                      </span>
+                      Total Revenue
+                    </h3>
+                    <p className="text-3xl font-bold mt-2">
+                      ${Array.isArray(advertisements) 
+                        ? advertisements.filter((ad: any) => ad.isApproved).reduce((sum: number, ad: any) => sum + (ad.price / (ad.price ? 100 : 1) || 0), 0).toFixed(2)
+                        : '0.00'}
+                    </p>
+                    <p className="text-sm text-blue-700 mt-1">From approved ads</p>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col md:flex-row gap-4 mt-8">
+                  <Button 
+                    size="lg" 
+                    className="bg-purple-600 hover:bg-purple-700"
+                    onClick={() => navigate('/admin/advertisements')}
+                  >
+                    <DollarSignIcon className="mr-2 h-5 w-5" />
+                    Manage All Advertisements
+                  </Button>
+                  
+                  {pendingAdsCount > 0 && (
+                    <Button 
+                      variant="outline" 
+                      size="lg"
+                      className="border-amber-500 text-amber-600 hover:bg-amber-50"
+                      onClick={() => navigate('/admin/advertisements')}
+                    >
+                      <BellIcon className="mr-2 h-5 w-5" />
+                      Review Pending Ads ({pendingAdsCount})
+                    </Button>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
