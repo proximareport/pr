@@ -916,6 +916,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get article by ID (for admin/edit purposes)
+  app.get("/api/articles/:id(\\d+)", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const articleId = parseInt(id);
+      
+      // Direct database check - more reliable
+      const articleExists = await pool.query(
+        `SELECT EXISTS(SELECT 1 FROM articles WHERE id = $1)`,
+        [articleId]
+      );
+      
+      if (!articleExists.rows[0].exists) {
+        console.log(`Article with id ${articleId} not found in database.`);
+        return res.status(404).json({ message: "Article not found" });
+      }
+      
+      const article = await storage.getArticleById(articleId);
+      
+      if (!article) {
+        return res.status(404).json({ message: "Article not found" });
+      }
+      
+      // Always fetch all authors for the article
+      const authors = await storage.getArticleAuthors(article.id);
+      // Map to a simplified author structure
+      const authorData = authors.map(authorRecord => ({
+        id: authorRecord.user.id,
+        username: authorRecord.user.username,
+        profilePicture: authorRecord.user.profilePicture,
+        role: authorRecord.role
+      }));
+      
+      // Return with authors data
+      res.json({
+        ...article,
+        authors: authorData
+      });
+    } catch (error) {
+      console.error("Error fetching article by ID:", error);
+      res.status(500).json({ message: "Error fetching article" });
+    }
+  });
+
+  // Get article by slug (for public viewing)
   app.get("/api/articles/:slug", async (req, res) => {
     try {
       const { slug } = req.params;
