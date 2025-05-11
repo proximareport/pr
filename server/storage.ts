@@ -398,12 +398,13 @@ export class DatabaseStorage implements IStorage {
       }
       
       // Create the article using direct SQL to avoid schema mismatches
+      // Only include columns that actually exist in the database
       const query = `
         INSERT INTO articles (
           title, slug, summary, content, author_id, published_at, featured_image, 
-          is_breaking, read_time, tags, category, status, is_collaborative
+          is_breaking, read_time, tags, category, status
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
         ) RETURNING *
       `;
       
@@ -424,8 +425,7 @@ export class DatabaseStorage implements IStorage {
         articleData.readTime || 5,
         articleData.tags || [],
         articleData.category,
-        articleData.status || 'draft',
-        articleData.isCollaborative || false
+        articleData.status || 'draft'
       ];
       
       console.log("Executing article insert with values:", JSON.stringify({
@@ -455,20 +455,19 @@ export class DatabaseStorage implements IStorage {
       newArticle.publishedAt = newArticle.published_at;
       newArticle.createdAt = newArticle.created_at;
       newArticle.updatedAt = newArticle.updated_at;
-      newArticle.isCollaborative = newArticle.is_collaborative;
+      // Add properties that don't exist in the database but are expected by the front-end
+      newArticle.isCollaborative = false;
       
-      // Add authors if it's a collaborative article
-      if (articleData.isCollaborative) {
-        // Always add primary author
-        await this.addAuthorToArticle(newArticle.id, authorIdToUse, "primary");
-        
-        // Add coauthors if provided
-        if (authors && Array.isArray(authors)) {
-          for (const author of authors) {
-            // Skip the primary author as we already added them
-            if (author.id !== authorIdToUse) {
-              await this.addAuthorToArticle(newArticle.id, author.id, author.role || "coauthor");
-            }
+      // Always add authors to the article
+      // First add the primary author
+      await this.addAuthorToArticle(newArticle.id, authorIdToUse, "primary");
+      
+      // Add coauthors if provided
+      if (articleData.authors && Array.isArray(articleData.authors)) {
+        for (const author of articleData.authors) {
+          // Skip the primary author as we already added them
+          if (author.id !== authorIdToUse) {
+            await this.addAuthorToArticle(newArticle.id, author.id, author.role || "coauthor");
           }
         }
       }
