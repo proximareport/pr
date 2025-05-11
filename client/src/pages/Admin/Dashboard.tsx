@@ -302,46 +302,46 @@ function AdminDashboard() {
                 </Label>
               </div>
               
-              <div className={`flex items-start p-3 rounded-lg ${selectedStatus === 'good_to_publish' ? 'bg-blue-50 border border-blue-200' : 'hover:bg-gray-50'} cursor-pointer`} onClick={() => setSelectedStatus('good_to_publish')}>
+              <div className={`flex items-start p-3 rounded-lg ${selectedStatus === 'good_to_publish' ? 'bg-blue-900/40 border border-blue-700/50' : 'hover:bg-gray-800/50'} cursor-pointer`} onClick={() => setSelectedStatus('good_to_publish')}>
                 <RadioGroupItem value="good_to_publish" id="good_to_publish" className="mt-1" />
                 <Label htmlFor="good_to_publish" className="flex flex-col ml-3 cursor-pointer">
                   <div className="flex items-center">
-                    <Badge className="bg-blue-100 text-blue-800 border-blue-200 font-medium">Good to Publish</Badge>
+                    <Badge className="bg-blue-900/70 text-blue-200 border-blue-700 font-medium">Good to Publish</Badge>
                   </div>
-                  <span className="mt-1 text-sm text-gray-600">Article has been reviewed and approved for publication.</span>
+                  <span className="mt-1 text-sm text-gray-400">Article has been reviewed and approved for publication.</span>
                 </Label>
               </div>
               
-              <div className={`flex items-start p-3 rounded-lg ${selectedStatus === 'do_not_publish' ? 'bg-red-50 border border-red-200' : 'hover:bg-gray-50'} cursor-pointer`} onClick={() => setSelectedStatus('do_not_publish')}>
+              <div className={`flex items-start p-3 rounded-lg ${selectedStatus === 'do_not_publish' ? 'bg-red-900/40 border border-red-700/50' : 'hover:bg-gray-800/50'} cursor-pointer`} onClick={() => setSelectedStatus('do_not_publish')}>
                 <RadioGroupItem value="do_not_publish" id="do_not_publish" className="mt-1" />
                 <Label htmlFor="do_not_publish" className="flex flex-col ml-3 cursor-pointer">
                   <div className="flex items-center">
-                    <Badge className="bg-red-100 text-red-800 border-red-200 font-medium">Do Not Publish</Badge>
+                    <Badge className="bg-red-900/70 text-red-200 border-red-700 font-medium">Do Not Publish</Badge>
                   </div>
-                  <span className="mt-1 text-sm text-gray-600">Content has been rejected and should not be published.</span>
+                  <span className="mt-1 text-sm text-gray-400">Content has been rejected and should not be published.</span>
                 </Label>
               </div>
               
-              <div className={`flex items-start p-3 rounded-lg ${selectedStatus === 'published' ? 'bg-green-50 border border-green-200' : 'hover:bg-gray-50'} cursor-pointer`} onClick={() => setSelectedStatus('published')}>
+              <div className={`flex items-start p-3 rounded-lg ${selectedStatus === 'published' ? 'bg-green-900/40 border border-green-700/50' : 'hover:bg-gray-800/50'} cursor-pointer`} onClick={() => setSelectedStatus('published')}>
                 <RadioGroupItem value="published" id="published" className="mt-1" />
                 <Label htmlFor="published" className="flex flex-col ml-3 cursor-pointer">
                   <div className="flex items-center">
-                    <Badge className="bg-green-100 text-green-800 border-green-200 font-medium">Published</Badge>
+                    <Badge className="bg-green-900/70 text-green-200 border-green-700 font-medium">Published</Badge>
                   </div>
-                  <span className="mt-1 text-sm text-gray-600">Article is live and visible to the public on the site.</span>
+                  <span className="mt-1 text-sm text-gray-400">Article is live and visible to the public on the site.</span>
                 </Label>
               </div>
             </RadioGroup>
           </div>
 
           <DialogFooter className="flex justify-between sm:justify-end gap-2 mt-2">
-            <Button variant="outline" onClick={() => setSelectedArticle(null)} className="border-gray-300">
+            <Button variant="outline" onClick={() => setSelectedArticle(null)} className="border-gray-700 bg-transparent text-gray-300 hover:bg-gray-800 hover:text-gray-100">
               Cancel
             </Button>
             <Button
               onClick={handleStatusUpdate}
               disabled={updateStatusMutation.isPending || selectedStatus === selectedArticle?.status}
-              className={`${selectedStatus === 'published' ? 'bg-green-600 hover:bg-green-700' : selectedStatus === 'do_not_publish' ? 'bg-red-600 hover:bg-red-700' : 'bg-primary hover:bg-primary/90'}`}
+              className={`${selectedStatus === 'published' ? 'bg-green-700 hover:bg-green-800' : selectedStatus === 'do_not_publish' ? 'bg-red-700 hover:bg-red-800' : 'bg-blue-700 hover:bg-blue-800'}`}
             >
               {updateStatusMutation.isPending ? (
                 <>
