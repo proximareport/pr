@@ -1429,6 +1429,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.get("/api/advertisements/:placement", async (req, res) => {
+    try {
+      const { placement } = req.params;
+      const adsForPlacement = await storage.getAdvertisements(placement);
+      
+      // If multiple ads exist for this placement, randomly select one
+      if (adsForPlacement.length > 0) {
+        const randomIndex = Math.floor(Math.random() * adsForPlacement.length);
+        res.json(adsForPlacement[randomIndex]);
+      } else {
+        res.json(null);
+      }
+    } catch (error) {
+      console.error("Error fetching advertisement by placement:", error);
+      res.status(500).json({ message: "Error fetching advertisement" });
+    }
+  });
+
+  app.post("/api/advertisements/:id/impression", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.incrementAdImpression(parseInt(id));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error recording impression:", error);
+      res.status(500).json({ message: "Error recording impression" });
+    }
+  });
+
+  app.post("/api/advertisements/:id/click", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.incrementAdClick(parseInt(id));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error recording click:", error);
+      res.status(500).json({ message: "Error recording click" });
+    }
+  });
+  
   app.post("/api/advertisements", requireAuth, upload.single('image'), async (req, res) => {
     try {
       if (!req.file) {
