@@ -64,24 +64,10 @@ import {
 type MediaType = "image" | "video" | "document" | "audio" | "all";
 
 // Media Item Type
-interface MediaItem {
-  id: number;
-  userId: number;
-  fileName: string;
-  fileUrl: string;
-  fileSize: number;
-  fileType: MediaType;
-  mimeType: string;
-  altText: string | null;
-  caption: string | null;
-  width: number | null;
-  height: number | null;
-  duration: number | null;
-  isPublic: boolean;
-  tags: string[] | null;
-  createdAt: string;
-  updatedAt: string;
-}
+import { MediaLibraryItem } from "@shared/schema";
+
+// For backward compatibility (temporary)
+type MediaItem = MediaLibraryItem;
 
 // File Size Formatter
 const formatFileSize = (bytes: number): string => {
