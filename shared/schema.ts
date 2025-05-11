@@ -139,6 +139,11 @@ export const advertisements = pgTable("advertisements", {
   endDate: timestamp("end_date").notNull(),
   userId: integer("user_id").notNull().references(() => users.id),
   isApproved: boolean("is_approved").default(false),
+  status: text("status").default("pending").notNull(), // pending, approved, rejected, paused, completed
+  paymentStatus: text("payment_status").default("pending").notNull(), // pending, paid, failed
+  paymentId: text("payment_id"), // Stripe payment ID
+  price: integer("price"), // Price in cents
+  adminNotes: text("admin_notes"), // Notes from admin for approval/rejection reasons
   createdAt: timestamp("created_at").defaultNow().notNull(),
   impressions: integer("impressions").default(0),
   clicks: integer("clicks").default(0),
