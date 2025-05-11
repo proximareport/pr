@@ -316,9 +316,16 @@ function LaunchesTab() {
       });
     }
     
-    // Sort by date (closest first)
+    // Sort by date (closest first for upcoming)
     combined.sort((a, b) => {
-      return new Date(a.date).getTime() - new Date(b.date).getTime();
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      
+      // Check for invalid dates and put them at the end
+      if (isNaN(dateA.getTime())) return 1;
+      if (isNaN(dateB.getTime())) return -1;
+      
+      return dateA.getTime() - dateB.getTime();
     });
     
     setCombinedUpcomingLaunches(combined);
@@ -403,27 +410,58 @@ function LaunchesTab() {
       });
     }
     
-    // Sort by date (newest first)
+    // Sort by date (newest first for past launches)
     combined.sort((a, b) => {
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      
+      // Check for invalid dates and put them at the end
+      if (isNaN(dateA.getTime())) return 1;
+      if (isNaN(dateB.getTime())) return -1;
+      
+      return dateB.getTime() - dateA.getTime();
     });
     
     setCombinedPastLaunches(combined);
   }, [spacexPastLaunches, tsdPastData]);
   
-  // Filter launches based on user selections
+  // Filter upcoming launches based on user selections and ensure they are really upcoming
   const filteredUpcomingLaunches = combinedUpcomingLaunches.filter(launch => {
+    // First, ensure the launch date is in the future or very recent (last 24 hours)
+    const launchDate = new Date(launch.date);
+    const now = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    // Skip launch if date is invalid
+    if (isNaN(launchDate.getTime())) return false;
+    
+    // Only include launches that are after yesterday
+    if (launchDate < yesterday) return false;
+    
+    // Then apply agency filter
     if (filterAgency === "all") return true;
     return launch.agency?.toLowerCase().includes(filterAgency.toLowerCase());
   });
   
   const filteredPastLaunches = combinedPastLaunches.filter(launch => {
-    // First, filter by agency if one is selected
+    // First, ensure the launch date is in the past (older than a day)
+    const launchDate = new Date(launch.date);
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    // Skip launch if date is invalid
+    if (isNaN(launchDate.getTime())) return false;
+    
+    // Only include launches that are before yesterday
+    if (launchDate > yesterday) return false;
+    
+    // Then, filter by agency if one is selected
     if (filterAgency !== "all" && !launch.agency?.toLowerCase().includes(filterAgency.toLowerCase())) {
       return false;
     }
     
-    // Then, filter by status
+    // Finally, filter by status
     if (filterStatus === "success") return launch.success === true;
     if (filterStatus === "failed") return launch.success === false;
     return true; // "all" status
