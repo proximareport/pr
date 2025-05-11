@@ -82,7 +82,7 @@ function Router() {
         );
       }} />
       <Route path="/advertise" component={() => {
-        const AdvertisePage = React.lazy(() => import('./pages/Advertise'));
+        const AdvertisePage = React.lazy(() => import('./pages/Advertise-new'));
         return (
           <React.Suspense fallback={<div className="flex justify-center p-12"><div className="animate-spin h-8 w-8 border-4 border-purple-500 border-t-transparent rounded-full"></div></div>}>
             <AdvertisePage />
