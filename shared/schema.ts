@@ -317,7 +317,6 @@ export const insertJobListingSchema = createInsertSchema(jobListings).omit({
 export const insertAdvertisementSchema = createInsertSchema(advertisements).omit({
   id: true,
   createdAt: true,
-  isApproved: true,
   impressions: true,
   clicks: true,
 });

@@ -1544,6 +1544,201 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Advertisement Routes
+  
+  // Get all advertisements
+  app.get("/api/advertisements", async (req, res) => {
+    try {
+      const placement = req.query.placement as string | undefined;
+      const ads = await storage.getAdvertisements(placement);
+      
+      // Filter to only include approved and active ads
+      const now = new Date();
+      const activeAds = ads.filter(ad => 
+        ad.isApproved && 
+        new Date(ad.startDate) <= now && 
+        new Date(ad.endDate) >= now
+      );
+      
+      res.json(activeAds);
+    } catch (error) {
+      console.error("Error fetching advertisements:", error);
+      res.status(500).json({ message: "Error fetching advertisements" });
+    }
+  });
+  
+  // Get all advertisements (admin only)
+  app.get("/api/advertisements/all", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'admin' && user?.role !== 'editor') {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      const ads = await storage.getAdvertisements();
+      
+      // Include user information with each ad
+      const enhancedAds = await Promise.all(ads.map(async (ad) => {
+        const adUser = await storage.getUser(ad.userId);
+        return {
+          ...ad,
+          user: adUser ? {
+            username: adUser.username,
+            email: adUser.email
+          } : undefined
+        };
+      }));
+      
+      res.json(enhancedAds);
+    } catch (error) {
+      console.error("Error fetching all advertisements:", error);
+      res.status(500).json({ message: "Error fetching all advertisements" });
+    }
+  });
+  
+  // Create advertisement
+  app.post("/api/advertisements", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      
+      const { title, imageUrl, linkUrl, placement, startDate, endDate } = req.body;
+      
+      // Validate request
+      if (!title || !linkUrl || !placement || !startDate || !endDate) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      // Create the advertisement
+      const ad = await storage.createAdvertisement({
+        title,
+        imageUrl,
+        linkUrl,
+        placement,
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        userId,
+        isApproved: false,
+      });
+      
+      res.status(201).json(ad);
+    } catch (error) {
+      console.error("Error creating advertisement:", error);
+      res.status(500).json({ message: "Error creating advertisement" });
+    }
+  });
+  
+  // Approve advertisement (admin only)
+  app.post("/api/advertisements/:id/approve", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'admin' && user?.role !== 'editor') {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      const adId = parseInt(req.params.id);
+      const ad = await storage.approveAdvertisement(adId);
+      
+      if (!ad) {
+        return res.status(404).json({ message: "Advertisement not found" });
+      }
+      
+      res.json(ad);
+    } catch (error) {
+      console.error("Error approving advertisement:", error);
+      res.status(500).json({ message: "Error approving advertisement" });
+    }
+  });
+  
+  // Reject advertisement (admin only)
+  app.post("/api/advertisements/:id/reject", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'admin' && user?.role !== 'editor') {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      const adId = parseInt(req.params.id);
+      
+      // Update to set isApproved to false
+      const ad = await storage.updateAdvertisement(adId, { isApproved: false });
+      
+      if (!ad) {
+        return res.status(404).json({ message: "Advertisement not found" });
+      }
+      
+      res.json(ad);
+    } catch (error) {
+      console.error("Error rejecting advertisement:", error);
+      res.status(500).json({ message: "Error rejecting advertisement" });
+    }
+  });
+  
+  // Delete advertisement (admin only or owner)
+  app.delete("/api/advertisements/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const user = await storage.getUser(userId);
+      const adId = parseInt(req.params.id);
+      
+      // Get the ad to check ownership
+      const ad = await storage.getAdvertisementById(adId);
+      
+      if (!ad) {
+        return res.status(404).json({ message: "Advertisement not found" });
+      }
+      
+      // Allow admins/editors or the owner to delete
+      if (user?.role !== 'admin' && user?.role !== 'editor' && ad.userId !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      const success = await storage.deleteAdvertisement(adId);
+      
+      if (!success) {
+        return res.status(500).json({ message: "Failed to delete advertisement" });
+      }
+      
+      res.json({ message: "Advertisement deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting advertisement:", error);
+      res.status(500).json({ message: "Error deleting advertisement" });
+    }
+  });
+  
+  // Record ad click
+  app.post("/api/advertisements/:id/click", async (req, res) => {
+    try {
+      const adId = parseInt(req.params.id);
+      await storage.incrementAdClick(adId);
+      
+      // Return a 204 No Content
+      res.status(204).end();
+    } catch (error) {
+      console.error("Error recording advertisement click:", error);
+      res.status(500).json({ message: "Error recording advertisement click" });
+    }
+  });
+  
+  // Record ad impression
+  app.post("/api/advertisements/:id/impression", async (req, res) => {
+    try {
+      const adId = parseInt(req.params.id);
+      await storage.incrementAdImpression(adId);
+      
+      // Return a 204 No Content
+      res.status(204).end();
+    } catch (error) {
+      console.error("Error recording advertisement impression:", error);
+      res.status(500).json({ message: "Error recording advertisement impression" });
+    }
+  });
+  
   // External API Routes with caching
   
   // SpaceX API route for launch data

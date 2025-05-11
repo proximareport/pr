@@ -98,8 +98,13 @@ export interface IStorage {
   
   // Advertisement operations
   getAdvertisements(placement?: string): Promise<Advertisement[]>;
+  getAdvertisementById(id: number): Promise<Advertisement | undefined>;
   createAdvertisement(ad: InsertAdvertisement): Promise<Advertisement>;
+  updateAdvertisement(id: number, data: Partial<Advertisement>): Promise<Advertisement | undefined>;
   approveAdvertisement(id: number): Promise<Advertisement | undefined>;
+  deleteAdvertisement(id: number): Promise<boolean>;
+  incrementAdClick(id: number): Promise<void>;
+  incrementAdImpression(id: number): Promise<void>;
   
   // Emergency Banner operations
   getActiveBanner(): Promise<EmergencyBanner | undefined>;
@@ -746,6 +751,53 @@ export class DatabaseStorage implements IStorage {
       .where(eq(advertisements.id, id))
       .returning();
     return ad;
+  }
+  
+  async getAdvertisementById(id: number): Promise<Advertisement | undefined> {
+    const [ad] = await db
+      .select()
+      .from(advertisements)
+      .where(eq(advertisements.id, id))
+      .limit(1);
+    
+    return ad;
+  }
+  
+  async updateAdvertisement(id: number, data: Partial<Advertisement>): Promise<Advertisement | undefined> {
+    const [ad] = await db
+      .update(advertisements)
+      .set(data)
+      .where(eq(advertisements.id, id))
+      .returning();
+    
+    return ad;
+  }
+  
+  async deleteAdvertisement(id: number): Promise<boolean> {
+    const result = await db
+      .delete(advertisements)
+      .where(eq(advertisements.id, id))
+      .returning({ id: advertisements.id });
+    
+    return result.length > 0;
+  }
+  
+  async incrementAdClick(id: number): Promise<void> {
+    await db
+      .update(advertisements)
+      .set({ 
+        clicks: sql`${advertisements.clicks} + 1` 
+      })
+      .where(eq(advertisements.id, id));
+  }
+  
+  async incrementAdImpression(id: number): Promise<void> {
+    await db
+      .update(advertisements)
+      .set({ 
+        impressions: sql`${advertisements.impressions} + 1` 
+      })
+      .where(eq(advertisements.id, id));
   }
 
   // Emergency Banner operations
