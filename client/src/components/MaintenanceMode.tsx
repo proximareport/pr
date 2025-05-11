@@ -1,8 +1,9 @@
 import React from 'react';
-import { AlertCircle, Wrench, Shield, Clock, RefreshCw } from 'lucide-react';
+import { AlertCircle, Wrench, Shield, Clock, RefreshCw, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Link } from 'wouter';
 
 const MaintenanceMode: React.FC = () => {
   // Get current date for display
@@ -62,6 +63,16 @@ const MaintenanceMode: React.FC = () => {
             <RefreshCw className="mr-2 h-4 w-4" />
             Check Again
           </Button>
+          
+          <Link href="/login">
+            <Button 
+              variant="ghost" 
+              className="w-full text-primary" 
+            >
+              <LogIn className="mr-2 h-4 w-4" />
+              Administrator Login
+            </Button>
+          </Link>
           
           <div className="flex items-center justify-center space-x-2 text-muted-foreground text-xs">
             <Shield className="h-3 w-3" />

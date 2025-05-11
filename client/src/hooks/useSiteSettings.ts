@@ -39,6 +39,8 @@ export function useSiteSettings() {
   // 1. Settings are loaded
   // 2. Maintenance mode is enabled
   // 3. User is not an admin
+  // Note: The final decision to show the maintenance screen is made in App.tsx
+  // where we also exclude login/register pages
   const isMaintenanceMode = Boolean(settings?.maintenanceMode && !isAdmin);
 
   return {

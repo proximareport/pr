@@ -79,10 +79,37 @@ const checkMaintenanceMode = async (req: Request, res: Response, next: NextFunct
 
   try {
     // Check if user is admin
-    const isAdmin = req.session && req.session.isAdmin === true;
+    // First check session flag (faster)
+    let isAdmin = req.session && req.session.isAdmin === true;
+    
+    // If not found in session but user is logged in, check database
+    if (!isAdmin && req.session?.userId) {
+      try {
+        // Get user from database to verify role
+        const user = await storage.getUser(req.session.userId);
+        isAdmin = user?.role === 'admin';
+        
+        // Update session with correct admin status if needed
+        if (isAdmin && !req.session.isAdmin) {
+          console.log(`Fixing admin session for user ${user?.username} (${user?.id})`);
+          req.session.isAdmin = true;
+        }
+      } catch (err) {
+        console.error("Error checking admin status from database:", err);
+      }
+    }
+    
+    // Debug admin state
+    console.log("Admin check in middleware:", { 
+      sessionExists: !!req.session,
+      isAdmin: !!isAdmin,
+      userId: req.session?.userId,
+      path: req.path
+    });
     
     // Admin users can always access everything
     if (isAdmin) {
+      console.log("User is admin, allowing access");
       return next();
     }
     
@@ -96,22 +123,23 @@ const checkMaintenanceMode = async (req: Request, res: Response, next: NextFunct
     const settings = await storage.getSiteSettings();
     
     if (settings && settings.maintenanceMode) {
+      // Special case - always allow essential API endpoints to be accessible
+      if (req.path === '/api/site-settings' || req.path === '/api/me' || 
+          req.path === '/api/login' || req.path === '/api/register') {
+        return next();
+      }
+      
       if (req.path.startsWith('/api/')) {
         // API route - return JSON response
-        return res.status(503).json({ 
-          message: "Maintenance Mode", 
-          description: "The site is currently under maintenance. Please try again later." 
-        });
-      } else {
-        // Client-side will handle displaying the maintenance mode UI
-        // Just make sure the settings are accessible to the client
-        if (req.path === '/api/site-settings') {
-          return next();
-        }
+        console.log("API request during maintenance:", req.path);
         return res.status(503).json({ 
           maintenanceMode: true,
           message: "The site is currently under maintenance. Please try again later." 
         });
+      } else {
+        // For non-API requests, let the frontend handle maintenance display
+        console.log("Allowing frontend maintenance page to render:", req.path);
+        return next();
       }
     }
     
@@ -301,6 +329,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Set session
       req.session.userId = user.id;
       req.session.isAdmin = user.role === "admin";
+      
+      console.log("Login session set:", {
+        userId: user.id,
+        username: user.username,
+        isAdmin: req.session.isAdmin,
+        role: user.role
+      });
       
       // Return user without password
       const { password: _, ...userWithoutPassword } = user;

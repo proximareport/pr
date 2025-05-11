@@ -21,7 +21,7 @@ import MaintenanceMode from "@/components/MaintenanceMode";
 import AdminDashboard from "@/pages/Admin/Dashboard";
 import AdminArticleEditor from "@/pages/Admin/NewArticleEditor";
 import AdminUserManagement from "@/pages/Admin/UserManagement";
-import { AuthProvider } from "@/lib/AuthContext";
+import { useAuth, AuthProvider } from "@/lib/AuthContext";
 
 function Router() {
   return (
@@ -122,16 +122,41 @@ function Router() {
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 function MainApp() {
-  const { isMaintenanceMode } = useSiteSettings();
+  const { isMaintenanceMode, settings } = useSiteSettings();
+  const { isAdmin } = useAuth();
   const [location] = useLocation();
   
-  // Don't show maintenance mode for admin pages
+  // For debugging
+  console.log("Maintenance check:", { 
+    isMaintenanceMode, 
+    isAdmin, 
+    maintenanceEnabled: settings?.maintenanceMode 
+  });
+  
+  // Don't show maintenance mode for:
+  // 1. Admin users (they can see everything)
+  // 2. Admin pages (should be accessible during maintenance)
+  // 3. Login/auth pages (so people can still log in)
   const isAdminPage = location.startsWith('/admin');
-  const showMaintenanceMode = isMaintenanceMode && !isAdminPage;
+  const isAuthPage = location === '/login' || location === '/register';
+  const showMaintenanceMode = isMaintenanceMode && !isAdmin && !isAdminPage && !isAuthPage;
+  
+  // For debugging
+  console.log("MainApp render check:", {
+    path: location,
+    isMaintenanceMode,
+    isAdmin,
+    isAdminPage,
+    isAuthPage,
+    showMaintenanceMode
+  });
+  
+  if (showMaintenanceMode) {
+    return <MaintenanceMode />;
+  }
   
   return (
     <div className="min-h-screen flex flex-col">
-      {showMaintenanceMode && <MaintenanceMode />}
       <Header />
       <main className="flex-grow">
         <Router />
