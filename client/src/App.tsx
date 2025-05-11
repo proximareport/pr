@@ -57,6 +57,14 @@ function Router() {
           </React.Suspense>
         );
       }} />
+      <Route path="/admin/content-status" component={() => {
+        const ContentStatusPage = React.lazy(() => import('./pages/Admin/ContentStatus'));
+        return (
+          <React.Suspense fallback={<div>Loading...</div>}>
+            <ContentStatusPage />
+          </React.Suspense>
+        );
+      }} />
       <Route path="/admin/api-keys" component={() => {
         const ApiKeyManagementPage = React.lazy(() => import('./pages/Admin/ApiKeyManagement'));
         return (

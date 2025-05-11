@@ -515,6 +515,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get all articles (published and drafts) - for admin/editors only
+  app.get("/api/articles/all", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const user = await storage.getUser(userId);
+      
+      if (!user || (user.role !== 'admin' && user.role !== 'editor')) {
+        return res.status(403).json({ message: "Only admins and editors can view all articles" });
+      }
+      
+      // Use storage getArticles function without filtering by published status
+      const allArticles = await storage.getAllArticles();
+      
+      // Enhance articles with author information
+      const enhancedArticles = await Promise.all(allArticles.map(async (article) => {
+        // Fetch authors for all articles
+        const authors = await storage.getArticleAuthors(article.id);
+        // Map to a simplified author structure
+        const authorData = authors.map(authorRecord => ({
+          id: authorRecord.userId,
+          username: authorRecord.user.username,
+          profilePicture: authorRecord.user.profilePicture,
+          role: authorRecord.role
+        }));
+        
+        return {
+          ...article,
+          authors: authorData
+        };
+      }));
+      
+      res.json(enhancedArticles);
+    } catch (error) {
+      console.error("Error fetching all articles:", error);
+      res.status(500).json({ message: "Error fetching all articles" });
+    }
+  });
+  
   // Get all draft articles - requires admin or editor role
   app.get("/api/articles/drafts", requireAuth, async (req, res) => {
     try {
