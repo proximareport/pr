@@ -1026,9 +1026,19 @@ export class DatabaseStorage implements IStorage {
       // Only include defined values from the input data, convert string dates to Date objects
       Object.entries(data).forEach(([key, value]) => {
         if (value !== undefined) {
-          // Check if this is a date field that needs conversion
+          // Handle timestamp fields
           if (key === 'updatedAt' && typeof value === 'string') {
             updateData[key] = new Date(value);
+          } 
+          // Special handling for maintenanceEndTime
+          else if (key === 'maintenanceEndTime') {
+            // Convert empty strings to null for the timestamp field
+            if (value === '' || value === null) {
+              updateData[key] = null;
+            } else if (typeof value === 'string' && value.trim()) {
+              // Only set the date if we have a non-empty string
+              updateData[key] = new Date(value);
+            }
           } else {
             updateData[key] = value;
           }

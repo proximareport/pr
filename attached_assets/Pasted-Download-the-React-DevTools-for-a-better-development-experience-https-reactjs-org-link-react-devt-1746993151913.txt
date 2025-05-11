@@ -1,0 +1,241 @@
+Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+Subscribe.tsx:32  No Stripe public key found. Using dummy implementation for development.
+(anonymous) @ Subscribe.tsx:32
+App.tsx:130 Maintenance check: Object
+App.tsx:145 MainApp render check: Object
+queryClient.ts:30 API Request: GET /api/me undefined
+/api/me:1 
+            
+            
+            Failed to load resource: the server responded with a status of 401 (Unauthorized)
+queryClient.ts:40 API Response status: 401 Response
+queryClient.ts:47  API Error Response: Object
+apiRequest @ queryClient.ts:47
+queryClient.ts:56  API Request Failed: Error: 401: Not authenticated
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+apiRequest @ queryClient.ts:56
+App.tsx:130 Maintenance check: Object
+App.tsx:145 MainApp render check: Object
+/api/articles:1 
+            
+            
+            Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+/api/spacex/upcoming:1 
+            
+            
+            Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+App.tsx:130 Maintenance check: Object
+App.tsx:145 MainApp render check: Object
+/api/advertisements/sidebar:1 
+            
+            
+            Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+App.tsx:130 Maintenance check: Object
+App.tsx:145 MainApp render check: Object
+queryClient.ts:30 API Request: POST /api/login Object
+App.tsx:130 Maintenance check: Object
+App.tsx:145 MainApp render check: Object
+queryClient.ts:40 API Response status: 200 Response
+queryClient.ts:30 API Request: GET /api/me undefined
+App.tsx:130 Maintenance check: Object
+App.tsx:145 MainApp render check: Object
+App.tsx:130 Maintenance check: Object
+App.tsx:145 MainApp render check: Object
+queryClient.ts:40 API Response status: 200 Response
+App.tsx:130 Maintenance check: Object
+App.tsx:145 MainApp render check: Object
+App.tsx:130 Maintenance check: Object
+App.tsx:145 MainApp render check: Object
+queryClient.ts:30 API Request: POST /api/advertisements/1/impression Object
+queryClient.ts:40 API Response status: 200 Response
+App.tsx:130 Maintenance check: Object
+App.tsx:145 MainApp render check: Object
+App.tsx:130 Maintenance check: Object
+App.tsx:145 MainApp render check: Object
+SiteSettingsForm.tsx:138 Settings loaded: Object
+SiteSettingsForm.tsx:936 Manually submitting form with values: Object
+SiteSettingsForm.tsx:186 Using settings ID: 1
+SiteSettingsForm.tsx:189 Sending data: Object
+SiteSettingsForm.tsx:194 Making API request to: /api/site-settings/1
+queryClient.ts:30 API Request: PATCH /api/site-settings/1 Object
+/api/site-settings/1:1 
+            
+            
+            Failed to load resource: the server responded with a status of 404 (Not Found)
+queryClient.ts:40 API Response status: 404 Response
+queryClient.ts:47  API Error Response: Object
+apiRequest @ queryClient.ts:47
+queryClient.ts:56  API Request Failed: Error: 404: Settings not found
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (SiteSettingsForm.tsx:197:26)
+apiRequest @ queryClient.ts:56
+SiteSettingsForm.tsx:209  Request error: Error: 404: Settings not found
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (SiteSettingsForm.tsx:197:26)
+mutationFn @ SiteSettingsForm.tsx:209
+SiteSettingsForm.tsx:225  Mutation error: Error: 404: Settings not found
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (SiteSettingsForm.tsx:197:26)
+onError @ SiteSettingsForm.tsx:225
+App.tsx:130 Maintenance check: Object
+App.tsx:145 MainApp render check: Object
+
+                
+          
+          
+          
+         Microsoft Edge is moving towards a new experience that allows users to choose to browse without third-party cookies.
+App.tsx:130 Maintenance check: {isMaintenanceMode: false, isAdmin: true, maintenanceEnabled: true}
+App.tsx:145 MainApp render check: {path: '/admin', isMaintenanceMode: false, isAdmin: true, isAdminPage: true, isAuthPage: false, …}
+SiteSettingsForm.tsx:936 Manually submitting form with values: {siteName: 'Proxima Report Updated', siteTagline: 'STEM & Space News Platform', siteDescription: 'A cutting-edge STEM and space news platform delivering interactive content.', siteKeywords: Array(4), logoUrl: '', …}
+SiteSettingsForm.tsx:186 Using settings ID: 1
+SiteSettingsForm.tsx:189 Sending data: {siteName: 'Proxima Report Updated', siteTagline: 'STEM & Space News Platform', siteDescription: 'A cutting-edge STEM and space news platform delivering interactive content.', siteKeywords: Array(4), logoUrl: '', …}
+SiteSettingsForm.tsx:194 Making API request to: /api/site-settings/1
+queryClient.ts:30 API Request: PATCH /api/site-settings/1 {siteName: 'Proxima Report Updated', siteTagline: 'STEM & Space News Platform', siteDescription: 'A cutting-edge STEM and space news platform delivering interactive content.', siteKeywords: Array(4), logoUrl: '', …}
+queryClient.ts:33 
+            
+            
+            PATCH https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/site-settings/1 404 (Not Found)
+apiRequest @ queryClient.ts:33
+mutationFn @ SiteSettingsForm.tsx:197
+fn @ mutation.ts:170
+run @ retryer.ts:153
+start @ retryer.ts:218
+execute @ mutation.ts:208
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+onClick @ SiteSettingsForm.tsx:938
+callCallback2 @ react-dom.development.js:4164
+invokeGuardedCallbackDev @ react-dom.development.js:4213
+invokeGuardedCallback @ react-dom.development.js:4277
+invokeGuardedCallbackAndCatchFirstError @ react-dom.development.js:4291
+executeDispatch @ react-dom.development.js:9041
+processDispatchQueueItemsInOrder @ react-dom.development.js:9073
+processDispatchQueue @ react-dom.development.js:9086
+dispatchEventsForPlugins @ react-dom.development.js:9097
+(anonymous) @ react-dom.development.js:9288
+batchedUpdates$1 @ react-dom.development.js:26179
+batchedUpdates @ react-dom.development.js:3991
+dispatchEventForPluginEventSystem @ react-dom.development.js:9287
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ react-dom.development.js:6465
+dispatchEvent @ react-dom.development.js:6457
+dispatchDiscreteEvent @ react-dom.development.js:6430
+queryClient.ts:40 API Response status: 404 Response {type: 'basic', url: 'https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/site-settings/1', redirected: false, status: 404, ok: false, …}
+queryClient.ts:47  API Error Response: {message: 'Settings not found'}
+apiRequest @ queryClient.ts:47
+await in apiRequest
+mutationFn @ SiteSettingsForm.tsx:197
+fn @ mutation.ts:170
+run @ retryer.ts:153
+start @ retryer.ts:218
+execute @ mutation.ts:208
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+onClick @ SiteSettingsForm.tsx:938
+callCallback2 @ react-dom.development.js:4164
+invokeGuardedCallbackDev @ react-dom.development.js:4213
+invokeGuardedCallback @ react-dom.development.js:4277
+invokeGuardedCallbackAndCatchFirstError @ react-dom.development.js:4291
+executeDispatch @ react-dom.development.js:9041
+processDispatchQueueItemsInOrder @ react-dom.development.js:9073
+processDispatchQueue @ react-dom.development.js:9086
+dispatchEventsForPlugins @ react-dom.development.js:9097
+(anonymous) @ react-dom.development.js:9288
+batchedUpdates$1 @ react-dom.development.js:26179
+batchedUpdates @ react-dom.development.js:3991
+dispatchEventForPluginEventSystem @ react-dom.development.js:9287
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ react-dom.development.js:6465
+dispatchEvent @ react-dom.development.js:6457
+dispatchDiscreteEvent @ react-dom.development.js:6430
+queryClient.ts:56  API Request Failed: Error: 404: Settings not found
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (SiteSettingsForm.tsx:197:26)
+apiRequest @ queryClient.ts:56
+await in apiRequest
+mutationFn @ SiteSettingsForm.tsx:197
+fn @ mutation.ts:170
+run @ retryer.ts:153
+start @ retryer.ts:218
+execute @ mutation.ts:208
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+onClick @ SiteSettingsForm.tsx:938
+callCallback2 @ react-dom.development.js:4164
+invokeGuardedCallbackDev @ react-dom.development.js:4213
+invokeGuardedCallback @ react-dom.development.js:4277
+invokeGuardedCallbackAndCatchFirstError @ react-dom.development.js:4291
+executeDispatch @ react-dom.development.js:9041
+processDispatchQueueItemsInOrder @ react-dom.development.js:9073
+processDispatchQueue @ react-dom.development.js:9086
+dispatchEventsForPlugins @ react-dom.development.js:9097
+(anonymous) @ react-dom.development.js:9288
+batchedUpdates$1 @ react-dom.development.js:26179
+batchedUpdates @ react-dom.development.js:3991
+dispatchEventForPluginEventSystem @ react-dom.development.js:9287
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ react-dom.development.js:6465
+dispatchEvent @ react-dom.development.js:6457
+dispatchDiscreteEvent @ react-dom.development.js:6430
+SiteSettingsForm.tsx:209  Request error: Error: 404: Settings not found
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (SiteSettingsForm.tsx:197:26)
+mutationFn @ SiteSettingsForm.tsx:209
+await in mutationFn
+fn @ mutation.ts:170
+run @ retryer.ts:153
+start @ retryer.ts:218
+execute @ mutation.ts:208
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+onClick @ SiteSettingsForm.tsx:938
+callCallback2 @ react-dom.development.js:4164
+invokeGuardedCallbackDev @ react-dom.development.js:4213
+invokeGuardedCallback @ react-dom.development.js:4277
+invokeGuardedCallbackAndCatchFirstError @ react-dom.development.js:4291
+executeDispatch @ react-dom.development.js:9041
+processDispatchQueueItemsInOrder @ react-dom.development.js:9073
+processDispatchQueue @ react-dom.development.js:9086
+dispatchEventsForPlugins @ react-dom.development.js:9097
+(anonymous) @ react-dom.development.js:9288
+batchedUpdates$1 @ react-dom.development.js:26179
+batchedUpdates @ react-dom.development.js:3991
+dispatchEventForPluginEventSystem @ react-dom.development.js:9287
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ react-dom.development.js:6465
+dispatchEvent @ react-dom.development.js:6457
+dispatchDiscreteEvent @ react-dom.development.js:6430
+SiteSettingsForm.tsx:225  Mutation error: Error: 404: Settings not found
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (SiteSettingsForm.tsx:197:26)
+onError @ SiteSettingsForm.tsx:225
+execute @ mutation.ts:243
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+onClick @ SiteSettingsForm.tsx:938
+callCallback2 @ react-dom.development.js:4164
+invokeGuardedCallbackDev @ react-dom.development.js:4213
+invokeGuardedCallback @ react-dom.development.js:4277
+invokeGuardedCallbackAndCatchFirstError @ react-dom.development.js:4291
+executeDispatch @ react-dom.development.js:9041
+processDispatchQueueItemsInOrder @ react-dom.development.js:9073
+processDispatchQueue @ react-dom.development.js:9086
+dispatchEventsForPlugins @ react-dom.development.js:9097
+(anonymous) @ react-dom.development.js:9288
+batchedUpdates$1 @ react-dom.development.js:26179
+batchedUpdates @ react-dom.development.js:3991
+dispatchEventForPluginEventSystem @ react-dom.development.js:9287
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ react-dom.development.js:6465
+dispatchEvent @ react-dom.development.js:6457
+dispatchDiscreteEvent @ react-dom.development.js:6430
+App.tsx:130 Maintenance check: {isMaintenanceMode: false, isAdmin: true, maintenanceEnabled: true}
+App.tsx:145 MainApp render check: {path: '/admin', isMaintenanceMode: false, isAdmin: true, isAdminPage: true, isAuthPage: false, …}
