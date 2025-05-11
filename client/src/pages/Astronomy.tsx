@@ -9,19 +9,43 @@ import { Button } from "@/components/ui/button";
 import { Star, Info, Calendar, Compass, X } from "lucide-react";
 
 function Astronomy() {
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  
   // Fetch NASA Astronomy Picture of the Day
-  const { data: apodData, isLoading: isLoadingApod } = useQuery({
+  const { data: apodData, isLoading: isLoadingApod } = useQuery<{
+    url: string;
+    title: string;
+    explanation: string;
+    date: string;
+  }>({
     queryKey: ["/api/nasa/apod"],
   });
 
   return (
     <div className="bg-[#0D0D17] min-h-screen">
+      {/* Fullscreen Stellarium Sky Map */}
+      {isFullScreen && (
+        <div className="fixed inset-0 bg-black z-50">
+          <StellariumSkyMap 
+            fullScreen={true} 
+            onToggleFullScreen={() => setIsFullScreen(false)} 
+          />
+          <Button 
+            className="absolute top-4 right-4 bg-black/40 hover:bg-black/60 backdrop-blur-sm"
+            onClick={() => setIsFullScreen(false)}
+          >
+            <X className="h-4 w-4 mr-2" />
+            Close
+          </Button>
+        </div>
+      )}
+      
       {/* Hero banner with APOD */}
       <section className="relative">
         <div 
           className="h-[60vh] relative bg-cover bg-center"
           style={{ 
-            backgroundImage: apodData?.url 
+            backgroundImage: apodData && apodData.url 
               ? `url(${apodData.url})` 
               : `url(https://images.unsplash.com/photo-1462331940025-496dfbfc7564?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=800)` 
           }}
@@ -35,12 +59,15 @@ function Astronomy() {
                   <h3 className="font-space font-bold text-lg">NASA Astronomy Picture of the Day</h3>
                 </div>
                 <h2 className="font-space font-bold text-2xl mb-2">
-                  {isLoadingApod ? "Loading..." : apodData?.title || "Wonders of the Universe"}
+                  {isLoadingApod ? "Loading..." : (apodData && apodData.title) || "Wonders of the Universe"}
                 </h2>
                 <p className="text-white/80 line-clamp-3 mb-4">
-                  {isLoadingApod ? "Loading description..." : apodData?.explanation || "Explore the breathtaking phenomena of our cosmos."}
+                  {isLoadingApod ? "Loading description..." : (apodData && apodData.explanation) || "Explore the breathtaking phenomena of our cosmos."}
                 </p>
-                <Button className="bg-purple-800 hover:bg-purple-700">
+                <Button 
+                  className="bg-purple-800 hover:bg-purple-700"
+                  onClick={() => apodData && apodData.url && window.open(apodData.url, '_blank')}
+                >
                   View Full Image
                 </Button>
               </div>
@@ -67,20 +94,26 @@ function Astronomy() {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
-              {/* Featured card */}
+              {/* Featured card - Stellarium Sky Map */}
               <Card className="mb-8 bg-[#14141E] border-white/10 hover:border-purple-500/30 overflow-hidden transition-all">
-                <div className="h-64 relative bg-cover bg-center" style={{ backgroundImage: `url(https://images.unsplash.com/photo-1454789548928-9efd52dc4031?ixlib=rb-4.0.3&auto=format&fit=crop&w=1400&h=700)` }}>
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#14141E] via-[#14141E]/80 to-transparent"></div>
-                  <div className="absolute bottom-0 left-0 p-6">
+                <div className="relative">
+                  <StellariumSkyMap 
+                    height="300px" 
+                    onToggleFullScreen={() => setIsFullScreen(true)} 
+                  />
+                  <div className="absolute bottom-0 left-0 p-6 bg-gradient-to-t from-[#14141E] to-transparent/0 w-full">
                     <h3 className="font-space text-2xl font-bold mb-2 text-shadow-[0_0_8px_rgba(157,78,221,0.7)]">
-                      Interactive Sky Map
+                      Interactive Sky Map by Stellarium Web
                     </h3>
                     <p className="text-white/90 mb-4">
                       Explore stars, planets, constellations and more in real-time based on your location
                     </p>
-                    <Button className="bg-purple-800 hover:bg-purple-700">
+                    <Button 
+                      className="bg-purple-800 hover:bg-purple-700"
+                      onClick={() => setIsFullScreen(true)}
+                    >
                       <Compass className="h-4 w-4 mr-2" />
-                      Launch Sky Map
+                      Fullscreen Mode
                     </Button>
                   </div>
                 </div>
@@ -91,52 +124,8 @@ function Astronomy() {
             </div>
             
             <div className="lg:col-span-1 space-y-8">
-              {/* Sidebar content */}
-              <Card className="bg-[#14141E] border-white/10">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-purple-500" />
-                    <CardTitle className="text-lg">Upcoming Celestial Events</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="border-b border-white/10 pb-3">
-                      <div className="flex justify-between">
-                        <h3 className="font-medium">Meteor Shower</h3>
-                        <span className="text-white/60 text-sm">Nov 17</span>
-                      </div>
-                      <p className="text-sm text-white/70 mt-1">
-                        Leonid Meteor Shower peaks with up to 15 meteors per hour
-                      </p>
-                    </div>
-                    
-                    <div className="border-b border-white/10 pb-3">
-                      <div className="flex justify-between">
-                        <h3 className="font-medium">Full Moon</h3>
-                        <span className="text-white/60 text-sm">Nov 27</span>
-                      </div>
-                      <p className="text-sm text-white/70 mt-1">
-                        November's Beaver Moon reaches peak illumination
-                      </p>
-                    </div>
-                    
-                    <div className="border-b border-white/10 pb-3">
-                      <div className="flex justify-between">
-                        <h3 className="font-medium">Conjunction</h3>
-                        <span className="text-white/60 text-sm">Dec 8</span>
-                      </div>
-                      <p className="text-sm text-white/70 mt-1">
-                        Mars and Jupiter conjunction visible in the evening sky
-                      </p>
-                    </div>
-                    
-                    <Button variant="outline" className="w-full">
-                      View Full Calendar
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Upcoming Celestial Events from In-The-Sky.org */}
+              <CelestialEvents />
               
               <Card className="bg-[#14141E] border-white/10">
                 <CardHeader className="pb-2">
