@@ -1730,6 +1730,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Site Settings Routes
+  app.get("/api/site-settings", async (req, res) => {
+    try {
+      const settings = await storage.getSiteSettings();
+      
+      if (!settings) {
+        // Create default settings if not exists (only for first admin user)
+        if (req.session.userId && req.session.isAdmin) {
+          const newSettings = await storage.createDefaultSiteSettings(req.session.userId);
+          return res.json(newSettings);
+        }
+        return res.status(404).json({ message: "Site settings not found" });
+      }
+      
+      // Remove sensitive data for non-admin users
+      if (!req.session.isAdmin) {
+        const publicSettings = {
+          id: settings.id,
+          siteName: settings.siteName,
+          siteTagline: settings.siteTagline,
+          siteDescription: settings.siteDescription,
+          siteKeywords: settings.siteKeywords,
+          logoUrl: settings.logoUrl,
+          faviconUrl: settings.faviconUrl,
+          primaryColor: settings.primaryColor,
+          secondaryColor: settings.secondaryColor,
+          contactEmail: settings.contactEmail,
+          allowComments: settings.allowComments,
+          allowUserRegistration: settings.allowUserRegistration,
+          maintenanceMode: settings.maintenanceMode,
+        };
+        return res.json(publicSettings);
+      }
+      
+      return res.json(settings);
+    } catch (error) {
+      console.error("Error fetching site settings:", error);
+      res.status(500).json({ message: "Failed to fetch site settings" });
+    }
+  });
+  
+  app.patch("/api/site-settings/:id", requireAdmin, async (req, res) => {
+    try {
+      const settingsId = parseInt(req.params.id);
+      const updateData = req.body;
+      
+      if (!settingsId || isNaN(settingsId)) {
+        return res.status(400).json({ message: "Invalid settings ID" });
+      }
+      
+      // Validate the update data
+      const result = updateSiteSettingsSchema.safeParse(updateData);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid settings data", 
+          errors: result.error.format() 
+        });
+      }
+      
+      const updatedSettings = await storage.updateSiteSettings(
+        settingsId, 
+        updateData, 
+        req.session.userId
+      );
+      
+      if (!updatedSettings) {
+        return res.status(404).json({ message: "Settings not found" });
+      }
+      
+      res.json(updatedSettings);
+    } catch (error) {
+      console.error("Error updating site settings:", error);
+      res.status(500).json({ message: "Failed to update site settings" });
+    }
+  });
+  
   // Category Routes
   app.get("/api/categories", async (req, res) => {
     try {

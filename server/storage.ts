@@ -11,6 +11,7 @@ import {
   apiKeys,
   articleAuthors,
   mediaLibrary,
+  siteSettings,
   type User, 
   type InsertUser, 
   type Article, 
@@ -29,7 +30,9 @@ import {
   type ArticleAuthor,
   type InsertArticleAuthor,
   type MediaLibraryItem,
-  type InsertMediaLibraryItem
+  type InsertMediaLibraryItem,
+  type SiteSettings,
+  type UpdateSiteSettings
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, isNull, desc, sql, or, like, not, inArray, asc } from "drizzle-orm";
@@ -966,6 +969,59 @@ export class DatabaseStorage implements IStorage {
     }
     
     return await query;
+  }
+  
+  // Site Settings Operations
+  async getSiteSettings(): Promise<SiteSettings | undefined> {
+    try {
+      const [settings] = await db.select().from(siteSettings).limit(1);
+      return settings;
+    } catch (error) {
+      console.error("Error fetching site settings:", error);
+      return undefined;
+    }
+  }
+  
+  async updateSiteSettings(settingsId: number, data: Partial<SiteSettings>, updatedBy: number): Promise<SiteSettings | undefined> {
+    try {
+      const [updatedSettings] = await db
+        .update(siteSettings)
+        .set({
+          ...data,
+          updatedAt: new Date(),
+          updatedBy,
+        })
+        .where(eq(siteSettings.id, settingsId))
+        .returning();
+        
+      return updatedSettings;
+    } catch (error) {
+      console.error("Error updating site settings:", error);
+      return undefined;
+    }
+  }
+  
+  async createDefaultSiteSettings(adminUserId: number): Promise<SiteSettings> {
+    try {
+      // Check if settings already exist
+      const existingSettings = await this.getSiteSettings();
+      if (existingSettings) {
+        return existingSettings;
+      }
+      
+      // Create default settings
+      const [newSettings] = await db
+        .insert(siteSettings)
+        .values({
+          updatedBy: adminUserId,
+        })
+        .returning();
+        
+      return newSettings;
+    } catch (error) {
+      console.error("Error creating default site settings:", error);
+      throw error;
+    }
   }
 }
 
