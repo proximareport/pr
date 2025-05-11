@@ -1116,8 +1116,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Update the article
-      const updatedArticle = await storage.updateArticle(articleId, req.body);
+      // Create a sanitized update object by only including specific fields
+      // that we know exist in the database
+      const {
+        title, 
+        slug, 
+        summary, 
+        content, 
+        featuredImage, 
+        isBreaking, 
+        readTime, 
+        tags, 
+        category, 
+        status
+      } = req.body;
+      
+      const updateData: any = {};
+      
+      // Only include fields that are defined
+      if (title !== undefined) updateData.title = title;
+      if (slug !== undefined) updateData.slug = slug;
+      if (summary !== undefined) updateData.summary = summary;
+      if (content !== undefined) updateData.content = content;
+      if (featuredImage !== undefined) updateData.featuredImage = featuredImage;
+      if (isBreaking !== undefined) updateData.isBreaking = isBreaking;
+      if (readTime !== undefined) updateData.readTime = readTime;
+      if (tags !== undefined) updateData.tags = tags;
+      if (category !== undefined) updateData.category = category;
+      if (status !== undefined) updateData.status = status;
+      
+      // Update lastEditedBy
+      updateData.lastEditedBy = userId;
+      
+      // Update the article with sanitized data
+      const updatedArticle = await storage.updateArticle(articleId, updateData);
       if (!updatedArticle) {
         return res.status(404).json({ message: "Failed to update article" });
       }

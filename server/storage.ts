@@ -383,17 +383,51 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateArticle(id: number, data: Partial<Article>): Promise<Article | undefined> {
-    const [article] = await db
-      .update(articles)
-      .set({ 
-        ...data, 
-        updatedAt: new Date(),
-        // If lastEditedBy is provided, also update lastEditedAt
-        ...(data.lastEditedBy ? { lastEditedAt: new Date() } : {})
-      })
-      .where(eq(articles.id, id))
-      .returning();
-    return article;
+    try {
+      // Get the existing article to see what fields we can safely update
+      const existingArticle = await this.getArticleById(id);
+      if (!existingArticle) {
+        return undefined;
+      }
+      
+      // Create update object with only fields that match the database schema
+      const updateData: Record<string, any> = {
+        updated_at: new Date()
+      };
+      
+      // Map fields to their database column names
+      if (data.title !== undefined) updateData.title = data.title;
+      if (data.slug !== undefined) updateData.slug = data.slug;
+      if (data.summary !== undefined) updateData.summary = data.summary;
+      if (data.content !== undefined) updateData.content = data.content;
+      if (data.featuredImage !== undefined) updateData.featured_image = data.featuredImage;
+      if (data.isBreaking !== undefined) updateData.is_breaking = data.isBreaking;
+      if (data.readTime !== undefined) updateData.read_time = data.readTime;
+      if (data.tags !== undefined) updateData.tags = data.tags;
+      if (data.category !== undefined) updateData.category = data.category;
+      if (data.status !== undefined) updateData.status = data.status;
+      
+      // Execute a raw SQL update to avoid schema mapping issues
+      const result = await db.execute(
+        `UPDATE articles
+         SET ${Object.entries(updateData).map(([key, _]) => `${key} = $${key}`).join(', ')}
+         WHERE id = $id
+         RETURNING *`,
+        { 
+          ...updateData,
+          id
+        }
+      );
+      
+      const rows = result.rows;
+      if (rows && rows.length > 0) {
+        return rows[0] as Article;
+      }
+      return undefined;
+    } catch (error) {
+      console.error("Error in updateArticle:", error);
+      throw error;
+    }
   }
 
   async deleteArticle(id: number): Promise<boolean> {

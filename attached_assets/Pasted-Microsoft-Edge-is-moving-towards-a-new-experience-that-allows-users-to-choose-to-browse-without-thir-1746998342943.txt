@@ -1,0 +1,71 @@
+Microsoft Edge is moving towards a new experience that allows users to choose to browse without third-party cookies.
+queryClient.ts:30 API Request: PATCH /api/articles/2 {title: 'test', slug: 't-18598', summary: '', content: '', category: 'space-exploration', …}
+queryClient.ts:33 
+            
+            
+            PATCH https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/articles/2 500 (Internal Server Error)
+apiRequest @ queryClient.ts:33
+mutationFn @ NewArticleEditor.tsx:173
+fn @ mutation.ts:170
+run @ retryer.ts:153
+start @ retryer.ts:218
+execute @ mutation.ts:208
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+(anonymous) @ NewArticleEditor.tsx:315
+(anonymous) @ NewArticleEditor.tsx:331
+queryClient.ts:40 API Response status: 500 Response {type: 'basic', url: 'https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/articles/2', redirected: false, status: 500, ok: false, …}
+queryClient.ts:47  API Error Response: {message: 'Server error while updating article', error: 'column "primary_author_id" does not exist'}
+apiRequest @ queryClient.ts:47
+await in apiRequest
+mutationFn @ NewArticleEditor.tsx:173
+fn @ mutation.ts:170
+run @ retryer.ts:153
+start @ retryer.ts:218
+execute @ mutation.ts:208
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+(anonymous) @ NewArticleEditor.tsx:315
+(anonymous) @ NewArticleEditor.tsx:331
+queryClient.ts:56  API Request Failed: Error: 500: Server error while updating article
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (NewArticleEditor.tsx:173:22)
+apiRequest @ queryClient.ts:56
+await in apiRequest
+mutationFn @ NewArticleEditor.tsx:173
+fn @ mutation.ts:170
+run @ retryer.ts:153
+start @ retryer.ts:218
+execute @ mutation.ts:208
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+(anonymous) @ NewArticleEditor.tsx:315
+(anonymous) @ NewArticleEditor.tsx:331
+NewArticleEditor.tsx:186  Autosave request error: Error: 500: Server error while updating article
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (NewArticleEditor.tsx:173:22)
+mutationFn @ NewArticleEditor.tsx:186
+await in mutationFn
+fn @ mutation.ts:170
+run @ retryer.ts:153
+start @ retryer.ts:218
+execute @ mutation.ts:208
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+(anonymous) @ NewArticleEditor.tsx:315
+(anonymous) @ NewArticleEditor.tsx:331
+NewArticleEditor.tsx:207  Autosave error: Error: Failed to save draft
+    at Object.mutationFn (NewArticleEditor.tsx:187:15)
+onError @ NewArticleEditor.tsx:207
+execute @ mutation.ts:243
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+(anonymous) @ NewArticleEditor.tsx:315
+(anonymous) @ NewArticleEditor.tsx:331
