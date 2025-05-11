@@ -63,11 +63,21 @@ import {
 // Media Types
 type MediaType = "image" | "video" | "document" | "audio" | "all";
 
-// Media Item Type
+// Media Item Type 
 import { MediaLibraryItem } from "@shared/schema";
 
 // For backward compatibility (temporary)
 type MediaItem = MediaLibraryItem;
+
+// Type guard for MediaItem
+function isMediaItem(item: any): item is MediaItem {
+  return (
+    item &&
+    typeof item.id === 'number' &&
+    typeof item.fileName === 'string' &&
+    typeof item.fileUrl === 'string'
+  );
+}
 
 // File Size Formatter
 const formatFileSize = (bytes: number): string => {
