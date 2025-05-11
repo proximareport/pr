@@ -26,8 +26,8 @@ interface SiteSettings {
 }
 
 export function useSiteSettings() {
-  const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const { isAdmin } = useAuth();
+  // We have direct access to isAdmin from the AuthContext
 
   const { data: settings, isLoading, error } = useQuery<SiteSettings>({
     queryKey: ['/api/site-settings'],

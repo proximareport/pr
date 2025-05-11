@@ -119,7 +119,7 @@ function Router() {
   );
 }
 
-import { useSiteSettings } from "./hooks/useSiteSettings";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 function MainApp() {
   const { isMaintenanceMode } = useSiteSettings();
