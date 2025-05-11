@@ -11,6 +11,13 @@ interface User {
   membershipTier: string;
   profilePicture?: string;
   bio?: string;
+  themePreference?: string;
+  profileCustomization?: {
+    color?: string;
+    backgroundColor?: string;
+    animatedBackground?: boolean;
+    [key: string]: any;
+  };
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
   createdAt: string;
@@ -21,6 +28,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAdmin: boolean;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
   login: (userData: { email: string; password: string } | any) => Promise<void>;
   register: (userData: { username: string; email: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
@@ -179,6 +187,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
+        setUser,
         isLoading,
         isAdmin,
         login,

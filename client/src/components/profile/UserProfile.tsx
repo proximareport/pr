@@ -303,7 +303,7 @@ const UserProfile = ({ username, isEditable = false }: ProfileProps) => {
             
             {isCurrentUser && !isEditable && (
               <Button asChild className="bg-purple-800 hover:bg-purple-700">
-                <Link href="/profile/settings">Edit Profile</Link>
+                <Link href="/edit-profile">Edit Profile</Link>
               </Button>
             )}
             

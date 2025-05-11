@@ -11,6 +11,7 @@ import Article from "@/pages/Article";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Profile from "@/pages/Profile";
+import EditProfile from "@/pages/EditProfile";
 import Launches from "@/pages/Launches";
 import Astronomy from "@/pages/Astronomy";
 import Subscribe from "@/pages/Subscribe";
@@ -30,6 +31,7 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/profile/settings" component={Profile} />
       <Route path="/profile/:username?" component={Profile} />
+      <Route path="/edit-profile" component={EditProfile} />
       <Route path="/launches" component={Launches} />
       <Route path="/astronomy" component={Astronomy} />
       <Route path="/subscribe" component={Subscribe} />
