@@ -43,7 +43,7 @@ function ContentStatus() {
   const { toast } = useToast();
   
   // Fetch all articles for editors and admins
-  const { data: articles, isLoading, isError } = useQuery({
+  const { data: articles, isLoading, isError } = useQuery<Article[]>({
     queryKey: ['/api/articles/all'],
     retry: false,
   });
@@ -156,8 +156,8 @@ function ContentStatus() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {articles?.length > 0 ? (
-                  articles.map((article: Article) => (
+                {articles && articles.length > 0 ? (
+                  articles.map((article) => (
                     <TableRow key={article.id}>
                       <TableCell className="font-medium">{article.title}</TableCell>
                       <TableCell>

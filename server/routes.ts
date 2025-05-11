@@ -1086,7 +1086,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isPublishing = status === 'published' && article.status !== 'published';
       
       // Prepare update data
-      const updateData: Partial<Article> = { status };
+      const updateData: Partial<typeof articles.$inferSelect> = { status };
       
       // Set publishedAt timestamp when publishing
       if (isPublishing) {
