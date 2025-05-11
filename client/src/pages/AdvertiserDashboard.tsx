@@ -79,6 +79,44 @@ function AdvertiserDashboard() {
   const [, setLocation] = useLocation();
   const [previewAd, setPreviewAd] = useState<Advertisement | null>(null);
   
+  // Parse URL search parameters for status messages
+  const searchParams = new URLSearchParams(window.location.search);
+  const isSuccess = searchParams.get('success') === 'true';
+  const isCanceled = searchParams.get('canceled') === 'true';
+  const isDevCheckout = searchParams.get('dev_checkout') === 'true';
+  
+  // Show appropriate toast notifications based on URL parameters
+  React.useEffect(() => {
+    if (isSuccess) {
+      toast({
+        title: "Payment Successful",
+        description: "Your advertisement payment has been processed successfully.",
+        variant: "default",
+      });
+      
+      // Clean up the URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (isCanceled) {
+      toast({
+        title: "Payment Canceled",
+        description: "Your advertisement payment was canceled.",
+        variant: "destructive",
+      });
+      
+      // Clean up the URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (isDevCheckout) {
+      toast({
+        title: "Development Mode",
+        description: "Payment simulated successfully in development mode.",
+        variant: "default",
+      });
+      
+      // Clean up the URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [isSuccess, isCanceled, isDevCheckout, toast]);
+  
   // Fetch user's advertisements
   const { data: advertisements, isLoading, isError } = useQuery({
     queryKey: ['/api/advertisements/user'],
@@ -573,8 +611,8 @@ function AdTable({
                   </Button>
                   
                   {ad.status === 'approved_pending_payment' && (
-                    <Button variant="outline" size="sm" onClick={() => onCheckout(ad.id)}>
-                      <CreditCard className="h-4 w-4" />
+                    <Button variant="outline" size="sm" onClick={() => onCheckout(ad.id)} className="gap-1">
+                      <CreditCard className="h-4 w-4" /> Pay Now
                     </Button>
                   )}
                 </div>
