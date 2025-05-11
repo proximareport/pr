@@ -61,6 +61,9 @@ const siteSettingsSchema = z.object({
   supporterTierPrice: z.coerce.number().min(0).max(10000),
   proTierPrice: z.coerce.number().min(0).max(10000),
   maintenanceMode: z.boolean().default(false),
+  maintenanceMessage: z.string().optional().default("We're currently performing scheduled maintenance on our systems to enhance your experience."),
+  maintenanceDetails: z.string().optional().default("Our team is working to complete the scheduled maintenance as quickly as possible. The site will be back online shortly with all services fully operational."),
+  maintenanceEndTime: z.string().optional().nullable(),
 });
 
 type SiteSettingsFormValues = z.infer<typeof siteSettingsSchema>;

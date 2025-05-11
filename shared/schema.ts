@@ -202,6 +202,9 @@ export const siteSettings = pgTable("site_settings", {
   supporterTierPrice: integer("supporter_tier_price").default(200).notNull(), // In cents (2.00)
   proTierPrice: integer("pro_tier_price").default(400).notNull(), // In cents (4.00)
   maintenanceMode: boolean("maintenance_mode").default(false).notNull(),
+  maintenanceMessage: text("maintenance_message").default("We're currently performing scheduled maintenance on our systems to enhance your experience."),
+  maintenanceDetails: text("maintenance_details").default("Our team is working to complete the scheduled maintenance as quickly as possible. The site will be back online shortly with all services fully operational."),
+  maintenanceEndTime: timestamp("maintenance_end_time"),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   updatedBy: integer("updated_by").references(() => users.id),
 });
