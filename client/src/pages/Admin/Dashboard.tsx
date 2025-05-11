@@ -36,7 +36,8 @@ import {
   AlertTriangleIcon,
   Eye,
   XCircle,
-  Settings
+  Settings,
+  ClockIcon
 } from 'lucide-react';
 import DraftManagement from './DraftManagement';
 import PublishedContent from './PublishedContent';
@@ -728,73 +729,93 @@ function AdminDashboard() {
                       </p>
                     </div>
                   </li>
-                  <li className="flex items-center text-sm">
-                    <div className="bg-purple-100 p-2 rounded-full mr-3">
-                      <ImageIcon className="h-4 w-4 text-purple-500" />
+                  <li className="flex p-3 bg-white rounded-lg border border-gray-100">
+                    <div className="bg-violet-100 p-3 rounded-xl mr-4 flex-shrink-0">
+                      <ImageIcon className="h-5 w-5 text-violet-600" />
                     </div>
                     <div>
-                      <p className="font-medium">New astronomy photo submitted</p>
-                      <p className="text-gray-500">Andromeda Galaxy</p>
-                      <p className="text-gray-400 text-xs">Yesterday</p>
+                      <p className="font-medium text-gray-900">New astronomy photo submitted</p>
+                      <p className="text-gray-600 mt-0.5">Andromeda Galaxy</p>
+                      <p className="text-gray-400 text-xs mt-1.5 flex items-center">
+                        <ClockIcon className="h-3 w-3 mr-1" /> Yesterday
+                      </p>
                     </div>
                   </li>
                 </ul>
               </CardContent>
             </Card>
             
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
+            <Card className="rounded-xl border border-gray-200 shadow-md overflow-hidden bg-white">
+              <div className="h-2 w-full bg-indigo-500"></div>
+              <CardHeader className="pb-2 pt-5">
+                <CardTitle className="flex items-center text-xl">
+                  <div className="p-3 rounded-xl bg-indigo-100 text-indigo-600 mr-4 flex-shrink-0">
+                    <Settings className="h-6 w-6" />
+                  </div>
+                  <div>Quick Actions</div>
+                </CardTitle>
+                <CardDescription className="text-base ml-[3.25rem]">
+                  Shortcuts to common tasks
+                </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-4">
                 <div className="grid grid-cols-2 gap-4">
                   <Button 
-                    variant="outline" 
-                    className="h-auto py-4 flex flex-col items-center justify-center"
+                    className="flex flex-col items-center justify-center p-0 h-auto bg-blue-600 hover:bg-blue-700 shadow-sm transition-all rounded-lg overflow-hidden border-0"
                     onClick={() => navigate('/admin/articles/new')}
                   >
-                    <FileTextIcon className="h-5 w-5 mb-2" />
-                    <span>New Article</span>
+                    <div className="w-full flex flex-col items-center py-5">
+                      <FileTextIcon className="h-8 w-8 mb-3" />
+                      <span className="font-medium">New Article</span>
+                    </div>
                   </Button>
+                  
                   <Button
-                    variant="outline"
-                    className="h-auto py-4 flex flex-col items-center justify-center"
+                    className="flex flex-col items-center justify-center p-0 h-auto bg-purple-600 hover:bg-purple-700 shadow-sm transition-all rounded-lg overflow-hidden border-0"
                     onClick={() => navigate('/admin/categories-tags')}
                   >
-                    <TagIcon className="h-5 w-5 mb-2" />
-                    <span>Tags & Categories</span>
+                    <div className="w-full flex flex-col items-center py-5">
+                      <TagIcon className="h-8 w-8 mb-3" />
+                      <span className="font-medium">Tags & Categories</span>
+                    </div>
                   </Button>
+                  
                   <Button
-                    variant="outline"
-                    className="h-auto py-4 flex flex-col items-center justify-center"
+                    className="flex flex-col items-center justify-center p-0 h-auto bg-amber-600 hover:bg-amber-700 shadow-sm transition-all rounded-lg overflow-hidden border-0"
                     onClick={() => navigate('/admin/emergency-banner')}
                   >
-                    <AlertOctagonIcon className="h-5 w-5 mb-2" />
-                    <span>Emergency Banner</span>
+                    <div className="w-full flex flex-col items-center py-5">
+                      <AlertOctagonIcon className="h-8 w-8 mb-3" />
+                      <span className="font-medium">Emergency Banner</span>
+                    </div>
                   </Button>
+                  
                   <Button
-                    variant="outline"
-                    className="h-auto py-4 flex flex-col items-center justify-center"
+                    className="flex flex-col items-center justify-center p-0 h-auto bg-teal-600 hover:bg-teal-700 shadow-sm transition-all rounded-lg overflow-hidden border-0"
                     onClick={() => navigate('/admin/astronomy-photos')}
                   >
-                    <ImageIcon className="h-5 w-5 mb-2" />
-                    <span>Approve Photos</span>
+                    <div className="w-full flex flex-col items-center py-5">
+                      <ImageIcon className="h-8 w-8 mb-3" />
+                      <span className="font-medium">Approve Photos</span>
+                    </div>
                   </Button>
                   <Button
-                    variant="outline"
-                    className="h-auto py-4 flex flex-col items-center justify-center"
+                    className="flex flex-col items-center justify-center p-0 h-auto bg-green-600 hover:bg-green-700 shadow-sm transition-all rounded-lg overflow-hidden border-0"
                     onClick={() => navigate('/admin/job-listings')}
                   >
-                    <BriefcaseIcon className="h-5 w-5 mb-2" />
-                    <span>Job Listings</span>
+                    <div className="w-full flex flex-col items-center py-5">
+                      <BriefcaseIcon className="h-8 w-8 mb-3" />
+                      <span className="font-medium">Job Listings</span>
+                    </div>
                   </Button>
                   <Button
-                    variant="outline"
-                    className="h-auto py-4 flex flex-col items-center justify-center"
+                    className="flex flex-col items-center justify-center p-0 h-auto bg-slate-600 hover:bg-slate-700 shadow-sm transition-all rounded-lg overflow-hidden border-0"
                     onClick={() => navigate('/admin/api-keys')}
                   >
-                    <KeyIcon className="h-5 w-5 mb-2" />
-                    <span>API Keys</span>
+                    <div className="w-full flex flex-col items-center py-5">
+                      <KeyIcon className="h-8 w-8 mb-3" />
+                      <span className="font-medium">API Keys</span>
+                    </div>
                   </Button>
                 </div>
               </CardContent>
