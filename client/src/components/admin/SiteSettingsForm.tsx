@@ -38,7 +38,9 @@ import {
   Settings, 
   DollarSign, 
   FileText,
-  Image
+  Image,
+  AlertCircle,
+  CalendarClock
 } from 'lucide-react';
 
 // Form validation schema
@@ -93,6 +95,9 @@ const SiteSettingsForm = () => {
     supporterTierPrice: number;
     proTierPrice: number;
     maintenanceMode: boolean;
+    maintenanceMessage: string;
+    maintenanceDetails: string;
+    maintenanceEndTime: string | null;
     updatedAt: string;
     updatedBy: number;
   }
@@ -166,6 +171,9 @@ const SiteSettingsForm = () => {
         supporterTierPrice: settings.supporterTierPrice || 200,
         proTierPrice: settings.proTierPrice || 400,
         maintenanceMode: settings.maintenanceMode ?? false,
+        maintenanceMessage: settings.maintenanceMessage || "We're currently performing scheduled maintenance on our systems to enhance your experience.",
+        maintenanceDetails: settings.maintenanceDetails || "Our team is working to complete the scheduled maintenance as quickly as possible. The site will be back online shortly with all services fully operational.",
+        maintenanceEndTime: settings.maintenanceEndTime || "",
       });
     }
   }, [settings, form]);
@@ -301,6 +309,9 @@ const SiteSettingsForm = () => {
             </TabsTrigger>
             <TabsTrigger value="membership" className="flex items-center">
               <DollarSign className="mr-2 h-4 w-4" /> Membership
+            </TabsTrigger>
+            <TabsTrigger value="maintenance" className="flex items-center">
+              <AlertCircle className="mr-2 h-4 w-4" /> Maintenance
             </TabsTrigger>
           </TabsList>
 
