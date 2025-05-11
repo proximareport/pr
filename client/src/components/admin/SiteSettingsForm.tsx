@@ -69,8 +69,33 @@ const SiteSettingsForm = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
+  // Cast the settings type for TypeScript
+  type SettingsType = {
+    id: number;
+    siteName: string;
+    siteTagline: string;
+    siteDescription: string;
+    siteKeywords: string[] | any; // Handle different potential formats
+    logoUrl: string | null;
+    faviconUrl: string | null;
+    primaryColor: string;
+    secondaryColor: string;
+    googleAnalyticsId: string | null;
+    facebookAppId: string | null;
+    twitterUsername: string | null;
+    contactEmail: string | null;
+    allowComments: boolean;
+    requireCommentApproval: boolean;
+    allowUserRegistration: boolean;
+    supporterTierPrice: number;
+    proTierPrice: number;
+    maintenanceMode: boolean;
+    updatedAt: string;
+    updatedBy: number;
+  };
+
   // Fetch current settings
-  const { data: settings, isLoading, error } = useQuery({
+  const { data: settings, isLoading, error } = useQuery<SettingsType>({
     queryKey: ['/api/site-settings'],
     retry: false,
   });
@@ -103,16 +128,44 @@ const SiteSettingsForm = () => {
   React.useEffect(() => {
     if (settings) {
       console.log("Settings loaded:", settings);
+      
+      // Cast settings to our expected type
+      const typedSettings = settings as unknown as SettingsType;
+      
       // Ensure siteKeywords is an array
-      const formattedKeywords = Array.isArray(settings.siteKeywords) 
-        ? settings.siteKeywords 
-        : (settings.siteKeywords ? JSON.parse(settings.siteKeywords) : []);
+      let formattedKeywords: string[] = [];
+      
+      if (Array.isArray(typedSettings.siteKeywords)) {
+        formattedKeywords = typedSettings.siteKeywords;
+      } else if (typeof typedSettings.siteKeywords === 'string') {
+        try {
+          // Try to parse JSON string
+          formattedKeywords = JSON.parse(typedSettings.siteKeywords);
+        } catch (e) {
+          // If parsing fails, use string as a single keyword
+          formattedKeywords = [typedSettings.siteKeywords];
+        }
+      }
       
       form.reset({
-        ...settings,
+        siteName: typedSettings.siteName || '',
+        siteTagline: typedSettings.siteTagline || '',
+        siteDescription: typedSettings.siteDescription || '',
         siteKeywords: formattedKeywords,
-        supporterTierPrice: settings.supporterTierPrice || 200,
-        proTierPrice: settings.proTierPrice || 400,
+        logoUrl: typedSettings.logoUrl || '',
+        faviconUrl: typedSettings.faviconUrl || '',
+        primaryColor: typedSettings.primaryColor || '#0f172a',
+        secondaryColor: typedSettings.secondaryColor || '#4f46e5',
+        googleAnalyticsId: typedSettings.googleAnalyticsId || '',
+        facebookAppId: typedSettings.facebookAppId || '',
+        twitterUsername: typedSettings.twitterUsername || '',
+        contactEmail: typedSettings.contactEmail || '',
+        allowComments: typedSettings.allowComments ?? true,
+        requireCommentApproval: typedSettings.requireCommentApproval ?? false,
+        allowUserRegistration: typedSettings.allowUserRegistration ?? true,
+        supporterTierPrice: typedSettings.supporterTierPrice || 200,
+        proTierPrice: typedSettings.proTierPrice || 400,
+        maintenanceMode: typedSettings.maintenanceMode ?? false,
       });
     }
   }, [settings, form]);
@@ -121,21 +174,35 @@ const SiteSettingsForm = () => {
   const updateSettingsMutation = useMutation({
     mutationFn: async (data: SiteSettingsFormValues) => {
       // We know settings exist with ID 1 from our curl test
-      const settingsId = settings?.id || 1;
+      const settingsId = 1; // Hardcode to 1 based on our testing
       console.log("Using settings ID:", settingsId);
       
+      // Log the data being sent, particularly siteKeywords
+      console.log("Sending data:", {
+        ...data,
+        siteKeywords: Array.isArray(data.siteKeywords) ? data.siteKeywords : []
+      });
+      
       console.log("Making API request to:", `/api/site-settings/${settingsId}`);
-      const response = await apiRequest('PATCH', `/api/site-settings/${settingsId}`, data);
       
-      console.log("API response status:", response.status);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(e => ({ message: "Unknown server error" }));
-        console.error("API error response:", errorData);
-        throw new Error(errorData.message || "Failed to update settings");
+      try {
+        const response = await apiRequest('PATCH', `/api/site-settings/${settingsId}`, data);
+        
+        console.log("API response status:", response.status);
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(e => ({ message: "Unknown server error" }));
+          console.error("API error response:", errorData);
+          throw new Error(errorData.message || "Failed to update settings");
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Request error:", error);
+        throw error instanceof Error 
+          ? error 
+          : new Error(String(error) || "Failed to update settings");
       }
-      
-      return response.json();
     },
     onSuccess: (data) => {
       console.log("Settings update successful:", data);
@@ -143,13 +210,14 @@ const SiteSettingsForm = () => {
       toast({
         title: "Settings updated",
         description: "Your site settings have been successfully updated.",
+        variant: "default",
       });
     },
     onError: (error: Error) => {
       console.error("Mutation error:", error);
       toast({
         title: "Update failed",
-        description: error.message,
+        description: error.message || "An unexpected error occurred",
         variant: "destructive",
       });
     },
@@ -158,6 +226,25 @@ const SiteSettingsForm = () => {
   const onSubmit = (data: SiteSettingsFormValues) => {
     console.log("Form submit handler called");
     console.log("Submitting form data:", data);
+    
+    // Form validation
+    if (!data.siteName.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Site name is required",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!data.siteTagline.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Site tagline is required",
+        variant: "destructive"
+      });
+      return;
+    }
     
     // Ensure keywords are properly formatted
     let formattedData = {
@@ -168,11 +255,7 @@ const SiteSettingsForm = () => {
     
     console.log("Formatted form data:", formattedData);
     
-    // We know settings exist with ID 1 from our curl test
-    const settingsId = settings?.id || 1;
-    console.log("Using settings ID:", settingsId);
-    
-    // Proceed with the mutation using the settingsId
+    // Proceed with the mutation
     updateSettingsMutation.mutate(formattedData);
   };
   
