@@ -17,7 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { RocketIcon, MenuIcon, SearchIcon, LogOutIcon, UserIcon, SettingsIcon, ShieldIcon } from "lucide-react";
+import { RocketIcon, MenuIcon, SearchIcon, LogOutIcon, UserIcon, SettingsIcon, ShieldIcon, LineChartIcon } from "lucide-react";
 
 function Header() {
   const [location] = useLocation();

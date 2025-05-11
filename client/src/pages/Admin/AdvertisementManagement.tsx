@@ -33,6 +33,11 @@ interface Advertisement {
   createdAt: string;
   impressions: number;
   clicks: number;
+  price: number | null;
+  status: string;
+  paymentStatus: string | null;
+  paymentId: string | null;
+  adminNotes: string | null;
   user?: {
     username: string;
     email: string;

@@ -1704,7 +1704,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const adId = parseInt(req.params.id);
-      const ad = await storage.approveAdvertisement(adId);
+      
+      // Get the advertisement first to check its payment status
+      const existingAd = await storage.getAdvertisementById(adId);
+      if (!existingAd) {
+        return res.status(404).json({ message: "Advertisement not found" });
+      }
+      
+      // Only approve if payment is complete or update status accordingly
+      let updateData: Partial<any> = { 
+        isApproved: true,
+        adminNotes: null // Clear any previous rejection notes
+      };
+      
+      if (existingAd.paymentStatus === 'complete') {
+        updateData.status = 'active';
+      } else {
+        updateData.status = 'approved_pending_payment';
+      }
+      
+      // Update the advertisement
+      const ad = await storage.updateAdvertisement(adId, updateData);
       
       if (!ad) {
         return res.status(404).json({ message: "Advertisement not found" });
@@ -1728,9 +1748,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const adId = parseInt(req.params.id);
+      const { adminNotes } = req.body;
       
-      // Update to set isApproved to false
-      const ad = await storage.updateAdvertisement(adId, { isApproved: false });
+      if (!adminNotes) {
+        return res.status(400).json({ message: "Rejection reason is required" });
+      }
+      
+      // Update to set isApproved to false and add admin notes
+      const ad = await storage.updateAdvertisement(adId, { 
+        isApproved: false, 
+        status: 'rejected',
+        adminNotes 
+      });
       
       if (!ad) {
         return res.status(404).json({ message: "Advertisement not found" });
