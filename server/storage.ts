@@ -126,6 +126,11 @@ export interface IStorage {
   
   // Category operations
   getCategories(): Promise<{ id: number; name: string; slug: string }[]>;
+  
+  // Site Settings operations
+  getSiteSettings(): Promise<SiteSettings | undefined>;
+  updateSiteSettings(settingsId: number, data: Partial<SiteSettings>, updatedBy: number): Promise<SiteSettings | undefined>;
+  createDefaultSiteSettings(adminUserId: number): Promise<SiteSettings>;
 }
 
 export class DatabaseStorage implements IStorage {

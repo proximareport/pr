@@ -181,6 +181,31 @@ export const mediaLibrary = pgTable("media_library", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Site Settings
+export const siteSettings = pgTable("site_settings", {
+  id: serial("id").primaryKey(),
+  siteName: text("site_name").default("Proxima Report").notNull(),
+  siteTagline: text("site_tagline").default("STEM & Space News Platform").notNull(),
+  siteDescription: text("site_description").default("A cutting-edge STEM and space news platform delivering interactive content."),
+  siteKeywords: text("site_keywords").array().default(["space", "STEM", "science", "technology"]).notNull(),
+  logoUrl: text("logo_url"),
+  faviconUrl: text("favicon_url"),
+  primaryColor: text("primary_color").default("#0f172a"),
+  secondaryColor: text("secondary_color").default("#4f46e5"),
+  googleAnalyticsId: text("google_analytics_id"),
+  facebookAppId: text("facebook_app_id"),
+  twitterUsername: text("twitter_username"),
+  contactEmail: text("contact_email"),
+  allowComments: boolean("allow_comments").default(true).notNull(),
+  requireCommentApproval: boolean("require_comment_approval").default(false).notNull(),
+  allowUserRegistration: boolean("allow_user_registration").default(true).notNull(),
+  supporterTierPrice: integer("supporter_tier_price").default(200).notNull(), // In cents (2.00)
+  proTierPrice: integer("pro_tier_price").default(400).notNull(), // In cents (4.00)
+  maintenanceMode: boolean("maintenance_mode").default(false).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedBy: integer("updated_by").references(() => users.id),
+});
+
 // Relations
 // API Keys for external applications
 export const apiKeys = pgTable("api_keys", {
@@ -291,6 +316,13 @@ export const mediaLibraryRelations = relations(mediaLibrary, ({ one }) => ({
   }),
 }));
 
+export const siteSettingsRelations = relations(siteSettings, ({ one }) => ({
+  updatedByUser: one(users, {
+    fields: [siteSettings.updatedBy],
+    references: [users.id],
+  }),
+}));
+
 // Zod Schemas for validation
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true, 
@@ -373,6 +405,11 @@ export const insertMediaLibrarySchema = createInsertSchema(mediaLibrary).omit({
   updatedAt: true,
 });
 
+export const updateSiteSettingsSchema = createInsertSchema(siteSettings).omit({
+  id: true,
+  updatedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type Article = typeof articles.$inferSelect;
@@ -386,6 +423,7 @@ export type Vote = typeof votes.$inferSelect;
 export type ApiKey = typeof apiKeys.$inferSelect;
 export type ArticleAuthor = typeof articleAuthors.$inferSelect;
 export type MediaLibraryItem = typeof mediaLibrary.$inferSelect;
+export type SiteSettings = typeof siteSettings.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertArticle = z.infer<typeof insertArticleSchema>;
@@ -396,3 +434,4 @@ export type InsertJobListing = z.infer<typeof insertJobListingSchema>;
 export type InsertAdvertisement = z.infer<typeof insertAdvertisementSchema>;
 export type InsertApiKey = z.infer<typeof insertApiKeySchema>;
 export type InsertMediaLibraryItem = z.infer<typeof insertMediaLibrarySchema>;
+export type UpdateSiteSettings = z.infer<typeof updateSiteSettingsSchema>;
