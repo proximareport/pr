@@ -102,10 +102,11 @@ const SiteSettingsForm = () => {
   // Update form values when settings are loaded
   React.useEffect(() => {
     if (settings) {
-      // Convert keyword array to string for the input
+      console.log("Settings loaded:", settings);
+      // Ensure siteKeywords is an array
       const formattedKeywords = Array.isArray(settings.siteKeywords) 
         ? settings.siteKeywords 
-        : [];
+        : (settings.siteKeywords ? JSON.parse(settings.siteKeywords) : []);
       
       form.reset({
         ...settings,
@@ -158,12 +159,21 @@ const SiteSettingsForm = () => {
     console.log("Form submit handler called");
     console.log("Submitting form data:", data);
     
+    // Ensure keywords are properly formatted
+    let formattedData = {
+      ...data,
+      // Ensure keywords is an array
+      siteKeywords: Array.isArray(data.siteKeywords) ? data.siteKeywords : []
+    };
+    
+    console.log("Formatted form data:", formattedData);
+    
     // We know settings exist with ID 1 from our curl test
     const settingsId = settings?.id || 1;
     console.log("Using settings ID:", settingsId);
     
-    // Always proceed with the mutation using the settingsId
-    updateSettingsMutation.mutate(data);
+    // Proceed with the mutation using the settingsId
+    updateSettingsMutation.mutate(formattedData);
   };
   
   if (isLoading) {
@@ -270,6 +280,81 @@ const SiteSettingsForm = () => {
                       <FormMessage />
                     </FormItem>
                   )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="siteKeywords"
+                  render={({ field }) => {
+                    // Ensure value is always an array
+                    const keywords = field.value || [];
+                    
+                    return (
+                      <FormItem>
+                        <FormLabel>Keywords</FormLabel>
+                        <FormControl>
+                          <div className="space-y-2">
+                            <div className="flex flex-wrap gap-2">
+                              {keywords.map((keyword, index) => (
+                                <div 
+                                  key={index} 
+                                  className="bg-secondary text-secondary-foreground px-3 py-1 rounded-full text-sm flex items-center gap-1"
+                                >
+                                  {keyword}
+                                  <button
+                                    type="button"
+                                    className="text-secondary-foreground/70 hover:text-secondary-foreground"
+                                    onClick={() => {
+                                      const newKeywords = [...keywords];
+                                      newKeywords.splice(index, 1);
+                                      field.onChange(newKeywords);
+                                    }}
+                                  >
+                                    <span className="sr-only">Remove</span>
+                                    <span className="ml-1">×</span>
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                placeholder="Add keyword and press Enter"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    const value = e.currentTarget.value.trim();
+                                    if (value && !keywords.includes(value)) {
+                                      field.onChange([...keywords, value]);
+                                      e.currentTarget.value = '';
+                                    }
+                                  }
+                                }}
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                                  const value = input.value.trim();
+                                  if (value && !keywords.includes(value)) {
+                                    field.onChange([...keywords, value]);
+                                    input.value = '';
+                                  }
+                                }}
+                              >
+                                Add
+                              </Button>
+                            </div>
+                          </div>
+                        </FormControl>
+                        <FormDescription>
+                          Keywords for SEO (press Enter after each keyword)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
                 
                 <FormField
