@@ -461,8 +461,8 @@ function AdminDashboard() {
           </TabsList>
         </div>
         
-        <TabsContent value="overview" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <TabsContent value="overview" className="mt-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Ad Management Card */}
             <Card className="rounded-xl border border-gray-200 shadow-md overflow-hidden bg-white">
               <div className={`h-2 w-full ${pendingAdsCount > 0 ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
@@ -592,96 +592,140 @@ function AdminDashboard() {
             </Card>
             
             {/* Users Card */}
-            <Card className="border-l-4 border-l-purple-500 shadow-md overflow-hidden">
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center">
-                  <div className="p-2 rounded-full bg-purple-100 text-purple-700 mr-3">
-                    <UsersIcon className="h-5 w-5" />
+            <Card className="rounded-xl border border-gray-200 shadow-md overflow-hidden bg-white">
+              <div className="h-2 w-full bg-purple-500"></div>
+              <CardHeader className="pb-2 pt-5">
+                <CardTitle className="flex items-center text-xl">
+                  <div className="p-3 rounded-xl bg-purple-100 text-purple-600 mr-4 flex-shrink-0">
+                    <UsersIcon className="h-6 w-6" />
                   </div>
-                  User Management
+                  <div>User Management</div>
                 </CardTitle>
-                <CardDescription>Manage users and permissions</CardDescription>
+                <CardDescription className="text-base ml-[3.25rem]">
+                  Manage accounts and user permissions
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3 mb-4">
-                  <div className="flex justify-between items-center p-2 bg-gray-50 rounded-md">
-                    <div className="flex items-center">
-                      <div className="p-1.5 rounded-full bg-red-100 text-red-700 mr-2">
-                        <UsersIcon className="h-4 w-4" />
-                      </div>
-                      <span className="text-sm font-medium">Admins</span>
-                    </div>
-                    <span className="font-bold text-gray-900">1</span>
+              <CardContent className="pt-4">
+                <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="font-medium text-gray-700">User Summary</h4>
+                    <Badge variant="outline" className="font-semibold bg-purple-50 text-purple-700 border-purple-200">
+                      {8} Total
+                    </Badge>
                   </div>
-                  <div className="flex justify-between items-center p-2 bg-gray-50 rounded-md">
-                    <div className="flex items-center">
-                      <div className="p-1.5 rounded-full bg-blue-100 text-blue-700 mr-2">
-                        <FileEditIcon className="h-4 w-4" />
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center p-2.5 bg-white rounded-md border border-gray-100">
+                      <div className="p-2 rounded-full bg-red-100 text-red-700 mr-3 flex-shrink-0">
+                        <UsersIcon className="h-5 w-5" />
                       </div>
-                      <span className="text-sm font-medium">Editors</span>
+                      <span className="text-gray-700 flex-1 font-medium">Administrators</span>
+                      <Badge className="bg-red-100 text-red-800 border-red-200">
+                        1
+                      </Badge>
                     </div>
-                    <span className="font-bold text-gray-900">2</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 bg-gray-50 rounded-md">
-                    <div className="flex items-center">
-                      <div className="p-1.5 rounded-full bg-green-100 text-green-700 mr-2">
-                        <FileTextIcon className="h-4 w-4" />
+                    
+                    <div className="flex items-center p-2.5 bg-white rounded-md border border-gray-100">
+                      <div className="p-2 rounded-full bg-blue-100 text-blue-700 mr-3 flex-shrink-0">
+                        <FileEditIcon className="h-5 w-5" />
                       </div>
-                      <span className="text-sm font-medium">Authors</span>
+                      <span className="text-gray-700 flex-1 font-medium">Editors</span>
+                      <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                        2
+                      </Badge>
                     </div>
-                    <span className="font-bold text-gray-900">5</span>
+                    
+                    <div className="flex items-center p-2.5 bg-white rounded-md border border-gray-100">
+                      <div className="p-2 rounded-full bg-green-100 text-green-700 mr-3 flex-shrink-0">
+                        <FileTextIcon className="h-5 w-5" />
+                      </div>
+                      <span className="text-gray-700 flex-1 font-medium">Authors</span>
+                      <Badge className="bg-green-100 text-green-800 border-green-200">
+                        5
+                      </Badge>
+                    </div>
                   </div>
                 </div>
+                
                 <Button 
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                  variant="default" 
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-medium w-full py-5"
                   onClick={() => navigate('/admin/users')}
                 >
-                  <UsersIcon className="mr-2 h-4 w-4" />
+                  <UsersIcon className="mr-2 h-5 w-5" />
                   Manage Users
                 </Button>
               </CardContent>
             </Card>
             
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle>Subscription Revenue</CardTitle>
-                <CardDescription>Monthly recurring</CardDescription>
+            <Card className="rounded-xl border border-gray-200 shadow-md overflow-hidden bg-white">
+              <div className="h-2 w-full bg-green-500"></div>
+              <CardHeader className="pb-2 pt-5">
+                <CardTitle className="flex items-center text-xl">
+                  <div className="p-3 rounded-xl bg-green-100 text-green-600 mr-4 flex-shrink-0">
+                    <DollarSignIcon className="h-6 w-6" />
+                  </div>
+                  <div>Subscription Revenue</div>
+                </CardTitle>
+                <CardDescription className="text-base ml-[3.25rem]">
+                  Monthly recurring revenue
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">$328</div>
-                <div className="flex items-center text-xs text-green-500 mt-1">
-                  <BarChart3Icon className="h-3 w-3 mr-1" />
-                  <span>+12% from last month</span>
+              <CardContent className="pt-4">
+                <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 flex items-center justify-between">
+                  <div>
+                    <div className="text-4xl font-bold text-gray-900">$328</div>
+                    <div className="flex items-center text-sm text-green-600 mt-2 font-medium">
+                      <BarChart3Icon className="h-4 w-4 mr-1" />
+                      <span>+12% from last month</span>
+                    </div>
+                  </div>
+                  <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center">
+                    <DollarSignIcon className="h-8 w-8 text-green-600" />
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+            <Card className="rounded-xl border border-gray-200 shadow-md overflow-hidden bg-white">
+              <div className="h-2 w-full bg-gray-500"></div>
+              <CardHeader className="pb-2 pt-5">
+                <CardTitle className="flex items-center text-xl">
+                  <div className="p-3 rounded-xl bg-gray-100 text-gray-600 mr-4 flex-shrink-0">
+                    <BellIcon className="h-6 w-6" />
+                  </div>
+                  <div>Recent Activity</div>
+                </CardTitle>
+                <CardDescription className="text-base ml-[3.25rem]">
+                  Latest site updates and events
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <ul className="space-y-4">
-                  <li className="flex items-center text-sm">
-                    <div className="bg-blue-100 p-2 rounded-full mr-3">
-                      <FileTextIcon className="h-4 w-4 text-blue-500" />
+              <CardContent className="pt-4">
+                <ul className="space-y-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <li className="flex p-3 bg-white rounded-lg border border-gray-100">
+                    <div className="bg-blue-100 p-3 rounded-xl mr-4 flex-shrink-0">
+                      <FileTextIcon className="h-5 w-5 text-blue-600" />
                     </div>
                     <div>
-                      <p className="font-medium">New article published</p>
-                      <p className="text-gray-500">Webb Telescope Discovers New Exoplanet</p>
-                      <p className="text-gray-400 text-xs">2 hours ago</p>
+                      <p className="font-medium text-gray-900">New article published</p>
+                      <p className="text-gray-600 mt-0.5">Webb Telescope Discovers New Exoplanet</p>
+                      <p className="text-gray-400 text-xs mt-1.5 flex items-center">
+                        <ClockIcon className="h-3 w-3 mr-1" /> 2 hours ago
+                      </p>
                     </div>
                   </li>
-                  <li className="flex items-center text-sm">
-                    <div className="bg-green-100 p-2 rounded-full mr-3">
-                      <UsersIcon className="h-4 w-4 text-green-500" />
+                  <li className="flex p-3 bg-white rounded-lg border border-gray-100">
+                    <div className="bg-green-100 p-3 rounded-xl mr-4 flex-shrink-0">
+                      <UsersIcon className="h-5 w-5 text-green-600" />
                     </div>
                     <div>
-                      <p className="font-medium">New user registered</p>
-                      <p className="text-gray-500">astronautX</p>
-                      <p className="text-gray-400 text-xs">4 hours ago</p>
+                      <p className="font-medium text-gray-900">New user registered</p>
+                      <p className="text-gray-600 mt-0.5">astronautX</p>
+                      <p className="text-gray-400 text-xs mt-1.5 flex items-center">
+                        <ClockIcon className="h-3 w-3 mr-1" /> 4 hours ago
+                      </p>
                     </div>
                   </li>
                   <li className="flex items-center text-sm">
