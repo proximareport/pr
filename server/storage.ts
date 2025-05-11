@@ -343,34 +343,65 @@ export class DatabaseStorage implements IStorage {
 
   async getArticleById(id: number): Promise<Article | undefined> {
     try {
-      // Use direct pool query to ensure we're using the exact column names from the DB
-      const result = await pool.query(
-        `SELECT 
-          id, 
-          title, 
-          slug, 
-          summary, 
-          content, 
-          author_id as "primaryAuthorId", 
-          published_at as "publishedAt", 
-          created_at as "createdAt", 
-          updated_at as "updatedAt", 
-          featured_image as "featuredImage", 
-          is_breaking as "isBreaking", 
-          read_time as "readTime",
-          view_count as "viewCount",
-          tags,
-          category,
-          status,
-          last_edited_by as "lastEditedBy",
-          last_edited_at as "lastEditedAt",
-          is_collaborative as "isCollaborative",
-          collaborative_session_id as "collaborativeSessionId"
+      // First check which columns exist in the articles table
+      const tableInfoResult = await pool.query(
+        `SELECT column_name 
+         FROM information_schema.columns 
+         WHERE table_name = 'articles'`
+      );
+      
+      // Extract existing column names
+      const existingColumns = tableInfoResult.rows.map(row => row.column_name);
+      console.log("Existing columns in articles table:", existingColumns);
+      
+      // Build a dynamic query based on the columns that actually exist
+      let selectClause = "SELECT id";
+      
+      // Add mapping for known columns
+      const columnMappings = [
+        { db: "title", code: "title" },
+        { db: "slug", code: "slug" },
+        { db: "summary", code: "summary" },
+        { db: "content", code: "content" },
+        { db: "author_id", code: "primaryAuthorId" },
+        { db: "published_at", code: "publishedAt" },
+        { db: "created_at", code: "createdAt" },
+        { db: "updated_at", code: "updatedAt" },
+        { db: "featured_image", code: "featuredImage" },
+        { db: "is_breaking", code: "isBreaking" },
+        { db: "read_time", code: "readTime" },
+        { db: "view_count", code: "viewCount" },
+        { db: "tags", code: "tags" },
+        { db: "category", code: "category" },
+        { db: "status", code: "status" },
+        { db: "last_edited_by", code: "lastEditedBy" },
+        { db: "last_edited_at", code: "lastEditedAt" },
+        { db: "is_collaborative", code: "isCollaborative" },
+        { db: "collaborative_session_id", code: "collaborativeSessionId" }
+      ];
+      
+      // Add each column that exists to the select clause
+      for (const mapping of columnMappings) {
+        if (existingColumns.includes(mapping.db)) {
+          if (mapping.db === mapping.code) {
+            selectClause += `, ${mapping.db}`;
+          } else {
+            selectClause += `, ${mapping.db} as "${mapping.code}"`;
+          }
+        }
+      }
+      
+      // Complete the query
+      const query = `
+        ${selectClause}
         FROM articles 
         WHERE id = $1
-        LIMIT 1`,
-        [id]
-      );
+        LIMIT 1
+      `;
+      
+      console.log("Generated query:", query);
+      
+      const result = await pool.query(query, [id]);
       
       if (result.rows.length > 0) {
         console.log("Article found:", result.rows[0]);
