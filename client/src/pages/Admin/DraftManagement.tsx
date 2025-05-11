@@ -20,10 +20,26 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FileEditIcon, EyeIcon, TrashIcon, CheckSquareIcon } from 'lucide-react';
+import { 
+  FileEditIcon, 
+  EyeIcon, 
+  TrashIcon, 
+  CheckSquareIcon, 
+  AlertTriangleIcon, 
+  CheckCircleIcon,
+  XCircleIcon 
+} from 'lucide-react';
 import { formatDistance } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
 
 export function DraftManagement() {
   const { user } = useAuth();
@@ -77,25 +93,61 @@ export function DraftManagement() {
       const article = await response.json();
 
       // Update to published status
+      const updateResponse = await apiRequest('PUT', `/api/articles/${id}`, {
+        ...article,
+        status: 'published',
+        publishedAt: new Date().toISOString()
+      });
+
+      if (updateResponse.ok) {
+        toast({
+          title: 'Success',
+          description: 'Article published successfully',
+        });
+
+        // Invalidate queries to refresh data
+        queryClient.invalidateQueries({ queryKey: ['/api/articles/drafts'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/articles/drafts/me'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/articles'] });
+      } else {
+        const errorData = await updateResponse.json();
+        throw new Error(errorData.message || 'Failed to publish article');
+      }
+    } catch (error: any) {
+      console.error('Error publishing article:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to publish article. Only editors and admins can publish.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleUpdateStatus = async (id: number, status: string) => {
+    try {
+      // Get the current article data
+      const response = await apiRequest('GET', `/api/articles/${id}`);
+      const article = await response.json();
+
+      // Update the status
       await apiRequest('PUT', `/api/articles/${id}`, {
         ...article,
-        status: 'published'
+        status
       });
 
       toast({
-        title: 'Success',
-        description: 'Article published successfully',
+        title: 'Status Updated',
+        description: `Article marked as "${status.replace('_', ' ')}"`,
       });
 
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['/api/articles/drafts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/articles/drafts/me'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/articles'] });
     } catch (error) {
-      console.error('Error publishing article:', error);
+      console.error('Error updating article status:', error);
       toast({
         title: 'Error',
-        description: 'Failed to publish article. Only editors and admins can publish.',
+        description: 'Failed to update article status',
         variant: 'destructive',
       });
     }
@@ -129,6 +181,24 @@ export function DraftManagement() {
         description: 'Failed to delete draft',
         variant: 'destructive',
       });
+    }
+  };
+
+  // Function to render status badge with appropriate color
+  const renderStatusBadge = (status: string) => {
+    switch (status) {
+      case 'published':
+        return <Badge className="bg-green-500">Published</Badge>;
+      case 'draft':
+        return <Badge variant="outline">Draft</Badge>;
+      case 'needs_edits':
+        return <Badge className="bg-amber-500">Needs Edits</Badge>;
+      case 'good_to_publish':
+        return <Badge className="bg-blue-500">Ready to Publish</Badge>;
+      case 'do_not_publish':
+        return <Badge className="bg-red-500">Do Not Publish</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
 
@@ -203,9 +273,7 @@ export function DraftManagement() {
                       : 'Unknown'}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={draft.status === 'draft' ? 'outline' : 'default'}>
-                      {draft.status || 'draft'}
-                    </Badge>
+                    {renderStatusBadge(draft.status || 'draft')}
                   </TableCell>
                   <TableCell className="text-right space-x-2">
                     <Button
@@ -228,14 +296,50 @@ export function DraftManagement() {
                     </Button>
                     
                     {(user?.role === 'admin' || user?.role === 'editor') && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handlePublish(draft.id)}
-                        title="Publish"
-                      >
-                        <CheckSquareIcon className="h-4 w-4" />
-                      </Button>
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handlePublish(draft.id)}
+                          title="Publish"
+                          disabled={draft.status === 'do_not_publish'}
+                        >
+                          <CheckSquareIcon className="h-4 w-4" />
+                        </Button>
+                        
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              Status
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Change Status</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={() => handleUpdateStatus(draft.id, 'needs_edits')}
+                              className="text-amber-500 flex items-center"
+                            >
+                              <AlertTriangleIcon className="h-4 w-4 mr-2" />
+                              Needs Edits
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleUpdateStatus(draft.id, 'good_to_publish')}
+                              className="text-blue-500 flex items-center"
+                            >
+                              <CheckCircleIcon className="h-4 w-4 mr-2" />
+                              Good to Publish
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleUpdateStatus(draft.id, 'do_not_publish')}
+                              className="text-red-500 flex items-center"
+                            >
+                              <XCircleIcon className="h-4 w-4 mr-2" />
+                              Do Not Publish
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </>
                     )}
                     
                     <Button

@@ -17,6 +17,7 @@ import {
   FileEditIcon
 } from 'lucide-react';
 import DraftManagement from './DraftManagement';
+import PublishedContent from './PublishedContent';
 
 function AdminDashboard() {
   const { user, isAdmin } = useAuth();
@@ -215,7 +216,22 @@ function AdminDashboard() {
         
         <TabsContent value="content" className="mt-6">
           <div className="space-y-6">
-            <DraftManagement />
+            <Tabs defaultValue="published" className="w-full">
+              <TabsList className="w-full">
+                <TabsTrigger value="published">Published Content</TabsTrigger>
+                <TabsTrigger value="drafts">Draft Management</TabsTrigger>
+              </TabsList>
+              <TabsContent value="published">
+                <div className="mt-4">
+                  <PublishedContent />
+                </div>
+              </TabsContent>
+              <TabsContent value="drafts">
+                <div className="mt-4">
+                  <DraftManagement />
+                </div>
+              </TabsContent>
+            </Tabs>
             
             <Card>
               <CardHeader>
@@ -223,7 +239,7 @@ function AdminDashboard() {
                 <CardDescription>Manage all content</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <Button 
                     variant="outline" 
                     className="h-auto py-4 flex flex-col items-center justify-center"
@@ -247,6 +263,14 @@ function AdminDashboard() {
                   >
                     <AlertOctagonIcon className="h-5 w-5 mb-2" />
                     <span>Emergency Banner</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-auto py-4 flex flex-col items-center justify-center"
+                    onClick={() => navigate('/admin/content-status')}
+                  >
+                    <FileEditIcon className="h-5 w-5 mb-2" />
+                    <span>Content Status</span>
                   </Button>
                 </div>
               </CardContent>
