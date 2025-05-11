@@ -42,12 +42,7 @@ interface AstronomyPhoto {
   };
 }
 
-interface CelestialEvent {
-  date: string;
-  title: string;
-  description: string;
-  type: string;
-}
+// Celestial events interface moved to CelestialEvents.tsx
 
 function AstronomyPortal() {
   const { user } = useAuth();
@@ -66,45 +61,7 @@ function AstronomyPortal() {
     queryKey: ["/api/astronomy-photos"],
   });
 
-  // Celestial events for the upcoming month (this would come from an API)
-  const celestialEvents: CelestialEvent[] = [
-    {
-      date: "2023-11-05",
-      title: "Taurid Meteor Shower Peak",
-      description: "The Northern Taurids peak with 5-10 meteors per hour. Best viewing after midnight.",
-      type: "meteor",
-    },
-    {
-      date: "2023-11-13",
-      title: "New Moon",
-      description: "Perfect night for deep sky observation with no moonlight interference.",
-      type: "moon",
-    },
-    {
-      date: "2023-11-17",
-      title: "Leonid Meteor Shower",
-      description: "Fast, bright meteors with rates of about 15 per hour. Best viewed pre-dawn.",
-      type: "meteor",
-    },
-    {
-      date: "2023-11-27",
-      title: "Full Moon - Beaver Moon",
-      description: "November's full moon, named for beaver trapping season in colonial America.",
-      type: "moon",
-    },
-    {
-      date: "2023-12-14",
-      title: "Geminid Meteor Shower Peak",
-      description: "One of the best meteor showers with up to 120-150 meteors per hour. Multicolored display.",
-      type: "meteor",
-    },
-    {
-      date: "2023-12-21",
-      title: "Winter Solstice",
-      description: "The shortest day of the year in the Northern Hemisphere.",
-      type: "seasonal",
-    },
-  ];
+  // We've moved the celestial events to their own component
 
   // Handle photo submission
   const handleSubmitPhoto = async (e: React.FormEvent) => {
@@ -255,43 +212,6 @@ function AstronomyPortal() {
             </div>
           </Card>
         </div>
-        
-        <Card className="bg-[#0D0D17] border-white/10 mb-10">
-          <CardHeader>
-            <CardTitle className="font-space text-xl">Upcoming Celestial Events</CardTitle>
-            <CardDescription>
-              Notable astronomical events for the next month
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {celestialEvents.map((event, index) => (
-                <div 
-                  key={index} 
-                  className="flex items-start p-3 rounded-lg bg-[#14141E] border border-white/10"
-                >
-                  <div className="w-12 h-12 flex items-center justify-center rounded-full bg-purple-900/30 mr-4 flex-shrink-0">
-                    {event.type === "meteor" && <Star className="h-5 w-5 text-purple-400" />}
-                    {event.type === "moon" && <div className="h-5 w-5 rounded-full bg-white/90" />}
-                    {event.type === "seasonal" && <Calendar className="h-5 w-5 text-purple-400" />}
-                  </div>
-                  <div>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
-                      <h4 className="font-space font-bold">{event.title}</h4>
-                      <span className="text-sm text-white/60">{formatDate(event.date)}</span>
-                    </div>
-                    <p className="text-sm text-white/80">{event.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button variant="outline" className="w-full">
-              View All Events
-            </Button>
-          </CardFooter>
-        </Card>
         
         <Card className="bg-[#0D0D17] border-white/10">
           <CardHeader>
