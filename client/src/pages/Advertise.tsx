@@ -29,7 +29,6 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAuth } from '@/hooks/useAuth';
 
 // Extend the schema for form validation
 const adFormSchema = insertAdvertisementSchema.extend({
@@ -51,7 +50,11 @@ type AdFormValues = z.infer<typeof adFormSchema>;
 function Advertise() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { user } = useAuth();
+  const isAuthenticated = !!user;
+  
+  // Add useTransition to prevent Suspense during form submission
+  const [isPendingTransition, startTransition] = useTransition();
   
   // Default form values
   const defaultValues: Partial<AdFormValues> = {
@@ -68,7 +71,7 @@ function Advertise() {
     defaultValues,
   });
   
-  const { mutate, isPending } = useMutation({
+  const { mutate, isPending: isMutating } = useMutation({
     mutationFn: async (data: AdFormValues) => {
       return await apiRequest("POST", "/api/advertisements", data);
     },
@@ -96,7 +99,10 @@ function Advertise() {
       return;
     }
     
-    mutate(data);
+    // Wrap mutation in startTransition to prevent React suspending during synchronous updates
+    startTransition(() => {
+      mutate(data);
+    });
   };
   
   return (
@@ -294,8 +300,8 @@ function Advertise() {
                         />
                       </div>
                       
-                      <Button type="submit" className="w-full" disabled={isPending}>
-                        {isPending ? "Submitting..." : "Submit Advertisement"}
+                      <Button type="submit" className="w-full" disabled={isPendingTransition || isMutating}>
+                        {isPendingTransition || isMutating ? "Submitting..." : "Submit Advertisement"}
                       </Button>
                     </form>
                   </Form>
