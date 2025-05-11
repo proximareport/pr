@@ -34,7 +34,7 @@ import {
   type SiteSettings,
   type UpdateSiteSettings
 } from "@shared/schema";
-import { db } from "./db";
+import { db, pool } from "./db";
 import { eq, and, isNull, desc, sql, or, like, not, inArray, asc } from "drizzle-orm";
 import { z } from "zod";
 
