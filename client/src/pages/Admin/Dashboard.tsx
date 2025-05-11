@@ -409,7 +409,11 @@ function AdminDashboard() {
                     </h3>
                     <p className="text-3xl font-bold mt-2">
                       {Array.isArray(advertisements) 
-                        ? advertisements.filter((ad: any) => ad.isApproved && new Date(ad.startDate) <= new Date() && new Date(ad.endDate) >= new Date()).length 
+                        ? advertisements.filter((ad: any) => 
+                            ad && ad.isApproved && 
+                            new Date(ad.startDate) <= new Date() && 
+                            new Date(ad.endDate) >= new Date()
+                          ).length 
                         : 0}
                     </p>
                     <p className="text-sm text-green-700 mt-1">Currently running</p>
@@ -424,7 +428,13 @@ function AdminDashboard() {
                     </h3>
                     <p className="text-3xl font-bold mt-2">
                       ${Array.isArray(advertisements) 
-                        ? advertisements.filter((ad: any) => ad.isApproved).reduce((sum: number, ad: any) => sum + (ad.price / (ad.price ? 100 : 1) || 0), 0).toFixed(2)
+                        ? advertisements
+                            .filter((ad: any) => ad && ad.isApproved)
+                            .reduce((sum: number, ad: any) => {
+                              const price = ad.price ? Number(ad.price) / 100 : 0;
+                              return sum + (isNaN(price) ? 0 : price);
+                            }, 0)
+                            .toFixed(2)
                         : '0.00'}
                     </p>
                     <p className="text-sm text-blue-700 mt-1">From approved ads</p>

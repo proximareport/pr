@@ -49,7 +49,7 @@ function AdvertisementManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const { data: advertisements = [], isLoading } = useQuery({
+  const { data: advertisements = [], isLoading } = useQuery<Advertisement[]>({
     queryKey: ['/api/advertisements/all'],
     retry: false,
   });
@@ -119,10 +119,10 @@ function AdvertisementManagement() {
     },
   });
   
-  const getPendingAds = () => advertisements.filter((ad: Advertisement) => !ad.isApproved);
+  const getPendingAds = () => (advertisements || []).filter((ad: Advertisement) => !ad.isApproved);
   const getActiveAds = () => {
     const now = new Date();
-    return advertisements.filter((ad: Advertisement) => 
+    return (advertisements || []).filter((ad: Advertisement) => 
       ad.isApproved && 
       new Date(ad.startDate) <= now && 
       new Date(ad.endDate) >= now
@@ -130,7 +130,7 @@ function AdvertisementManagement() {
   };
   const getInactiveAds = () => {
     const now = new Date();
-    return advertisements.filter((ad: Advertisement) => 
+    return (advertisements || []).filter((ad: Advertisement) => 
       ad.isApproved && 
       (new Date(ad.startDate) > now || new Date(ad.endDate) < now)
     );
