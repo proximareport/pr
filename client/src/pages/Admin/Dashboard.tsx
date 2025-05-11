@@ -608,32 +608,32 @@ function AdminDashboard() {
                   </div>
                   
                   <div className="space-y-4">
-                    <div className="flex items-center p-2.5 bg-white rounded-md border border-gray-100">
-                      <div className="p-2 rounded-full bg-red-100 text-red-700 mr-3 flex-shrink-0">
+                    <div className="flex items-center p-2.5 bg-gray-800/70 rounded-md border border-gray-700">
+                      <div className="p-2 rounded-full bg-red-900/60 text-red-400 mr-3 flex-shrink-0">
                         <UsersIcon className="h-5 w-5" />
                       </div>
-                      <span className="text-gray-700 flex-1 font-medium">Administrators</span>
-                      <Badge className="bg-red-100 text-red-800 border-red-200">
+                      <span className="text-gray-300 flex-1 font-medium">Administrators</span>
+                      <Badge className="bg-red-900/70 text-red-300 border-red-700">
                         1
                       </Badge>
                     </div>
                     
-                    <div className="flex items-center p-2.5 bg-white rounded-md border border-gray-100">
-                      <div className="p-2 rounded-full bg-blue-100 text-blue-700 mr-3 flex-shrink-0">
+                    <div className="flex items-center p-2.5 bg-gray-800/70 rounded-md border border-gray-700">
+                      <div className="p-2 rounded-full bg-blue-900/60 text-blue-400 mr-3 flex-shrink-0">
                         <FileEditIcon className="h-5 w-5" />
                       </div>
-                      <span className="text-gray-700 flex-1 font-medium">Editors</span>
-                      <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                      <span className="text-gray-300 flex-1 font-medium">Editors</span>
+                      <Badge className="bg-blue-900/70 text-blue-300 border-blue-700">
                         2
                       </Badge>
                     </div>
                     
-                    <div className="flex items-center p-2.5 bg-white rounded-md border border-gray-100">
-                      <div className="p-2 rounded-full bg-green-100 text-green-700 mr-3 flex-shrink-0">
+                    <div className="flex items-center p-2.5 bg-gray-800/70 rounded-md border border-gray-700">
+                      <div className="p-2 rounded-full bg-green-900/60 text-green-400 mr-3 flex-shrink-0">
                         <FileTextIcon className="h-5 w-5" />
                       </div>
-                      <span className="text-gray-700 flex-1 font-medium">Authors</span>
-                      <Badge className="bg-green-100 text-green-800 border-green-200">
+                      <span className="text-gray-300 flex-1 font-medium">Authors</span>
+                      <Badge className="bg-green-900/70 text-green-300 border-green-700">
                         5
                       </Badge>
                     </div>
@@ -642,7 +642,7 @@ function AdminDashboard() {
                 
                 <Button 
                   variant="default" 
-                  className="bg-purple-600 hover:bg-purple-700 text-white font-medium w-full py-5"
+                  className="bg-purple-700 hover:bg-purple-800 text-white font-medium w-full py-5"
                   onClick={() => navigate('/admin/users')}
                 >
                   <UsersIcon className="mr-2 h-5 w-5" />
