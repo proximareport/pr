@@ -457,17 +457,17 @@ function AdminDashboard() {
         <TabsContent value="overview" className="mt-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Ad Management Card */}
-            <Card className="rounded-xl border border-gray-200 shadow-md overflow-hidden bg-white">
-              <div className={`h-2 w-full ${pendingAdsCount > 0 ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
+            <Card className="rounded-xl border border-gray-800 shadow-md overflow-hidden bg-gray-900">
+              <div className={`h-2 w-full ${pendingAdsCount > 0 ? 'bg-amber-600' : 'bg-emerald-600'}`}></div>
               <CardHeader className="pb-2 pt-5">
-                <CardTitle className="flex items-center text-xl">
-                  <div className={`p-3 rounded-xl ${pendingAdsCount > 0 ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'} mr-4 flex-shrink-0`}>
+                <CardTitle className="flex items-center text-xl text-gray-100">
+                  <div className={`p-3 rounded-xl ${pendingAdsCount > 0 ? 'bg-amber-900/60 text-amber-400' : 'bg-emerald-900/60 text-emerald-400'} mr-4 flex-shrink-0`}>
                     <DollarSignIcon className="h-6 w-6" />
                   </div>
                   <div>
                     Advertisement Management
                     {pendingAdsCount > 0 && (
-                      <Badge className="ml-2 bg-red-500 text-white">
+                      <Badge className="ml-2 bg-red-700 text-gray-100">
                         {pendingAdsCount} pending
                       </Badge>
                     )}
@@ -651,30 +651,30 @@ function AdminDashboard() {
               </CardContent>
             </Card>
             
-            <Card className="rounded-xl border border-gray-200 shadow-md overflow-hidden bg-white">
-              <div className="h-2 w-full bg-green-500"></div>
+            <Card className="rounded-xl border border-gray-800 shadow-md overflow-hidden bg-gray-900">
+              <div className="h-2 w-full bg-green-600"></div>
               <CardHeader className="pb-2 pt-5">
-                <CardTitle className="flex items-center text-xl">
-                  <div className="p-3 rounded-xl bg-green-100 text-green-600 mr-4 flex-shrink-0">
+                <CardTitle className="flex items-center text-xl text-gray-100">
+                  <div className="p-3 rounded-xl bg-green-900/60 text-green-400 mr-4 flex-shrink-0">
                     <DollarSignIcon className="h-6 w-6" />
                   </div>
                   <div>Subscription Revenue</div>
                 </CardTitle>
-                <CardDescription className="text-base ml-[3.25rem]">
+                <CardDescription className="text-base ml-[3.25rem] text-gray-400">
                   Monthly recurring revenue
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-4">
-                <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 flex items-center justify-between">
+                <div className="bg-gray-800/80 p-6 rounded-lg border border-gray-700 flex items-center justify-between">
                   <div>
-                    <div className="text-4xl font-bold text-gray-900">$328</div>
-                    <div className="flex items-center text-sm text-green-600 mt-2 font-medium">
+                    <div className="text-4xl font-bold text-gray-200">$328</div>
+                    <div className="flex items-center text-sm text-green-400 mt-2 font-medium">
                       <BarChart3Icon className="h-4 w-4 mr-1" />
                       <span>+12% from last month</span>
                     </div>
                   </div>
-                  <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center">
-                    <DollarSignIcon className="h-8 w-8 text-green-600" />
+                  <div className="h-16 w-16 bg-green-900/60 rounded-full flex items-center justify-center">
+                    <DollarSignIcon className="h-8 w-8 text-green-400" />
                   </div>
                 </div>
               </CardContent>
