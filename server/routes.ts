@@ -1903,6 +1903,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Received update request for site settings ID:", settingsId);
       console.log("Update data:", updateData);
       
+      // Preprocess maintenance end time to handle empty strings
+      if (updateData.maintenanceEndTime === '') {
+        updateData.maintenanceEndTime = null;
+      }
+      
       if (!settingsId || isNaN(settingsId)) {
         console.error("Invalid settings ID:", req.params.id);
         return res.status(400).json({ message: "Invalid settings ID" });

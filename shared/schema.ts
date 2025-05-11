@@ -412,8 +412,16 @@ export const updateSiteSettingsSchema = createInsertSchema(siteSettings).omit({
   id: true,
   updatedAt: true,
 }).extend({
-  // Make sure the maintenanceEndTime field can be a string for datetime-local input
-  maintenanceEndTime: z.string().nullable().optional(),
+  // Make sure the maintenanceEndTime field can handle various formats
+  maintenanceEndTime: z.union([
+    z.string(),
+    z.null(),
+    z.undefined()
+  ]).transform(val => {
+    // Convert empty strings to null
+    if (val === '') return null;
+    return val;
+  }),
 });
 
 // Types
