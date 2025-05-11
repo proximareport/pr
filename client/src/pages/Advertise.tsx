@@ -128,8 +128,8 @@ function Advertise() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                    <Form {...form}>
+                      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                       <FormField
                         control={form.control}
                         name="title"
@@ -305,6 +305,7 @@ function Advertise() {
                       </Button>
                     </form>
                   </Form>
+                  </Suspense>
                 </CardContent>
               </Card>
             </div>
