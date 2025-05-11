@@ -813,6 +813,111 @@ const SiteSettingsForm = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Maintenance Tab */}
+          <TabsContent value="maintenance">
+            <Card>
+              <CardHeader>
+                <CardTitle>Maintenance Mode</CardTitle>
+                <CardDescription>
+                  Configure maintenance mode settings and messaging
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="maintenanceMode"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4 border rounded-md bg-amber-50 dark:bg-amber-950">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel className="font-semibold">Enable Maintenance Mode</FormLabel>
+                        <FormDescription>
+                          When enabled, only administrators can access the site. All other users will see a maintenance page.
+                        </FormDescription>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="mt-4">
+                  <Separator className="my-4" />
+                  <h3 className="text-lg font-medium mb-2">Maintenance Page Content</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Customize the message shown to users during maintenance
+                  </p>
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="maintenanceMessage"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Main Message</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        The main headline displayed on the maintenance page
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="maintenanceDetails"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Detailed Message</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} className="min-h-[100px]" />
+                      </FormControl>
+                      <FormDescription>
+                        Additional details about the maintenance being performed
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="maintenanceEndTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Expected End Time</FormLabel>
+                      <FormControl>
+                        <div className="flex items-center">
+                          <CalendarClock className="h-5 w-5 mr-2 text-gray-400" />
+                          <Input 
+                            type="datetime-local" 
+                            value={field.value || ''} 
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            disabled={field.disabled}
+                            ref={field.ref}
+                            name={field.name}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormDescription>
+                        When maintenance is expected to end (optional)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
         
         <div className="mt-6 flex items-center justify-end space-x-4">
