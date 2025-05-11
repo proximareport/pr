@@ -306,6 +306,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error uploading profile picture" });
     }
   });
+  
+  // Change password endpoint
+  app.post("/api/users/password", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const changePasswordSchema = z.object({
+        currentPassword: z.string(),
+        newPassword: z.string().min(8),
+      });
+      
+      const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
+      
+      // Get current user with password
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Check current password
+      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+      if (!isCurrentPasswordValid) {
+        return res.status(401).json({ message: "Current password is incorrect" });
+      }
+      
+      // Hash new password
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(newPassword, salt);
+      
+      // Update user with new password
+      await storage.updateUser(userId, { password: hashedPassword });
+      
+      res.json({ message: "Password updated successfully" });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          message: "Invalid input", 
+          errors: error.format() 
+        });
+      }
+      
+      console.error('Error changing password:', error);
+      res.status(500).json({ message: "Error changing password" });
+    }
+  });
 
   app.get("/api/users/profile/:username", async (req, res) => {
     try {
