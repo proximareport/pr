@@ -326,10 +326,10 @@ function AdminArticleEditor() {
       return;
     }
     
-    // Set a new timeout for autosave (3 seconds after last change)
+    // Set a new timeout for autosave (60 seconds after last change)
     autosaveTimeoutRef.current = window.setTimeout(() => {
       doAutosave();
-    }, 3000);
+    }, 60000);
   }, [title, doAutosave]);
   
   // Format the last saved time
