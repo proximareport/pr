@@ -359,26 +359,18 @@ function AdminDashboard() {
         </DialogContent>
       </Dialog>
       
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-8 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-8">
         <div className="text-center sm:text-left mb-4 sm:mb-0">
           <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="text-gray-500 mt-1">Manage your content, users, and site settings</p>
+          <p className="text-gray-600 mt-1">Manage your content, users, and site settings</p>
         </div>
         <div className="flex gap-3">
           <Button 
-            className="bg-primary hover:bg-primary/90 shadow-sm transition-all"
+            className="bg-blue-600 hover:bg-blue-700 shadow-sm transition-all font-medium flex items-center gap-2"
             onClick={() => navigate('/admin/articles/new')}
           >
-            <PlusIcon className="h-4 w-4 mr-2" />
+            <PlusIcon className="h-4 w-4" />
             New Article
-          </Button>
-          <Button 
-            variant="outline"
-            className="border-gray-200 hover:bg-gray-50 transition-all"
-            onClick={() => navigate('/admin/settings')}
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            Settings
           </Button>
         </div>
       </div>
@@ -393,37 +385,37 @@ function AdminDashboard() {
           window.history.pushState({}, '', newUrl.toString());
         }}
       >
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-2 mb-8">
-          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 gap-2">
+        <div className="border-b border-gray-200 mb-8">
+          <TabsList className="bg-transparent justify-start gap-8">
             <TabsTrigger 
               value="overview" 
-              className="py-3 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg transition-all"
+              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
             >
-              <div className="flex flex-col items-center sm:flex-row sm:justify-center">
-                <BarChart3Icon className="h-5 w-5 sm:mr-2 mb-1 sm:mb-0" />
+              <div className="flex items-center gap-2">
+                <BarChart3Icon className="h-4 w-4" />
                 <span>Overview</span>
               </div>
             </TabsTrigger>
             
             <TabsTrigger 
               value="content" 
-              className="py-3 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg transition-all"
+              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
             >
-              <div className="flex flex-col items-center sm:flex-row sm:justify-center">
-                <FileTextIcon className="h-5 w-5 sm:mr-2 mb-1 sm:mb-0" />
+              <div className="flex items-center gap-2">
+                <FileTextIcon className="h-4 w-4" />
                 <span>Content</span>
               </div>
             </TabsTrigger>
             
             <TabsTrigger 
               value="advertisements" 
-              className="py-3 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg transition-all"
+              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
             >
-              <div className="flex flex-col items-center sm:flex-row sm:justify-center relative">
-                <DollarSignIcon className="h-5 w-5 sm:mr-2 mb-1 sm:mb-0 text-green-600" />
-                <span>Ads</span>
+              <div className="flex items-center gap-2 relative">
+                <DollarSignIcon className="h-4 w-4 text-green-600" />
+                <span>Advertisements</span>
                 {pendingAdsCount > 0 && (
-                  <span className="absolute -top-1 -right-1 sm:right-auto sm:-top-1 sm:-left-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white ml-1">
                     {pendingAdsCount}
                   </span>
                 )}
@@ -432,30 +424,30 @@ function AdminDashboard() {
             
             <TabsTrigger 
               value="users" 
-              className="py-3 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg transition-all"
+              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
             >
-              <div className="flex flex-col items-center sm:flex-row sm:justify-center">
-                <UsersIcon className="h-5 w-5 sm:mr-2 mb-1 sm:mb-0" />
+              <div className="flex items-center gap-2">
+                <UsersIcon className="h-4 w-4" />
                 <span>Users</span>
               </div>
             </TabsTrigger>
             
             <TabsTrigger 
               value="media" 
-              className="py-3 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg transition-all"
+              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
             >
-              <div className="flex flex-col items-center sm:flex-row sm:justify-center">
-                <ImageIcon className="h-5 w-5 sm:mr-2 mb-1 sm:mb-0" />
+              <div className="flex items-center gap-2">
+                <ImageIcon className="h-4 w-4" />
                 <span>Media</span>
               </div>
             </TabsTrigger>
             
             <TabsTrigger 
               value="settings" 
-              className="py-3 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg transition-all"
+              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
             >
-              <div className="flex flex-col items-center sm:flex-row sm:justify-center">
-                <Settings className="h-5 w-5 sm:mr-2 mb-1 sm:mb-0" />
+              <div className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
                 <span>Settings</span>
               </div>
             </TabsTrigger>
@@ -823,8 +815,8 @@ function AdminDashboard() {
           </div>
         </TabsContent>
         
-        <TabsContent value="content" className="mt-6">
-          <div className="space-y-6">
+        <TabsContent value="content" className="mt-8">
+          <div className="space-y-8">
             <Tabs 
               defaultValue={subTabFromUrl || "published"} 
               className="w-full"
@@ -835,11 +827,28 @@ function AdminDashboard() {
                 window.history.pushState({}, '', newUrl.toString());
               }}
             >
-              <TabsList className="w-full">
-                <TabsTrigger value="published">Published Content</TabsTrigger>
-                <TabsTrigger value="drafts">Draft Management</TabsTrigger>
-                <TabsTrigger value="content_status">Content Status</TabsTrigger>
-              </TabsList>
+              <div className="border-b border-gray-200 mb-6">
+                <TabsList className="bg-transparent w-full justify-start gap-8">
+                  <TabsTrigger 
+                    value="published" 
+                    className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
+                  >
+                    Published Content
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="drafts" 
+                    className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
+                  >
+                    Draft Management
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="content_status" 
+                    className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
+                  >
+                    Content Status
+                  </TabsTrigger>
+                </TabsList>
+              </div>
               <TabsContent value="published">
                 <div className="mt-4">
                   <PublishedContent />
