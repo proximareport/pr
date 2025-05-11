@@ -454,10 +454,16 @@ export class DatabaseStorage implements IStorage {
       }
       
       if (data.tags !== undefined) {
-        updates.push(`tags = $${paramIndex++}`);
-        // Make sure tags is formatted as a proper JSON string
-        const tagsJson = data.tags ? (typeof data.tags === 'string' ? data.tags : JSON.stringify(data.tags)) : '[]';
-        values.push(tagsJson);
+        if (Array.isArray(data.tags) && data.tags.length > 0) {
+          // For non-empty arrays, we need to handle each element as a separate parameter
+          const placeholders = data.tags.map((_, idx) => `$${paramIndex + idx}`).join(',');
+          updates.push(`tags = ARRAY[${placeholders}]::TEXT[]`);
+          data.tags.forEach(tag => values.push(tag));
+          paramIndex += data.tags.length;
+        } else {
+          // For empty arrays, use a SQL expression that creates an empty array
+          updates.push(`tags = '{}'::TEXT[]`);
+        }
       }
       
       if (data.category !== undefined) {

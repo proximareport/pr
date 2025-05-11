@@ -1163,7 +1163,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (featuredImage !== undefined) updateData.featuredImage = featuredImage || '';
       if (isBreaking !== undefined) updateData.isBreaking = !!isBreaking;
       if (readTime !== undefined) updateData.readTime = readTime || 1;
-      if (tags !== undefined) updateData.tags = Array.isArray(tags) ? JSON.stringify(tags) : '[]';
+      if (tags !== undefined) {
+        // For Postgres array column, pass the array directly, not as a string
+        updateData.tags = Array.isArray(tags) ? tags : [];
+      }
       if (category !== undefined) updateData.category = category || '';
       if (status !== undefined) updateData.status = status || 'draft';
       
