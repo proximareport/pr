@@ -1082,6 +1082,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Add explicit PATCH endpoint for autosave functionality
+  app.patch("/api/articles/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const articleId = parseInt(id);
+      const userId = req.session.userId!;
+      
+      // Check article exists
+      const article = await storage.getArticleById(articleId);
+      if (!article) {
+        return res.status(404).json({ message: "Article not found" });
+      }
+      
+      // Get user data to check role
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      // Get article authors to check if user is an author
+      const articleAuthors = await storage.getArticleAuthors(articleId);
+      const isArticleAuthor = articleAuthors.some(author => author.user.id === userId);
+      
+      // Determine if user has permission to edit this article
+      const canEdit = user.role === 'admin' || 
+                     user.role === 'editor' || 
+                     (user.role === 'author' && isArticleAuthor);
+      
+      if (!canEdit) {
+        return res.status(403).json({ 
+          message: "You don't have permission to edit this article" 
+        });
+      }
+      
+      // Update the article
+      const updatedArticle = await storage.updateArticle(articleId, req.body);
+      if (!updatedArticle) {
+        return res.status(404).json({ message: "Failed to update article" });
+      }
+      
+      // Return proper JSON response
+      return res.json({ success: true, article: updatedArticle });
+    } catch (error) {
+      console.error("Error updating article:", error);
+      return res.status(500).json({ 
+        message: "Server error while updating article", 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // Original PUT endpoint
   app.put("/api/articles/:id", requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
