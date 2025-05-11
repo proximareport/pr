@@ -971,53 +971,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // If article is collaborative, fetch all authors
-      if (article.isCollaborative) {
-        const authors = await storage.getArticleAuthors(article.id);
-        // Map to a simplified author structure
-        const authorData = authors.map(authorRecord => ({
-          id: authorRecord.user.id,
-          username: authorRecord.user.username,
-          profilePicture: authorRecord.user.profilePicture,
-          role: authorRecord.role
-        }));
-        
-        // Return with authors data
-        res.json({
-          ...article,
-          authors: authorData
-        });
-      } else {
-        // Return standard article data
-        res.json(article);
-      }
+      // Always fetch all authors for the article
+      const authors = await storage.getArticleAuthors(article.id);
+      // Map to a simplified author structure
+      const authorData = authors.map(authorRecord => ({
+        id: authorRecord.user.id,
+        username: authorRecord.user.username,
+        profilePicture: authorRecord.user.profilePicture,
+        role: authorRecord.role
+      }));
+      
+      // Return with authors data
+      res.json({
+        ...article,
+        authors: authorData
+      });
     } catch (error) {
       console.error("Error fetching article:", error);
       res.status(500).json({ message: "Error fetching article" });
     }
   });
   
-  // Get draft articles (only for authors/editors/admins)
-  app.get("/api/articles/drafts", requireAuthor, async (req, res) => {
-    try {
-      const userId = req.session.userId!;
-      const user = await storage.getUser(userId);
-      
-      let articles: any[] = [];
-      if (user && (user.role === 'admin' || user.role === 'editor')) {
-        // Admins and editors can see all drafts
-        articles = await storage.getArticlesByStatus('draft');
-      } else if (user) {
-        // Authors can only see their own drafts or articles they're collaborating on
-        articles = await storage.getAuthorDrafts(userId);
-      }
-      
-      res.json(articles);
-    } catch (error) {
-      console.error("Error fetching draft articles:", error);
-      res.status(500).json({ message: "Error fetching draft articles" });
-    }
-  });
+  // Get draft articles (only for authors/editors/admins) - DUPLICATE REMOVED
   
   app.post("/api/articles", requireAuthor, async (req, res) => {
     try {
