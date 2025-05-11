@@ -18,6 +18,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -31,9 +32,33 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Pencil, Trash2, MoreVertical, Upload, Image, FileText, Video, Music, Filter, Search } from "lucide-react";
+import { 
+  Pencil, 
+  Trash2, 
+  MoreVertical, 
+  Upload, 
+  Image, 
+  FileText, 
+  Video, 
+  Music, 
+  Filter, 
+  Search, 
+  Eye, 
+  Copy,
+  ArrowUpDown,
+  ArrowDownUp,
+  MoreHorizontal
+} from "lucide-react";
 
 // Media Types
 type MediaType = "image" | "video" | "document" | "audio" | "all";
@@ -84,22 +109,60 @@ const MediaTypeIcon = ({ type }: { type: MediaType }) => {
 };
 
 // Media Item Card Component
-const MediaItemCard = ({ item, onEdit, onDelete }: { 
+const MediaItemCard = ({ 
+  item, 
+  onEdit, 
+  onDelete,
+  isSelected,
+  onSelect,
+  onPreview 
+}: { 
   item: MediaItem; 
   onEdit: (item: MediaItem) => void;
   onDelete: (item: MediaItem) => void;
+  isSelected?: boolean;
+  onSelect?: (item: MediaItem, selected: boolean) => void;
+  onPreview?: (item: MediaItem) => void;
 }) => {
   return (
-    <Card className="overflow-hidden">
-      <div className="relative aspect-square bg-gray-100 overflow-hidden">
+    <Card className={`overflow-hidden ${isSelected ? 'ring-2 ring-primary border-primary' : ''}`}>
+      <div className="relative aspect-square bg-gray-100 overflow-hidden group">
+        {onSelect && (
+          <div className="absolute top-2 left-2 z-10">
+            <Checkbox 
+              checked={isSelected} 
+              onCheckedChange={(checked) => onSelect(item, !!checked)}
+              className="h-5 w-5 bg-white/90 backdrop-blur-sm"
+            />
+          </div>
+        )}
+        
         {item.fileType === "image" ? (
-          <img
-            src={item.fileUrl}
-            alt={item.altText || item.fileName}
-            className="h-full w-full object-cover"
-          />
+          <>
+            <img
+              src={item.fileUrl}
+              alt={item.altText || item.fileName}
+              className="h-full w-full object-cover cursor-pointer transition-transform group-hover:scale-105"
+              onClick={() => onPreview && onPreview(item)}
+            />
+            {onPreview && (
+              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                <Button 
+                  variant="secondary" 
+                  size="sm" 
+                  className="bg-white/70 hover:bg-white"
+                  onClick={() => onPreview(item)}
+                >
+                  <Eye className="h-4 w-4 mr-1" /> Preview
+                </Button>
+              </div>
+            )}
+          </>
         ) : (
-          <div className="h-full w-full flex items-center justify-center bg-gray-100">
+          <div 
+            className="h-full w-full flex items-center justify-center bg-gray-100 cursor-pointer"
+            onClick={() => onPreview && onPreview(item)}
+          >
             <MediaTypeIcon type={item.fileType} />
           </div>
         )}
@@ -116,10 +179,19 @@ const MediaItemCard = ({ item, onEdit, onDelete }: {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              {onPreview && (
+                <DropdownMenuItem onClick={() => onPreview(item)}>
+                  <Eye className="mr-2 h-4 w-4" /> Preview
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={() => onEdit(item)}>
                 <Pencil className="mr-2 h-4 w-4" /> Edit
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onDelete(item)}>
+              <DropdownMenuItem onClick={() => navigator.clipboard.writeText(item.fileUrl)}>
+                <Copy className="mr-2 h-4 w-4" /> Copy URL
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => onDelete(item)} className="text-red-600">
                 <Trash2 className="mr-2 h-4 w-4" /> Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -723,6 +795,56 @@ const MediaLibrary = () => {
               </TabsList>
             </Tabs>
           </div>
+        </div>
+        
+        <div className="flex flex-col md:flex-row justify-between items-center mb-6">
+          <div className="flex items-center space-x-4 mb-4 md:mb-0">
+            <div className="flex items-center">
+              <label htmlFor="sort-by" className="mr-2 text-sm font-medium">Sort by:</label>
+              <Select value={sortBy} onValueChange={(value) => setSortBy(value as "date" | "name" | "size")}>
+                <SelectTrigger id="sort-by" className="w-[120px]">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date">Date</SelectItem>
+                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="size">Size</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex items-center ml-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                className="flex items-center"
+              >
+                {sortOrder === "asc" ? <ArrowUpDown className="h-4 w-4 mr-1" /> : <ArrowDownUp className="h-4 w-4 mr-1" />}
+                {sortOrder === "asc" ? "Ascending" : "Descending"}
+              </Button>
+            </div>
+          </div>
+          
+          {selectedItems.length > 0 && (
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium">{selectedItems.length} selected</span>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setSelectedItems([])}
+              >
+                Clear selection
+              </Button>
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={() => setIsBulkDeleteModalOpen(true)}
+              >
+                Delete selected
+              </Button>
+            </div>
+          )}
         </div>
 
         <Separator className="my-6" />
