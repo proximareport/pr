@@ -1,11 +1,24 @@
-import React, { useEffect } from 'react';
-import { useLocation, useRouter } from 'wouter';
+import React, { useEffect, useState } from 'react';
+import { useLocation, useRouter, Link } from 'wouter';
 import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { apiRequest } from '@/lib/queryClient';
 import { 
   FileTextIcon, 
   UsersIcon, 
@@ -20,14 +33,38 @@ import {
   DollarSignIcon,
   BellIcon,
   CheckCircleIcon,
-  AlertTriangleIcon
+  AlertTriangleIcon,
+  Eye,
+  XCircle
 } from 'lucide-react';
 import DraftManagement from './DraftManagement';
 import PublishedContent from './PublishedContent';
 
+interface Article {
+  id: number;
+  title: string;
+  slug: string;
+  status: string;
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  authors?: Array<{
+    user: {
+      id: number;
+      username: string;
+    };
+  }>;
+}
+
 function AdminDashboard() {
   const { user, isAdmin } = useAuth();
   const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // ContentStatus state
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<string>('');
   
   // Fetch all advertisements to count pending ones
   const { data: advertisements = [] } = useQuery({
@@ -36,10 +73,93 @@ function AdminDashboard() {
     enabled: !!isAdmin
   });
   
+  // Fetch all articles for content status tab
+  const { data: articles = [], isLoading: articlesLoading } = useQuery({
+    queryKey: ['/api/articles/all'],
+    retry: false,
+    enabled: !!isAdmin
+  });
+
+  // Status update mutation
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({
+      articleId,
+      status,
+    }: {
+      articleId: number;
+      status: string;
+    }) => {
+      return await apiRequest('PATCH', `/api/articles/${articleId}/status`, { status });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/articles/all'] });
+      toast({
+        title: 'Success',
+        description: 'Article status updated successfully',
+      });
+      setSelectedArticle(null);
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to update article status',
+        variant: 'destructive',
+      });
+    },
+  });
+  
   // Count pending advertisements that need review
   const pendingAdsCount = Array.isArray(advertisements) 
     ? advertisements.filter((ad: any) => !ad.isApproved).length 
     : 0;
+    
+  // ContentStatus helper functions
+  const handleStatusUpdate = () => {
+    if (selectedArticle && selectedStatus) {
+      updateStatusMutation.mutate({
+        articleId: selectedArticle.id,
+        status: selectedStatus,
+      });
+    }
+  };
+
+  const openStatusDialog = (article: Article) => {
+    setSelectedArticle(article);
+    setSelectedStatus(article.status);
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'published':
+        return <Badge className="bg-green-100 text-green-800 border-green-200">Published</Badge>;
+      case 'draft':
+        return <Badge className="bg-gray-100 text-gray-800 border-gray-200">Draft</Badge>;
+      case 'needs_edits':
+        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Needs Edits</Badge>;
+      case 'good_to_publish':
+        return <Badge className="bg-blue-100 text-blue-800 border-blue-200">Good to Publish</Badge>;
+      case 'do_not_publish':
+        return <Badge className="bg-red-100 text-red-800 border-red-200">Do Not Publish</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const getArticlesByStatus = (status: string | string[]) => {
+    if (!articles) return [];
+    
+    if (Array.isArray(status)) {
+      return articles.filter((article: Article) => status.includes(article.status));
+    }
+    
+    return articles.filter((article: Article) => article.status === status);
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Not published';
+    const date = new Date(dateString);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+  };
   
   useEffect(() => {
     // Redirect if not admin
@@ -280,6 +400,7 @@ function AdminDashboard() {
               <TabsList className="w-full">
                 <TabsTrigger value="published">Published Content</TabsTrigger>
                 <TabsTrigger value="drafts">Draft Management</TabsTrigger>
+                <TabsTrigger value="content_status">Content Status</TabsTrigger>
               </TabsList>
               <TabsContent value="published">
                 <div className="mt-4">
@@ -289,6 +410,49 @@ function AdminDashboard() {
               <TabsContent value="drafts">
                 <div className="mt-4">
                   <DraftManagement />
+                </div>
+              </TabsContent>
+              <TabsContent value="content_status">
+                <div className="mt-4">
+                  {articlesLoading ? (
+                    <div className="flex justify-center items-center h-64">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                  ) : (
+                    <Tabs defaultValue="all" className="w-full">
+                      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-4">
+                        <TabsList className="grid grid-cols-5 max-w-md mx-auto">
+                          <TabsTrigger value="all">All</TabsTrigger>
+                          <TabsTrigger value="needs_edits" className="flex gap-2 items-center">
+                            <AlertTriangleIcon className="h-4 w-4" /> Needs Edits
+                          </TabsTrigger>
+                          <TabsTrigger value="good_to_publish" className="flex gap-2 items-center">
+                            <CheckCircleIcon className="h-4 w-4" /> Good to Publish
+                          </TabsTrigger>
+                          <TabsTrigger value="do_not_publish" className="flex gap-2 items-center">
+                            <XCircle className="h-4 w-4" /> Do Not Publish
+                          </TabsTrigger>
+                          <TabsTrigger value="published">Published</TabsTrigger>
+                        </TabsList>
+                      </div>
+
+                      <TabsContent value="all">
+                        {renderArticleTable(articles)}
+                      </TabsContent>
+                      <TabsContent value="needs_edits">
+                        {renderArticleTable(getArticlesByStatus('needs_edits'))}
+                      </TabsContent>
+                      <TabsContent value="good_to_publish">
+                        {renderArticleTable(getArticlesByStatus('good_to_publish'))}
+                      </TabsContent>
+                      <TabsContent value="do_not_publish">
+                        {renderArticleTable(getArticlesByStatus('do_not_publish'))}
+                      </TabsContent>
+                      <TabsContent value="published">
+                        {renderArticleTable(getArticlesByStatus('published'))}
+                      </TabsContent>
+                    </Tabs>
+                  )}
                 </div>
               </TabsContent>
             </Tabs>
