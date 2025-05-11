@@ -9,7 +9,9 @@ import {
   insertAstronomyPhotoSchema,
   insertJobListingSchema,
   insertAdvertisementSchema,
-  type User
+  insertMediaLibrarySchema,
+  type User,
+  type MediaLibraryItem
 } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { handleStripeWebhook, createStripeCheckoutSession, stripe, SUBSCRIPTION_PRICES } from "./stripe";

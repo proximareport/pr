@@ -10,6 +10,7 @@ import {
   categories,
   apiKeys,
   articleAuthors,
+  mediaLibrary,
   type User, 
   type InsertUser, 
   type Article, 
@@ -26,7 +27,9 @@ import {
   type ApiKey,
   type InsertApiKey,
   type ArticleAuthor,
-  type InsertArticleAuthor
+  type InsertArticleAuthor,
+  type MediaLibraryItem,
+  type InsertMediaLibraryItem
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, isNull, desc, sql, or, like, not, inArray, asc } from "drizzle-orm";
@@ -85,6 +88,15 @@ export interface IStorage {
   addVote(userId: number, commentId: number, voteType: string): Promise<void>;
   removeVote(userId: number, commentId: number): Promise<void>;
   getVote(userId: number, commentId: number): Promise<{ voteType: string } | undefined>;
+  
+  // Media Library operations
+  getMediaLibraryItems(userId?: number): Promise<MediaLibraryItem[]>;
+  getMediaLibraryItemById(id: number): Promise<MediaLibraryItem | undefined>;
+  createMediaLibraryItem(item: InsertMediaLibraryItem): Promise<MediaLibraryItem>;
+  updateMediaLibraryItem(id: number, data: Partial<MediaLibraryItem>): Promise<MediaLibraryItem | undefined>;
+  deleteMediaLibraryItem(id: number): Promise<boolean>;
+  searchMediaLibrary(query: string, userId?: number): Promise<MediaLibraryItem[]>;
+  getMediaLibraryItemsByType(fileType: string, userId?: number): Promise<MediaLibraryItem[]>;
   
   // Astronomy Photo operations
   getAstronomyPhotos(approved?: boolean): Promise<AstronomyPhoto[]>;
@@ -876,6 +888,79 @@ export class DatabaseStorage implements IStorage {
         slug: categories.slug,
       })
       .from(categories);
+  }
+
+  // Media Library operations
+  async getMediaLibraryItems(userId?: number): Promise<MediaLibraryItem[]> {
+    let query = db.select().from(mediaLibrary).orderBy(desc(mediaLibrary.createdAt));
+    
+    if (userId) {
+      query = query.where(eq(mediaLibrary.userId, userId));
+    }
+    
+    return await query;
+  }
+  
+  async getMediaLibraryItemById(id: number): Promise<MediaLibraryItem | undefined> {
+    const [item] = await db.select().from(mediaLibrary).where(eq(mediaLibrary.id, id));
+    return item;
+  }
+  
+  async createMediaLibraryItem(item: InsertMediaLibraryItem): Promise<MediaLibraryItem> {
+    const [newItem] = await db.insert(mediaLibrary).values(item).returning();
+    return newItem;
+  }
+  
+  async updateMediaLibraryItem(id: number, data: Partial<MediaLibraryItem>): Promise<MediaLibraryItem | undefined> {
+    const [updatedItem] = await db
+      .update(mediaLibrary)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(mediaLibrary.id, id))
+      .returning();
+    
+    return updatedItem;
+  }
+  
+  async deleteMediaLibraryItem(id: number): Promise<boolean> {
+    const result = await db.delete(mediaLibrary).where(eq(mediaLibrary.id, id));
+    return !!result;
+  }
+  
+  async searchMediaLibrary(query: string, userId?: number): Promise<MediaLibraryItem[]> {
+    let dbQuery = db
+      .select()
+      .from(mediaLibrary)
+      .where(
+        or(
+          like(mediaLibrary.fileName, `%${query}%`),
+          like(mediaLibrary.altText || '', `%${query}%`),
+          like(mediaLibrary.caption || '', `%${query}%`)
+        )
+      )
+      .orderBy(desc(mediaLibrary.createdAt));
+    
+    if (userId) {
+      dbQuery = dbQuery.where(eq(mediaLibrary.userId, userId));
+    }
+    
+    return await dbQuery;
+  }
+  
+  async getMediaLibraryItemsByType(fileType: string, userId?: number): Promise<MediaLibraryItem[]> {
+    let query = db
+      .select()
+      .from(mediaLibrary)
+      .where(eq(mediaLibrary.fileType, fileType as any))
+      .orderBy(desc(mediaLibrary.createdAt));
+    
+    if (userId) {
+      query = query.where(eq(mediaLibrary.userId, userId));
+    }
+    
+    return await query;
   }
 }
 
