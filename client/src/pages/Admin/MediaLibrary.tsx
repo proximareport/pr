@@ -731,6 +731,19 @@ const MediaLibrary = () => {
     setSelectedItem(item);
     setIsDeleteModalOpen(true);
   };
+  
+  const handlePreviewItem = (item: MediaItem) => {
+    setSelectedItem(item);
+    setIsPreviewModalOpen(true);
+  };
+  
+  const handleSelectItem = (item: MediaItem, selected: boolean) => {
+    if (selected) {
+      setSelectedItems(prev => [...prev, item]);
+    } else {
+      setSelectedItems(prev => prev.filter(i => i.id !== item.id));
+    }
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -739,6 +752,10 @@ const MediaLibrary = () => {
 
   const clearSearch = () => {
     setSearchQuery("");
+  };
+  
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   return (
@@ -889,16 +906,51 @@ const MediaLibrary = () => {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {filteredMedia.map((item) => (
-              <MediaItemCard
-                key={item.id}
-                item={item}
-                onEdit={handleEditItem}
-                onDelete={handleDeleteItem}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {paginatedMedia.map((item) => (
+                <MediaItemCard
+                  key={item.id}
+                  item={item}
+                  onEdit={handleEditItem}
+                  onDelete={handleDeleteItem}
+                  onPreview={handlePreviewItem}
+                  isSelected={selectedItems.some(i => i.id === item.id)}
+                  onSelect={handleSelectItem}
+                />
+              ))}
+            </div>
+            
+            {totalPages > 1 && (
+              <div className="flex justify-center mt-8">
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <Button
+                      key={page}
+                      variant={currentPage === page ? "default" : "outline"}
+                      onClick={() => handlePageChange(page)}
+                    >
+                      {page}
+                    </Button>
+                  ))}
+                  <Button
+                    variant="outline"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -917,7 +969,222 @@ const MediaLibrary = () => {
         onClose={() => setIsDeleteModalOpen(false)}
         mediaItem={selectedItem}
       />
+      <PreviewMediaModal
+        isOpen={isPreviewModalOpen}
+        onClose={() => setIsPreviewModalOpen(false)}
+        mediaItem={selectedItem}
+      />
+      <BulkDeleteMediaModal
+        isOpen={isBulkDeleteModalOpen}
+        onClose={() => setIsBulkDeleteModalOpen(false)}
+        items={selectedItems}
+      />
     </AdminLayout>
+  );
+};
+
+// Preview Media Modal Component
+const PreviewMediaModal = ({
+  isOpen,
+  onClose,
+  mediaItem,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  mediaItem: MediaItem | null;
+}) => {
+  if (!mediaItem) return null;
+  
+  const isImage = mediaItem.fileType === "image";
+  const isVideo = mediaItem.fileType === "video";
+  const isAudio = mediaItem.fileType === "audio";
+  const isDocument = mediaItem.fileType === "document";
+  
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[750px] max-h-[80vh] overflow-auto">
+        <DialogHeader>
+          <DialogTitle>Preview: {mediaItem.fileName}</DialogTitle>
+          <DialogDescription>
+            {mediaItem.caption || "No caption provided"}
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="py-4 flex flex-col items-center">
+          {isImage && (
+            <img 
+              src={mediaItem.fileUrl} 
+              alt={mediaItem.altText || mediaItem.fileName}
+              className="max-w-full max-h-[50vh] object-contain"
+            />
+          )}
+          
+          {isVideo && (
+            <video 
+              controls
+              className="max-w-full max-h-[50vh]"
+              src={mediaItem.fileUrl}
+            >
+              Your browser does not support the video tag.
+            </video>
+          )}
+          
+          {isAudio && (
+            <div className="w-full">
+              <audio controls className="w-full" src={mediaItem.fileUrl}>
+                Your browser does not support the audio tag.
+              </audio>
+              <div className="mt-4 flex justify-center">
+                <Music className="h-24 w-24 text-gray-300" />
+              </div>
+            </div>
+          )}
+          
+          {isDocument && (
+            <div className="text-center">
+              <FileText className="h-24 w-24 mx-auto text-gray-300" />
+              <p className="mt-4">Document preview not available</p>
+              <Button 
+                variant="outline" 
+                className="mt-2"
+                onClick={() => window.open(mediaItem.fileUrl, '_blank')}
+              >
+                Open Document
+              </Button>
+            </div>
+          )}
+        </div>
+        
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="font-medium">File name:</span> 
+            <span>{mediaItem.fileName}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="font-medium">File type:</span> 
+            <span>{mediaItem.mimeType}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="font-medium">File size:</span> 
+            <span>{formatFileSize(mediaItem.fileSize)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="font-medium">Uploaded:</span> 
+            <span>{new Date(mediaItem.createdAt).toLocaleString()}</span>
+          </div>
+          {mediaItem.tags && mediaItem.tags.length > 0 && (
+            <div className="flex justify-between">
+              <span className="font-medium">Tags:</span> 
+              <span>{mediaItem.tags.join(', ')}</span>
+            </div>
+          )}
+        </div>
+        
+        <DialogFooter>
+          <Button 
+            onClick={() => navigator.clipboard.writeText(mediaItem.fileUrl)}
+            variant="outline"
+            className="mr-2"
+          >
+            <Copy className="h-4 w-4 mr-2" /> Copy URL
+          </Button>
+          <Button 
+            onClick={() => window.open(mediaItem.fileUrl, '_blank')}
+            variant="outline"
+          >
+            Open in New Tab
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// Bulk Delete Confirmation Modal
+const BulkDeleteMediaModal = ({
+  isOpen,
+  onClose,
+  items,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  items: MediaItem[];
+}) => {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      if (!items.length) return null;
+
+      const response = await apiRequest("DELETE", `/api/media/bulk`, {
+        ids: items.map(item => item.id)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to delete media items");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/media'] });
+      toast({
+        title: "Media deleted",
+        description: `${items.length} media items have been deleted successfully.`,
+      });
+      onClose();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Delete failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDelete = async () => {
+    if (!items.length) return;
+
+    setIsDeleting(true);
+    await deleteMutation.mutateAsync();
+    setIsDeleting(false);
+  };
+
+  if (!items.length) return null;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[400px]">
+        <DialogHeader>
+          <DialogTitle>Delete {items.length} Items</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete {items.length} media items? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4">
+          <p className="text-sm text-gray-500">
+            The items will be permanently removed from your media library.
+          </p>
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose} disabled={isDeleting}>
+            Cancel
+          </Button>
+          <Button 
+            type="button" 
+            variant="destructive" 
+            onClick={handleDelete}
+            disabled={isDeleting}
+          >
+            {isDeleting ? "Deleting..." : "Delete Items"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 
