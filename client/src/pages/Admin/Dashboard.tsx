@@ -464,100 +464,128 @@ function AdminDashboard() {
         <TabsContent value="overview" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Ad Management Card */}
-            <Card className={`border-l-4 ${pendingAdsCount > 0 ? 'border-l-amber-500' : 'border-l-emerald-500'} shadow-md overflow-hidden`}>
-              <div className="absolute right-0 top-0 h-16 w-16">
-                <div className={`absolute transform rotate-45 bg-gradient-to-r ${pendingAdsCount > 0 ? 'from-amber-500 to-amber-600' : 'from-emerald-500 to-emerald-600'} text-white shadow-lg -right-9 top-3 w-24 text-center`}>
-                  {pendingAdsCount > 0 ? 'Action' : 'Active'}
-                </div>
-              </div>
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center">
-                  <div className={`p-2 rounded-full ${pendingAdsCount > 0 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'} mr-3`}>
-                    <DollarSignIcon className="h-5 w-5" />
+            <Card className="rounded-xl border border-gray-200 shadow-md overflow-hidden bg-white">
+              <div className={`h-2 w-full ${pendingAdsCount > 0 ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
+              <CardHeader className="pb-2 pt-5">
+                <CardTitle className="flex items-center text-xl">
+                  <div className={`p-3 rounded-xl ${pendingAdsCount > 0 ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'} mr-4 flex-shrink-0`}>
+                    <DollarSignIcon className="h-6 w-6" />
                   </div>
-                  Advertisement Management
-                </CardTitle>
-                <CardDescription>Review and approve ad submissions</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center">
-                  <div className={`text-4xl font-bold ${pendingAdsCount > 0 ? 'text-amber-700' : 'text-gray-800'}`}>
-                    {pendingAdsCount > 0 ? pendingAdsCount : 'No'} 
-                    <span className="text-lg ml-1 font-medium text-gray-600">Pending</span>
-                  </div>
-                  {pendingAdsCount > 0 && (
-                    <Badge variant="outline" className="ml-3 px-3 py-1 border border-amber-300 text-amber-700 bg-amber-50">
-                      <BellIcon className="h-3 w-3 mr-1" /> Needs review
-                    </Badge>
-                  )}
-                </div>
-                <div className="flex justify-between mt-6">
-                  <Button 
-                    variant="default" 
-                    className={`${pendingAdsCount > 0 ? 'bg-amber-600 hover:bg-amber-700' : 'bg-emerald-600 hover:bg-emerald-700'} text-white font-medium ${pendingAdsCount > 0 ? 'shadow-md hover:shadow-lg transition-all duration-200' : ''}`}
-                    onClick={() => navigate('/admin/advertisements')}
-                  >
-                    {pendingAdsCount > 0 ? (
-                      <>
-                        <BellIcon className="mr-2 h-4 w-4" />
-                        Review {pendingAdsCount} Ad{pendingAdsCount !== 1 ? 's' : ''}
-                      </>
-                    ) : (
-                      <>
-                        <DollarSignIcon className="mr-2 h-4 w-4" />
-                        Manage Advertisements
-                      </>
+                  <div>
+                    Advertisement Management
+                    {pendingAdsCount > 0 && (
+                      <Badge className="ml-2 bg-red-500 text-white">
+                        {pendingAdsCount} pending
+                      </Badge>
                     )}
-                  </Button>
-                </div>
+                  </div>
+                </CardTitle>
+                <CardDescription className="text-base ml-[3.25rem]">
+                  Review and approve advertisement submissions
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-4">
+                {pendingAdsCount > 0 ? (
+                  <div className="flex items-center mb-6 bg-amber-50 p-4 rounded-lg border border-amber-100">
+                    <div className="p-3 rounded-full bg-amber-100 text-amber-600 mr-4 flex-shrink-0">
+                      <AlertTriangleIcon className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-amber-800">Action Required</h4>
+                      <p className="text-amber-700 text-sm">
+                        You have {pendingAdsCount} advertisement{pendingAdsCount !== 1 ? 's' : ''} waiting for approval.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center mb-6 bg-emerald-50 p-4 rounded-lg border border-emerald-100">
+                    <div className="p-3 rounded-full bg-emerald-100 text-emerald-600 mr-4 flex-shrink-0">
+                      <CheckCircleIcon className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-emerald-800">All Caught Up</h4>
+                      <p className="text-emerald-700 text-sm">
+                        No pending advertisements requiring your attention.
+                      </p>
+                    </div>
+                  </div>
+                )}
+                <Button 
+                  variant="default" 
+                  className={`w-full ${pendingAdsCount > 0 ? 'bg-amber-600 hover:bg-amber-700' : 'bg-emerald-600 hover:bg-emerald-700'} text-white font-medium py-6`}
+                  onClick={() => navigate('/admin/advertisements')}
+                >
+                  {pendingAdsCount > 0 ? (
+                    <>
+                      <BellIcon className="mr-2 h-5 w-5" />
+                      Review Pending Advertisements
+                    </>
+                  ) : (
+                    <>
+                      <DollarSignIcon className="mr-2 h-5 w-5" />
+                      Manage Advertisements
+                    </>
+                  )}
+                </Button>
               </CardContent>
             </Card>
             
             {/* Articles Card */}
-            <Card className="border-l-4 border-l-blue-500 shadow-md overflow-hidden">
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center">
-                  <div className="p-2 rounded-full bg-blue-100 text-blue-700 mr-3">
-                    <FileTextIcon className="h-5 w-5" />
+            <Card className="rounded-xl border border-gray-200 shadow-md overflow-hidden bg-white">
+              <div className="h-2 w-full bg-blue-500"></div>
+              <CardHeader className="pb-2 pt-5">
+                <CardTitle className="flex items-center text-xl">
+                  <div className="p-3 rounded-xl bg-blue-100 text-blue-600 mr-4 flex-shrink-0">
+                    <FileTextIcon className="h-6 w-6" />
                   </div>
-                  Content Management
+                  <div>Content Management</div>
                 </CardTitle>
-                <CardDescription>Manage your articles and content</CardDescription>
+                <CardDescription className="text-base ml-[3.25rem]">
+                  Monitor and manage all site content
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="flex flex-col space-y-1">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Published</span>
-                    <span className="font-semibold text-gray-900">{(articles as Article[]).filter(a => a.status === 'published').length || 0}</span>
+              <CardContent className="pt-4">
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-col items-center justify-center">
+                    <div className="text-3xl font-bold text-blue-600 mb-1">
+                      {(articles as Article[]).filter(a => a.status === 'published').length || 0}
+                    </div>
+                    <div className="text-gray-600 text-sm">Published</div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Drafts</span>
-                    <span className="font-semibold text-gray-900">{(articles as Article[]).filter(a => a.status === 'draft').length || 0}</span>
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-col items-center justify-center">
+                    <div className="text-3xl font-bold text-amber-600 mb-1">
+                      {(articles as Article[]).filter(a => a.status === 'draft').length || 0}
+                    </div>
+                    <div className="text-gray-600 text-sm">Drafts</div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Ready to publish</span>
-                    <span className="font-semibold text-gray-900">{(articles as Article[]).filter(a => a.status === 'good_to_publish').length || 0}</span>
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-col items-center justify-center">
+                    <div className="text-3xl font-bold text-green-600 mb-1">
+                      {(articles as Article[]).filter(a => a.status === 'good_to_publish').length || 0}
+                    </div>
+                    <div className="text-gray-600 text-sm">Ready</div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Need review</span>
-                    <span className="font-semibold text-gray-900">{(articles as Article[]).filter(a => a.status === 'needs_edits').length || 0}</span>
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-col items-center justify-center">
+                    <div className="text-3xl font-bold text-orange-600 mb-1">
+                      {(articles as Article[]).filter(a => a.status === 'needs_edits').length || 0}
+                    </div>
+                    <div className="text-gray-600 text-sm">Need Review</div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 mt-5">
+                <div className="grid grid-cols-2 gap-3">
                   <Button 
-                    variant="outline" 
-                    className="text-blue-700 border-blue-200 hover:bg-blue-50"
-                    onClick={() => navigate('/admin/articles')}
-                  >
-                    <Eye className="mr-2 h-4 w-4" />
-                    View All
-                  </Button>
-                  <Button 
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    className="bg-blue-600 hover:bg-blue-700 text-white py-5"
                     onClick={() => navigate('/admin/articles/new')}
                   >
-                    <PlusIcon className="mr-2 h-4 w-4" />
+                    <PlusIcon className="mr-2 h-5 w-5" />
                     New Article
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="text-blue-700 border-blue-200 hover:bg-blue-50 py-5"
+                    onClick={() => navigate('/admin/articles')}
+                  >
+                    <Eye className="mr-2 h-5 w-5" />
+                    View All
                   </Button>
                 </div>
               </CardContent>
