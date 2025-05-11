@@ -115,10 +115,18 @@ function AdminDashboard() {
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     {article.authors && article.authors.map((author, idx) => (
-                      <span key={author.user.id} className="inline-flex items-center px-2 py-1 bg-gray-700 text-xs rounded-full font-medium text-gray-300">
-                        {author.user.username}
+                      <span 
+                        key={`author-${idx}-${article.id}`} 
+                        className="inline-flex items-center px-2 py-1 bg-gray-700 text-xs rounded-full font-medium text-gray-300"
+                      >
+                        {author.user?.username || (author.user?.id === 1 || author.userId === 1 ? 'Admin' : `Author #${author.user?.id || author.userId || idx}`)}
                       </span>
                     ))}
+                    {(!article.authors || article.authors.length === 0) && (
+                      <span className="inline-flex items-center px-2 py-1 bg-gray-700 text-xs rounded-full font-medium text-gray-300">
+                        System
+                      </span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell>{getStatusBadge(article.status)}</TableCell>

@@ -443,9 +443,17 @@ export class DatabaseStorage implements IStorage {
       // Add properties that don't exist in the database but are expected by the front-end
       newArticle.isCollaborative = false;
       
+      // Add authors array to the article
+      newArticle.authors = [];
+      
       // Always add authors to the article
       // First add the primary author
-      await this.addAuthorToArticle(newArticle.id, authorIdToUse, "primary");
+      const primaryAuthor = await this.addAuthorToArticle(newArticle.id, authorIdToUse, "primary");
+      newArticle.authors.push({
+        userId: authorIdToUse,
+        articleId: newArticle.id,
+        role: "primary"
+      });
       
       // Add coauthors if provided
       if (articleData.authors && Array.isArray(articleData.authors)) {
@@ -453,6 +461,11 @@ export class DatabaseStorage implements IStorage {
           // Skip the primary author as we already added them
           if (author.id !== authorIdToUse) {
             await this.addAuthorToArticle(newArticle.id, author.id, author.role || "coauthor");
+            newArticle.authors.push({
+              userId: author.id,
+              articleId: newArticle.id,
+              role: author.role || "coauthor"
+            });
           }
         }
       }
