@@ -10,8 +10,11 @@ import {
   insertJobListingSchema,
   insertAdvertisementSchema,
   insertMediaLibrarySchema,
+  updateSiteSettingsSchema,
   type User,
-  type MediaLibraryItem
+  type MediaLibraryItem,
+  type SiteSettings,
+  type UpdateSiteSettings
 } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { handleStripeWebhook, createStripeCheckoutSession, stripe, SUBSCRIPTION_PRICES } from "./stripe";

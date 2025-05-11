@@ -41,6 +41,7 @@ import DraftManagement from './DraftManagement';
 import PublishedContent from './PublishedContent';
 import UserManagement from './UserManagement';
 import MediaLibraryTab from './MediaLibraryTab';
+import SiteSettingsForm from '@/components/admin/SiteSettingsForm';
 
 interface Article {
   id: number;
@@ -785,15 +786,7 @@ function AdminDashboard() {
         </TabsContent>
         
         <TabsContent value="settings" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Admin Settings</CardTitle>
-              <CardDescription>Configure site settings</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Settings tab content will go here.</p>
-            </CardContent>
-          </Card>
+          <SiteSettingsForm />
         </TabsContent>
       </Tabs>
     </div>

@@ -1,0 +1,654 @@
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useToast } from '@/hooks/use-toast';
+
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
+import { 
+  AlertTriangle, 
+  Check, 
+  Globe, 
+  Mail, 
+  PaintBucket, 
+  Settings, 
+  DollarSign, 
+  FileText,
+  Image
+} from 'lucide-react';
+
+// Form validation schema
+const siteSettingsSchema = z.object({
+  siteName: z.string().min(2, { message: "Site name must be at least 2 characters" }),
+  siteTagline: z.string().min(2, { message: "Tagline must be at least 2 characters" }),
+  siteDescription: z.string().optional(),
+  siteKeywords: z.array(z.string()).optional(),
+  logoUrl: z.string().url({ message: "Please enter a valid URL" }).optional().or(z.literal('')),
+  faviconUrl: z.string().url({ message: "Please enter a valid URL" }).optional().or(z.literal('')),
+  primaryColor: z.string().regex(/^#([0-9A-F]{3}){1,2}$/i, { message: "Please enter a valid hex color" }),
+  secondaryColor: z.string().regex(/^#([0-9A-F]{3}){1,2}$/i, { message: "Please enter a valid hex color" }),
+  googleAnalyticsId: z.string().optional().or(z.literal('')),
+  facebookAppId: z.string().optional().or(z.literal('')),
+  twitterUsername: z.string().optional().or(z.literal('')),
+  contactEmail: z.string().email({ message: "Please enter a valid email address" }).optional().or(z.literal('')),
+  allowComments: z.boolean().default(true),
+  requireCommentApproval: z.boolean().default(false),
+  allowUserRegistration: z.boolean().default(true),
+  supporterTierPrice: z.coerce.number().min(0).max(10000),
+  proTierPrice: z.coerce.number().min(0).max(10000),
+  maintenanceMode: z.boolean().default(false),
+});
+
+type SiteSettingsFormValues = z.infer<typeof siteSettingsSchema>;
+
+const SiteSettingsForm = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // Fetch current settings
+  const { data: settings, isLoading, error } = useQuery({
+    queryKey: ['/api/site-settings'],
+    retry: false,
+  });
+  
+  const form = useForm<SiteSettingsFormValues>({
+    resolver: zodResolver(siteSettingsSchema),
+    defaultValues: {
+      siteName: '',
+      siteTagline: '',
+      siteDescription: '',
+      siteKeywords: [],
+      logoUrl: '',
+      faviconUrl: '',
+      primaryColor: '#0f172a',
+      secondaryColor: '#4f46e5',
+      googleAnalyticsId: '',
+      facebookAppId: '',
+      twitterUsername: '',
+      contactEmail: '',
+      allowComments: true,
+      requireCommentApproval: false,
+      allowUserRegistration: true,
+      supporterTierPrice: 200, // $2.00 in cents
+      proTierPrice: 400, // $4.00 in cents
+      maintenanceMode: false,
+    },
+  });
+  
+  // Update form values when settings are loaded
+  React.useEffect(() => {
+    if (settings) {
+      // Convert keyword array to string for the input
+      const formattedKeywords = Array.isArray(settings.siteKeywords) 
+        ? settings.siteKeywords 
+        : [];
+      
+      form.reset({
+        ...settings,
+        siteKeywords: formattedKeywords,
+        supporterTierPrice: settings.supporterTierPrice || 200,
+        proTierPrice: settings.proTierPrice || 400,
+      });
+    }
+  }, [settings, form]);
+  
+  // Mutation for updating settings
+  const updateSettingsMutation = useMutation({
+    mutationFn: async (data: SiteSettingsFormValues) => {
+      if (!settings?.id) throw new Error("Settings ID not found");
+      
+      const response = await apiRequest('PATCH', `/api/site-settings/${settings.id}`, data);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update settings");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/site-settings'] });
+      toast({
+        title: "Settings updated",
+        description: "Your site settings have been successfully updated.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  const onSubmit = (data: SiteSettingsFormValues) => {
+    updateSettingsMutation.mutate(data);
+  };
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-red-500 flex items-center">
+            <AlertTriangle className="mr-2 h-5 w-5" /> Error Loading Settings
+          </CardTitle>
+          <CardDescription>
+            There was a problem loading the site settings. Please try again later.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+  
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <Tabs defaultValue="general">
+          <TabsList className="mb-4">
+            <TabsTrigger value="general" className="flex items-center">
+              <Globe className="mr-2 h-4 w-4" /> General
+            </TabsTrigger>
+            <TabsTrigger value="appearance" className="flex items-center">
+              <PaintBucket className="mr-2 h-4 w-4" /> Appearance
+            </TabsTrigger>
+            <TabsTrigger value="integrations" className="flex items-center">
+              <Settings className="mr-2 h-4 w-4" /> Integrations
+            </TabsTrigger>
+            <TabsTrigger value="content" className="flex items-center">
+              <FileText className="mr-2 h-4 w-4" /> Content
+            </TabsTrigger>
+            <TabsTrigger value="membership" className="flex items-center">
+              <DollarSign className="mr-2 h-4 w-4" /> Membership
+            </TabsTrigger>
+          </TabsList>
+
+          {/* General Settings Tab */}
+          <TabsContent value="general">
+            <Card>
+              <CardHeader>
+                <CardTitle>General Settings</CardTitle>
+                <CardDescription>
+                  Basic information about your website
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="siteName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Site Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        The name of your website
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="siteTagline"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tagline</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        A short description or slogan for your website
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="siteDescription"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Site Description</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        A longer description of your website (used for SEO)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="contactEmail"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contact Email</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="email" />
+                      </FormControl>
+                      <FormDescription>
+                        Email address for user inquiries
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="maintenanceMode"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4 border rounded-md">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Maintenance Mode</FormLabel>
+                        <FormDescription>
+                          When enabled, the site will be unavailable to non-admin users
+                        </FormDescription>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Appearance Tab */}
+          <TabsContent value="appearance">
+            <Card>
+              <CardHeader>
+                <CardTitle>Appearance Settings</CardTitle>
+                <CardDescription>
+                  Customize the look and feel of your website
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="logoUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Logo URL</FormLabel>
+                        <FormControl>
+                          <div className="flex items-center space-x-3">
+                            <Input {...field} placeholder="https://example.com/logo.png" />
+                            {field.value && (
+                              <div className="h-10 w-10 rounded overflow-hidden bg-gray-100 flex items-center justify-center">
+                                <img 
+                                  src={field.value} 
+                                  alt="Logo preview" 
+                                  className="max-h-full max-w-full object-contain"
+                                  onError={(e) => (e.target as HTMLImageElement).src = '/placeholder-image.png'}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </FormControl>
+                        <FormDescription>
+                          URL to your site logo
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="faviconUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Favicon URL</FormLabel>
+                        <FormControl>
+                          <div className="flex items-center space-x-3">
+                            <Input {...field} placeholder="https://example.com/favicon.ico" />
+                            {field.value && (
+                              <div className="h-6 w-6 rounded overflow-hidden bg-gray-100 flex items-center justify-center">
+                                <img 
+                                  src={field.value} 
+                                  alt="Favicon preview" 
+                                  className="max-h-full max-w-full object-contain"
+                                  onError={(e) => (e.target as HTMLImageElement).src = '/placeholder-image.png'}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </FormControl>
+                        <FormDescription>
+                          URL to your site favicon
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <Separator className="my-4" />
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="primaryColor"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Primary Color</FormLabel>
+                        <FormControl>
+                          <div className="flex items-center space-x-3">
+                            <Input {...field} type="text" placeholder="#000000" />
+                            <div 
+                              className="h-8 w-8 rounded border border-gray-200" 
+                              style={{ backgroundColor: field.value || '#000000' }} 
+                            />
+                          </div>
+                        </FormControl>
+                        <FormDescription>
+                          Main color for your site (hex code)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="secondaryColor"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Secondary Color</FormLabel>
+                        <FormControl>
+                          <div className="flex items-center space-x-3">
+                            <Input {...field} type="text" placeholder="#000000" />
+                            <div 
+                              className="h-8 w-8 rounded border border-gray-200" 
+                              style={{ backgroundColor: field.value || '#000000' }} 
+                            />
+                          </div>
+                        </FormControl>
+                        <FormDescription>
+                          Accent color for your site (hex code)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Integrations Tab */}
+          <TabsContent value="integrations">
+            <Card>
+              <CardHeader>
+                <CardTitle>Integrations</CardTitle>
+                <CardDescription>
+                  Configure third-party services and integrations
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="googleAnalyticsId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Google Analytics ID</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="G-XXXXXXXXXX or UA-XXXXXXXX-X" />
+                      </FormControl>
+                      <FormDescription>
+                        Your Google Analytics tracking ID
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="facebookAppId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Facebook App ID</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="123456789012345" />
+                      </FormControl>
+                      <FormDescription>
+                        Used for Facebook sharing and login
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="twitterUsername"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Twitter Username</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="@username" />
+                      </FormControl>
+                      <FormDescription>
+                        Used for Twitter cards and sharing
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Content Tab */}
+          <TabsContent value="content">
+            <Card>
+              <CardHeader>
+                <CardTitle>Content Settings</CardTitle>
+                <CardDescription>
+                  Configure content-related settings and permissions
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="allowComments"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4 border rounded-md">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Allow Comments</FormLabel>
+                        <FormDescription>
+                          Enable or disable user comments on articles
+                        </FormDescription>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="requireCommentApproval"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4 border rounded-md">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Require Comment Approval</FormLabel>
+                        <FormDescription>
+                          New comments require admin approval before being published
+                        </FormDescription>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="allowUserRegistration"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4 border rounded-md">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Allow User Registration</FormLabel>
+                        <FormDescription>
+                          Allow new users to register on the site
+                        </FormDescription>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Membership Tab */}
+          <TabsContent value="membership">
+            <Card>
+              <CardHeader>
+                <CardTitle>Membership & Pricing</CardTitle>
+                <CardDescription>
+                  Configure your membership tiers and pricing
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="supporterTierPrice"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Supporter Tier Price (in cents)</FormLabel>
+                        <FormControl>
+                          <div className="flex items-center">
+                            <DollarSign className="h-5 w-5 mr-2 text-gray-400" />
+                            <Input {...field} type="number" min="0" step="1" />
+                          </div>
+                        </FormControl>
+                        <FormDescription>
+                          Price for the Supporter tier (e.g., 200 = $2.00)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="proTierPrice"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Pro Tier Price (in cents)</FormLabel>
+                        <FormControl>
+                          <div className="flex items-center">
+                            <DollarSign className="h-5 w-5 mr-2 text-gray-400" />
+                            <Input {...field} type="number" min="0" step="1" />
+                          </div>
+                        </FormControl>
+                        <FormDescription>
+                          Price for the Pro tier (e.g., 400 = $4.00)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+        
+        <div className="mt-6 flex items-center justify-end space-x-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => form.reset()}
+            disabled={updateSettingsMutation.isPending}
+          >
+            Reset
+          </Button>
+          <Button 
+            type="submit" 
+            disabled={updateSettingsMutation.isPending}
+            className="flex items-center"
+          >
+            {updateSettingsMutation.isPending ? (
+              <>
+                <div className="animate-spin mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
+                Saving...
+              </>
+            ) : (
+              <>
+                <Check className="mr-2 h-4 w-4" /> Save Settings
+              </>
+            )}
+          </Button>
+        </div>
+      </form>
+    </Form>
+  );
+};
+
+export default SiteSettingsForm;
