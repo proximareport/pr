@@ -1,6 +1,7 @@
-import React, { ReactNode, useEffect } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useAuth } from '@/hooks/useAuth';
+import { useQuery } from '@tanstack/react-query';
 import {
   BarChart3,
   FileText,
@@ -14,6 +15,8 @@ import {
   Image,
   Briefcase,
   MessageSquare,
+  DollarSign,
+  BellRing,
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -49,11 +52,32 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       : 'text-gray-600 hover:bg-gray-100 hover:text-primary';
   };
 
+  // Fetch all advertisements to count pending ones
+  const { data: advertisements = [] } = useQuery({
+    queryKey: ['/api/advertisements/all'],
+    retry: false,
+    enabled: !!user && (user.role === 'admin' || user.role === 'editor')
+  });
+  
+  // Count pending advertisements that need review
+  const pendingAdsCount = Array.isArray(advertisements) 
+    ? advertisements.filter((ad: any) => !ad.isApproved).length 
+    : 0;
+  
   const menuItems = [
     { label: 'Dashboard', icon: <Home className="h-5 w-5" />, path: '/admin' },
+    { 
+      label: 'Ad Management', 
+      icon: <DollarSign className="h-5 w-5 text-green-600" />, 
+      path: '/admin/advertisements',
+      badge: pendingAdsCount > 0 ? (
+        <span className="ml-auto bg-orange-100 text-orange-800 text-xs font-medium mr-2 px-2 py-0.5 rounded flex items-center">
+          <BellRing className="h-3 w-3 mr-1" /> {pendingAdsCount}
+        </span>
+      ) : null
+    },
     { label: 'Content Status', icon: <BookOpenCheck className="h-5 w-5" />, path: '/admin/content-status' },
     { label: 'Draft Management', icon: <FileText className="h-5 w-5" />, path: '/admin/drafts' },
-    { label: 'Advertisements', icon: <BarChart3 className="h-5 w-5" />, path: '/admin/advertisements' },
     { label: 'Users', icon: <Users className="h-5 w-5" />, path: '/admin/users' },
     { label: 'Tags & Categories', icon: <Tag className="h-5 w-5" />, path: '/admin/categories-tags' },
     { label: 'Comments', icon: <MessageSquare className="h-5 w-5" />, path: '/admin/comments' },
@@ -89,6 +113,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                     >
                       {item.icon}
                       <span className="ml-3">{item.label}</span>
+                      {item.badge}
                     </div>
                   </Link>
                 ))}
