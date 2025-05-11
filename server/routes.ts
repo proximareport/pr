@@ -1137,7 +1137,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (title !== undefined) updateData.title = title || '';
       if (slug !== undefined) updateData.slug = slug || '';
       if (summary !== undefined) updateData.summary = summary || '';
-      if (content !== undefined) updateData.content = content || '';
+      if (content !== undefined) {
+        // Properly format as JSON for JSONB column
+        try {
+          if (typeof content === 'string') {
+            // Try to parse if it's already a JSON string
+            try {
+              const parsed = JSON.parse(content);
+              updateData.content = parsed;
+            } catch (e) {
+              // If not valid JSON, treat as a string value
+              updateData.content = content || '';
+            }
+          } else if (content === null || content === '') {
+            updateData.content = '{}';
+          } else {
+            // Assume it's already an object
+            updateData.content = content;
+          }
+        } catch (error) {
+          console.error("Error formatting content as JSON:", error);
+          updateData.content = '{}';
+        }
+      }
       if (featuredImage !== undefined) updateData.featuredImage = featuredImage || '';
       if (isBreaking !== undefined) updateData.isBreaking = !!isBreaking;
       if (readTime !== undefined) updateData.readTime = readTime || 1;

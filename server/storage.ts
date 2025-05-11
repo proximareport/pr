@@ -412,9 +412,30 @@ export class DatabaseStorage implements IStorage {
       
       if (data.content !== undefined) {
         updates.push(`content = $${paramIndex++}`);
-        // Ensure content is a string to avoid JSON formatting issues
-        const contentString = data.content === '' ? ' ' : data.content || ' ';
-        values.push(contentString);
+        // Properly handle JSONB content
+        try {
+          // If it's an object, convert to JSON string
+          if (typeof data.content === 'object') {
+            values.push(JSON.stringify(data.content || {}));
+          } else if (typeof data.content === 'string') {
+            // If it's a string, make sure it's valid JSON
+            try {
+              // Try to parse it to validate it's proper JSON
+              JSON.parse(data.content);
+              // If it doesn't throw, it's valid JSON
+              values.push(data.content);
+            } catch (e) {
+              // If not valid JSON, wrap it as a JSON string
+              values.push(JSON.stringify({ content: data.content || '' }));
+            }
+          } else {
+            // Default fallback
+            values.push('{}');
+          }
+        } catch (error) {
+          console.error("Error handling content as JSON:", error);
+          values.push('{}');
+        }
       }
       
       if (data.featuredImage !== undefined) {
