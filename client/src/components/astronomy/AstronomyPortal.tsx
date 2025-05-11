@@ -25,6 +25,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Camera, Calendar, Map, Star, Upload } from "lucide-react";
+import StellariumSkyMap from "./StellariumSkyMap";
 
 interface AstronomyPhoto {
   id: number;
@@ -448,15 +449,18 @@ function AstronomyPortal() {
                 )}
               </TabsContent>
               <TabsContent value="map">
-                <div className="bg-[#14141E] rounded-lg border border-white/10 p-6 text-center h-[400px] flex flex-col items-center justify-center">
-                  <Map className="h-12 w-12 mb-4 text-white/30" />
-                  <h3 className="font-space font-bold text-lg mb-2">Interactive Sky Map</h3>
-                  <p className="text-white/70 mb-4 max-w-md">
-                    Explore stars, planets, and constellations visible from your location in real-time.
-                  </p>
-                  <Button>
-                    Launch Sky Map
-                  </Button>
+                <div className="bg-[#14141E] rounded-lg border border-white/10 overflow-hidden">
+                  <StellariumSkyMap height="500px" onToggleFullScreen={() => {
+                    // Create a fullscreen version in the main component
+                    // This is handled in the Astronomy.tsx component
+                  }} />
+                  <div className="p-4 text-center">
+                    <h3 className="font-space font-bold text-lg mb-2">Stellarium Web Sky Map</h3>
+                    <p className="text-white/70 mb-0 max-w-md mx-auto text-sm">
+                      Interactive map powered by Stellarium Web. Use mouse to pan, scroll to zoom.
+                      Click on celestial objects to learn more about them.
+                    </p>
+                  </div>
                 </div>
               </TabsContent>
             </Tabs>

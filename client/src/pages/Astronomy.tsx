@@ -1,9 +1,12 @@
+import { useState } from "react";
 import AstronomyPortal from "@/components/astronomy/AstronomyPortal";
+import StellariumSkyMap from "@/components/astronomy/StellariumSkyMap";
+import CelestialEvents from "@/components/astronomy/CelestialEvents";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Star, Info, Calendar, Compass } from "lucide-react";
+import { Star, Info, Calendar, Compass, X } from "lucide-react";
 
 function Astronomy() {
   // Fetch NASA Astronomy Picture of the Day
