@@ -191,7 +191,7 @@ function AdminArticleEditor() {
       // If we're creating a new article and get an ID back, update the state
       if (!isEditing && data?.id) {
         setArticleId(data.id);
-        window.history.replaceState(null, '', `/admin/articles/${data.id}/edit`);
+        window.history.replaceState(null, '', `/admin/articles/edit/${data.id}`);
       }
       
       // Set last saved time
