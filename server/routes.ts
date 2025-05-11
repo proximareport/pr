@@ -1062,8 +1062,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         requestData.content = { content: requestData.content };
       }
       
-      // Set primaryAuthorId from session
-      requestData.primaryAuthorId = userId;
+      // Map camelCase fields to snake_case for database
+      // The actual DB column is author_id, not primaryAuthorId
       
       // Log the processed request data
       console.log('Processed article request data:', JSON.stringify(requestData, null, 2));
@@ -1088,6 +1088,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         summary: requestData.summary || '',
         content: requestData.content,
         publishedAt,
+        // Map to the database field name in the storage implementation
+        // The storage implementation will handle column name conversion (primaryAuthorId → author_id)
         primaryAuthorId: userId,
         category: requestData.category,
         status: requestData.status || 'draft',

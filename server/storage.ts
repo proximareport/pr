@@ -385,15 +385,17 @@ export class DatabaseStorage implements IStorage {
   async createArticle(article: InsertArticle): Promise<Article> {
     try {
       // Extract authors data if present
-      const { authors, primaryAuthorId, ...articleData } = article as any;
+      const { authors, authorId, primaryAuthorId, ...articleData } = article as any;
       
-      // Map primaryAuthorId to author_id for the database
-      const articleDataForDb = {
-        ...articleData,
-        author_id: primaryAuthorId, // Use author_id instead of primaryAuthorId
-      };
+      // Use either authorId or primaryAuthorId (for backward compatibility)
+      // The database column is actually 'author_id' not 'primary_author_id'
+      const authorIdToUse = authorId || primaryAuthorId;
       
-      console.log("Inserting article with data:", JSON.stringify(articleDataForDb, null, 2));
+      console.log("Starting article creation with authorId:", authorIdToUse);
+      
+      if (!authorIdToUse) {
+        throw new Error("Author ID is required for article creation");
+      }
       
       // Create the article using direct SQL to avoid schema mismatches
       const query = `
@@ -405,38 +407,66 @@ export class DatabaseStorage implements IStorage {
         ) RETURNING *
       `;
       
+      // Process content field if it's a string
+      const contentToSave = typeof articleData.content === 'string' 
+        ? { content: articleData.content } 
+        : articleData.content;
+      
       const values = [
-        articleDataForDb.title,
-        articleDataForDb.slug,
-        articleDataForDb.summary || '',
-        articleDataForDb.content,
-        articleDataForDb.author_id,
-        articleDataForDb.publishedAt || null,
-        articleDataForDb.featuredImage || '',
-        articleDataForDb.isBreaking || false,
-        articleDataForDb.readTime || 5,
-        articleDataForDb.tags || [],
-        articleDataForDb.category,
-        articleDataForDb.status || 'draft',
-        articleDataForDb.isCollaborative || false
+        articleData.title,
+        articleData.slug,
+        articleData.summary || '',
+        contentToSave,
+        authorIdToUse,
+        articleData.publishedAt || null,
+        articleData.featuredImage || '',
+        articleData.isBreaking || false,
+        articleData.readTime || 5,
+        articleData.tags || [],
+        articleData.category,
+        articleData.status || 'draft',
+        articleData.isCollaborative || false
       ];
       
+      console.log("Executing article insert with values:", JSON.stringify({
+        title: articleData.title,
+        slug: articleData.slug,
+        authorId: authorIdToUse,
+        category: articleData.category,
+        status: articleData.status || 'draft'
+      }));
+      
       const result = await db.execute(query, values);
+      
+      if (!result.rows || result.rows.length === 0) {
+        throw new Error("Article creation failed - no rows returned");
+      }
+      
+      console.log("Article created successfully with ID:", result.rows[0].id);
+      
       const newArticle = result.rows[0];
       
-      // Map the result back to our expected format
+      // Map the result back to application's expected format
+      // The database uses snake_case but our app expects camelCase
       newArticle.primaryAuthorId = newArticle.author_id;
+      newArticle.featuredImage = newArticle.featured_image;
+      newArticle.isBreaking = newArticle.is_breaking;
+      newArticle.readTime = newArticle.read_time;
+      newArticle.publishedAt = newArticle.published_at;
+      newArticle.createdAt = newArticle.created_at;
+      newArticle.updatedAt = newArticle.updated_at;
+      newArticle.isCollaborative = newArticle.is_collaborative;
       
       // Add authors if it's a collaborative article
-      if (article.isCollaborative) {
+      if (articleData.isCollaborative) {
         // Always add primary author
-        await this.addAuthorToArticle(newArticle.id, newArticle.author_id, "primary");
+        await this.addAuthorToArticle(newArticle.id, authorIdToUse, "primary");
         
         // Add coauthors if provided
         if (authors && Array.isArray(authors)) {
           for (const author of authors) {
             // Skip the primary author as we already added them
-            if (author.id !== newArticle.author_id) {
+            if (author.id !== authorIdToUse) {
               await this.addAuthorToArticle(newArticle.id, author.id, author.role || "coauthor");
             }
           }
