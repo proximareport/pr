@@ -238,6 +238,13 @@ function AdvertisementManagement() {
       <div className="container mx-auto py-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold tracking-tight">Advertisement Management</h1>
+          <div className="flex space-x-4">
+            <Button asChild>
+              <a href="/advertise" target="_blank" rel="noopener noreferrer">
+                Create New Advertisement
+              </a>
+            </Button>
+          </div>
         </div>
         
         {isLoading ? (

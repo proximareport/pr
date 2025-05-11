@@ -30,6 +30,7 @@ function Header() {
     { name: "Astronomy", href: "/astronomy" },
     { name: "Science", href: "/science" },
     { name: "Jobs", href: "/jobs" },
+    { name: "Advertise", href: "/advertise" },
   ];
 
   const isActive = (path: string) => {

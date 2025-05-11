@@ -50,17 +50,18 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   };
 
   const menuItems = [
-    { label: 'Dashboard', icon: <Home className="h-5 w-5" />, path: '/admin/dashboard' },
+    { label: 'Dashboard', icon: <Home className="h-5 w-5" />, path: '/admin' },
     { label: 'Content Status', icon: <BookOpenCheck className="h-5 w-5" />, path: '/admin/content-status' },
     { label: 'Draft Management', icon: <FileText className="h-5 w-5" />, path: '/admin/drafts' },
     { label: 'Advertisements', icon: <BarChart3 className="h-5 w-5" />, path: '/admin/advertisements' },
     { label: 'Users', icon: <Users className="h-5 w-5" />, path: '/admin/users' },
-    { label: 'Tags & Categories', icon: <Tag className="h-5 w-5" />, path: '/admin/tags' },
+    { label: 'Tags & Categories', icon: <Tag className="h-5 w-5" />, path: '/admin/categories-tags' },
     { label: 'Comments', icon: <MessageSquare className="h-5 w-5" />, path: '/admin/comments' },
     { label: 'Astronomy Photos', icon: <Image className="h-5 w-5" />, path: '/admin/astronomy-photos' },
     { label: 'Job Listings', icon: <Briefcase className="h-5 w-5" />, path: '/admin/job-listings' },
     { label: 'Archives', icon: <Archive className="h-5 w-5" />, path: '/admin/archives' },
     { label: 'Emergency Banner', icon: <AlertTriangle className="h-5 w-5" />, path: '/admin/emergency-banner' },
+    { label: 'API Keys', icon: <Settings className="h-5 w-5" />, path: '/admin/api-keys' },
     { label: 'Settings', icon: <Settings className="h-5 w-5" />, path: '/admin/settings' },
   ];
 
