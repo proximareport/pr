@@ -1881,6 +1881,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           allowComments: settings.allowComments,
           allowUserRegistration: settings.allowUserRegistration,
           maintenanceMode: settings.maintenanceMode,
+          maintenanceMessage: settings.maintenanceMessage,
+          maintenanceDetails: settings.maintenanceDetails,
+          maintenanceEndTime: settings.maintenanceEndTime,
         };
         return res.json(publicSettings);
       }
