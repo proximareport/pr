@@ -81,8 +81,22 @@ function Router() {
           </React.Suspense>
         );
       }} />
-      <Route path="/advertise" component={React.lazy(() => import('./pages/Advertise'))} />
-      <Route path="/advertise-success" component={React.lazy(() => import('./pages/AdvertiseSuccess'))} />
+      <Route path="/advertise" component={() => {
+        const AdvertisePage = React.lazy(() => import('./pages/Advertise'));
+        return (
+          <React.Suspense fallback={<div className="flex justify-center p-12"><div className="animate-spin h-8 w-8 border-4 border-purple-500 border-t-transparent rounded-full"></div></div>}>
+            <AdvertisePage />
+          </React.Suspense>
+        );
+      }} />
+      <Route path="/advertise-success" component={() => {
+        const AdvertiseSuccessPage = React.lazy(() => import('./pages/AdvertiseSuccess'));
+        return (
+          <React.Suspense fallback={<div className="flex justify-center p-12"><div className="animate-spin h-8 w-8 border-4 border-purple-500 border-t-transparent rounded-full"></div></div>}>
+            <AdvertiseSuccessPage />
+          </React.Suspense>
+        );
+      }} />
       <Route component={NotFound} />
     </Switch>
   );
