@@ -119,18 +119,26 @@ const SiteSettingsForm = () => {
   // Mutation for updating settings
   const updateSettingsMutation = useMutation({
     mutationFn: async (data: SiteSettingsFormValues) => {
-      if (!settings?.id) throw new Error("Settings ID not found");
+      if (!settings?.id) {
+        console.error("Settings ID is missing");
+        throw new Error("Settings ID not found");
+      }
       
+      console.log("Making API request to:", `/api/site-settings/${settings.id}`);
       const response = await apiRequest('PATCH', `/api/site-settings/${settings.id}`, data);
       
+      console.log("API response status:", response.status);
+      
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(e => ({ message: "Unknown server error" }));
+        console.error("API error response:", errorData);
         throw new Error(errorData.message || "Failed to update settings");
       }
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Settings update successful:", data);
       queryClient.invalidateQueries({ queryKey: ['/api/site-settings'] });
       toast({
         title: "Settings updated",
@@ -138,6 +146,7 @@ const SiteSettingsForm = () => {
       });
     },
     onError: (error: Error) => {
+      console.error("Mutation error:", error);
       toast({
         title: "Update failed",
         description: error.message,
@@ -147,6 +156,8 @@ const SiteSettingsForm = () => {
   });
   
   const onSubmit = (data: SiteSettingsFormValues) => {
+    console.log("Submitting form data:", data);
+    console.log("Settings ID:", settings?.id);
     updateSettingsMutation.mutate(data);
   };
   

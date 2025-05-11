@@ -77,9 +77,16 @@ const requireAuth = (req: Request, res: Response, next: NextFunction) => {
 };
 
 const requireAdmin = async (req: Request, res: Response, next: NextFunction) => {
-  if (!req.session.userId || !req.session.isAdmin) {
+  if (!req.session.userId) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  
+  // Check if user exists and has admin role
+  const user = await storage.getUser(req.session.userId);
+  if (!user || user.role !== 'admin') {
     return res.status(403).json({ message: "Admin access required" });
   }
+  
   next();
 };
 
