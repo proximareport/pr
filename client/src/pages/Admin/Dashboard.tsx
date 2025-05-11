@@ -265,13 +265,13 @@ function AdminDashboard() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
       {/* Status Update Dialog */}
       <Dialog open={!!selectedArticle} onOpenChange={(open) => !open && setSelectedArticle(null)}>
-        <DialogContent className="max-w-xl">
+        <DialogContent className="max-w-xl bg-gray-900 border-gray-700 text-gray-100">
           <DialogHeader>
-            <DialogTitle className="text-xl flex items-center">
-              <CheckCircleIcon className="text-primary h-5 w-5 mr-2" />
+            <DialogTitle className="text-xl flex items-center text-gray-100">
+              <CheckCircleIcon className="text-blue-400 h-5 w-5 mr-2" />
               Update Article Status
             </DialogTitle>
-            <DialogDescription className="text-base font-medium text-gray-700 mt-1">
+            <DialogDescription className="text-base font-medium text-gray-400 mt-1">
               {selectedArticle?.title}
             </DialogDescription>
           </DialogHeader>
@@ -539,34 +539,34 @@ function AdminDashboard() {
               </CardHeader>
               <CardContent className="pt-4">
                 <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-col items-center justify-center">
-                    <div className="text-3xl font-bold text-blue-600 mb-1">
+                  <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 flex flex-col items-center justify-center">
+                    <div className="text-3xl font-bold text-blue-400 mb-1">
                       {(articles as Article[]).filter(a => a.status === 'published').length || 0}
                     </div>
-                    <div className="text-gray-600 text-sm">Published</div>
+                    <div className="text-gray-400 text-sm">Published</div>
                   </div>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-col items-center justify-center">
-                    <div className="text-3xl font-bold text-amber-600 mb-1">
+                  <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 flex flex-col items-center justify-center">
+                    <div className="text-3xl font-bold text-amber-400 mb-1">
                       {(articles as Article[]).filter(a => a.status === 'draft').length || 0}
                     </div>
-                    <div className="text-gray-600 text-sm">Drafts</div>
+                    <div className="text-gray-400 text-sm">Drafts</div>
                   </div>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-col items-center justify-center">
-                    <div className="text-3xl font-bold text-green-600 mb-1">
+                  <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 flex flex-col items-center justify-center">
+                    <div className="text-3xl font-bold text-green-400 mb-1">
                       {(articles as Article[]).filter(a => a.status === 'good_to_publish').length || 0}
                     </div>
-                    <div className="text-gray-600 text-sm">Ready</div>
+                    <div className="text-gray-400 text-sm">Ready</div>
                   </div>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-col items-center justify-center">
-                    <div className="text-3xl font-bold text-orange-600 mb-1">
+                  <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 flex flex-col items-center justify-center">
+                    <div className="text-3xl font-bold text-orange-400 mb-1">
                       {(articles as Article[]).filter(a => a.status === 'needs_edits').length || 0}
                     </div>
-                    <div className="text-gray-600 text-sm">Need Review</div>
+                    <div className="text-gray-400 text-sm">Need Review</div>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <Button 
-                    className="bg-blue-600 hover:bg-blue-700 text-white py-5"
+                    className="bg-blue-700 hover:bg-blue-800 text-white py-5"
                     onClick={() => navigate('/admin/articles/new')}
                   >
                     <PlusIcon className="mr-2 h-5 w-5" />
@@ -574,7 +574,7 @@ function AdminDashboard() {
                   </Button>
                   <Button 
                     variant="outline" 
-                    className="text-blue-700 border-blue-200 hover:bg-blue-50 py-5"
+                    className="text-blue-400 border-blue-800 hover:bg-blue-900/50 py-5"
                     onClick={() => navigate('/admin/articles')}
                   >
                     <Eye className="mr-2 h-5 w-5" />
@@ -585,24 +585,24 @@ function AdminDashboard() {
             </Card>
             
             {/* Users Card */}
-            <Card className="rounded-xl border border-gray-200 shadow-md overflow-hidden bg-white">
-              <div className="h-2 w-full bg-purple-500"></div>
+            <Card className="rounded-xl border border-gray-800 shadow-md overflow-hidden bg-gray-900">
+              <div className="h-2 w-full bg-purple-600"></div>
               <CardHeader className="pb-2 pt-5">
-                <CardTitle className="flex items-center text-xl">
-                  <div className="p-3 rounded-xl bg-purple-100 text-purple-600 mr-4 flex-shrink-0">
+                <CardTitle className="flex items-center text-xl text-gray-100">
+                  <div className="p-3 rounded-xl bg-purple-900/60 text-purple-400 mr-4 flex-shrink-0">
                     <UsersIcon className="h-6 w-6" />
                   </div>
                   <div>User Management</div>
                 </CardTitle>
-                <CardDescription className="text-base ml-[3.25rem]">
+                <CardDescription className="text-base ml-[3.25rem] text-gray-400">
                   Manage accounts and user permissions
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-4">
-                <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 mb-6">
+                <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 mb-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h4 className="font-medium text-gray-700">User Summary</h4>
-                    <Badge variant="outline" className="font-semibold bg-purple-50 text-purple-700 border-purple-200">
+                    <h4 className="font-medium text-gray-300">User Summary</h4>
+                    <Badge variant="outline" className="font-semibold bg-purple-900/50 text-purple-300 border-purple-700">
                       {8} Total
                     </Badge>
                   </div>
