@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import ArticleCard from "@/components/article/ArticleCard";
 import LaunchCountdown from "@/components/article/LaunchCountdown";
+import Advertisement from "@/components/Advertisement";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -112,19 +113,35 @@ function Home() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-                {articles && articles.map((article) => (
-                  <ArticleCard key={article.id} article={article} />
-                ))}
-                
-                {(!articles || articles.length === 0) && (
-                  <div className="col-span-full text-center py-12 bg-[#14141E] rounded-xl border border-white/10">
-                    <p className="text-white/70 mb-4">No articles found</p>
-                    <Button asChild variant="outline">
-                      <a href="/">Back to all articles</a>
-                    </Button>
+              <div className="flex flex-col lg:flex-row gap-8">
+                <div className="lg:w-3/4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-10">
+                    {articles && articles.map((article) => (
+                      <ArticleCard key={article.id} article={article} />
+                    ))}
+                    
+                    {(!articles || articles.length === 0) && (
+                      <div className="col-span-full text-center py-12 bg-[#14141E] rounded-xl border border-white/10">
+                        <p className="text-white/70 mb-4">No articles found</p>
+                        <Button asChild variant="outline">
+                          <a href="/">Back to all articles</a>
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
+                
+                <div className="lg:w-1/4 space-y-6">
+                  <div>
+                    <h3 className="text-lg font-bold mb-4">Sponsored</h3>
+                    <Advertisement placement="sidebar" className="mb-6" />
+                  </div>
+                  
+                  <div className="bg-[#14141E] rounded-xl border border-white/10 p-5">
+                    <h3 className="text-lg font-bold mb-4">Featured Launch</h3>
+                    <LaunchCountdown compact={false} />
+                  </div>
+                </div>
               </div>
               
               {articles && articles.length >= 12 && (

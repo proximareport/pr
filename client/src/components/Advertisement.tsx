@@ -25,7 +25,7 @@ interface AdvertisementProps {
 }
 
 const Advertisement: React.FC<AdvertisementProps> = ({ placement, className = '' }) => {
-  const { data: ad, isLoading, error } = useQuery({
+  const { data: ad, isLoading, error } = useQuery<AdData | null>({
     queryKey: [`/api/advertisements/${placement}`],
     staleTime: 60 * 1000, // 1 minute
   });
@@ -33,7 +33,8 @@ const Advertisement: React.FC<AdvertisementProps> = ({ placement, className = ''
   // Record impression when the ad is viewed
   useEffect(() => {
     if (ad?.id) {
-      apiRequest('POST', `/api/advertisements/${ad.id}/impression`, {});
+      apiRequest('POST', `/api/advertisements/${ad.id}/impression`, {})
+        .catch(err => console.error('Failed to record impression:', err));
     }
   }, [ad?.id]);
 

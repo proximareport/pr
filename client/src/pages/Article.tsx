@@ -7,6 +7,7 @@ import ArticleContent from "@/components/article/ArticleContent";
 import GoogleDocsArticleContent from "@/components/article/GoogleDocsArticleContent";
 import TableOfContents from "@/components/article/TableOfContents";
 import CommentSection from "@/components/article/CommentSection";
+import Advertisement from "@/components/Advertisement";
 import { ChevronLeft } from "lucide-react";
 
 interface ArticleProps {
