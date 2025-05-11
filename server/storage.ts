@@ -383,29 +383,71 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createArticle(article: InsertArticle): Promise<Article> {
-    // Extract authors data if present
-    const { authors, ...articleData } = article as any;
-    
-    // Create the article
-    const [newArticle] = await db.insert(articles).values(articleData).returning();
-    
-    // Add authors if it's a collaborative article
-    if (article.isCollaborative) {
-      // Always add primary author
-      await this.addAuthorToArticle(newArticle.id, newArticle.primaryAuthorId, "primary");
+    try {
+      // Extract authors data if present
+      const { authors, primaryAuthorId, ...articleData } = article as any;
       
-      // Add coauthors if provided
-      if (authors && Array.isArray(authors)) {
-        for (const author of authors) {
-          // Skip the primary author as we already added them
-          if (author.id !== newArticle.primaryAuthorId) {
-            await this.addAuthorToArticle(newArticle.id, author.id, author.role || "coauthor");
+      // Map primaryAuthorId to author_id for the database
+      const articleDataForDb = {
+        ...articleData,
+        author_id: primaryAuthorId, // Use author_id instead of primaryAuthorId
+      };
+      
+      console.log("Inserting article with data:", JSON.stringify(articleDataForDb, null, 2));
+      
+      // Create the article using direct SQL to avoid schema mismatches
+      const query = `
+        INSERT INTO articles (
+          title, slug, summary, content, author_id, published_at, featured_image, 
+          is_breaking, read_time, tags, category, status, is_collaborative
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+        ) RETURNING *
+      `;
+      
+      const values = [
+        articleDataForDb.title,
+        articleDataForDb.slug,
+        articleDataForDb.summary || '',
+        articleDataForDb.content,
+        articleDataForDb.author_id,
+        articleDataForDb.publishedAt || null,
+        articleDataForDb.featuredImage || '',
+        articleDataForDb.isBreaking || false,
+        articleDataForDb.readTime || 5,
+        articleDataForDb.tags || [],
+        articleDataForDb.category,
+        articleDataForDb.status || 'draft',
+        articleDataForDb.isCollaborative || false
+      ];
+      
+      const result = await db.execute(query, values);
+      const newArticle = result.rows[0];
+      
+      // Map the result back to our expected format
+      newArticle.primaryAuthorId = newArticle.author_id;
+      
+      // Add authors if it's a collaborative article
+      if (article.isCollaborative) {
+        // Always add primary author
+        await this.addAuthorToArticle(newArticle.id, newArticle.author_id, "primary");
+        
+        // Add coauthors if provided
+        if (authors && Array.isArray(authors)) {
+          for (const author of authors) {
+            // Skip the primary author as we already added them
+            if (author.id !== newArticle.author_id) {
+              await this.addAuthorToArticle(newArticle.id, author.id, author.role || "coauthor");
+            }
           }
         }
       }
+      
+      return newArticle;
+    } catch (error) {
+      console.error("Error creating article:", error);
+      throw error;
     }
-    
-    return newArticle;
   }
 
   async updateArticle(id: number, data: Partial<Article>): Promise<Article | undefined> {
