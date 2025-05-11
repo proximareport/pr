@@ -17,6 +17,7 @@ import Astronomy from "@/pages/Astronomy";
 import Subscribe from "@/pages/Subscribe";
 import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
 import TagView from "@/pages/TagView";
+import MaintenanceMode from "@/components/MaintenanceMode";
 import AdminDashboard from "@/pages/Admin/Dashboard";
 import AdminArticleEditor from "@/pages/Admin/NewArticleEditor";
 import AdminUserManagement from "@/pages/Admin/UserManagement";
@@ -118,18 +119,34 @@ function Router() {
   );
 }
 
+import { useSiteSettings } from "./hooks/useSiteSettings";
+
+function MainApp() {
+  const { isMaintenanceMode } = useSiteSettings();
+  const [location] = useLocation();
+  
+  // Don't show maintenance mode for admin pages
+  const isAdminPage = location.startsWith('/admin');
+  const showMaintenanceMode = isMaintenanceMode && !isAdminPage;
+  
+  return (
+    <div className="min-h-screen flex flex-col">
+      {showMaintenanceMode && <MaintenanceMode />}
+      <Header />
+      <main className="flex-grow">
+        <Router />
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>
-          <div className="min-h-screen flex flex-col">
-            <Header />
-            <main className="flex-grow">
-              <Router />
-            </main>
-            <Footer />
-          </div>
+          <MainApp />
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>

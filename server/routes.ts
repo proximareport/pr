@@ -68,6 +68,34 @@ declare module 'express-session' {
 const apiCache: Record<string, { data: any, timestamp: number }> = {};
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour in milliseconds
 
+// Maintenance mode middleware
+const checkMaintenanceMode = async (req: Request, res: Response, next: NextFunction) => {
+  // Skip maintenance mode check for admin routes and API routes used by the admin dashboard
+  if (req.path.startsWith('/api/site-settings') || 
+      req.path.startsWith('/api/auth') || 
+      req.path === '/api/login' || 
+      req.path === '/api/me' ||
+      req.path.startsWith('/admin')) {
+    return next();
+  }
+
+  try {
+    const settings = await storage.getSiteSettings();
+    
+    if (settings && settings.maintenanceMode && !req.session.isAdmin) {
+      return res.status(503).json({ 
+        message: "Maintenance Mode", 
+        description: "The site is currently under maintenance. Please try again later." 
+      });
+    }
+    next();
+  } catch (error) {
+    console.error("Error checking maintenance mode:", error);
+    // If we can't check maintenance mode, allow the request to proceed
+    next();
+  }
+};
+
 // Auth middleware
 const requireAuth = (req: Request, res: Response, next: NextFunction) => {
   if (!req.session.userId) {
@@ -136,6 +164,9 @@ const requireEditor = async (req: Request, res: Response, next: NextFunction) =>
 export async function registerRoutes(app: Express): Promise<Server> {
   // Use session middleware
   app.use(session(sessionConfig));
+  
+  // Apply maintenance mode check to all routes
+  app.use(checkMaintenanceMode);
   
   // Serve static files from uploads directory
   const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
