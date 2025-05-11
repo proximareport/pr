@@ -4,6 +4,8 @@ import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { useQuery } from '@tanstack/react-query';
+import { Badge } from '@/components/ui/badge';
 import { 
   FileTextIcon, 
   UsersIcon, 
@@ -15,7 +17,8 @@ import {
   TagIcon,
   KeyIcon,
   FileEditIcon,
-  DollarSignIcon
+  DollarSignIcon,
+  BellIcon
 } from 'lucide-react';
 import DraftManagement from './DraftManagement';
 import PublishedContent from './PublishedContent';
@@ -23,6 +26,18 @@ import PublishedContent from './PublishedContent';
 function AdminDashboard() {
   const { user, isAdmin } = useAuth();
   const [, navigate] = useLocation();
+  
+  // Fetch all advertisements to count pending ones
+  const { data: advertisements = [] } = useQuery({
+    queryKey: ['/api/advertisements/all'],
+    retry: false,
+    enabled: !!isAdmin
+  });
+  
+  // Count pending advertisements that need review
+  const pendingAdsCount = Array.isArray(advertisements) 
+    ? advertisements.filter((ad: any) => !ad.isApproved).length 
+    : 0;
   
   useEffect(() => {
     // Redirect if not admin
@@ -50,6 +65,39 @@ function AdminDashboard() {
         
         <TabsContent value="overview" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="bg-green-50 border-2 border-green-200">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center text-green-800">
+                  <DollarSignIcon className="mr-2 h-5 w-5 text-green-600" />
+                  Advertisement Management
+                </CardTitle>
+                <CardDescription>Review and approve ad submissions</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center">
+                  <div className="text-3xl font-bold text-green-800">
+                    {pendingAdsCount > 0 ? pendingAdsCount : 'No'} Pending Ads
+                  </div>
+                  {pendingAdsCount > 0 && (
+                    <Badge variant="destructive" className="ml-3 px-3 py-1">
+                      <BellIcon className="h-3 w-3 mr-1" /> Needs attention
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex justify-between mt-4">
+                  <Button 
+                    variant="default" 
+                    size="lg" 
+                    className={`bg-green-600 hover:bg-green-700 text-white font-medium ${pendingAdsCount > 0 ? 'animate-pulse' : ''}`}
+                    onClick={() => navigate('/admin/advertisements')}
+                  >
+                    <DollarSignIcon className="mr-2 h-5 w-5" />
+                    {pendingAdsCount > 0 ? 'Review Pending Advertisements' : 'Manage Advertisements'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+            
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle>Articles</CardTitle>
