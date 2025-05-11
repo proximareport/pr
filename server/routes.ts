@@ -1052,6 +1052,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Dedicated endpoint for updating article status
+  app.patch("/api/articles/:id/status", requireAuth, async (req, res) => {
+    try {
+      const articleId = parseInt(req.params.id);
+      const userId = req.session.userId!;
+      const { status } = req.body;
+      
+      if (!status) {
+        return res.status(400).json({ message: "Status is required" });
+      }
+      
+      // Validate status value
+      const validStatuses = ['draft', 'needs_edits', 'good_to_publish', 'do_not_publish', 'published'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ message: "Invalid status value" });
+      }
+      
+      const user = await storage.getUser(userId);
+      
+      // Only admin and editor roles can change article status
+      if (user!.role !== 'admin' && user!.role !== 'editor') {
+        return res.status(403).json({ message: "Only administrators and editors can change article status" });
+      }
+      
+      // Verify article exists
+      const article = await storage.getArticleById(articleId);
+      if (!article) {
+        return res.status(404).json({ message: "Article not found" });
+      }
+      
+      // Check if published status is changing
+      const isPublishing = status === 'published' && article.status !== 'published';
+      
+      // Prepare update data
+      const updateData: Partial<Article> = { status };
+      
+      // Set publishedAt timestamp when publishing
+      if (isPublishing) {
+        updateData.publishedAt = new Date();
+      }
+      
+      // Update the article
+      const updatedArticle = await storage.updateArticle(articleId, updateData);
+      
+      res.json(updatedArticle);
+    } catch (error) {
+      console.error("Error updating article status:", error);
+      res.status(500).json({ message: "Error updating article status" });
+    }
+  });
+  
   app.delete("/api/articles/:id", requireAuth, async (req, res) => {
     try {
       const userId = req.session.userId!;
