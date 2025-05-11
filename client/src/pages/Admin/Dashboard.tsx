@@ -79,12 +79,12 @@ function AdminDashboard() {
   const renderArticleTable = (filteredArticles: Article[]) => {
     if (!filteredArticles || filteredArticles.length === 0) {
       return (
-        <div className="text-center py-12 px-4 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+        <div className="text-center py-12 px-4 bg-gray-800 rounded-lg border border-dashed border-gray-700">
           <div className="flex flex-col items-center justify-center">
-            <FileTextIcon className="h-12 w-12 text-gray-300 mb-3" />
-            <h3 className="text-lg font-medium text-gray-900 mb-1">No articles found</h3>
-            <p className="text-gray-500 mb-4 max-w-md text-center">There are no articles matching the selected criteria.</p>
-            <Button onClick={() => navigate('/admin/articles/new')} className="bg-primary hover:bg-primary/90">
+            <FileTextIcon className="h-12 w-12 text-gray-600 mb-3" />
+            <h3 className="text-lg font-medium text-gray-200 mb-1">No articles found</h3>
+            <p className="text-gray-400 mb-4 max-w-md text-center">There are no articles matching the selected criteria.</p>
+            <Button onClick={() => navigate('/admin/articles/new')} className="bg-blue-700 hover:bg-blue-800">
               <PlusIcon className="h-4 w-4 mr-2" />
               Create New Article
             </Button>
@@ -94,44 +94,44 @@ function AdminDashboard() {
     }
 
     return (
-      <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
+      <div className="bg-gray-900 rounded-lg shadow-md overflow-hidden border border-gray-800">
         <Table>
-          <TableHeader className="bg-gray-50">
-            <TableRow className="border-b border-gray-200 hover:bg-transparent">
-              <TableHead className="font-semibold text-gray-700">Title</TableHead>
-              <TableHead className="font-semibold text-gray-700">Author</TableHead>
-              <TableHead className="font-semibold text-gray-700">Status</TableHead>
-              <TableHead className="font-semibold text-gray-700">Last Updated</TableHead>
-              <TableHead className="font-semibold text-gray-700">Published</TableHead>
-              <TableHead className="text-right font-semibold text-gray-700">Actions</TableHead>
+          <TableHeader className="bg-gray-800">
+            <TableRow className="border-b border-gray-700 hover:bg-transparent">
+              <TableHead className="font-semibold text-gray-300">Title</TableHead>
+              <TableHead className="font-semibold text-gray-300">Author</TableHead>
+              <TableHead className="font-semibold text-gray-300">Status</TableHead>
+              <TableHead className="font-semibold text-gray-300">Last Updated</TableHead>
+              <TableHead className="font-semibold text-gray-300">Published</TableHead>
+              <TableHead className="text-right font-semibold text-gray-300">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredArticles.map((article: Article) => (
-              <TableRow key={article.id} className="hover:bg-gray-50 border-b border-gray-100 transition-colors">
-                <TableCell className="font-medium text-gray-900">
+              <TableRow key={article.id} className="hover:bg-gray-800 border-b border-gray-700 transition-colors">
+                <TableCell className="font-medium text-gray-100">
                   <div className="max-w-md truncate">{article.title}</div>
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     {article.authors && article.authors.map((author, idx) => (
-                      <span key={author.user.id} className="inline-flex items-center px-2 py-1 bg-gray-100 text-xs rounded-full font-medium text-gray-700">
+                      <span key={author.user.id} className="inline-flex items-center px-2 py-1 bg-gray-700 text-xs rounded-full font-medium text-gray-300">
                         {author.user.username}
                       </span>
                     ))}
                   </div>
                 </TableCell>
                 <TableCell>{getStatusBadge(article.status)}</TableCell>
-                <TableCell className="text-gray-600">{formatDate(article.updatedAt)}</TableCell>
-                <TableCell className="text-gray-600">{formatDate(article.publishedAt)}</TableCell>
+                <TableCell className="text-gray-400">{formatDate(article.updatedAt)}</TableCell>
+                <TableCell className="text-gray-400">{formatDate(article.publishedAt)}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end space-x-1">
-                    <Button asChild size="sm" variant="outline" className="h-8 w-8 p-0 rounded-full">
+                    <Button asChild size="sm" variant="outline" className="h-8 w-8 p-0 rounded-full bg-transparent border-gray-700 text-gray-400 hover:text-gray-100 hover:bg-gray-800 hover:border-gray-600">
                       <Link href={`/article/${article.slug}`} title="View Article">
                         <Eye className="h-4 w-4" />
                       </Link>
                     </Button>
-                    <Button asChild size="sm" variant="outline" className="h-8 w-8 p-0 rounded-full">
+                    <Button asChild size="sm" variant="outline" className="h-8 w-8 p-0 rounded-full bg-transparent border-gray-700 text-gray-400 hover:text-gray-100 hover:bg-gray-800 hover:border-gray-600">
                       <Link href={`/admin/edit-article/${article.id}`} title="Edit Article">
                         <FileEditIcon className="h-4 w-4" />
                       </Link>
@@ -139,7 +139,7 @@ function AdminDashboard() {
                     <Button 
                       size="sm" 
                       variant="outline" 
-                      className="h-8 w-8 p-0 rounded-full" 
+                      className="h-8 w-8 p-0 rounded-full bg-transparent border-gray-700 text-gray-400 hover:text-gray-100 hover:bg-gray-800 hover:border-gray-600" 
                       onClick={() => openStatusDialog(article)}
                       title="Change Status"
                     >
@@ -282,23 +282,23 @@ function AdminDashboard() {
               onValueChange={setSelectedStatus}
               className="space-y-4"
             >
-              <div className={`flex items-start p-3 rounded-lg ${selectedStatus === 'draft' ? 'bg-gray-50 border border-gray-200' : 'hover:bg-gray-50'} cursor-pointer`} onClick={() => setSelectedStatus('draft')}>
+              <div className={`flex items-start p-3 rounded-lg ${selectedStatus === 'draft' ? 'bg-gray-800 border border-gray-700' : 'hover:bg-gray-800/50'} cursor-pointer`} onClick={() => setSelectedStatus('draft')}>
                 <RadioGroupItem value="draft" id="draft" className="mt-1" />
                 <Label htmlFor="draft" className="flex flex-col ml-3 cursor-pointer">
                   <div className="flex items-center">
-                    <Badge className="bg-gray-100 text-gray-800 border-gray-200 font-medium">Draft</Badge>
+                    <Badge className="bg-gray-700 text-gray-200 border-gray-600 font-medium">Draft</Badge>
                   </div>
-                  <span className="mt-1 text-sm text-gray-600">Work in progress. Article is being developed and is not visible to the public.</span>
+                  <span className="mt-1 text-sm text-gray-400">Work in progress. Article is being developed and is not visible to the public.</span>
                 </Label>
               </div>
               
-              <div className={`flex items-start p-3 rounded-lg ${selectedStatus === 'needs_edits' ? 'bg-yellow-50 border border-yellow-200' : 'hover:bg-gray-50'} cursor-pointer`} onClick={() => setSelectedStatus('needs_edits')}>
+              <div className={`flex items-start p-3 rounded-lg ${selectedStatus === 'needs_edits' ? 'bg-yellow-900/40 border border-yellow-700/50' : 'hover:bg-gray-800/50'} cursor-pointer`} onClick={() => setSelectedStatus('needs_edits')}>
                 <RadioGroupItem value="needs_edits" id="needs_edits" className="mt-1" />
                 <Label htmlFor="needs_edits" className="flex flex-col ml-3 cursor-pointer">
                   <div className="flex items-center">
-                    <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 font-medium">Needs Edits</Badge>
+                    <Badge className="bg-yellow-900/70 text-yellow-200 border-yellow-700 font-medium">Needs Edits</Badge>
                   </div>
-                  <span className="mt-1 text-sm text-gray-600">Article requires revisions before it can be approved for publication.</span>
+                  <span className="mt-1 text-sm text-gray-400">Article requires revisions before it can be approved for publication.</span>
                 </Label>
               </div>
               
