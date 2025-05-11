@@ -144,12 +144,12 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
       window.clearTimeout(autosaveTimeoutRef.current);
     }
     
-    // Set a new timeout for autosave (3 seconds after last change)
+    // Set a new timeout for autosave (60 seconds after last change)
     autosaveTimeoutRef.current = window.setTimeout(() => {
       if (title) {
         autosaveArticle();
       }
-    }, 3000);
+    }, 60000);
     
     // Cleanup function
     return () => {
