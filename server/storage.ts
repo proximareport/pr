@@ -405,12 +405,16 @@ export class DatabaseStorage implements IStorage {
       
       if (data.summary !== undefined) {
         updates.push(`summary = $${paramIndex++}`);
-        values.push(data.summary);
+        // Ensure summary is a string to avoid JSON formatting issues
+        const summaryString = data.summary === '' ? ' ' : data.summary || ' ';
+        values.push(summaryString);
       }
       
       if (data.content !== undefined) {
         updates.push(`content = $${paramIndex++}`);
-        values.push(data.content);
+        // Ensure content is a string to avoid JSON formatting issues
+        const contentString = data.content === '' ? ' ' : data.content || ' ';
+        values.push(contentString);
       }
       
       if (data.featuredImage !== undefined) {
@@ -430,7 +434,9 @@ export class DatabaseStorage implements IStorage {
       
       if (data.tags !== undefined) {
         updates.push(`tags = $${paramIndex++}`);
-        values.push(data.tags);
+        // Make sure tags is formatted as a proper JSON string
+        const tagsJson = data.tags ? (typeof data.tags === 'string' ? data.tags : JSON.stringify(data.tags)) : '[]';
+        values.push(tagsJson);
       }
       
       if (data.category !== undefined) {
