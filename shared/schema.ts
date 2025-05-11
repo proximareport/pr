@@ -411,6 +411,9 @@ export const insertMediaLibrarySchema = createInsertSchema(mediaLibrary).omit({
 export const updateSiteSettingsSchema = createInsertSchema(siteSettings).omit({
   id: true,
   updatedAt: true,
+}).extend({
+  // Make sure the maintenanceEndTime field can be a string for datetime-local input
+  maintenanceEndTime: z.string().nullable().optional(),
 });
 
 // Types
