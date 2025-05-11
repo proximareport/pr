@@ -115,6 +115,12 @@ function Header() {
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuItem asChild>
+                      <Link href="/advertiser-dashboard">
+                        <LineChartIcon className="mr-2 h-4 w-4" />
+                        <span>Ad Dashboard</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
                       <Link href="/profile/settings">
                         <SettingsIcon className="mr-2 h-4 w-4" />
                         <span>Settings</span>

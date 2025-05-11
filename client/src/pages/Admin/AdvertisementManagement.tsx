@@ -135,8 +135,23 @@ function AdvertisementManagement() {
     approveMutation.mutate(adId);
   };
   
-  const handleReject = (adId: number) => {
-    rejectMutation.mutate(adId);
+  const handleReject = (ad: Advertisement) => {
+    setAdToReject(ad);
+  };
+  
+  const submitRejection = () => {
+    if (adToReject && rejectReason.trim()) {
+      rejectMutation.mutate({ 
+        adId: adToReject.id, 
+        reason: rejectReason 
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Please provide a reason for rejection",
+        variant: "destructive"
+      });
+    }
   };
   
   const handleDelete = (adId: number) => {
@@ -220,7 +235,7 @@ function AdvertisementManagement() {
                       <Button size="sm" variant="outline" onClick={() => handleApprove(ad.id)}>
                         <CheckCircle className="h-4 w-4 text-green-600" />
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleReject(ad.id)}>
+                      <Button size="sm" variant="outline" onClick={() => handleReject(ad)}>
                         <XCircle className="h-4 w-4 text-red-600" />
                       </Button>
                     </>
@@ -357,11 +372,30 @@ function AdvertisementManagement() {
                 </div>
               </div>
               
+              <div className="grid grid-cols-[80px_1fr] gap-2">
+                <div className="font-medium">Price:</div>
+                <div>{previewAd?.price ? `$${(previewAd.price / 100).toFixed(2)}` : 'No price set'}</div>
+              </div>
+              
+              {previewAd?.adminNotes && (
+                <div className="grid grid-cols-[80px_1fr] gap-2">
+                  <div className="font-medium">Notes:</div>
+                  <div className="text-red-600">{previewAd.adminNotes}</div>
+                </div>
+              )}
+              
               {previewAd?.imageUrl && (
                 <div className="mt-4">
                   <div className="font-medium mb-2">Image Preview:</div>
                   <div className="border rounded-md overflow-hidden">
-                    <img src={previewAd.imageUrl} alt={previewAd.title} className="max-w-full h-auto" />
+                    <img 
+                      src={previewAd.imageUrl} 
+                      alt={previewAd.title} 
+                      className="max-w-full h-auto"
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://placehold.co/600x400?text=Image+Not+Available';
+                      }}
+                    />
                   </div>
                 </div>
               )}
@@ -375,13 +409,54 @@ function AdvertisementManagement() {
                     <CheckCircle className="h-4 w-4 mr-2" /> Approve
                   </Button>
                   <Button variant="outline" className="border-red-500 text-red-600" 
-                          onClick={() => previewAd && handleReject(previewAd.id)}>
+                          onClick={() => previewAd && handleReject(previewAd)}>
                     <XCircle className="h-4 w-4 mr-2" /> Reject
                   </Button>
                 </div>
               )}
               <Button variant="outline" className="ml-auto" onClick={() => setPreviewAd(null)}>
                 Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        
+        {/* Reject Advertisement Dialog */}
+        <Dialog open={!!adToReject} onOpenChange={(open) => !open && setAdToReject(null)}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Reject Advertisement</DialogTitle>
+              <DialogDescription>
+                Please provide a reason for rejection. This will be shown to the advertiser.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="py-4">
+              <label htmlFor="reject-reason" className="block text-sm font-medium mb-2">
+                Rejection Reason
+              </label>
+              <textarea 
+                id="reject-reason"
+                className="w-full h-32 p-2 border border-gray-300 rounded-md resize-none"
+                placeholder="Please explain why this advertisement was rejected..."
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                Be specific and provide guidance on what needs to be changed for approval.
+              </p>
+            </div>
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setAdToReject(null)}>
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={submitRejection} 
+                disabled={!rejectReason.trim()}
+              >
+                Reject Advertisement
               </Button>
             </DialogFooter>
           </DialogContent>
