@@ -1,6 +1,6 @@
 import { useState } from "react";
 import AstronomyPortal from "@/components/astronomy/AstronomyPortal";
-import StellariumSkyMap from "@/components/astronomy/StellariumSkyMap";
+import CelestialSkyMap from "@/components/astronomy/CelestialSkyMap";
 import CelestialEvents from "@/components/astronomy/CelestialEvents";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,10 +23,10 @@ function Astronomy() {
 
   return (
     <div className="bg-[#0D0D17] min-h-screen">
-      {/* Fullscreen Stellarium Sky Map */}
+      {/* Fullscreen D3 Celestial Sky Map */}
       {isFullScreen && (
         <div className="fixed inset-0 bg-black z-50">
-          <StellariumSkyMap 
+          <CelestialSkyMap 
             fullScreen={true} 
             onToggleFullScreen={() => setIsFullScreen(false)} 
           />
@@ -94,16 +94,16 @@ function Astronomy() {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
-              {/* Featured card - Stellarium Sky Map */}
+              {/* Featured card - D3 Celestial Sky Map */}
               <Card className="mb-8 bg-[#14141E] border-white/10 hover:border-purple-500/30 overflow-hidden transition-all">
                 <div className="relative">
-                  <StellariumSkyMap 
+                  <CelestialSkyMap 
                     height="300px" 
                     onToggleFullScreen={() => setIsFullScreen(true)} 
                   />
                   <div className="absolute bottom-0 left-0 p-6 bg-gradient-to-t from-[#14141E] to-transparent/0 w-full">
                     <h3 className="font-space text-2xl font-bold mb-2 text-shadow-[0_0_8px_rgba(157,78,221,0.7)]">
-                      Interactive Sky Map by Stellarium Web
+                      Interactive Sky Map with d3-celestial
                     </h3>
                     <p className="text-white/90 mb-4">
                       Explore stars, planets, constellations and more in real-time based on your location
