@@ -1,0 +1,180 @@
+App.tsx:145 MainApp render check: 
+Object
+App.tsx:130 Maintenance check: 
+Object
+App.tsx:145 MainApp render check: 
+Object
+queryClient.ts:30 API Request: POST /api/login 
+Object
+App.tsx:130 Maintenance check: 
+Object
+App.tsx:145 MainApp render check: 
+Object
+queryClient.ts:40 API Response status: 200 
+Response
+queryClient.ts:30 API Request: GET /api/me undefined
+App.tsx:130 Maintenance check: 
+Object
+App.tsx:145 MainApp render check: 
+Object
+App.tsx:130 Maintenance check: 
+Object
+App.tsx:145 MainApp render check: 
+Object
+queryClient.ts:40 API Response status: 200 
+Response
+App.tsx:130 Maintenance check: 
+Object
+App.tsx:145 MainApp render check: 
+Object
+App.tsx:130 Maintenance check: 
+Object
+App.tsx:145 MainApp render check: 
+Object
+queryClient.ts:30 API Request: POST /api/advertisements/1/impression 
+Object
+queryClient.ts:40 API Response status: 200 
+Response
+App.tsx:130 Maintenance check: 
+Object
+App.tsx:145 MainApp render check: 
+Object
+App.tsx:130 Maintenance check: 
+Object
+App.tsx:145 MainApp render check: 
+Object
+App.tsx:130 Maintenance check: 
+Object
+App.tsx:145 MainApp render check: 
+Object
+queryClient.ts:30 API Request: GET /api/articles/2 undefined
+queryClient.ts:30 API Request: GET /api/categories undefined
+queryClient.ts:30 API Request: GET /api/tags undefined
+queryClient.ts:30 API Request: GET /api/users undefined
+queryClient.ts:40 API Response status: 200 
+Response
+/api/articles/2:1 
+ 
+ Failed to load resource: the server responded with a status of 404 (Not Found)
+queryClient.ts:40 API Response status: 404 
+Response
+queryClient.ts:40 API Response status: 200 
+Response
+queryClient.ts:47 
+ API Error Response: 
+Object
+queryClient.ts:56 
+ API Request Failed: Error: 404: Article not found
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+react-dom.development.js:86 
+ Warning: findDOMNode is deprecated and will be removed in the next major release. Instead, add a ref directly to the element you want to reference. Learn more about using refs safely here: https://reactjs.org/link/strict-mode-find-node
+    at ReactQuill2 (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.repli…unner/workspace/node_modules/.vite/deps/react-quill.js?v=bc020cd0:11416:30)
+    at div
+    at div
+    at div
+    at _c (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/components/ui/card.tsx:20:11)
+    at RichTextEditor (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/components/article/RichTextEditor.tsx:26:3)
+    at div
+    at div
+    at _c9 (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/components/ui/card.tsx:114:12)
+    at div
+    at _c (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/components/ui/card.tsx:20:11)
+    at EditorMainCard (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/components/admin/EditorLayout.tsx:110:3)
+    at form
+    at div
+    at div
+    at div
+    at EditorLayout (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/components/admin/EditorLayout.tsx:22:32)
+    at AdminArticleEditor (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/pages/Admin/NewArticleEditor.tsx:42:18)
+    at Route (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.repli…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=bc020cd0:323:16)
+    at Switch (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.repli…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=bc020cd0:379:17)
+    at Router
+    at main
+    at div
+    at MainApp (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/App.tsx?v=0andg9iVg5sfpYWx2NaYb:330:43)
+    at Provider (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.repli…unner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=bc020cd0:38:15)
+    at TooltipProvider (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.repli…rkspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=bc020cd0:62:5)
+    at AuthProvider (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/lib/AuthContext.tsx:23:32)
+    at QueryClientProvider (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.repli…rkspace/node_modules/.vite/deps/@tanstack_react-query.js?v=bc020cd0:2805:3)
+    at App
+    at V (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.repli…e/runner/workspace/node_modules/.vite/deps/next-themes.js?v=bc020cd0:44:25)
+    at J (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.repli…e/runner/workspace/node_modules/.vite/deps/next-themes.js?v=bc020cd0:42:18)
+    at ThemeProvider (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/components/ThemeProvider.tsx:19:33)
+quill.js:4237 
+ [Deprecation] Listener added for a 'DOMNodeInserted' mutation event. Support for this event type has been removed, and this event will no longer be fired. See https://chromestatus.com/feature/5083947249172480 for more information.
+queryClient.ts:40 API Response status: 200 
+Response
+
+ Microsoft Edge is moving towards a new experience that allows users to choose to browse without third-party cookies.
+queryClient.ts:30 API Request: PATCH /api/articles/2 
+{title: 'test', slug: 't-38570', summary: '', content: '', category: 'space-exploration', …}
+queryClient.ts:33 
+ 
+ PATCH https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/articles/2 500 (Internal Server Error)
+queryClient.ts:40 API Response status: 500 
+Response {type: 'basic', url: 'https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/articles/2', redirected: false, status: 500, ok: false, …}
+queryClient.ts:47 
+ API Error Response: 
+{message: 'Server error while updating article', error: 'invalid input syntax for type json'}
+queryClient.ts:56 
+ API Request Failed: Error: 500: Server error while updating article
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (NewArticleEditor.tsx:173:22)
+NewArticleEditor.tsx:186 
+ Autosave request error: Error: 500: Server error while updating article
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (NewArticleEditor.tsx:173:22)
+NewArticleEditor.tsx:207 
+ Autosave error: Error: Failed to save draft
+    at Object.mutationFn (NewArticleEditor.tsx:187:15)
+queryClient.ts:30 API Request: PATCH /api/articles/2 
+{title: 'test', slug: 't-38570', summary: '', content: '', category: 'space-exploration', …}
+queryClient.ts:33 
+ 
+ PATCH https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/articles/2 500 (Internal Server Error)
+queryClient.ts:40 API Response status: 500 
+Response {type: 'basic', url: 'https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/articles/2', redirected: false, status: 500, ok: false, …}
+queryClient.ts:47 
+ API Error Response: 
+{message: 'Server error while updating article', error: 'invalid input syntax for type json'}
+queryClient.ts:56 
+ API Request Failed: Error: 500: Server error while updating article
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (NewArticleEditor.tsx:173:22)
+NewArticleEditor.tsx:186 
+ Autosave request error: Error: 500: Server error while updating article
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (NewArticleEditor.tsx:173:22)
+NewArticleEditor.tsx:207 
+ Autosave error: Error: Failed to save draft
+    at Object.mutationFn (NewArticleEditor.tsx:187:15)
+queryClient.ts:30 API Request: PATCH /api/articles/2 
+{title: 'test', slug: 't-38570', summary: '', content: '', category: 'space-exploration', …}
+queryClient.ts:33 
+ 
+ PATCH https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/articles/2 500 (Internal Server Error)
+queryClient.ts:40 API Response status: 500 
+Response {type: 'basic', url: 'https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/articles/2', redirected: false, status: 500, ok: false, …}
+queryClient.ts:47 
+ API Error Response: 
+{message: 'Server error while updating article', error: 'invalid input syntax for type json'}
+queryClient.ts:56 
+ API Request Failed: Error: 500: Server error while updating article
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (NewArticleEditor.tsx:173:22)
+NewArticleEditor.tsx:186 
+ Autosave request error: Error: 500: Server error while updating article
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (NewArticleEditor.tsx:173:22)
+NewArticleEditor.tsx:207 
+ Autosave error: Error: Failed to save draft
+    at Object.mutationFn (NewArticleEditor.tsx:187:15)
+﻿
+

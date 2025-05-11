@@ -1134,16 +1134,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updateData: any = {};
       
       // Only include fields that are defined
-      if (title !== undefined) updateData.title = title;
-      if (slug !== undefined) updateData.slug = slug;
-      if (summary !== undefined) updateData.summary = summary;
-      if (content !== undefined) updateData.content = content;
-      if (featuredImage !== undefined) updateData.featuredImage = featuredImage;
-      if (isBreaking !== undefined) updateData.isBreaking = isBreaking;
-      if (readTime !== undefined) updateData.readTime = readTime;
-      if (tags !== undefined) updateData.tags = tags;
-      if (category !== undefined) updateData.category = category;
-      if (status !== undefined) updateData.status = status;
+      if (title !== undefined) updateData.title = title || '';
+      if (slug !== undefined) updateData.slug = slug || '';
+      if (summary !== undefined) updateData.summary = summary || '';
+      if (content !== undefined) updateData.content = content || '';
+      if (featuredImage !== undefined) updateData.featuredImage = featuredImage || '';
+      if (isBreaking !== undefined) updateData.isBreaking = !!isBreaking;
+      if (readTime !== undefined) updateData.readTime = readTime || 1;
+      if (tags !== undefined) updateData.tags = Array.isArray(tags) ? JSON.stringify(tags) : '[]';
+      if (category !== undefined) updateData.category = category || '';
+      if (status !== undefined) updateData.status = status || 'draft';
       
       // Update lastEditedBy
       updateData.lastEditedBy = userId;
