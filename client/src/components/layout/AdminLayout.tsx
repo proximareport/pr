@@ -100,51 +100,104 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
       <div className="hidden md:flex md:flex-shrink-0">
-        <div className="flex flex-col w-64">
-          <div className="flex flex-col h-0 flex-1 border-r border-gray-200 bg-white">
+        <div className="flex flex-col w-72">
+          <div className="flex flex-col h-full border-r border-gray-200 bg-gray-900 text-white shadow-xl">
             <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
-              <div className="flex items-center flex-shrink-0 px-4">
+              <div className="flex items-center justify-center flex-shrink-0 px-4 mb-4">
                 <Link href="/">
-                  <div className="cursor-pointer">
-                    <span className="text-xl font-bold text-primary">Proxima Report</span>
+                  <div className="cursor-pointer bg-gray-800 px-4 py-3 rounded-lg">
+                    <span className="text-xl font-bold text-white">Proxima <span className="text-primary">Report</span></span>
                   </div>
                 </Link>
               </div>
-              <nav className="mt-5 flex-1 px-2 bg-white space-y-1">
-                {menuItems.map((item) => (
+              
+              <div className="px-3 py-2 text-xs font-semibold uppercase text-gray-400 tracking-wider">
+                Main
+              </div>
+              
+              <nav className="mt-1 flex-1 px-2 space-y-1">
+                {menuItems.slice(0, 4).map((item) => (
                   <Link key={item.path} href={item.path}>
                     <div
-                      className={`${isActive(
-                        item.path
-                      )} group flex items-center px-2 py-2 text-sm rounded-md cursor-pointer transition-colors`}
+                      className={`${
+                        location === item.path
+                          ? 'bg-gray-800 text-white border-l-4 border-primary pl-3'
+                          : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                      } group flex items-center px-4 py-2.5 text-sm rounded-md cursor-pointer transition-all duration-150 ease-in-out`}
                     >
                       {item.icon}
-                      <span className="ml-3">{item.label}</span>
+                      <span className="ml-3 font-medium">{item.label}</span>
+                      {item.badge}
+                    </div>
+                  </Link>
+                ))}
+              </nav>
+              
+              <div className="px-3 py-2 mt-6 text-xs font-semibold uppercase text-gray-400 tracking-wider">
+                Content Management
+              </div>
+              
+              <nav className="mt-1 flex-1 px-2 space-y-1">
+                {menuItems.slice(4, 9).map((item) => (
+                  <Link key={item.path} href={item.path}>
+                    <div
+                      className={`${
+                        location === item.path
+                          ? 'bg-gray-800 text-white border-l-4 border-primary pl-3'
+                          : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                      } group flex items-center px-4 py-2.5 text-sm rounded-md cursor-pointer transition-all duration-150 ease-in-out`}
+                    >
+                      {item.icon}
+                      <span className="ml-3 font-medium">{item.label}</span>
+                      {item.badge}
+                    </div>
+                  </Link>
+                ))}
+              </nav>
+              
+              <div className="px-3 py-2 mt-6 text-xs font-semibold uppercase text-gray-400 tracking-wider">
+                System
+              </div>
+              
+              <nav className="mt-1 flex-1 px-2 space-y-1">
+                {menuItems.slice(9).map((item) => (
+                  <Link key={item.path} href={item.path}>
+                    <div
+                      className={`${
+                        location === item.path
+                          ? 'bg-gray-800 text-white border-l-4 border-primary pl-3'
+                          : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                      } group flex items-center px-4 py-2.5 text-sm rounded-md cursor-pointer transition-all duration-150 ease-in-out`}
+                    >
+                      {item.icon}
+                      <span className="ml-3 font-medium">{item.label}</span>
                       {item.badge}
                     </div>
                   </Link>
                 ))}
               </nav>
             </div>
-            <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
-              <div className="flex-shrink-0 w-full group block">
-                <div className="flex items-center">
-                  <div>
-                    <img
-                      className="inline-block h-9 w-9 rounded-full"
-                      src={user.profilePicture || `https://ui-avatars.com/api/?name=${user.username}&background=random`}
-                      alt=""
-                    />
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
-                      {user.username}
-                    </p>
-                    <p className="text-xs font-medium text-gray-500 group-hover:text-gray-700">
-                      {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                    </p>
-                  </div>
+            
+            <div className="flex-shrink-0 border-t border-gray-700 p-4 bg-gray-800 rounded-md mx-3 mb-3">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <img
+                    className="h-10 w-10 rounded-full border-2 border-primary"
+                    src={user.profilePicture || `https://ui-avatars.com/api/?name=${user.username}&background=random`}
+                    alt={user.username}
+                  />
                 </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-white">
+                    {user.username}
+                  </p>
+                  <p className="text-xs font-medium text-gray-300">
+                    {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                  </p>
+                </div>
+                <Link href="/profile" className="ml-auto p-1 rounded-full hover:bg-gray-700 transition-colors">
+                  <Settings className="h-5 w-5 text-gray-400" />
+                </Link>
               </div>
             </div>
           </div>
@@ -153,8 +206,24 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
       {/* Main content */}
       <div className="flex flex-col w-0 flex-1 overflow-hidden">
+        <div className="flex-shrink-0 bg-white shadow z-10">
+          <div className="flex justify-between items-center px-4 py-3">
+            <h1 className="text-lg font-semibold">Admin Console</h1>
+            <div className="flex items-center space-x-3">
+              {pendingAdsCount > 0 && (
+                <div className="bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-xs font-medium flex items-center">
+                  <BellRing className="h-3 w-3 mr-1" /> 
+                  {pendingAdsCount} pending ad{pendingAdsCount !== 1 ? 's' : ''}
+                </div>
+              )}
+              <Link href="/" className="text-gray-600 hover:text-primary transition-colors">
+                <Home className="h-5 w-5" />
+              </Link>
+            </div>
+          </div>
+        </div>
         <main className="flex-1 relative z-0 overflow-y-auto focus:outline-none bg-gray-50">
-          <div className="py-6">
+          <div className="py-6 px-4 sm:px-6 lg:px-8">
             {children}
           </div>
         </main>

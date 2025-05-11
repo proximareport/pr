@@ -306,8 +306,17 @@ function AdminDashboard() {
         </DialogContent>
       </Dialog>
       
-      <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
-      
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+          <p className="text-gray-500 mt-1">Manage your content, users, and site settings</p>
+        </div>
+        <Button className="bg-primary hover:bg-primary/90" onClick={() => navigate('/admin/articles/new')}>
+          <PlusIcon className="h-4 w-4 mr-2" />
+          New Article
+        </Button>
+      </div>
+
       <Tabs 
         defaultValue={tabFromUrl || "overview"} 
         className="w-full"
@@ -318,104 +327,188 @@ function AdminDashboard() {
           window.history.pushState({}, '', newUrl.toString());
         }}
       >
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="content">Content</TabsTrigger>
-          <TabsTrigger value="advertisements" className="flex items-center">
-            <DollarSignIcon className="h-4 w-4 mr-1 text-green-600" />
-            Ad Overview
+        <TabsList className="grid w-full grid-cols-6 mb-6 bg-white shadow-sm rounded-lg p-1">
+          <TabsTrigger value="overview" className="rounded-md data-[state=active]:bg-primary data-[state=active]:text-white">
+            <BarChart3Icon className="h-4 w-4 mr-1.5" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="content" className="rounded-md data-[state=active]:bg-primary data-[state=active]:text-white">
+            <FileTextIcon className="h-4 w-4 mr-1.5" />
+            Content
+          </TabsTrigger>
+          <TabsTrigger value="advertisements" className="rounded-md data-[state=active]:bg-primary data-[state=active]:text-white flex items-center">
+            <DollarSignIcon className="h-4 w-4 mr-1.5 text-green-600" />
+            Ad Management
             {pendingAdsCount > 0 && (
               <span className="ml-1.5 bg-red-100 text-red-800 text-xs font-semibold px-1.5 py-0.5 rounded-full">
                 {pendingAdsCount}
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="users">Users</TabsTrigger>
-          <TabsTrigger value="media">Media</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
+          <TabsTrigger value="users" className="rounded-md data-[state=active]:bg-primary data-[state=active]:text-white">
+            <UsersIcon className="h-4 w-4 mr-1.5" />
+            Users
+          </TabsTrigger>
+          <TabsTrigger value="media" className="rounded-md data-[state=active]:bg-primary data-[state=active]:text-white">
+            <ImageIcon className="h-4 w-4 mr-1.5" />
+            Media
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="rounded-md data-[state=active]:bg-primary data-[state=active]:text-white">
+            <Settings className="h-4 w-4 mr-1.5" />
+            Settings
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="bg-green-50 border-2 border-green-200">
+            {/* Ad Management Card */}
+            <Card className={`border-l-4 ${pendingAdsCount > 0 ? 'border-l-amber-500' : 'border-l-emerald-500'} shadow-md overflow-hidden`}>
+              <div className="absolute right-0 top-0 h-16 w-16">
+                <div className={`absolute transform rotate-45 bg-gradient-to-r ${pendingAdsCount > 0 ? 'from-amber-500 to-amber-600' : 'from-emerald-500 to-emerald-600'} text-white shadow-lg -right-9 top-3 w-24 text-center`}>
+                  {pendingAdsCount > 0 ? 'Action' : 'Active'}
+                </div>
+              </div>
               <CardHeader className="pb-2">
-                <CardTitle className="flex items-center text-green-800">
-                  <DollarSignIcon className="mr-2 h-5 w-5 text-green-600" />
+                <CardTitle className="flex items-center">
+                  <div className={`p-2 rounded-full ${pendingAdsCount > 0 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'} mr-3`}>
+                    <DollarSignIcon className="h-5 w-5" />
+                  </div>
                   Advertisement Management
                 </CardTitle>
                 <CardDescription>Review and approve ad submissions</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center">
-                  <div className="text-3xl font-bold text-green-800">
-                    {pendingAdsCount > 0 ? pendingAdsCount : 'No'} Pending Ads
+                  <div className={`text-4xl font-bold ${pendingAdsCount > 0 ? 'text-amber-700' : 'text-gray-800'}`}>
+                    {pendingAdsCount > 0 ? pendingAdsCount : 'No'} 
+                    <span className="text-lg ml-1 font-medium text-gray-600">Pending</span>
                   </div>
                   {pendingAdsCount > 0 && (
-                    <Badge variant="destructive" className="ml-3 px-3 py-1">
-                      <BellIcon className="h-3 w-3 mr-1" /> Needs attention
+                    <Badge variant="outline" className="ml-3 px-3 py-1 border border-amber-300 text-amber-700 bg-amber-50">
+                      <BellIcon className="h-3 w-3 mr-1" /> Needs review
                     </Badge>
                   )}
                 </div>
-                <div className="flex justify-between mt-4">
+                <div className="flex justify-between mt-6">
                   <Button 
                     variant="default" 
-                    size="lg" 
-                    className={`bg-green-600 hover:bg-green-700 text-white font-medium ${pendingAdsCount > 0 ? 'animate-pulse' : ''}`}
+                    className={`${pendingAdsCount > 0 ? 'bg-amber-600 hover:bg-amber-700' : 'bg-emerald-600 hover:bg-emerald-700'} text-white font-medium ${pendingAdsCount > 0 ? 'shadow-md hover:shadow-lg transition-all duration-200' : ''}`}
                     onClick={() => navigate('/admin/advertisements')}
                   >
-                    <DollarSignIcon className="mr-2 h-5 w-5" />
-                    {pendingAdsCount > 0 ? 'Review Pending Advertisements' : 'Manage Advertisements'}
+                    {pendingAdsCount > 0 ? (
+                      <>
+                        <BellIcon className="mr-2 h-4 w-4" />
+                        Review {pendingAdsCount} Ad{pendingAdsCount !== 1 ? 's' : ''}
+                      </>
+                    ) : (
+                      <>
+                        <DollarSignIcon className="mr-2 h-4 w-4" />
+                        Manage Advertisements
+                      </>
+                    )}
                   </Button>
                 </div>
               </CardContent>
             </Card>
             
-            <Card>
+            {/* Articles Card */}
+            <Card className="border-l-4 border-l-blue-500 shadow-md overflow-hidden">
               <CardHeader className="pb-2">
-                <CardTitle>Articles</CardTitle>
-                <CardDescription>Manage published content</CardDescription>
+                <CardTitle className="flex items-center">
+                  <div className="p-2 rounded-full bg-blue-100 text-blue-700 mr-3">
+                    <FileTextIcon className="h-5 w-5" />
+                  </div>
+                  Content Management
+                </CardTitle>
+                <CardDescription>Manage your articles and content</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">42</div>
-                <div className="flex justify-between mt-4">
+                <div className="flex flex-col space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Published</span>
+                    <span className="font-semibold text-gray-900">{articles.filter((a: any) => a.status === 'published').length || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Drafts</span>
+                    <span className="font-semibold text-gray-900">{articles.filter((a: any) => a.status === 'draft').length || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Ready to publish</span>
+                    <span className="font-semibold text-gray-900">{articles.filter((a: any) => a.status === 'good_to_publish').length || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Need review</span>
+                    <span className="font-semibold text-gray-900">{articles.filter((a: any) => a.status === 'needs_edits').length || 0}</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mt-5">
                   <Button 
                     variant="outline" 
-                    size="sm" 
-                    className="text-xs"
+                    className="text-blue-700 border-blue-200 hover:bg-blue-50"
                     onClick={() => navigate('/admin/articles')}
                   >
+                    <Eye className="mr-2 h-4 w-4" />
                     View All
                   </Button>
                   <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="text-xs"
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
                     onClick={() => navigate('/admin/articles/new')}
                   >
-                    <PlusIcon className="mr-1 h-3 w-3" />
-                    New
+                    <PlusIcon className="mr-2 h-4 w-4" />
+                    New Article
                   </Button>
                 </div>
               </CardContent>
             </Card>
             
-            <Card>
+            {/* Users Card */}
+            <Card className="border-l-4 border-l-purple-500 shadow-md overflow-hidden">
               <CardHeader className="pb-2">
-                <CardTitle>Users</CardTitle>
-                <CardDescription>User management</CardDescription>
+                <CardTitle className="flex items-center">
+                  <div className="p-2 rounded-full bg-purple-100 text-purple-700 mr-3">
+                    <UsersIcon className="h-5 w-5" />
+                  </div>
+                  User Management
+                </CardTitle>
+                <CardDescription>Manage users and permissions</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">156</div>
-                <div className="flex justify-between mt-4">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="text-xs"
-                    onClick={() => navigate('/admin/users')}
-                  >
-                    Manage Users
-                  </Button>
+                <div className="space-y-3 mb-4">
+                  <div className="flex justify-between items-center p-2 bg-gray-50 rounded-md">
+                    <div className="flex items-center">
+                      <div className="p-1.5 rounded-full bg-red-100 text-red-700 mr-2">
+                        <UsersIcon className="h-4 w-4" />
+                      </div>
+                      <span className="text-sm font-medium">Admins</span>
+                    </div>
+                    <span className="font-bold text-gray-900">1</span>
+                  </div>
+                  <div className="flex justify-between items-center p-2 bg-gray-50 rounded-md">
+                    <div className="flex items-center">
+                      <div className="p-1.5 rounded-full bg-blue-100 text-blue-700 mr-2">
+                        <FileEditIcon className="h-4 w-4" />
+                      </div>
+                      <span className="text-sm font-medium">Editors</span>
+                    </div>
+                    <span className="font-bold text-gray-900">2</span>
+                  </div>
+                  <div className="flex justify-between items-center p-2 bg-gray-50 rounded-md">
+                    <div className="flex items-center">
+                      <div className="p-1.5 rounded-full bg-green-100 text-green-700 mr-2">
+                        <FileTextIcon className="h-4 w-4" />
+                      </div>
+                      <span className="text-sm font-medium">Authors</span>
+                    </div>
+                    <span className="font-bold text-gray-900">5</span>
+                  </div>
                 </div>
+                <Button 
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                  onClick={() => navigate('/admin/users')}
+                >
+                  <UsersIcon className="mr-2 h-4 w-4" />
+                  Manage Users
+                </Button>
               </CardContent>
             </Card>
             
