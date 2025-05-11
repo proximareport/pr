@@ -112,6 +112,8 @@ function Advertise() {
   });
   
   const onSubmit = (data: AdFormValues) => {
+    console.log("Form submitted with data:", data);
+    
     if (!isAuthenticated) {
       toast({
         title: "Authentication Required",
@@ -161,7 +163,11 @@ function Advertise() {
                   <LoadingSpinner />
                 ) : (
                   <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                    <form onSubmit={(e) => {
+                      e.preventDefault();
+                      console.log("Form submitted, calling form.handleSubmit");
+                      form.handleSubmit(onSubmit)(e);
+                    }} className="space-y-6">
                       <FormField
                         control={form.control}
                         name="title"
