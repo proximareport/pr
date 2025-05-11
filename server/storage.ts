@@ -384,45 +384,91 @@ export class DatabaseStorage implements IStorage {
 
   async updateArticle(id: number, data: Partial<Article>): Promise<Article | undefined> {
     try {
-      // Get the existing article to see what fields we can safely update
-      const existingArticle = await this.getArticleById(id);
-      if (!existingArticle) {
-        return undefined;
+      // Let's use a different approach with a direct SQL update
+      // to avoid schema mismatches between code and database
+      
+      // Prepare fields we want to update
+      const updates: string[] = [];
+      const values: any[] = [];
+      let paramIndex = 1;
+      
+      // Add each field that's defined
+      if (data.title !== undefined) {
+        updates.push(`title = $${paramIndex++}`);
+        values.push(data.title);
       }
       
-      // Create update object with only fields that match the database schema
-      const updateData: Record<string, any> = {
-        updated_at: new Date()
-      };
-      
-      // Map fields to their database column names
-      if (data.title !== undefined) updateData.title = data.title;
-      if (data.slug !== undefined) updateData.slug = data.slug;
-      if (data.summary !== undefined) updateData.summary = data.summary;
-      if (data.content !== undefined) updateData.content = data.content;
-      if (data.featuredImage !== undefined) updateData.featured_image = data.featuredImage;
-      if (data.isBreaking !== undefined) updateData.is_breaking = data.isBreaking;
-      if (data.readTime !== undefined) updateData.read_time = data.readTime;
-      if (data.tags !== undefined) updateData.tags = data.tags;
-      if (data.category !== undefined) updateData.category = data.category;
-      if (data.status !== undefined) updateData.status = data.status;
-      
-      // Execute a raw SQL update to avoid schema mapping issues
-      const result = await db.execute(
-        `UPDATE articles
-         SET ${Object.entries(updateData).map(([key, _]) => `${key} = $${key}`).join(', ')}
-         WHERE id = $id
-         RETURNING *`,
-        { 
-          ...updateData,
-          id
-        }
-      );
-      
-      const rows = result.rows;
-      if (rows && rows.length > 0) {
-        return rows[0] as Article;
+      if (data.slug !== undefined) {
+        updates.push(`slug = $${paramIndex++}`);
+        values.push(data.slug);
       }
+      
+      if (data.summary !== undefined) {
+        updates.push(`summary = $${paramIndex++}`);
+        values.push(data.summary);
+      }
+      
+      if (data.content !== undefined) {
+        updates.push(`content = $${paramIndex++}`);
+        values.push(data.content);
+      }
+      
+      if (data.featuredImage !== undefined) {
+        updates.push(`featured_image = $${paramIndex++}`);
+        values.push(data.featuredImage);
+      }
+      
+      if (data.isBreaking !== undefined) {
+        updates.push(`is_breaking = $${paramIndex++}`);
+        values.push(data.isBreaking);
+      }
+      
+      if (data.readTime !== undefined) {
+        updates.push(`read_time = $${paramIndex++}`);
+        values.push(data.readTime);
+      }
+      
+      if (data.tags !== undefined) {
+        updates.push(`tags = $${paramIndex++}`);
+        values.push(data.tags);
+      }
+      
+      if (data.category !== undefined) {
+        updates.push(`category = $${paramIndex++}`);
+        values.push(data.category);
+      }
+      
+      if (data.status !== undefined) {
+        updates.push(`status = $${paramIndex++}`);
+        values.push(data.status);
+      }
+      
+      // Always update the timestamp
+      updates.push(`updated_at = $${paramIndex++}`);
+      values.push(new Date());
+      
+      // Add the ID as the last parameter
+      values.push(id);
+      
+      // If no fields to update, just return the original article
+      if (updates.length === 0) {
+        return this.getArticleById(id);
+      }
+      
+      // Create and execute the SQL query
+      const sql = `
+        UPDATE articles 
+        SET ${updates.join(', ')} 
+        WHERE id = $${values.length} 
+        RETURNING *
+      `;
+      
+      const result = await pool.query(sql, values);
+      
+      if (result.rows.length > 0) {
+        return result.rows[0] as Article;
+      }
+      
       return undefined;
     } catch (error) {
       console.error("Error in updateArticle:", error);
