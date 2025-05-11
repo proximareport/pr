@@ -405,6 +405,25 @@ function AdminArticleEditor() {
     }
   };
   
+  // Handle media selection from the library for featured image
+  const handleFeaturedImageSelect = (media: any) => {
+    if (media.fileType === 'image') {
+      setFeaturedImage(media.fileUrl);
+      scheduleAutosave();
+      
+      toast({
+        title: "Image selected",
+        description: "Featured image selected from media library.",
+      });
+    } else {
+      toast({
+        title: "Invalid selection",
+        description: "Please select an image file for the featured image.",
+        variant: "destructive",
+      });
+    }
+  };
+  
   // Redirect if not admin
   useEffect(() => {
     if (!isAdmin) {
@@ -745,7 +764,7 @@ function AdminArticleEditor() {
       {/* Featured Image */}
       <EditorSideCard
         title="Featured Image"
-        description="Upload an image to display with your article"
+        description="Upload or select an image to display with your article"
       >
         <div className="space-y-4">
           {featuredImage ? (
@@ -769,44 +788,87 @@ function AdminArticleEditor() {
                 >
                   Remove
                 </Button>
-                <label className="inline-flex cursor-pointer">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="cursor-pointer"
-                    disabled={imageUploading}
-                  >
-                    <UploadIcon className="h-4 w-4 mr-2" />
-                    {imageUploading ? 'Uploading...' : 'Replace'}
-                  </Button>
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    disabled={imageUploading}
+                <div className="flex space-x-2">
+                  <MediaSelector
+                    onSelect={handleFeaturedImageSelect}
+                    allowedTypes={["image"]}
+                    triggerComponent={
+                      <Button 
+                        type="button" 
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-1"
+                      >
+                        <ImageIcon className="h-4 w-4 mr-1" />
+                        Media Library
+                      </Button>
+                    }
                   />
-                </label>
+                  <label className="inline-flex cursor-pointer">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="cursor-pointer"
+                      disabled={imageUploading}
+                    >
+                      <UploadIcon className="h-4 w-4 mr-2" />
+                      {imageUploading ? 'Uploading...' : 'Upload New'}
+                    </Button>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={imageUploading}
+                    />
+                  </label>
+                </div>
               </div>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-4">
               <div className="flex justify-center items-center aspect-video rounded-md border border-dashed border-white/20 bg-gray-800/50">
-                <label className="cursor-pointer">
-                  <div className="flex flex-col items-center space-y-2 p-4">
-                    <UploadIcon className="h-8 w-8 text-white/60" />
-                    <span className="text-sm font-medium">Upload Image</span>
-                    <span className="text-xs text-white/60">Click to browse or drop your file</span>
+                <div className="flex flex-col items-center space-y-4 p-4">
+                  <UploadIcon className="h-8 w-8 text-white/60" />
+                  <span className="text-sm font-medium">Add Featured Image</span>
+                  <div className="flex space-x-2">
+                    <MediaSelector
+                      onSelect={handleFeaturedImageSelect}
+                      allowedTypes={["image"]}
+                      triggerComponent={
+                        <Button 
+                          type="button" 
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-1"
+                        >
+                          <ImageIcon className="h-4 w-4 mr-1" />
+                          Select from Media
+                        </Button>
+                      }
+                    />
+                    <label className="inline-flex cursor-pointer">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="cursor-pointer"
+                        disabled={imageUploading}
+                      >
+                        <UploadIcon className="h-4 w-4 mr-1" />
+                        Upload New
+                      </Button>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        disabled={imageUploading}
+                      />
+                    </label>
                   </div>
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    disabled={imageUploading}
-                  />
-                </label>
+                </div>
               </div>
               {imageUploading && (
                 <div className="w-full bg-gray-700 rounded-full h-2.5">
