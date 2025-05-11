@@ -2,6 +2,7 @@ import { useState } from "react";
 import AstronomyPortal from "@/components/astronomy/AstronomyPortal";
 import CelestialSkyMap from "@/components/astronomy/CelestialSkyMap";
 import CelestialEvents from "@/components/astronomy/CelestialEvents";
+import Advertisement from "@/components/Advertisement";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -126,6 +127,12 @@ function Astronomy() {
             <div className="lg:col-span-1 space-y-8">
               {/* Upcoming Celestial Events from In-The-Sky.org */}
               <CelestialEvents />
+              
+              {/* Advertisement */}
+              <div className="bg-[#14141E] rounded-lg border border-white/10 p-5">
+                <h3 className="text-lg font-bold mb-4">Sponsored</h3>
+                <Advertisement placement="astronomy_sidebar" />
+              </div>
               
               <Card className="bg-[#14141E] border-white/10">
                 <CardHeader className="pb-2">

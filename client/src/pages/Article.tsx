@@ -255,6 +255,12 @@ function Article({ params }: ArticleProps) {
                     activeHeadingId={activeHeadingId}
                   />
                 )}
+                
+                {/* Advertisement - Left Sidebar */}
+                <div className="mt-8 mb-6">
+                  <h3 className="text-lg font-bold mb-4">Sponsored</h3>
+                  <Advertisement placement="article_sidebar" className="mb-6" />
+                </div>
               </div>
               
               {/* Article Content */}
@@ -265,6 +271,12 @@ function Article({ params }: ArticleProps) {
                 ) : (
                   <ArticleContent article={article} />
                 )}
+                
+                {/* In-article Advertisement */}
+                <div className="my-8 py-5 border-t border-b border-white/10">
+                  <h4 className="text-sm uppercase mb-3 text-white/70">Continue Reading Below</h4>
+                  <Advertisement placement="article_middle" />
+                </div>
                 
                 {/* Comments */}
                 <CommentSection 
