@@ -35,7 +35,8 @@ import {
   CheckCircleIcon,
   AlertTriangleIcon,
   Eye,
-  XCircle
+  XCircle,
+  Settings
 } from 'lucide-react';
 import DraftManagement from './DraftManagement';
 import PublishedContent from './PublishedContent';
@@ -76,57 +77,80 @@ function AdminDashboard() {
   
   const renderArticleTable = (filteredArticles: Article[]) => {
     if (!filteredArticles || filteredArticles.length === 0) {
-      return <div className="text-center py-8 text-gray-500">No articles found</div>;
+      return (
+        <div className="text-center py-12 px-4 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+          <div className="flex flex-col items-center justify-center">
+            <FileTextIcon className="h-12 w-12 text-gray-300 mb-3" />
+            <h3 className="text-lg font-medium text-gray-900 mb-1">No articles found</h3>
+            <p className="text-gray-500 mb-4 max-w-md text-center">There are no articles matching the selected criteria.</p>
+            <Button onClick={() => navigate('/admin/articles/new')} className="bg-primary hover:bg-primary/90">
+              <PlusIcon className="h-4 w-4 mr-2" />
+              Create New Article
+            </Button>
+          </div>
+        </div>
+      );
     }
 
     return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Title</TableHead>
-            <TableHead>Author</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Last Updated</TableHead>
-            <TableHead>Published</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filteredArticles.map((article: Article) => (
-            <TableRow key={article.id}>
-              <TableCell className="font-medium">{article.title}</TableCell>
-              <TableCell>
-                {article.authors && article.authors.map((author, idx) => (
-                  <span key={author.user.id}>
-                    {author.user.username}
-                    {idx < article.authors!.length - 1 ? ', ' : ''}
-                  </span>
-                ))}
-              </TableCell>
-              <TableCell>{getStatusBadge(article.status)}</TableCell>
-              <TableCell>{formatDate(article.updatedAt)}</TableCell>
-              <TableCell>{formatDate(article.publishedAt)}</TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end space-x-2">
-                  <Button asChild size="sm" variant="ghost">
-                    <Link href={`/article/${article.slug}`}>
-                      <Eye className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                  <Button asChild size="sm" variant="ghost">
-                    <Link href={`/admin/edit-article/${article.id}`}>
-                      <FileEditIcon className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => openStatusDialog(article)}>
-                    <CheckCircleIcon className="h-4 w-4" />
-                  </Button>
-                </div>
-              </TableCell>
+      <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
+        <Table>
+          <TableHeader className="bg-gray-50">
+            <TableRow className="border-b border-gray-200 hover:bg-transparent">
+              <TableHead className="font-semibold text-gray-700">Title</TableHead>
+              <TableHead className="font-semibold text-gray-700">Author</TableHead>
+              <TableHead className="font-semibold text-gray-700">Status</TableHead>
+              <TableHead className="font-semibold text-gray-700">Last Updated</TableHead>
+              <TableHead className="font-semibold text-gray-700">Published</TableHead>
+              <TableHead className="text-right font-semibold text-gray-700">Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {filteredArticles.map((article: Article) => (
+              <TableRow key={article.id} className="hover:bg-gray-50 border-b border-gray-100 transition-colors">
+                <TableCell className="font-medium text-gray-900">
+                  <div className="max-w-md truncate">{article.title}</div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">
+                    {article.authors && article.authors.map((author, idx) => (
+                      <span key={author.user.id} className="inline-flex items-center px-2 py-1 bg-gray-100 text-xs rounded-full font-medium text-gray-700">
+                        {author.user.username}
+                      </span>
+                    ))}
+                  </div>
+                </TableCell>
+                <TableCell>{getStatusBadge(article.status)}</TableCell>
+                <TableCell className="text-gray-600">{formatDate(article.updatedAt)}</TableCell>
+                <TableCell className="text-gray-600">{formatDate(article.publishedAt)}</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end space-x-1">
+                    <Button asChild size="sm" variant="outline" className="h-8 w-8 p-0 rounded-full">
+                      <Link href={`/article/${article.slug}`} title="View Article">
+                        <Eye className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                    <Button asChild size="sm" variant="outline" className="h-8 w-8 p-0 rounded-full">
+                      <Link href={`/admin/edit-article/${article.id}`} title="Edit Article">
+                        <FileEditIcon className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="h-8 w-8 p-0 rounded-full" 
+                      onClick={() => openStatusDialog(article)}
+                      title="Change Status"
+                    >
+                      <CheckCircleIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     );
   };
   
@@ -138,7 +162,7 @@ function AdminDashboard() {
   });
   
   // Fetch all articles for content status tab
-  const { data: articles = [], isLoading: articlesLoading } = useQuery({
+  const { data: articles = [], isLoading: articlesLoading } = useQuery<Article[]>({
     queryKey: ['/api/articles/all'],
     retry: false,
     enabled: !!isAdmin
@@ -240,10 +264,13 @@ function AdminDashboard() {
     <div className="container py-8">
       {/* Status Update Dialog */}
       <Dialog open={!!selectedArticle} onOpenChange={(open) => !open && setSelectedArticle(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle>Update Article Status</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-xl flex items-center">
+              <CheckCircleIcon className="text-primary h-5 w-5 mr-2" />
+              Update Article Status
+            </DialogTitle>
+            <DialogDescription className="text-base font-medium text-gray-700 mt-1">
               {selectedArticle?.title}
             </DialogDescription>
           </DialogHeader>
@@ -252,55 +279,80 @@ function AdminDashboard() {
             <RadioGroup
               value={selectedStatus}
               onValueChange={setSelectedStatus}
-              className="space-y-3"
+              className="space-y-4"
             >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="draft" id="draft" />
-                <Label htmlFor="draft" className="flex items-center">
-                  <Badge className="ml-2 bg-gray-100 text-gray-800 border-gray-200">Draft</Badge>
-                  <span className="ml-2">Work in progress</span>
+              <div className={`flex items-start p-3 rounded-lg ${selectedStatus === 'draft' ? 'bg-gray-50 border border-gray-200' : 'hover:bg-gray-50'} cursor-pointer`} onClick={() => setSelectedStatus('draft')}>
+                <RadioGroupItem value="draft" id="draft" className="mt-1" />
+                <Label htmlFor="draft" className="flex flex-col ml-3 cursor-pointer">
+                  <div className="flex items-center">
+                    <Badge className="bg-gray-100 text-gray-800 border-gray-200 font-medium">Draft</Badge>
+                  </div>
+                  <span className="mt-1 text-sm text-gray-600">Work in progress. Article is being developed and is not visible to the public.</span>
                 </Label>
               </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="needs_edits" id="needs_edits" />
-                <Label htmlFor="needs_edits" className="flex items-center">
-                  <Badge className="ml-2 bg-yellow-100 text-yellow-800 border-yellow-200">Needs Edits</Badge>
-                  <span className="ml-2">Requires revisions before publishing</span>
+              
+              <div className={`flex items-start p-3 rounded-lg ${selectedStatus === 'needs_edits' ? 'bg-yellow-50 border border-yellow-200' : 'hover:bg-gray-50'} cursor-pointer`} onClick={() => setSelectedStatus('needs_edits')}>
+                <RadioGroupItem value="needs_edits" id="needs_edits" className="mt-1" />
+                <Label htmlFor="needs_edits" className="flex flex-col ml-3 cursor-pointer">
+                  <div className="flex items-center">
+                    <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 font-medium">Needs Edits</Badge>
+                  </div>
+                  <span className="mt-1 text-sm text-gray-600">Article requires revisions before it can be approved for publication.</span>
                 </Label>
               </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="good_to_publish" id="good_to_publish" />
-                <Label htmlFor="good_to_publish" className="flex items-center">
-                  <Badge className="ml-2 bg-blue-100 text-blue-800 border-blue-200">Good to Publish</Badge>
-                  <span className="ml-2">Ready for publication</span>
+              
+              <div className={`flex items-start p-3 rounded-lg ${selectedStatus === 'good_to_publish' ? 'bg-blue-50 border border-blue-200' : 'hover:bg-gray-50'} cursor-pointer`} onClick={() => setSelectedStatus('good_to_publish')}>
+                <RadioGroupItem value="good_to_publish" id="good_to_publish" className="mt-1" />
+                <Label htmlFor="good_to_publish" className="flex flex-col ml-3 cursor-pointer">
+                  <div className="flex items-center">
+                    <Badge className="bg-blue-100 text-blue-800 border-blue-200 font-medium">Good to Publish</Badge>
+                  </div>
+                  <span className="mt-1 text-sm text-gray-600">Article has been reviewed and approved for publication.</span>
                 </Label>
               </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="do_not_publish" id="do_not_publish" />
-                <Label htmlFor="do_not_publish" className="flex items-center">
-                  <Badge className="ml-2 bg-red-100 text-red-800 border-red-200">Do Not Publish</Badge>
-                  <span className="ml-2">Content rejected - do not publish</span>
+              
+              <div className={`flex items-start p-3 rounded-lg ${selectedStatus === 'do_not_publish' ? 'bg-red-50 border border-red-200' : 'hover:bg-gray-50'} cursor-pointer`} onClick={() => setSelectedStatus('do_not_publish')}>
+                <RadioGroupItem value="do_not_publish" id="do_not_publish" className="mt-1" />
+                <Label htmlFor="do_not_publish" className="flex flex-col ml-3 cursor-pointer">
+                  <div className="flex items-center">
+                    <Badge className="bg-red-100 text-red-800 border-red-200 font-medium">Do Not Publish</Badge>
+                  </div>
+                  <span className="mt-1 text-sm text-gray-600">Content has been rejected and should not be published.</span>
                 </Label>
               </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="published" id="published" />
-                <Label htmlFor="published" className="flex items-center">
-                  <Badge className="ml-2 bg-green-100 text-green-800 border-green-200">Published</Badge>
-                  <span className="ml-2">Live on the site</span>
+              
+              <div className={`flex items-start p-3 rounded-lg ${selectedStatus === 'published' ? 'bg-green-50 border border-green-200' : 'hover:bg-gray-50'} cursor-pointer`} onClick={() => setSelectedStatus('published')}>
+                <RadioGroupItem value="published" id="published" className="mt-1" />
+                <Label htmlFor="published" className="flex flex-col ml-3 cursor-pointer">
+                  <div className="flex items-center">
+                    <Badge className="bg-green-100 text-green-800 border-green-200 font-medium">Published</Badge>
+                  </div>
+                  <span className="mt-1 text-sm text-gray-600">Article is live and visible to the public on the site.</span>
                 </Label>
               </div>
             </RadioGroup>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSelectedArticle(null)}>
+          <DialogFooter className="flex justify-between sm:justify-end gap-2 mt-2">
+            <Button variant="outline" onClick={() => setSelectedArticle(null)} className="border-gray-300">
               Cancel
             </Button>
             <Button
               onClick={handleStatusUpdate}
               disabled={updateStatusMutation.isPending || selectedStatus === selectedArticle?.status}
+              className={`${selectedStatus === 'published' ? 'bg-green-600 hover:bg-green-700' : selectedStatus === 'do_not_publish' ? 'bg-red-600 hover:bg-red-700' : 'bg-primary hover:bg-primary/90'}`}
             >
-              {updateStatusMutation.isPending ? 'Updating...' : 'Update Status'}
+              {updateStatusMutation.isPending ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <CheckCircleIcon className="h-4 w-4 mr-2" />
+                  Update Status
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -426,19 +478,19 @@ function AdminDashboard() {
                 <div className="flex flex-col space-y-1">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Published</span>
-                    <span className="font-semibold text-gray-900">{articles.filter((a: any) => a.status === 'published').length || 0}</span>
+                    <span className="font-semibold text-gray-900">{(articles as Article[]).filter(a => a.status === 'published').length || 0}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Drafts</span>
-                    <span className="font-semibold text-gray-900">{articles.filter((a: any) => a.status === 'draft').length || 0}</span>
+                    <span className="font-semibold text-gray-900">{(articles as Article[]).filter(a => a.status === 'draft').length || 0}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Ready to publish</span>
-                    <span className="font-semibold text-gray-900">{articles.filter((a: any) => a.status === 'good_to_publish').length || 0}</span>
+                    <span className="font-semibold text-gray-900">{(articles as Article[]).filter(a => a.status === 'good_to_publish').length || 0}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Need review</span>
-                    <span className="font-semibold text-gray-900">{articles.filter((a: any) => a.status === 'needs_edits').length || 0}</span>
+                    <span className="font-semibold text-gray-900">{(articles as Article[]).filter(a => a.status === 'needs_edits').length || 0}</span>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2 mt-5">
