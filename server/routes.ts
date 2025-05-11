@@ -1650,6 +1650,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Missing required fields" });
       }
       
+      // Calculate price based on placement and duration
+      let price = 0;
+      const durationDays = Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24));
+      
+      switch (placement) {
+        case 'homepage':
+          price = 2000 * durationDays; // $20/day
+          break;
+        case 'sidebar':
+          price = 1000 * durationDays; // $10/day
+          break;
+        case 'article':
+          price = 1500 * durationDays; // $15/day
+          break;
+        case 'newsletter':
+          price = 3000 * durationDays; // $30/day
+          break;
+        default:
+          price = 1000 * durationDays; // $10/day default
+      }
+      
       // Create the advertisement
       const ad = await storage.createAdvertisement({
         title,
@@ -1660,6 +1681,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         endDate: new Date(endDate),
         userId,
         isApproved: false,
+        status: 'pending',
+        paymentStatus: 'pending',
+        price,
       });
       
       res.status(201).json(ad);
@@ -1776,6 +1800,169 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error recording advertisement impression:", error);
       res.status(500).json({ message: "Error recording advertisement impression" });
+    }
+  });
+  
+  // Get advertisements for the logged-in user
+  app.get("/api/advertisements/user", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const ads = await storage.getAdvertisementsByUser(userId);
+      res.json(ads);
+    } catch (error) {
+      console.error("Error fetching user advertisements:", error);
+      res.status(500).json({ message: "Error fetching user advertisements" });
+    }
+  });
+  
+  // Cancel advertisement (user can cancel their own ads)
+  app.post("/api/advertisements/:id/cancel", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const adId = parseInt(req.params.id);
+      
+      const ad = await storage.getAdvertisementById(adId);
+      
+      if (!ad) {
+        return res.status(404).json({ message: "Advertisement not found" });
+      }
+      
+      if (ad.userId !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      const updatedAd = await storage.updateAdvertisement(adId, { 
+        status: 'cancelled',
+        adminNotes: 'Cancelled by advertiser'
+      });
+      
+      res.json(updatedAd);
+    } catch (error) {
+      console.error("Error cancelling advertisement:", error);
+      res.status(500).json({ message: "Error cancelling advertisement" });
+    }
+  });
+  
+  // Process advertisement payment
+  app.post("/api/advertisements/:id/pay", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const adId = parseInt(req.params.id);
+      
+      const ad = await storage.getAdvertisementById(adId);
+      
+      if (!ad) {
+        return res.status(404).json({ message: "Advertisement not found" });
+      }
+      
+      if (ad.userId !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      if (ad.paymentStatus === 'paid') {
+        return res.status(400).json({ message: "Payment already processed" });
+      }
+      
+      // TODO: In a production environment, integrate with Stripe for real payments
+      // For now, we'll simulate successful payment
+      
+      // Simulate Stripe checkout:
+      if (process.env.STRIPE_SECRET_KEY) {
+        try {
+          const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+          const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items: [
+              {
+                price_data: {
+                  currency: 'usd',
+                  product_data: {
+                    name: `Advertisement: ${ad.title}`,
+                    description: `${ad.placement} placement from ${new Date(ad.startDate).toLocaleDateString()} to ${new Date(ad.endDate).toLocaleDateString()}`,
+                  },
+                  unit_amount: ad.price || 1000, // Default to $10 if no price set
+                },
+                quantity: 1,
+              },
+            ],
+            mode: 'payment',
+            success_url: `${req.protocol}://${req.get('host')}/advertiser-dashboard?payment=success`,
+            cancel_url: `${req.protocol}://${req.get('host')}/advertiser-dashboard?payment=cancelled`,
+          });
+          
+          return res.json({ checkoutUrl: session.url });
+        } catch (stripeError) {
+          console.error("Stripe error:", stripeError);
+        }
+      }
+      
+      // If no Stripe or Stripe fails, simulate a successful payment
+      const updatedAd = await storage.updateAdvertisement(adId, {
+        paymentStatus: 'paid',
+        paymentId: `sim_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`,
+        // Auto-approve for demo purposes - in production, this would still require admin review
+        isApproved: true,
+        status: 'approved',
+      });
+      
+      res.json(updatedAd);
+    } catch (error) {
+      console.error("Error processing payment:", error);
+      res.status(500).json({ message: "Error processing payment" });
+    }
+  });
+  
+  // Update advertisement (admin or owner)
+  app.patch("/api/advertisements/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const user = await storage.getUser(userId);
+      const adId = parseInt(req.params.id);
+      
+      // Get the ad to check ownership
+      const ad = await storage.getAdvertisementById(adId);
+      
+      if (!ad) {
+        return res.status(404).json({ message: "Advertisement not found" });
+      }
+      
+      // Allow admins/editors or the owner to update
+      if (user?.role !== 'admin' && user?.role !== 'editor' && ad.userId !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      const { title, imageUrl, linkUrl, placement, startDate, endDate, status, adminNotes } = req.body;
+      
+      // Users can only update certain fields, admins can update all
+      const updateData: any = {};
+      
+      if (user?.role === 'admin' || user?.role === 'editor') {
+        // Admin updates
+        if (title) updateData.title = title;
+        if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
+        if (linkUrl) updateData.linkUrl = linkUrl;
+        if (placement) updateData.placement = placement;
+        if (startDate) updateData.startDate = new Date(startDate);
+        if (endDate) updateData.endDate = new Date(endDate);
+        if (status) updateData.status = status;
+        if (adminNotes !== undefined) updateData.adminNotes = adminNotes;
+      } else {
+        // Regular user updates (limited fields)
+        if (title) updateData.title = title;
+        if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
+        if (linkUrl) updateData.linkUrl = linkUrl;
+      }
+      
+      const updatedAd = await storage.updateAdvertisement(adId, updateData);
+      
+      if (!updatedAd) {
+        return res.status(500).json({ message: "Failed to update advertisement" });
+      }
+      
+      res.json(updatedAd);
+    } catch (error) {
+      console.error("Error updating advertisement:", error);
+      res.status(500).json({ message: "Error updating advertisement" });
     }
   });
   

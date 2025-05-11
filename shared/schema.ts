@@ -324,6 +324,11 @@ export const insertAdvertisementSchema = createInsertSchema(advertisements).omit
   createdAt: true,
   impressions: true,
   clicks: true,
+  isApproved: true,
+  status: true,
+  paymentStatus: true,
+  paymentId: true,
+  adminNotes: true,
 });
 
 export const insertApiKeySchema = createInsertSchema(apiKeys).omit({
