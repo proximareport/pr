@@ -773,6 +773,18 @@ export class DatabaseStorage implements IStorage {
     return ad;
   }
   
+  async getAdvertisementsByUser(userId: number): Promise<Advertisement[]> {
+    try {
+      return await db.select()
+        .from(advertisements)
+        .where(eq(advertisements.userId, userId))
+        .orderBy(desc(advertisements.createdAt));
+    } catch (error) {
+      console.error("Error fetching user advertisements:", error);
+      return [];
+    }
+  }
+  
   async deleteAdvertisement(id: number): Promise<boolean> {
     const result = await db
       .delete(advertisements)

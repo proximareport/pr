@@ -69,9 +69,12 @@ function AdvertisementManagement() {
     },
   });
   
+  const [adToReject, setAdToReject] = useState<Advertisement | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  
   const rejectMutation = useMutation({
-    mutationFn: async (adId: number) => {
-      return await apiRequest('POST', `/api/advertisements/${adId}/reject`);
+    mutationFn: async ({ adId, reason }: { adId: number, reason: string }) => {
+      return await apiRequest('POST', `/api/advertisements/${adId}/reject`, { adminNotes: reason });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/advertisements/all'] });
@@ -79,6 +82,8 @@ function AdvertisementManagement() {
         title: 'Success',
         description: 'Advertisement rejected',
       });
+      setAdToReject(null);
+      setRejectReason('');
     },
     onError: () => {
       toast({
