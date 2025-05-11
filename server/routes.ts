@@ -1469,7 +1469,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/advertisements", requireAuth, upload.single('image'), async (req, res) => {
+  // File upload advertisement route
+  app.post("/api/advertisements/upload", requireAuth, upload.single('image'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "Image file is required" });
@@ -1514,6 +1515,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof ZodError) {
         return res.status(400).json({ message: "Invalid input", errors: error.format() });
       }
+      res.status(500).json({ message: "Error creating advertisement" });
+    }
+  });
+  
+  // JSON API advertisement route with optional imageUrl
+  app.post("/api/advertisements", requireAuth, async (req, res) => {
+    try {
+      // Validate request
+      const { title, imageUrl, linkUrl, placement, startDate, endDate, userId } = req.body;
+      
+      if (!title || !linkUrl || !placement || !startDate || !endDate) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      // Calculate price based on placement and duration
+      let price = 0;
+      const durationDays = Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24));
+      
+      switch (placement) {
+        case 'homepage':
+          price = 2000 * durationDays; // $20/day
+          break;
+        case 'sidebar':
+          price = 1000 * durationDays; // $10/day
+          break;
+        case 'article':
+          price = 1500 * durationDays; // $15/day
+          break;
+        case 'newsletter':
+          price = 3000 * durationDays; // $30/day
+          break;
+        default:
+          price = 1000 * durationDays; // $10/day default
+      }
+      
+      // Create the advertisement with status fields
+      const adData = {
+        title,
+        imageUrl,
+        linkUrl,
+        placement,
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        userId: userId || req.session.userId,
+        price,
+      };
+      
+      const ad = await storage.createAdvertisementWithStatus({
+        ...adData,
+        isApproved: false,
+        status: 'pending',
+        paymentStatus: 'pending',
+      });
+      
+      res.status(201).json(ad);
+    } catch (error) {
+      console.error("Error creating advertisement:", error);
       res.status(500).json({ message: "Error creating advertisement" });
     }
   });
@@ -1638,65 +1696,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Create advertisement
-  app.post("/api/advertisements", requireAuth, async (req, res) => {
-    try {
-      const userId = req.session.userId!;
-      
-      const { title, imageUrl, linkUrl, placement, startDate, endDate } = req.body;
-      
-      // Validate request
-      if (!title || !linkUrl || !placement || !startDate || !endDate) {
-        return res.status(400).json({ message: "Missing required fields" });
-      }
-      
-      // Calculate price based on placement and duration
-      let price = 0;
-      const durationDays = Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24));
-      
-      switch (placement) {
-        case 'homepage':
-          price = 2000 * durationDays; // $20/day
-          break;
-        case 'sidebar':
-          price = 1000 * durationDays; // $10/day
-          break;
-        case 'article':
-          price = 1500 * durationDays; // $15/day
-          break;
-        case 'newsletter':
-          price = 3000 * durationDays; // $30/day
-          break;
-        default:
-          price = 1000 * durationDays; // $10/day default
-      }
-      
-      // Create the advertisement with base fields
-      const adData: any = {
-        title,
-        imageUrl,
-        linkUrl,
-        placement,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-        userId,
-        price,
-      };
-      
-      // Add status fields directly to the database query
-      const ad = await storage.createAdvertisementWithStatus({
-        ...adData,
-        isApproved: false,
-        status: 'pending',
-        paymentStatus: 'pending',
-      });
-      
-      res.status(201).json(ad);
-    } catch (error) {
-      console.error("Error creating advertisement:", error);
-      res.status(500).json({ message: "Error creating advertisement" });
-    }
-  });
+  // URL for create advertisement is maintained in our already defined route above
   
   // Approve advertisement (admin only)
   app.post("/api/advertisements/:id/approve", requireAuth, async (req, res) => {
