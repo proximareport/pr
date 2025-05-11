@@ -88,25 +88,31 @@ function AdvertiserDashboard() {
   // Function to create a checkout session for an ad
   const checkoutMutation = useMutation({
     mutationFn: async (adId: number) => {
-      return await apiRequest('POST', `/api/advertisements/${adId}/checkout`);
+      const response = await apiRequest('POST', `/api/advertisements/${adId}/checkout`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create checkout session');
+      }
+      return await response.json();
     },
-    onSuccess: async (response) => {
-      const data = await response.json();
+    onSuccess: (data) => {
+      // If we have a checkout URL, redirect the user to it
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
       } else {
+        // If there's no checkout URL (e.g. in dev mode without Stripe), refresh the page
+        queryClient.invalidateQueries({ queryKey: ['/api/advertisements/user'] });
         toast({
-          title: 'Error',
-          description: 'Failed to create checkout session',
-          variant: 'destructive',
+          title: "Success",
+          description: "Payment processed successfully.",
         });
       }
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
-        title: 'Error',
-        description: 'Failed to create checkout session',
-        variant: 'destructive',
+        title: "Error",
+        description: error.message || "Failed to process payment. Please try again.",
+        variant: "destructive",
       });
     },
   });
@@ -237,7 +243,7 @@ function AdvertiserDashboard() {
                 <CardTitle className="text-sm font-medium text-gray-500">Total Ads</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{advertisements?.length || 0}</div>
+                <div className="text-3xl font-bold">{advertisements ? (advertisements as Advertisement[]).length : 0}</div>
               </CardContent>
             </Card>
             
@@ -256,7 +262,7 @@ function AdvertiserDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-blue-600">
-                  {advertisements?.reduce((sum: number, ad: Advertisement) => sum + (ad.impressions || 0), 0)}
+                  {advertisements ? (advertisements as Advertisement[]).reduce((sum, ad) => sum + (ad.impressions || 0), 0) : 0}
                 </div>
               </CardContent>
             </Card>
@@ -267,7 +273,7 @@ function AdvertiserDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-purple-600">
-                  {advertisements?.reduce((sum: number, ad: Advertisement) => sum + (ad.clicks || 0), 0)}
+                  {advertisements ? (advertisements as Advertisement[]).reduce((sum, ad) => sum + (ad.clicks || 0), 0) : 0}
                 </div>
               </CardContent>
             </Card>
@@ -291,7 +297,7 @@ function AdvertiserDashboard() {
                 </CardHeader>
                 <CardContent>
                   <AdTable 
-                    advertisements={advertisements || []} 
+                    advertisements={advertisements ? (advertisements as Advertisement[]) : []} 
                     formatPrice={formatPrice}
                     getStatusBadge={getStatusBadge}
                     getPlacementName={getPlacementName}
