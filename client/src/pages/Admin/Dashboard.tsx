@@ -261,7 +261,7 @@ function AdminDashboard() {
   }
 
   return (
-    <div className="container py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
       {/* Status Update Dialog */}
       <Dialog open={!!selectedArticle} onOpenChange={(open) => !open && setSelectedArticle(null)}>
         <DialogContent className="max-w-xl">
@@ -358,15 +358,28 @@ function AdminDashboard() {
         </DialogContent>
       </Dialog>
       
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-8 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div className="text-center sm:text-left mb-4 sm:mb-0">
+          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
           <p className="text-gray-500 mt-1">Manage your content, users, and site settings</p>
         </div>
-        <Button className="bg-primary hover:bg-primary/90" onClick={() => navigate('/admin/articles/new')}>
-          <PlusIcon className="h-4 w-4 mr-2" />
-          New Article
-        </Button>
+        <div className="flex gap-3">
+          <Button 
+            className="bg-primary hover:bg-primary/90 shadow-sm transition-all"
+            onClick={() => navigate('/admin/articles/new')}
+          >
+            <PlusIcon className="h-4 w-4 mr-2" />
+            New Article
+          </Button>
+          <Button 
+            variant="outline"
+            className="border-gray-200 hover:bg-gray-50 transition-all"
+            onClick={() => navigate('/admin/settings')}
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Settings
+          </Button>
+        </div>
       </div>
 
       <Tabs 
@@ -379,37 +392,74 @@ function AdminDashboard() {
           window.history.pushState({}, '', newUrl.toString());
         }}
       >
-        <TabsList className="grid w-full grid-cols-6 mb-6 bg-white shadow-sm rounded-lg p-1">
-          <TabsTrigger value="overview" className="rounded-md data-[state=active]:bg-primary data-[state=active]:text-white">
-            <BarChart3Icon className="h-4 w-4 mr-1.5" />
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="content" className="rounded-md data-[state=active]:bg-primary data-[state=active]:text-white">
-            <FileTextIcon className="h-4 w-4 mr-1.5" />
-            Content
-          </TabsTrigger>
-          <TabsTrigger value="advertisements" className="rounded-md data-[state=active]:bg-primary data-[state=active]:text-white flex items-center">
-            <DollarSignIcon className="h-4 w-4 mr-1.5 text-green-600" />
-            Ad Management
-            {pendingAdsCount > 0 && (
-              <span className="ml-1.5 bg-red-100 text-red-800 text-xs font-semibold px-1.5 py-0.5 rounded-full">
-                {pendingAdsCount}
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="users" className="rounded-md data-[state=active]:bg-primary data-[state=active]:text-white">
-            <UsersIcon className="h-4 w-4 mr-1.5" />
-            Users
-          </TabsTrigger>
-          <TabsTrigger value="media" className="rounded-md data-[state=active]:bg-primary data-[state=active]:text-white">
-            <ImageIcon className="h-4 w-4 mr-1.5" />
-            Media
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="rounded-md data-[state=active]:bg-primary data-[state=active]:text-white">
-            <Settings className="h-4 w-4 mr-1.5" />
-            Settings
-          </TabsTrigger>
-        </TabsList>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-2 mb-8">
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 gap-2">
+            <TabsTrigger 
+              value="overview" 
+              className="py-3 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg transition-all"
+            >
+              <div className="flex flex-col items-center sm:flex-row sm:justify-center">
+                <BarChart3Icon className="h-5 w-5 sm:mr-2 mb-1 sm:mb-0" />
+                <span>Overview</span>
+              </div>
+            </TabsTrigger>
+            
+            <TabsTrigger 
+              value="content" 
+              className="py-3 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg transition-all"
+            >
+              <div className="flex flex-col items-center sm:flex-row sm:justify-center">
+                <FileTextIcon className="h-5 w-5 sm:mr-2 mb-1 sm:mb-0" />
+                <span>Content</span>
+              </div>
+            </TabsTrigger>
+            
+            <TabsTrigger 
+              value="advertisements" 
+              className="py-3 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg transition-all"
+            >
+              <div className="flex flex-col items-center sm:flex-row sm:justify-center relative">
+                <DollarSignIcon className="h-5 w-5 sm:mr-2 mb-1 sm:mb-0 text-green-600" />
+                <span>Ads</span>
+                {pendingAdsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 sm:right-auto sm:-top-1 sm:-left-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                    {pendingAdsCount}
+                  </span>
+                )}
+              </div>
+            </TabsTrigger>
+            
+            <TabsTrigger 
+              value="users" 
+              className="py-3 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg transition-all"
+            >
+              <div className="flex flex-col items-center sm:flex-row sm:justify-center">
+                <UsersIcon className="h-5 w-5 sm:mr-2 mb-1 sm:mb-0" />
+                <span>Users</span>
+              </div>
+            </TabsTrigger>
+            
+            <TabsTrigger 
+              value="media" 
+              className="py-3 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg transition-all"
+            >
+              <div className="flex flex-col items-center sm:flex-row sm:justify-center">
+                <ImageIcon className="h-5 w-5 sm:mr-2 mb-1 sm:mb-0" />
+                <span>Media</span>
+              </div>
+            </TabsTrigger>
+            
+            <TabsTrigger 
+              value="settings" 
+              className="py-3 data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg transition-all"
+            >
+              <div className="flex flex-col items-center sm:flex-row sm:justify-center">
+                <Settings className="h-5 w-5 sm:mr-2 mb-1 sm:mb-0" />
+                <span>Settings</span>
+              </div>
+            </TabsTrigger>
+          </TabsList>
+        </div>
         
         <TabsContent value="overview" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
