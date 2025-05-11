@@ -1050,40 +1050,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Only admins can create articles" });
       }
       
-      // Custom validation for the content field to handle different formats
-      const contentValidator = z.union([
-        z.array(z.any()), // Accept array format for Google Docs-style editor
-        z.record(z.any()), // Accept object format for other editors
-      ]);
+      // Get the current user ID
+      const userId = req.session.userId!;
       
-      // Create a schema that completely ignores publishedAt in validation
-      // We'll handle it separately
-      const modifiedSchema = insertArticleSchema
-        .omit({ publishedAt: true })
-        .extend({
-          content: contentValidator,
-        });
+      // Preprocess the request data
+      const requestData = {...req.body};
       
-      // Parse and validate (without publishedAt)
-      const articleData = modifiedSchema.parse(req.body);
+      // Handle content field - handle different formats including string HTML from rich text editor
+      if (typeof requestData.content === 'string') {
+        // Convert string HTML to content object
+        requestData.content = { content: requestData.content };
+      }
+      
+      // Set primaryAuthorId from session
+      requestData.primaryAuthorId = userId;
+      
+      // Log the processed request data
+      console.log('Processed article request data:', JSON.stringify(requestData, null, 2));
       
       // Handle publishedAt separately - convert from ISO string to Date
       let publishedAt = undefined;
-      if (req.body.publishedAt) {
+      if (requestData.publishedAt) {
         try {
-          publishedAt = new Date(req.body.publishedAt);
+          publishedAt = new Date(requestData.publishedAt);
         } catch (e) {
           console.error("Invalid publishedAt date:", e);
         }
       }
       
       // Extract authors data from the request if present
-      const { authors } = req.body;
+      const { authors } = requestData;
       
+      // Create the article with manual validation instead of schema
       const newArticle = await storage.createArticle({
-        ...articleData,
+        title: requestData.title,
+        slug: requestData.slug,
+        summary: requestData.summary || '',
+        content: requestData.content,
         publishedAt,
-        primaryAuthorId: req.session.userId!,
+        primaryAuthorId: userId,
+        category: requestData.category,
+        status: requestData.status || 'draft',
+        featuredImage: requestData.featuredImage || '',
+        isBreaking: requestData.isBreaking || false,
+        readTime: requestData.readTime || 5,
+        tags: requestData.tags || [],
+        isCollaborative: requestData.isCollaborative || false,
         // Pass authors array to the storage method if it exists
         authors: authors && Array.isArray(authors) ? authors : undefined
       });
