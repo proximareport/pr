@@ -1,39 +1,74 @@
 import React from 'react';
-import { AlertCircle, Wrench, Shield } from 'lucide-react';
+import { AlertCircle, Wrench, Shield, Clock, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 const MaintenanceMode: React.FC = () => {
+  // Get current date for display
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
+  const refreshPage = () => {
+    window.location.reload();
+  };
+
   return (
-    <div className="fixed inset-0 bg-slate-900 bg-opacity-95 z-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-card p-8 rounded-lg shadow-lg">
-        <div className="flex flex-col items-center text-center space-y-4">
-          <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
+    <div className="fixed inset-0 bg-gradient-to-br from-slate-900 to-slate-800 z-50 flex items-center justify-center p-4">
+      <Card className="max-w-md w-full bg-card/95 border-primary/20 shadow-xl backdrop-blur-sm">
+        <CardHeader className="pb-0">
+          <div className="mx-auto mb-4 h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
             <Wrench className="h-10 w-10 text-primary" />
           </div>
-          
-          <h1 className="text-2xl font-bold text-foreground">Site Under Maintenance</h1>
-          
-          <p className="text-muted-foreground">
-            We're currently performing scheduled maintenance on our systems to enhance your experience.
-            Please check back soon.
+          <CardTitle className="text-2xl text-center">Site Under Maintenance</CardTitle>
+          <CardDescription className="text-center">
+            <Badge variant="outline" className="mt-2 bg-amber-500/10 text-amber-400 border-amber-400/30">
+              <Clock className="mr-1 h-3 w-3" /> Scheduled Maintenance
+            </Badge>
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent className="space-y-4">
+          <p className="text-center text-muted-foreground">
+            We're currently upgrading our systems to bring you an improved experience.
+            Thank you for your patience.
           </p>
           
-          <div className="bg-slate-800 p-4 rounded-md w-full mt-4">
-            <div className="flex items-center space-x-2 text-amber-400 mb-2">
+          <div className="border border-primary/10 bg-primary/5 p-4 rounded-md w-full">
+            <div className="flex items-center space-x-2 text-primary mb-2">
               <AlertCircle className="h-5 w-5" />
-              <span className="font-medium">Estimated Downtime</span>
+              <span className="font-medium">Maintenance Details</span>
             </div>
-            <p className="text-slate-300 text-sm">
-              Our team is working to complete maintenance as quickly as possible.
-              The site should be back online shortly.
+            <p className="text-sm">
+              Our team is working to complete the scheduled maintenance as quickly as possible.
+              The site will be back online shortly with all services fully operational.
             </p>
+            <div className="mt-2 text-xs text-muted-foreground">
+              {currentDate}
+            </div>
           </div>
+        </CardContent>
+        
+        <CardFooter className="flex flex-col gap-3">
+          <Button 
+            variant="outline" 
+            className="w-full" 
+            onClick={refreshPage}
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Check Again
+          </Button>
           
-          <div className="flex items-center justify-center space-x-2 text-muted-foreground text-sm mt-6">
-            <Shield className="h-4 w-4" />
-            <span>Admin users can still access the site</span>
+          <div className="flex items-center justify-center space-x-2 text-muted-foreground text-xs">
+            <Shield className="h-3 w-3" />
+            <span>Administrators have full access during maintenance</span>
           </div>
-        </div>
-      </div>
+        </CardFooter>
+      </Card>
     </div>
   );
 };

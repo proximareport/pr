@@ -70,24 +70,52 @@ const CACHE_TTL = 60 * 60 * 1000; // 1 hour in milliseconds
 
 // Maintenance mode middleware
 const checkMaintenanceMode = async (req: Request, res: Response, next: NextFunction) => {
-  // Skip maintenance mode check for admin routes and API routes used by the admin dashboard
-  if (req.path.startsWith('/api/site-settings') || 
-      req.path.startsWith('/api/auth') || 
-      req.path === '/api/login' || 
-      req.path === '/api/me' ||
-      req.path.startsWith('/admin')) {
+  // Always allow access to authentication endpoints
+  if (req.path === '/api/login' || 
+      req.path === '/api/logout' ||
+      req.path === '/api/me') {
     return next();
   }
 
   try {
+    // Check if user is admin
+    const isAdmin = req.session && req.session.isAdmin === true;
+    
+    // Admin users can always access everything
+    if (isAdmin) {
+      return next();
+    }
+    
+    // Skip maintenance check for admin login and authentication routes
+    if (req.path.startsWith('/api/auth') || 
+        req.path.startsWith('/admin')) {
+      return next();
+    }
+
+    // Check maintenance mode setting
     const settings = await storage.getSiteSettings();
     
-    if (settings && settings.maintenanceMode && !req.session.isAdmin) {
-      return res.status(503).json({ 
-        message: "Maintenance Mode", 
-        description: "The site is currently under maintenance. Please try again later." 
-      });
+    if (settings && settings.maintenanceMode) {
+      if (req.path.startsWith('/api/')) {
+        // API route - return JSON response
+        return res.status(503).json({ 
+          message: "Maintenance Mode", 
+          description: "The site is currently under maintenance. Please try again later." 
+        });
+      } else {
+        // Client-side will handle displaying the maintenance mode UI
+        // Just make sure the settings are accessible to the client
+        if (req.path === '/api/site-settings') {
+          return next();
+        }
+        return res.status(503).json({ 
+          maintenanceMode: true,
+          message: "The site is currently under maintenance. Please try again later." 
+        });
+      }
     }
+    
+    // Not in maintenance mode, proceed normally
     next();
   } catch (error) {
     console.error("Error checking maintenance mode:", error);
