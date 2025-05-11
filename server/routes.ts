@@ -930,14 +930,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If article is a draft, enforce access control
       if (isDraft) {
-        // Check if this is a preview request, otherwise reject
-        if (!isPreview) {
+        // For authenticated users in the editor
+        const isFromEditorUI = req.originalUrl.includes('/api/articles/');
+        
+        // If this is an API request from the editor, allow access for authenticated users
+        // Otherwise, it needs to be a preview request for public access
+        if (!isFromEditorUI && !isPreview) {
           return res.status(404).json({ message: "Article not found" });
         }
         
-        // For preview mode, check authentication through session
+        // Check authentication through session
         if (!req.session || !req.session.userId) {
-          return res.status(401).json({ message: "Authentication required to preview drafts" });
+          return res.status(401).json({ message: "Authentication required to access drafts" });
         }
         
         // Check user permissions for viewing drafts
@@ -953,7 +957,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Only admins, editors, or the article's authors can view drafts
         const isAdmin = user.role === 'admin';
-        const isEditor = user.role === 'editor';
+        const hasEditorRole = user.role === 'editor';
         const isAuthor = user.role === 'author';
         
         // If the user is an author, check if they are one of the article's authors

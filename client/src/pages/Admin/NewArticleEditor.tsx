@@ -167,10 +167,24 @@ function AdminArticleEditor() {
   // Autosave mutation - doesn't show toasts, doesn't redirect
   const { mutate: autosaveArticleMutation, isPending: isAutosaving } = useMutation({
     mutationFn: async (articleData: any) => {
-      if (isEditing) {
-        return apiRequest('PATCH', `/api/articles/${id}`, articleData).then(r => r.json());
-      } else {
-        return apiRequest('POST', '/api/articles', articleData).then(r => r.json());
+      try {
+        let response;
+        if (isEditing) {
+          response = await apiRequest('PATCH', `/api/articles/${id}`, articleData);
+        } else {
+          response = await apiRequest('POST', '/api/articles', articleData);
+        }
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('Expected JSON response from server');
+        }
+        
+        return response.json();
+      } catch (error: any) {
+        console.error('Autosave request error:', error);
+        throw new Error('Failed to save draft');
       }
     },
     onSuccess: (data) => {
