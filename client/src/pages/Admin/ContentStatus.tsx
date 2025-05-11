@@ -1,15 +1,8 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useLocation } from 'wouter';
-import { useAuth } from '@/lib/AuthContext';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
+import AdminLayout from '@/components/layout/AdminLayout';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -18,20 +11,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { 
-  FileEditIcon, 
-  EyeIcon, 
-  AlertTriangleIcon, 
-  CheckCircleIcon, 
-  XCircleIcon,
-  RefreshCcwIcon
-} from 'lucide-react';
-import { formatDistance } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
+import { Link } from 'wouter';
+import { Loader2, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest, queryClient } from '@/lib/queryClient';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 interface Article {
   id: number;
@@ -49,257 +40,192 @@ interface Article {
 }
 
 function ContentStatus() {
-  const { user, isAdmin } = useAuth();
-  const [, navigate] = useLocation();
   const { toast } = useToast();
   
-  // Guard for non-editor, non-admin users
-  React.useEffect(() => {
-    if (!user || (user.role !== 'admin' && user.role !== 'editor')) {
-      navigate('/');
-    }
-  }, [user, navigate]);
-
-  // Fetch all articles
-  const { data: articles = [], isLoading, refetch } = useQuery<Article[]>({
+  // Fetch all articles for editors and admins
+  const { data: articles, isLoading, isError } = useQuery({
     queryKey: ['/api/articles/all'],
-    enabled: !!user && (user.role === 'admin' || user.role === 'editor'),
+    retry: false,
   });
-
-  // Filter articles by status
-  const needsEditsArticles = articles.filter(article => article.status === 'needs_edits');
-  const goodToPublishArticles = articles.filter(article => article.status === 'good_to_publish');
-  const doNotPublishArticles = articles.filter(article => article.status === 'do_not_publish');
-  const publishedArticles = articles.filter(article => article.status === 'published');
-  const draftArticles = articles.filter(article => article.status === 'draft');
-
-  const handleUpdateStatus = async (id: number, status: string) => {
-    try {
-      // Get the current article data
-      const response = await apiRequest('GET', `/api/articles/${id}`);
-      const article = await response.json();
-
-      // Update the status
-      await apiRequest('PUT', `/api/articles/${id}`, {
-        ...article,
-        status
+  
+  // Status mutation
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: string }) => {
+      const response = await fetch(`/api/articles/${id}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
       });
-
+      
+      if (!response.ok) {
+        throw new Error('Failed to update article status');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate the articles query to refresh the data
+      queryClient.invalidateQueries({ queryKey: ['/api/articles/all'] });
       toast({
-        title: 'Status Updated',
-        description: `Article marked as "${status.replace('_', ' ')}"`,
+        title: 'Status updated',
+        description: 'The article status has been updated successfully.',
       });
-
-      // Refresh the data
-      refetch();
-    } catch (error) {
+    },
+    onError: (error) => {
       console.error('Error updating article status:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update article status',
+        description: 'Failed to update article status. Please try again.',
         variant: 'destructive',
       });
-    }
+    },
+  });
+  
+  // Handle status change
+  const handleStatusChange = (id: number, status: string) => {
+    updateStatusMutation.mutate({ id, status });
   };
-
-  const handleEdit = (id: number) => {
-    navigate(`/admin/articles/edit/${id}`);
-  };
-
-  const handleView = (slug: string) => {
-    window.open(`/article/${slug}${slug.includes('?') ? '&' : '?'}preview=true`, '_blank');
-  };
-
-  // Function to render status badge with appropriate color
-  const renderStatusBadge = (status: string) => {
+  
+  // Status badge color mapping
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'published':
-        return <Badge className="bg-green-500">Published</Badge>;
+        return 'bg-green-500';
       case 'draft':
-        return <Badge variant="outline">Draft</Badge>;
+        return 'bg-gray-500';
       case 'needs_edits':
-        return <Badge className="bg-amber-500">Needs Edits</Badge>;
+        return 'bg-yellow-500';
       case 'good_to_publish':
-        return <Badge className="bg-blue-500">Ready to Publish</Badge>;
+        return 'bg-blue-500';
       case 'do_not_publish':
-        return <Badge className="bg-red-500">Do Not Publish</Badge>;
+        return 'bg-red-500';
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return 'bg-gray-500';
     }
   };
-
-  // Render a table of articles with the given title and articles array
-  const renderArticleTable = (title: string, articlesToShow: Article[]) => (
-    <Card className="mb-6">
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>
-          {articlesToShow.length} article{articlesToShow.length !== 1 ? 's' : ''}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {articlesToShow.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No articles in this category.
+  
+  // Status display mapping
+  const getStatusDisplay = (status: string) => {
+    switch (status) {
+      case 'published':
+        return 'Published';
+      case 'draft':
+        return 'Draft';
+      case 'needs_edits':
+        return 'Needs Edits';
+      case 'good_to_publish':
+        return 'Good to Publish';
+      case 'do_not_publish':
+        return 'Do Not Publish';
+      default:
+        return status;
+    }
+  };
+  
+  return (
+    <AdminLayout>
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold">Content Status</h1>
+          <Link href="/admin/articles/new">
+            <Button>Create New Article</Button>
+          </Link>
+        </div>
+        
+        {isLoading ? (
+          <div className="flex items-center justify-center p-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-2">Loading articles...</span>
+          </div>
+        ) : isError ? (
+          <div className="bg-red-100 p-4 rounded-md text-red-700">
+            Failed to load articles. Please refresh the page or try again later.
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Author</TableHead>
-                <TableHead>Updated</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {articlesToShow.map((article) => (
-                <TableRow key={article.id}>
-                  <TableCell className="font-medium">{article.title || 'Untitled Article'}</TableCell>
-                  <TableCell>
-                    {article.authors?.map((author) => author.username).join(', ') || 'Unknown'}
-                  </TableCell>
-                  <TableCell>
-                    {article.updatedAt 
-                      ? formatDistance(new Date(article.updatedAt), new Date(), { addSuffix: true }) 
-                      : 'Unknown'}
-                  </TableCell>
-                  <TableCell>
-                    {renderStatusBadge(article.status)}
-                  </TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEdit(article.id)}
-                      title="Edit"
-                    >
-                      <FileEditIcon className="h-4 w-4" />
-                    </Button>
-                    
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleView(article.slug)}
-                      title="View"
-                      disabled={!article.slug}
-                    >
-                      <EyeIcon className="h-4 w-4" />
-                    </Button>
-                    
-                    {/* Status change buttons - only show the ones that make sense for the current status */}
-                    {article.status !== 'needs_edits' && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleUpdateStatus(article.id, 'needs_edits')}
-                        title="Needs Edits"
-                        className="text-amber-500"
-                      >
-                        <AlertTriangleIcon className="h-4 w-4" />
-                      </Button>
-                    )}
-                    
-                    {article.status !== 'good_to_publish' && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleUpdateStatus(article.id, 'good_to_publish')}
-                        title="Good to Publish"
-                        className="text-blue-500"
-                      >
-                        <CheckCircleIcon className="h-4 w-4" />
-                      </Button>
-                    )}
-                    
-                    {article.status !== 'do_not_publish' && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleUpdateStatus(article.id, 'do_not_publish')}
-                        title="Do Not Publish"
-                        className="text-red-500"
-                      >
-                        <XCircleIcon className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </TableCell>
+          <div className="bg-white rounded-md shadow overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50">
+                  <TableHead className="w-[300px]">Title</TableHead>
+                  <TableHead>Authors</TableHead>
+                  <TableHead>Last Updated</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {articles?.length > 0 ? (
+                  articles.map((article: Article) => (
+                    <TableRow key={article.id}>
+                      <TableCell className="font-medium">{article.title}</TableCell>
+                      <TableCell>
+                        {article.authors ? (
+                          article.authors.map((author, index) => (
+                            <span key={author.id}>
+                              {author.username}
+                              {index < article.authors!.length - 1 ? ', ' : ''}
+                            </span>
+                          ))
+                        ) : (
+                          'No authors'
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {formatDistanceToNow(new Date(article.updatedAt), { addSuffix: true })}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(article.status)}>
+                          {getStatusDisplay(article.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right space-x-2">
+                        <Select
+                          defaultValue={article.status}
+                          onValueChange={(value) => handleStatusChange(article.id, value)}
+                          disabled={updateStatusMutation.isPending}
+                        >
+                          <SelectTrigger className="w-32 h-8">
+                            <SelectValue placeholder="Change status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="draft">Draft</SelectItem>
+                            <SelectItem value="needs_edits">Needs Edits</SelectItem>
+                            <SelectItem value="good_to_publish">Good to Publish</SelectItem>
+                            <SelectItem value="do_not_publish">Do Not Publish</SelectItem>
+                            <SelectItem value="published">Published</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        
+                        <Link href={`/admin/articles/edit/${article.id}`}>
+                          <Button variant="outline" size="sm">Edit</Button>
+                        </Link>
+                        
+                        {article.status === 'published' && (
+                          <a href={`/article/${article.slug}`} target="_blank" rel="noopener noreferrer">
+                            <Button variant="ghost" size="sm">
+                              <ExternalLink className="h-4 w-4 mr-1" />
+                              View
+                            </Button>
+                          </a>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8">
+                      No articles found. Create your first article to get started.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         )}
-      </CardContent>
-    </Card>
-  );
-
-  if (isLoading) {
-    return (
-      <div className="container py-8">
-        <h1 className="text-3xl font-bold mb-6">Content Status Management</h1>
-        <div className="h-40 flex items-center justify-center">
-          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
-        </div>
       </div>
-    );
-  }
-
-  return (
-    <div className="container py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Content Status Management</h1>
-        <Button onClick={() => refetch()} className="flex items-center gap-2">
-          <RefreshCcwIcon size={16} />
-          Refresh
-        </Button>
-      </div>
-
-      <Tabs defaultValue="needs-edits" className="w-full mb-8">
-        <TabsList className="w-full">
-          <TabsTrigger value="needs-edits" className="flex-1">
-            Needs Edits ({needsEditsArticles.length})
-          </TabsTrigger>
-          <TabsTrigger value="good-to-publish" className="flex-1">
-            Good to Publish ({goodToPublishArticles.length})
-          </TabsTrigger>
-          <TabsTrigger value="do-not-publish" className="flex-1">
-            Do Not Publish ({doNotPublishArticles.length})
-          </TabsTrigger>
-          <TabsTrigger value="all" className="flex-1">
-            All Content
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="needs-edits" className="mt-6">
-          {renderArticleTable("Articles Needing Edits", needsEditsArticles)}
-        </TabsContent>
-        
-        <TabsContent value="good-to-publish" className="mt-6">
-          {renderArticleTable("Articles Ready to Publish", goodToPublishArticles)}
-        </TabsContent>
-        
-        <TabsContent value="do-not-publish" className="mt-6">
-          {renderArticleTable("Articles Not to Publish", doNotPublishArticles)}
-        </TabsContent>
-        
-        <TabsContent value="all" className="mt-6">
-          {renderArticleTable("Published Articles", publishedArticles)}
-          {renderArticleTable("Draft Articles", draftArticles)}
-          {renderArticleTable("Articles Needing Edits", needsEditsArticles)}
-          {renderArticleTable("Articles Ready to Publish", goodToPublishArticles)}
-          {renderArticleTable("Articles Not to Publish", doNotPublishArticles)}
-        </TabsContent>
-      </Tabs>
-
-      <Button 
-        variant="outline" 
-        onClick={() => navigate('/admin')}
-        className="mt-8"
-      >
-        Back to Dashboard
-      </Button>
-    </div>
+    </AdminLayout>
   );
 }
 

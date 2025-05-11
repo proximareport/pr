@@ -54,6 +54,7 @@ export interface IStorage {
   
   // Article operations
   getArticles(limit?: number, offset?: number): Promise<Article[]>;
+  getAllArticles(): Promise<Article[]>;
   getArticleBySlug(slug: string): Promise<Article | undefined>;
   getArticleById(id: number): Promise<Article | undefined>;
   createArticle(article: InsertArticle): Promise<Article>;
@@ -261,6 +262,26 @@ export class DatabaseStorage implements IStorage {
         console.error("Error stack:", error.stack);
       }
       throw error;
+    }
+  }
+  
+  async getAllArticles(): Promise<Article[]> {
+    try {
+      // Get all articles without filtering by status
+      const result = await db.execute(sql`
+        SELECT * FROM articles 
+        ORDER BY updated_at DESC
+      `);
+      
+      return result.rows as Article[];
+    } catch (error) {
+      console.error("Error in getAllArticles:", error);
+      if (error instanceof Error) {
+        console.error("Error name:", error.name);
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      }
+      return [];
     }
   }
 
