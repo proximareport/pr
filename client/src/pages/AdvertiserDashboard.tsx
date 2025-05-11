@@ -1,27 +1,23 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
+import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
 import { Link, useLocation } from 'wouter';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { 
-  AlertTriangle, 
-  CheckCircle, 
-  CreditCard, 
-  Eye, 
-  LineChart, 
-  Settings, 
-  XCircle,
-  ExternalLink,
-  PlusCircle
-} from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { format } from 'date-fns';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -29,7 +25,32 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  AlertTriangle,
+  Ban,
+  CheckCircle,
+  Clock,
+  CreditCard,
+  Eye,
+  Info,
+  LineChart,
+  PieChart,
+  Plus,
+  RefreshCw,
+  XCircle,
+} from 'lucide-react';
 
 interface Advertisement {
   id: number;
@@ -42,519 +63,520 @@ interface Advertisement {
   userId: number;
   isApproved: boolean;
   status: string;
-  paymentStatus: string;
-  paymentId: string | null;
-  price: number | null;
-  adminNotes: string | null;
   createdAt: string;
   impressions: number;
   clicks: number;
+  price: number | null;
+  paymentStatus: string | null;
+  paymentId: string | null;
+  adminNotes: string | null;
 }
 
 function AdvertiserDashboard() {
-  const { user, isLoading: authLoading, isAuthenticated } = useAuth();
-  const [, navigate] = useLocation();
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [previewAd, setPreviewAd] = useState<Advertisement | null>(null);
   
-  // Redirect if not authenticated
-  React.useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      navigate('/login?returnTo=/advertiser-dashboard');
-    }
-  }, [authLoading, isAuthenticated, navigate]);
-  
-  // Get user's advertisements
-  const { data: advertisements = [], isLoading: adsLoading } = useQuery({
+  // Fetch user's advertisements
+  const { data: advertisements, isLoading, isError } = useQuery({
     queryKey: ['/api/advertisements/user'],
-    enabled: isAuthenticated,
+    enabled: !!user,
   });
   
-  // Cancel advertisement
-  const cancelMutation = useMutation({
+  // Function to create a checkout session for an ad
+  const checkoutMutation = useMutation({
     mutationFn: async (adId: number) => {
-      return await apiRequest('POST', `/api/advertisements/${adId}/cancel`);
+      return await apiRequest('POST', `/api/advertisements/${adId}/checkout`);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/advertisements/user'] });
-      toast({
-        title: 'Success',
-        description: 'Advertisement cancelled successfully',
-      });
-    },
-    onError: () => {
-      toast({
-        title: 'Error',
-        description: 'Failed to cancel advertisement',
-        variant: 'destructive',
-      });
-    },
-  });
-  
-  // Pay for advertisement mutation
-  const payMutation = useMutation({
-    mutationFn: async (adId: number) => {
-      return await apiRequest('POST', `/api/advertisements/${adId}/pay`);
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/advertisements/user'] });
-      // Redirect to payment page if needed
+    onSuccess: async (response) => {
+      const data = await response.json();
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
       } else {
         toast({
-          title: 'Success',
-          description: 'Payment processed successfully',
+          title: 'Error',
+          description: 'Failed to create checkout session',
+          variant: 'destructive',
         });
       }
     },
     onError: () => {
       toast({
         title: 'Error',
-        description: 'Payment failed. Please try again.',
+        description: 'Failed to create checkout session',
         variant: 'destructive',
       });
     },
   });
   
-  // Filter advertisements by status
-  const getPendingAds = () => advertisements.filter((ad: Advertisement) => 
-    ad.status === 'pending' || (!ad.isApproved && ad.status !== 'rejected')
-  );
+  const handleCheckout = (adId: number) => {
+    checkoutMutation.mutate(adId);
+  };
+  
+  // Get ads by status
+  const getPendingAds = () => {
+    if (!advertisements) return [];
+    return (advertisements as Advertisement[]).filter(ad => 
+      ad.status === 'pending' || ad.status === 'approved_pending_payment'
+    );
+  };
   
   const getActiveAds = () => {
-    const now = new Date();
-    return advertisements.filter((ad: Advertisement) => 
-      (ad.isApproved || ad.status === 'approved') && 
-      new Date(ad.startDate) <= now && 
-      new Date(ad.endDate) >= now
+    if (!advertisements) return [];
+    return (advertisements as Advertisement[]).filter(ad => 
+      ad.status === 'active'
+    );
+  };
+  
+  const getRejectedAds = () => {
+    if (!advertisements) return [];
+    return (advertisements as Advertisement[]).filter(ad => 
+      ad.status === 'rejected'
     );
   };
   
   const getCompletedAds = () => {
-    const now = new Date();
-    return advertisements.filter((ad: Advertisement) => 
-      (ad.status === 'completed' || new Date(ad.endDate) < now)
+    if (!advertisements) return [];
+    return (advertisements as Advertisement[]).filter(ad => 
+      ad.status === 'completed' || ad.status === 'expired'
     );
   };
   
-  const getRejectedAds = () => advertisements.filter((ad: Advertisement) => 
-    ad.status === 'rejected' || (ad.isApproved === false && ad.adminNotes)
-  );
+  // Format price from cents to dollars
+  const formatPrice = (priceInCents: number | null) => {
+    if (priceInCents === null) return 'N/A';
+    return `$${(priceInCents / 100).toFixed(2)}`;
+  };
   
-  // Helper functions
-  const getPlacementLabel = (placement: string) => {
+  // Get status badge color based on status
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200"><Clock className="h-3 w-3 mr-1" /> Pending Review</Badge>;
+      case 'approved_pending_payment':
+        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200"><CreditCard className="h-3 w-3 mr-1" /> Payment Required</Badge>;
+      case 'active':
+        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200"><CheckCircle className="h-3 w-3 mr-1" /> Active</Badge>;
+      case 'rejected':
+        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200"><XCircle className="h-3 w-3 mr-1" /> Rejected</Badge>;
+      case 'completed':
+        return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">Completed</Badge>;
+      case 'expired':
+        return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">Expired</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+  
+  // Get placement name for display
+  const getPlacementName = (placement: string) => {
     switch (placement) {
-      case 'homepage': return 'Homepage Banner';
-      case 'sidebar': return 'Sidebar';
-      case 'article': return 'In-Article';
-      case 'newsletter': return 'Newsletter';
-      default: return placement;
+      case 'homepage':
+        return 'Homepage';
+      case 'sidebar':
+        return 'Sidebar';
+      case 'article':
+        return 'In-Article';
+      case 'newsletter':
+        return 'Newsletter';
+      default:
+        return placement;
     }
   };
   
-  const getStatusBadge = (ad: Advertisement) => {
-    // Determine status based on all ad properties
-    if (ad.status === 'rejected' || (!ad.isApproved && ad.adminNotes)) {
-      return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">Rejected</Badge>;
-    } else if (ad.isApproved || ad.status === 'approved') {
-      const now = new Date();
-      if (new Date(ad.endDate) < now) {
-        return <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200">Completed</Badge>;
-      } else if (new Date(ad.startDate) > now) {
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">Scheduled</Badge>;
-      } else {
-        return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">Active</Badge>;
-      }
-    } else if (ad.paymentStatus === 'pending') {
-      return <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-200">Payment Needed</Badge>;
-    } else {
-      return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">Pending Approval</Badge>;
-    }
-  };
-  
-  const canPay = (ad: Advertisement) => {
-    return ad.paymentStatus === 'pending' && ad.price && ad.price > 0;
-  };
-  
-  const canCancel = (ad: Advertisement) => {
-    return ad.status !== 'completed' && ad.status !== 'rejected' && 
-           new Date(ad.endDate) > new Date();
-  };
-  
-  const handlePreview = (ad: Advertisement) => {
-    setPreviewAd(ad);
-  };
-  
-  const handleCancel = (adId: number) => {
-    const isConfirmed = window.confirm('Are you sure you want to cancel this advertisement? This action cannot be undone.');
-    if (isConfirmed) {
-      cancelMutation.mutate(adId);
-    }
-  };
-  
-  const handlePay = (adId: number) => {
-    payMutation.mutate(adId);
-  };
-  
-  const renderAdTable = (ads: Advertisement[]) => {
-    if (adsLoading) {
-      return (
-        <div className="space-y-4">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-        </div>
-      );
-    }
-    
-    if (ads.length === 0) {
-      return <div className="text-center py-8 text-gray-500">No advertisements found</div>;
-    }
-    
+  if (!user) {
     return (
+      <div className="container max-w-6xl mx-auto py-10">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Advertiser Dashboard</h1>
+          <p className="mb-6">Please log in to manage your advertisements.</p>
+          <Button onClick={() => setLocation('/login')}>Log In</Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container max-w-6xl mx-auto py-6 px-4 md:px-6">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold">Advertiser Dashboard</h1>
+          <p className="text-muted-foreground">Manage your advertisements and track performance</p>
+        </div>
+        <div className="flex space-x-2">
+          <Button variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/advertisements/user'] })} className="gap-1">
+            <RefreshCw className="h-4 w-4" /> Refresh
+          </Button>
+          <Button className="gap-1" onClick={() => setLocation('/advertise')}>
+            <Plus className="h-4 w-4" /> New Advertisement
+          </Button>
+        </div>
+      </div>
+      
+      {isLoading ? (
+        <div className="flex justify-center p-12">
+          <div className="animate-spin h-10 w-10 border-4 border-purple-500 border-t-transparent rounded-full"></div>
+        </div>
+      ) : isError ? (
+        <div className="text-center p-12">
+          <AlertTriangle className="h-10 w-10 mx-auto text-red-500 mb-4" />
+          <h3 className="text-xl font-semibold mb-2">Error Loading Advertisements</h3>
+          <p className="mb-4 text-gray-600">There was a problem loading your advertisements. Please try again.</p>
+          <Button variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/advertisements/my'] })}>
+            Try Again
+          </Button>
+        </div>
+      ) : (
+        <>
+          {/* Dashboard Overview Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-500">Total Ads</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{advertisements?.length || 0}</div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-500">Active Ads</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-green-600">{getActiveAds().length}</div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-500">Total Impressions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-blue-600">
+                  {advertisements?.reduce((sum: number, ad: Advertisement) => sum + (ad.impressions || 0), 0)}
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-500">Total Clicks</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-purple-600">
+                  {advertisements?.reduce((sum: number, ad: Advertisement) => sum + (ad.clicks || 0), 0)}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Advertisements Tab View */}
+          <Tabs defaultValue="all" className="space-y-4">
+            <TabsList className="grid grid-cols-5 w-full max-w-md">
+              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="pending">Pending</TabsTrigger>
+              <TabsTrigger value="active">Active</TabsTrigger>
+              <TabsTrigger value="rejected">Rejected</TabsTrigger>
+              <TabsTrigger value="completed">Completed</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="all">
+              <Card>
+                <CardHeader>
+                  <CardTitle>All Advertisements</CardTitle>
+                  <CardDescription>View all your advertisements in one place</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <AdTable 
+                    advertisements={advertisements || []} 
+                    formatPrice={formatPrice}
+                    getStatusBadge={getStatusBadge}
+                    getPlacementName={getPlacementName}
+                    onPreview={setPreviewAd}
+                    onCheckout={handleCheckout}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="pending">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Pending Advertisements</CardTitle>
+                  <CardDescription>Ads waiting for approval or payment</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <AdTable 
+                    advertisements={getPendingAds()} 
+                    formatPrice={formatPrice}
+                    getStatusBadge={getStatusBadge}
+                    getPlacementName={getPlacementName}
+                    onPreview={setPreviewAd}
+                    onCheckout={handleCheckout}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="active">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Active Advertisements</CardTitle>
+                  <CardDescription>Currently running advertisements</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <AdTable 
+                    advertisements={getActiveAds()} 
+                    formatPrice={formatPrice}
+                    getStatusBadge={getStatusBadge}
+                    getPlacementName={getPlacementName}
+                    onPreview={setPreviewAd}
+                    onCheckout={handleCheckout}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="rejected">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Rejected Advertisements</CardTitle>
+                  <CardDescription>Advertisements that were rejected by admins</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <AdTable 
+                    advertisements={getRejectedAds()} 
+                    formatPrice={formatPrice}
+                    getStatusBadge={getStatusBadge}
+                    getPlacementName={getPlacementName}
+                    onPreview={setPreviewAd}
+                    onCheckout={handleCheckout}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="completed">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Completed Advertisements</CardTitle>
+                  <CardDescription>Past advertisements that have completed their run</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <AdTable 
+                    advertisements={getCompletedAds()} 
+                    formatPrice={formatPrice}
+                    getStatusBadge={getStatusBadge}
+                    getPlacementName={getPlacementName}
+                    onPreview={setPreviewAd}
+                    onCheckout={handleCheckout}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+          
+          {/* Advertisement Preview Dialog */}
+          <Dialog open={!!previewAd} onOpenChange={(open) => !open && setPreviewAd(null)}>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Advertisement Details</DialogTitle>
+                <DialogDescription>
+                  Created on {previewAd && new Date(previewAd.createdAt).toLocaleDateString()}
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4 py-4">
+                <div className="grid grid-cols-[100px_1fr] gap-2">
+                  <div className="font-medium">Title:</div>
+                  <div>{previewAd?.title}</div>
+                </div>
+                
+                <div className="grid grid-cols-[100px_1fr] gap-2">
+                  <div className="font-medium">Status:</div>
+                  <div>{previewAd && getStatusBadge(previewAd.status)}</div>
+                </div>
+                
+                <div className="grid grid-cols-[100px_1fr] gap-2">
+                  <div className="font-medium">Link URL:</div>
+                  <div className="break-all">
+                    <a href={previewAd?.linkUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                      {previewAd?.linkUrl}
+                    </a>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-[100px_1fr] gap-2">
+                  <div className="font-medium">Placement:</div>
+                  <div>{previewAd && getPlacementName(previewAd.placement)}</div>
+                </div>
+                
+                <div className="grid grid-cols-[100px_1fr] gap-2">
+                  <div className="font-medium">Duration:</div>
+                  <div>
+                    {previewAd && (
+                      <>
+                        {new Date(previewAd.startDate).toLocaleDateString()} to {new Date(previewAd.endDate).toLocaleDateString()}
+                      </>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-[100px_1fr] gap-2">
+                  <div className="font-medium">Price:</div>
+                  <div>{previewAd?.price && formatPrice(previewAd.price)}</div>
+                </div>
+                
+                <div className="grid grid-cols-[100px_1fr] gap-2">
+                  <div className="font-medium">Performance:</div>
+                  <div>
+                    <div className="text-sm">
+                      <span className="font-medium">{previewAd?.impressions || 0}</span> impressions
+                    </div>
+                    <div className="text-sm">
+                      <span className="font-medium">{previewAd?.clicks || 0}</span> clicks
+                    </div>
+                    <div className="text-sm">
+                      <span className="font-medium">
+                        {previewAd?.impressions && previewAd?.clicks && previewAd.impressions > 0
+                          ? ((previewAd.clicks / previewAd.impressions) * 100).toFixed(2)
+                          : '0.00'}%
+                      </span> CTR
+                    </div>
+                  </div>
+                </div>
+                
+                {previewAd?.adminNotes && (
+                  <div className="border-t pt-4 mt-4">
+                    <div className="font-medium mb-2 text-red-600">Admin Notes:</div>
+                    <div className="bg-red-50 p-3 rounded-md border border-red-200 text-red-800">
+                      {previewAd.adminNotes}
+                    </div>
+                  </div>
+                )}
+                
+                {previewAd?.imageUrl && (
+                  <div className="mt-4">
+                    <div className="font-medium mb-2">Image Preview:</div>
+                    <div className="border rounded-md overflow-hidden">
+                      <img 
+                        src={previewAd.imageUrl} 
+                        alt={previewAd.title} 
+                        className="max-w-full h-auto"
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://placehold.co/600x400?text=Image+Not+Available';
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <DialogFooter className="flex items-center justify-between">
+                {previewAd?.status === 'approved_pending_payment' && (
+                  <Button 
+                    variant="default"
+                    onClick={() => previewAd && handleCheckout(previewAd.id)}
+                    disabled={checkoutMutation.isPending}
+                    className="gap-1"
+                  >
+                    <CreditCard className="h-4 w-4" />
+                    {checkoutMutation.isPending ? 'Processing...' : 'Complete Payment'}
+                  </Button>
+                )}
+                <Button variant="outline" className="ml-auto" onClick={() => setPreviewAd(null)}>
+                  Close
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Sub-component for the Advertisement Table
+function AdTable({ 
+  advertisements, 
+  formatPrice, 
+  getStatusBadge, 
+  getPlacementName,
+  onPreview,
+  onCheckout
+}: { 
+  advertisements: Advertisement[], 
+  formatPrice: (price: number | null) => string,
+  getStatusBadge: (status: string) => React.ReactNode,
+  getPlacementName: (placement: string) => string,
+  onPreview: (ad: Advertisement) => void,
+  onCheckout: (adId: number) => void
+}) {
+  if (advertisements.length === 0) {
+    return (
+      <div className="text-center py-10">
+        <div className="bg-gray-50 rounded-lg p-6 max-w-md mx-auto">
+          <Info className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900">No advertisements found</h3>
+          <p className="mt-2 text-sm text-gray-500">
+            You don't have any advertisements in this category yet.
+          </p>
+          <div className="mt-6">
+            <Link href="/advertise">
+              <Button size="sm">Create New Advertisement</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Title</TableHead>
-            <TableHead>Placement</TableHead>
-            <TableHead>Duration</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Metrics</TableHead>
+            <TableHead>Placement</TableHead>
+            <TableHead className="text-right">Price</TableHead>
+            <TableHead className="text-right">Performance</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {ads.map((ad) => (
+          {advertisements.map((ad) => (
             <TableRow key={ad.id}>
               <TableCell className="font-medium">{ad.title}</TableCell>
-              <TableCell>{getPlacementLabel(ad.placement)}</TableCell>
-              <TableCell>
-                <div className="text-xs">
-                  <div>Start: {new Date(ad.startDate).toLocaleDateString()}</div>
-                  <div>End: {new Date(ad.endDate).toLocaleDateString()}</div>
-                </div>
-              </TableCell>
-              <TableCell>
-                {getStatusBadge(ad)}
-                {ad.paymentStatus && ad.paymentStatus !== 'paid' && (
-                  <div className="mt-1">
-                    <Badge variant="outline" className="bg-orange-50 text-orange-800 border-orange-100">
-                      {ad.paymentStatus === 'pending' ? 'Payment Needed' : ad.paymentStatus}
-                    </Badge>
-                  </div>
-                )}
-              </TableCell>
-              <TableCell>
-                <div className="text-xs">
-                  <div>Impressions: {ad.impressions.toLocaleString()}</div>
-                  <div>Clicks: {ad.clicks.toLocaleString()}</div>
-                  <div className="text-gray-500 mt-1">
-                    CTR: {ad.impressions ? ((ad.clicks / ad.impressions) * 100).toFixed(2) : 0}%
-                  </div>
+              <TableCell>{getStatusBadge(ad.status)}</TableCell>
+              <TableCell>{getPlacementName(ad.placement)}</TableCell>
+              <TableCell className="text-right">{formatPrice(ad.price)}</TableCell>
+              <TableCell className="text-right">
+                <div className="flex flex-col items-end">
+                  <span className="text-sm">{ad.impressions} views</span>
+                  <span className="text-xs text-gray-500">{ad.clicks} clicks</span>
                 </div>
               </TableCell>
               <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  <Button size="sm" variant="ghost" onClick={() => handlePreview(ad)}>
+                <div className="flex justify-end space-x-2">
+                  <Button variant="ghost" size="sm" onClick={() => onPreview(ad)}>
                     <Eye className="h-4 w-4" />
                   </Button>
                   
-                  {canPay(ad) && (
-                    <Button size="sm" variant="outline" className="text-green-600" onClick={() => handlePay(ad.id)}>
+                  {ad.status === 'approved_pending_payment' && (
+                    <Button variant="outline" size="sm" onClick={() => onCheckout(ad.id)}>
                       <CreditCard className="h-4 w-4" />
                     </Button>
                   )}
-                  
-                  {canCancel(ad) && (
-                    <Button size="sm" variant="outline" className="text-red-600" onClick={() => handleCancel(ad.id)}>
-                      <XCircle className="h-4 w-4" />
-                    </Button>
-                  )}
-                  
-                  <Button size="sm" variant="outline" asChild>
-                    <a href={ad.linkUrl} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
-                  </Button>
                 </div>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
-    );
-  };
-  
-  const renderSpendingStats = () => {
-    // Calculate total spending
-    const totalSpent = advertisements.reduce((sum: number, ad: Advertisement) => {
-      if (ad.paymentStatus === 'paid' && ad.price) {
-        return sum + ad.price;
-      }
-      return sum;
-    }, 0);
-    
-    // Calculate total impressions and clicks
-    const totalImpressions = advertisements.reduce((sum: number, ad: Advertisement) => sum + ad.impressions, 0);
-    const totalClicks = advertisements.reduce((sum: number, ad: Advertisement) => sum + ad.clicks, 0);
-    
-    // Calculate CTR and CPM
-    const ctr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
-    const cpm = totalImpressions > 0 && totalSpent > 0 ? (totalSpent / totalImpressions) * 1000 : 0;
-    
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-gray-500">Total Spent</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${(totalSpent / 100).toFixed(2)}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-gray-500">Impressions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalImpressions.toLocaleString()}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-gray-500">Clicks</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalClicks.toLocaleString()}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-gray-500">CTR</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{ctr.toFixed(2)}%</div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  };
-  
-  // Main content
-  if (authLoading) {
-    return (
-      <div className="container mx-auto py-8 px-4">
-        <div className="flex justify-center">
-          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
-        </div>
-      </div>
-    );
-  }
-  
-  return (
-    <div className="container mx-auto py-6 px-4">
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Advertiser Dashboard</h1>
-          <p className="text-gray-500 mt-1">Manage your advertisements and view performance metrics</p>
-        </div>
-        <Button asChild>
-          <Link href="/advertise">
-            <PlusCircle className="h-4 w-4 mr-2" /> New Advertisement
-          </Link>
-        </Button>
-      </div>
-      
-      {/* Spending & Performance Stats */}
-      <div className="mb-8">
-        <h2 className="text-xl font-medium mb-4">Performance Overview</h2>
-        {renderSpendingStats()}
-      </div>
-      
-      {/* Advertisement Management */}
-      <div>
-        <Tabs defaultValue="active">
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-4">
-            <TabsList className="grid grid-cols-4 max-w-md mx-auto">
-              <TabsTrigger value="active" className="flex gap-2 items-center">
-                <CheckCircle className="h-4 w-4" /> 
-                Active ({getActiveAds().length})
-              </TabsTrigger>
-              <TabsTrigger value="pending" className="flex gap-2 items-center">
-                <AlertTriangle className="h-4 w-4" /> 
-                Pending ({getPendingAds().length})
-              </TabsTrigger>
-              <TabsTrigger value="completed" className="flex gap-2 items-center">
-                <CheckCircle className="h-4 w-4" /> 
-                Completed ({getCompletedAds().length})
-              </TabsTrigger>
-              <TabsTrigger value="rejected" className="flex gap-2 items-center">
-                <XCircle className="h-4 w-4" /> 
-                Rejected ({getRejectedAds().length})
-              </TabsTrigger>
-            </TabsList>
-          </div>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                {(() => {
-                  switch (window.location.hash.substring(1)) {
-                    case 'active': return 'Active Advertisements';
-                    case 'pending': return 'Pending Advertisements';
-                    case 'completed': return 'Completed Advertisements';
-                    case 'rejected': return 'Rejected Advertisements';
-                    default: return 'Active Advertisements';
-                  }
-                })()}
-              </CardTitle>
-              <CardDescription>
-                {(() => {
-                  switch (window.location.hash.substring(1)) {
-                    case 'active': return 'Currently running advertisements';
-                    case 'pending': return 'Advertisements awaiting approval or payment';
-                    case 'completed': return 'Past advertisements that have completed their run';
-                    case 'rejected': return 'Advertisements that were not approved';
-                    default: return 'Currently running advertisements';
-                  }
-                })()}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <TabsContent value="active">
-                {renderAdTable(getActiveAds())}
-              </TabsContent>
-              <TabsContent value="pending">
-                {renderAdTable(getPendingAds())}
-              </TabsContent>
-              <TabsContent value="completed">
-                {renderAdTable(getCompletedAds())}
-              </TabsContent>
-              <TabsContent value="rejected">
-                {renderAdTable(getRejectedAds())}
-              </TabsContent>
-            </CardContent>
-          </Card>
-        </Tabs>
-      </div>
-      
-      {/* Ad Preview Dialog */}
-      <Dialog open={!!previewAd} onOpenChange={(open) => !open && setPreviewAd(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Advertisement Details</DialogTitle>
-            <DialogDescription>
-              Created on {previewAd && new Date(previewAd.createdAt).toLocaleDateString()}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-[120px_1fr] gap-2">
-              <div className="font-medium">Title:</div>
-              <div>{previewAd?.title}</div>
-            </div>
-            
-            <div className="grid grid-cols-[120px_1fr] gap-2">
-              <div className="font-medium">Link URL:</div>
-              <div className="break-all">
-                <a href={previewAd?.linkUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                  {previewAd?.linkUrl}
-                </a>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-[120px_1fr] gap-2">
-              <div className="font-medium">Placement:</div>
-              <div>{previewAd && getPlacementLabel(previewAd.placement)}</div>
-            </div>
-            
-            <div className="grid grid-cols-[120px_1fr] gap-2">
-              <div className="font-medium">Duration:</div>
-              <div>
-                {previewAd && (
-                  <>
-                    {new Date(previewAd.startDate).toLocaleDateString()} to {new Date(previewAd.endDate).toLocaleDateString()}
-                  </>
-                )}
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-[120px_1fr] gap-2">
-              <div className="font-medium">Status:</div>
-              <div>{previewAd && getStatusBadge(previewAd)}</div>
-            </div>
-            
-            {previewAd?.adminNotes && (
-              <div className="grid grid-cols-[120px_1fr] gap-2">
-                <div className="font-medium">Admin Notes:</div>
-                <div className="text-red-600">{previewAd.adminNotes}</div>
-              </div>
-            )}
-            
-            <div className="grid grid-cols-[120px_1fr] gap-2">
-              <div className="font-medium">Payment:</div>
-              <div>
-                {previewAd?.price ? (
-                  <span>${(previewAd.price / 100).toFixed(2)} - {previewAd.paymentStatus === 'paid' ? 'Paid' : 'Pending Payment'}</span>
-                ) : (
-                  <span>No payment required</span>
-                )}
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-[120px_1fr] gap-2">
-              <div className="font-medium">Performance:</div>
-              <div>
-                <div>Impressions: {previewAd?.impressions.toLocaleString()}</div>
-                <div>Clicks: {previewAd?.clicks.toLocaleString()}</div>
-                <div>
-                  CTR: {previewAd?.impressions ? ((previewAd.clicks / previewAd.impressions) * 100).toFixed(2) : 0}%
-                </div>
-              </div>
-            </div>
-            
-            {previewAd?.imageUrl && (
-              <div className="mt-4">
-                <div className="font-medium mb-2">Image Preview:</div>
-                <div className="border rounded-md overflow-hidden">
-                  <img 
-                    src={previewAd.imageUrl} 
-                    alt={previewAd.title} 
-                    className="max-w-full h-auto" 
-                    onError={(e) => {
-                      e.currentTarget.src = 'https://placehold.co/600x400?text=Image+Unavailable';
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <DialogFooter className="flex items-center justify-between">
-            {canPay(previewAd!) && (
-              <Button variant="default" onClick={() => previewAd && handlePay(previewAd.id)}>
-                <CreditCard className="h-4 w-4 mr-2" /> Make Payment
-              </Button>
-            )}
-            
-            {canCancel(previewAd!) && (
-              <Button variant="outline" className="border-red-500 text-red-600" 
-                      onClick={() => previewAd && handleCancel(previewAd.id)}>
-                <XCircle className="h-4 w-4 mr-2" /> Cancel Ad
-              </Button>
-            )}
-            
-            <Button variant="outline" onClick={() => setPreviewAd(null)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

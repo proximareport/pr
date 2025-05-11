@@ -1872,7 +1872,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Process advertisement payment
+  // Create checkout session for advertisement
+  app.post("/api/advertisements/:id/checkout", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const adId = parseInt(req.params.id);
+      
+      // Get the advertisement
+      const ad = await storage.getAdvertisementById(adId);
+      
+      if (!ad) {
+        return res.status(404).json({ message: "Advertisement not found" });
+      }
+      
+      // Ensure the user owns the advertisement
+      if (ad.userId !== userId) {
+        return res.status(403).json({ message: "You don't own this advertisement" });
+      }
+      
+      // Ensure the advertisement is in a state that requires payment
+      if (ad.paymentStatus === 'complete') {
+        return res.status(400).json({ message: "This advertisement has already been paid for" });
+      }
+      
+      if (!ad.price) {
+        return res.status(400).json({ message: "This advertisement doesn't have a price set" });
+      }
+      
+      // Create a Stripe checkout session or simulate one in development
+      let checkoutUrl;
+      
+      try {
+        // If we have Stripe configured, create a real checkout session
+        if (process.env.STRIPE_SECRET_KEY) {
+          const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+          
+          let placementLabel = "Unknown";
+          switch (ad.placement) {
+            case 'homepage': placementLabel = "Homepage"; break;
+            case 'sidebar': placementLabel = "Sidebar"; break;
+            case 'article': placementLabel = "In-Article"; break;
+            case 'newsletter': placementLabel = "Newsletter"; break;
+          }
+          
+          const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items: [
+              {
+                price_data: {
+                  currency: 'usd',
+                  product_data: {
+                    name: `Advertisement: ${ad.title}`,
+                    description: `${placementLabel} placement from ${new Date(ad.startDate).toLocaleDateString()} to ${new Date(ad.endDate).toLocaleDateString()}`,
+                  },
+                  unit_amount: ad.price,
+                },
+                quantity: 1,
+              },
+            ],
+            mode: 'payment',
+            success_url: `${req.protocol}://${req.get('host')}/advertiser-dashboard?success=true`,
+            cancel_url: `${req.protocol}://${req.get('host')}/advertiser-dashboard?canceled=true`,
+            metadata: {
+              adId: ad.id.toString(),
+              userId: userId.toString(),
+            },
+          });
+          
+          checkoutUrl = session.url;
+          
+          // Update the advertisement with the payment ID
+          await storage.updateAdvertisement(adId, {
+            paymentId: session.id,
+            paymentStatus: 'pending',
+          });
+        } else {
+          // For development without Stripe, simulate a checkout URL
+          checkoutUrl = `${req.protocol}://${req.get('host')}/advertiser-dashboard?dev_checkout=true&ad_id=${ad.id}`;
+          
+          // Simulate a successful payment in development
+          await storage.updateAdvertisement(adId, {
+            paymentStatus: 'complete',
+            status: ad.isApproved ? 'active' : 'pending',
+          });
+        }
+      } catch (stripeError) {
+        console.error("Stripe error:", stripeError);
+        return res.status(500).json({ message: "Payment processing error" });
+      }
+      
+      res.json({ checkoutUrl });
+    } catch (error) {
+      console.error("Error creating checkout session:", error);
+      res.status(500).json({ message: "Error creating checkout session" });
+    }
+  });
+  
+  // Process advertisement payment (legacy endpoint)
   app.post("/api/advertisements/:id/pay", requireAuth, async (req, res) => {
     try {
       const userId = req.session.userId!;
