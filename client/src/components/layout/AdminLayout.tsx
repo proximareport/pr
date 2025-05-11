@@ -27,6 +27,17 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const { user, isLoading } = useAuth();
   const [location, navigate] = useLocation();
 
+  // Always call useQuery before any conditional returns
+  // This ensures hooks are called in the same order every render
+  const { data: advertisements = [] } = useQuery({
+    queryKey: ['/api/advertisements/all'],
+    retry: false,
+    // Only fetch if the user is admin or editor
+    enabled: !!user && (['admin', 'editor'].includes(String(user.role))),
+    // Add a staleTime to prevent unnecessary refetches
+    staleTime: 60 * 1000 // 1 minute
+  });
+  
   // Redirect to login if not authenticated or not an admin/editor
   useEffect(() => {
     if (!isLoading && (!user || (user.role !== 'admin' && user.role !== 'editor'))) {
@@ -34,6 +45,19 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     }
   }, [user, isLoading, navigate]);
 
+  // Count pending advertisements that need review - must be calculated after hooks but before conditionals
+  const pendingAdsCount = (Array.isArray(advertisements) && user && ['admin', 'editor'].includes(String(user.role)))
+    ? advertisements.filter((ad: any) => ad && !ad.isApproved).length 
+    : 0;
+
+  // Helper function for active menu items - needs to be defined before it's used but after all hooks
+  const isActive = (path: string) => {
+    return location === path
+      ? 'bg-primary/10 text-primary font-medium'
+      : 'text-gray-600 hover:bg-gray-100 hover:text-primary';
+  };
+
+  // Conditional returns must come after all hooks
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -45,27 +69,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   if (!user || (user.role !== 'admin' && user.role !== 'editor')) {
     return null;
   }
-
-  const isActive = (path: string) => {
-    return location === path
-      ? 'bg-primary/10 text-primary font-medium'
-      : 'text-gray-600 hover:bg-gray-100 hover:text-primary';
-  };
-
-  // Always call useQuery, but only enable it conditionally
-  const { data: advertisements = [] } = useQuery({
-    queryKey: ['/api/advertisements/all'],
-    retry: false,
-    // Only fetch if the user is admin or editor
-    enabled: !!user && (['admin', 'editor'].includes(String(user.role))),
-    // Add a staleTime to prevent unnecessary refetches
-    staleTime: 60 * 1000 // 1 minute
-  });
-  
-  // Count pending advertisements that need review
-  const pendingAdsCount = (Array.isArray(advertisements) && user && ['admin', 'editor'].includes(String(user.role)))
-    ? advertisements.filter((ad: any) => ad && !ad.isApproved).length 
-    : 0;
   
   const menuItems = [
     { label: 'Dashboard', icon: <Home className="h-5 w-5" />, path: '/admin' },
