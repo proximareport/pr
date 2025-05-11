@@ -52,16 +52,19 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       : 'text-gray-600 hover:bg-gray-100 hover:text-primary';
   };
 
-  // Fetch all advertisements to count pending ones
+  // Always call useQuery, but only enable it conditionally
   const { data: advertisements = [] } = useQuery({
     queryKey: ['/api/advertisements/all'],
     retry: false,
-    enabled: !!user && (user.role === 'admin' || user.role === 'editor')
+    // Only fetch if the user is admin or editor
+    enabled: !!user && (['admin', 'editor'].includes(String(user.role))),
+    // Add a staleTime to prevent unnecessary refetches
+    staleTime: 60 * 1000 // 1 minute
   });
   
   // Count pending advertisements that need review
-  const pendingAdsCount = Array.isArray(advertisements) 
-    ? advertisements.filter((ad: any) => !ad.isApproved).length 
+  const pendingAdsCount = (Array.isArray(advertisements) && user && ['admin', 'editor'].includes(String(user.role)))
+    ? advertisements.filter((ad: any) => ad && !ad.isApproved).length 
     : 0;
   
   const menuItems = [
