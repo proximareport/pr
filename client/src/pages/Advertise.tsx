@@ -128,8 +128,8 @@ function Advertise() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Form {...form}>
-                      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                       <FormField
                         control={form.control}
                         name="title"
@@ -171,7 +171,11 @@ function Advertise() {
                           <FormItem>
                             <FormLabel>Image URL (Optional)</FormLabel>
                             <FormControl>
-                              <Input placeholder="https://example.com/your-image.jpg" {...field} />
+                              <Input 
+                                placeholder="https://example.com/your-image.jpg" 
+                                {...field} 
+                                value={field.value || ''} 
+                              />
                             </FormControl>
                             <FormDescription>
                               A direct link to your advertisement image. Leave blank for text-only ads.
@@ -305,7 +309,6 @@ function Advertise() {
                       </Button>
                     </form>
                   </Form>
-                  </Suspense>
                 </CardContent>
               </Card>
             </div>
