@@ -968,7 +968,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // If not authorized to view draft, return 403
-        if (!(isAdmin || isEditor || (isAuthor && isArticleAuthor))) {
+        if (!(isAdmin || hasEditorRole || (isAuthor && isArticleAuthor))) {
           return res.status(403).json({ 
             message: "You don't have permission to view this draft article" 
           });
@@ -1321,7 +1321,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check if user has permission to delete this article
       const isAdmin = user.role === 'admin';
-      const isEditor = user.role === 'editor';
+      const hasEditorRole = user.role === 'editor';
       
       // If the user is an author, check if they are the article's author
       let isArticleAuthor = false;
@@ -1335,7 +1335,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Editors can delete any article
       // Authors can only delete their own drafts, not published articles
       const canDelete = isAdmin || 
-                       isEditor || 
+                       hasEditorRole || 
                        (user.role === 'author' && isArticleAuthor && article.status === 'draft');
       
       if (!canDelete) {
