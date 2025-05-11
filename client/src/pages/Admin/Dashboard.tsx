@@ -361,12 +361,12 @@ function AdminDashboard() {
       
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8">
         <div className="text-center sm:text-left mb-4 sm:mb-0">
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="text-gray-600 mt-1">Manage your content, users, and site settings</p>
+          <h1 className="text-3xl font-bold text-gray-100">Admin Dashboard</h1>
+          <p className="text-gray-400 mt-1">Manage your content, users, and site settings</p>
         </div>
         <div className="flex gap-3">
           <Button 
-            className="bg-blue-600 hover:bg-blue-700 shadow-sm transition-all font-medium flex items-center gap-2"
+            className="bg-blue-700 hover:bg-blue-800 shadow-sm transition-all font-medium flex items-center gap-2"
             onClick={() => navigate('/admin/articles/new')}
           >
             <PlusIcon className="h-4 w-4" />
@@ -385,11 +385,11 @@ function AdminDashboard() {
           window.history.pushState({}, '', newUrl.toString());
         }}
       >
-        <div className="border-b border-gray-200 mb-8">
+        <div className="border-b border-gray-700 mb-8">
           <TabsList className="bg-transparent justify-start gap-8">
             <TabsTrigger 
               value="overview" 
-              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
+              className="text-gray-400 hover:text-gray-200 data-[state=active]:text-blue-400 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
             >
               <div className="flex items-center gap-2">
                 <BarChart3Icon className="h-4 w-4" />
@@ -399,7 +399,7 @@ function AdminDashboard() {
             
             <TabsTrigger 
               value="content" 
-              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
+              className="text-gray-400 hover:text-gray-200 data-[state=active]:text-blue-400 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
             >
               <div className="flex items-center gap-2">
                 <FileTextIcon className="h-4 w-4" />
@@ -409,10 +409,10 @@ function AdminDashboard() {
             
             <TabsTrigger 
               value="advertisements" 
-              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
+              className="text-gray-400 hover:text-gray-200 data-[state=active]:text-blue-400 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
             >
               <div className="flex items-center gap-2 relative">
-                <DollarSignIcon className="h-4 w-4 text-green-600" />
+                <DollarSignIcon className="h-4 w-4 text-green-400" />
                 <span>Advertisements</span>
                 {pendingAdsCount > 0 && (
                   <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white ml-1">
@@ -424,7 +424,7 @@ function AdminDashboard() {
             
             <TabsTrigger 
               value="users" 
-              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
+              className="text-gray-400 hover:text-gray-200 data-[state=active]:text-blue-400 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
             >
               <div className="flex items-center gap-2">
                 <UsersIcon className="h-4 w-4" />
@@ -434,7 +434,7 @@ function AdminDashboard() {
             
             <TabsTrigger 
               value="media" 
-              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
+              className="text-gray-400 hover:text-gray-200 data-[state=active]:text-blue-400 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
             >
               <div className="flex items-center gap-2">
                 <ImageIcon className="h-4 w-4" />
@@ -444,7 +444,7 @@ function AdminDashboard() {
             
             <TabsTrigger 
               value="settings" 
-              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
+              className="text-gray-400 hover:text-gray-200 data-[state=active]:text-blue-400 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
             >
               <div className="flex items-center gap-2">
                 <Settings className="h-4 w-4" />
@@ -682,53 +682,53 @@ function AdminDashboard() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
-            <Card className="rounded-xl border border-gray-200 shadow-md overflow-hidden bg-white">
-              <div className="h-2 w-full bg-gray-500"></div>
+            <Card className="rounded-xl border border-gray-800 shadow-md overflow-hidden bg-gray-900">
+              <div className="h-2 w-full bg-gray-700"></div>
               <CardHeader className="pb-2 pt-5">
-                <CardTitle className="flex items-center text-xl">
-                  <div className="p-3 rounded-xl bg-gray-100 text-gray-600 mr-4 flex-shrink-0">
+                <CardTitle className="flex items-center text-xl text-gray-100">
+                  <div className="p-3 rounded-xl bg-gray-800 text-gray-300 mr-4 flex-shrink-0">
                     <BellIcon className="h-6 w-6" />
                   </div>
                   <div>Recent Activity</div>
                 </CardTitle>
-                <CardDescription className="text-base ml-[3.25rem]">
+                <CardDescription className="text-base ml-[3.25rem] text-gray-400">
                   Latest site updates and events
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-4">
-                <ul className="space-y-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                  <li className="flex p-3 bg-white rounded-lg border border-gray-100">
-                    <div className="bg-blue-100 p-3 rounded-xl mr-4 flex-shrink-0">
-                      <FileTextIcon className="h-5 w-5 text-blue-600" />
+                <ul className="space-y-4 bg-gray-800 p-4 rounded-lg border border-gray-700">
+                  <li className="flex p-3 bg-gray-800/70 rounded-lg border border-gray-700">
+                    <div className="bg-blue-900/50 p-3 rounded-xl mr-4 flex-shrink-0">
+                      <FileTextIcon className="h-5 w-5 text-blue-400" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">New article published</p>
-                      <p className="text-gray-600 mt-0.5">Webb Telescope Discovers New Exoplanet</p>
-                      <p className="text-gray-400 text-xs mt-1.5 flex items-center">
+                      <p className="font-medium text-gray-100">New article published</p>
+                      <p className="text-gray-400 mt-0.5">Webb Telescope Discovers New Exoplanet</p>
+                      <p className="text-gray-500 text-xs mt-1.5 flex items-center">
                         <ClockIcon className="h-3 w-3 mr-1" /> 2 hours ago
                       </p>
                     </div>
                   </li>
-                  <li className="flex p-3 bg-white rounded-lg border border-gray-100">
-                    <div className="bg-green-100 p-3 rounded-xl mr-4 flex-shrink-0">
-                      <UsersIcon className="h-5 w-5 text-green-600" />
+                  <li className="flex p-3 bg-gray-800/70 rounded-lg border border-gray-700">
+                    <div className="bg-green-900/50 p-3 rounded-xl mr-4 flex-shrink-0">
+                      <UsersIcon className="h-5 w-5 text-green-400" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">New user registered</p>
-                      <p className="text-gray-600 mt-0.5">astronautX</p>
-                      <p className="text-gray-400 text-xs mt-1.5 flex items-center">
+                      <p className="font-medium text-gray-100">New user registered</p>
+                      <p className="text-gray-400 mt-0.5">astronautX</p>
+                      <p className="text-gray-500 text-xs mt-1.5 flex items-center">
                         <ClockIcon className="h-3 w-3 mr-1" /> 4 hours ago
                       </p>
                     </div>
                   </li>
-                  <li className="flex p-3 bg-white rounded-lg border border-gray-100">
-                    <div className="bg-violet-100 p-3 rounded-xl mr-4 flex-shrink-0">
-                      <ImageIcon className="h-5 w-5 text-violet-600" />
+                  <li className="flex p-3 bg-gray-800/70 rounded-lg border border-gray-700">
+                    <div className="bg-violet-900/50 p-3 rounded-xl mr-4 flex-shrink-0">
+                      <ImageIcon className="h-5 w-5 text-violet-400" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">New astronomy photo submitted</p>
-                      <p className="text-gray-600 mt-0.5">Andromeda Galaxy</p>
-                      <p className="text-gray-400 text-xs mt-1.5 flex items-center">
+                      <p className="font-medium text-gray-100">New astronomy photo submitted</p>
+                      <p className="text-gray-400 mt-0.5">Andromeda Galaxy</p>
+                      <p className="text-gray-500 text-xs mt-1.5 flex items-center">
                         <ClockIcon className="h-3 w-3 mr-1" /> Yesterday
                       </p>
                     </div>
@@ -737,23 +737,23 @@ function AdminDashboard() {
               </CardContent>
             </Card>
             
-            <Card className="rounded-xl border border-gray-200 shadow-md overflow-hidden bg-white">
+            <Card className="rounded-xl border border-gray-800 shadow-md overflow-hidden bg-gray-900">
               <div className="h-2 w-full bg-indigo-500"></div>
               <CardHeader className="pb-2 pt-5">
-                <CardTitle className="flex items-center text-xl">
-                  <div className="p-3 rounded-xl bg-indigo-100 text-indigo-600 mr-4 flex-shrink-0">
+                <CardTitle className="flex items-center text-xl text-gray-100">
+                  <div className="p-3 rounded-xl bg-indigo-900/60 text-indigo-400 mr-4 flex-shrink-0">
                     <Settings className="h-6 w-6" />
                   </div>
                   <div>Quick Actions</div>
                 </CardTitle>
-                <CardDescription className="text-base ml-[3.25rem]">
+                <CardDescription className="text-base ml-[3.25rem] text-gray-400">
                   Shortcuts to common tasks
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-4">
                 <div className="grid grid-cols-2 gap-4">
                   <Button 
-                    className="flex flex-col items-center justify-center p-0 h-auto bg-blue-600 hover:bg-blue-700 shadow-sm transition-all rounded-lg overflow-hidden border-0"
+                    className="flex flex-col items-center justify-center p-0 h-auto bg-blue-700 hover:bg-blue-800 shadow-sm transition-all rounded-lg overflow-hidden border-0"
                     onClick={() => navigate('/admin/articles/new')}
                   >
                     <div className="w-full flex flex-col items-center py-5">
@@ -763,7 +763,7 @@ function AdminDashboard() {
                   </Button>
                   
                   <Button
-                    className="flex flex-col items-center justify-center p-0 h-auto bg-purple-600 hover:bg-purple-700 shadow-sm transition-all rounded-lg overflow-hidden border-0"
+                    className="flex flex-col items-center justify-center p-0 h-auto bg-purple-700 hover:bg-purple-800 shadow-sm transition-all rounded-lg overflow-hidden border-0"
                     onClick={() => navigate('/admin/categories-tags')}
                   >
                     <div className="w-full flex flex-col items-center py-5">
@@ -773,7 +773,7 @@ function AdminDashboard() {
                   </Button>
                   
                   <Button
-                    className="flex flex-col items-center justify-center p-0 h-auto bg-amber-600 hover:bg-amber-700 shadow-sm transition-all rounded-lg overflow-hidden border-0"
+                    className="flex flex-col items-center justify-center p-0 h-auto bg-amber-700 hover:bg-amber-800 shadow-sm transition-all rounded-lg overflow-hidden border-0"
                     onClick={() => navigate('/admin/emergency-banner')}
                   >
                     <div className="w-full flex flex-col items-center py-5">
@@ -783,7 +783,7 @@ function AdminDashboard() {
                   </Button>
                   
                   <Button
-                    className="flex flex-col items-center justify-center p-0 h-auto bg-teal-600 hover:bg-teal-700 shadow-sm transition-all rounded-lg overflow-hidden border-0"
+                    className="flex flex-col items-center justify-center p-0 h-auto bg-teal-700 hover:bg-teal-800 shadow-sm transition-all rounded-lg overflow-hidden border-0"
                     onClick={() => navigate('/admin/astronomy-photos')}
                   >
                     <div className="w-full flex flex-col items-center py-5">
@@ -792,7 +792,7 @@ function AdminDashboard() {
                     </div>
                   </Button>
                   <Button
-                    className="flex flex-col items-center justify-center p-0 h-auto bg-green-600 hover:bg-green-700 shadow-sm transition-all rounded-lg overflow-hidden border-0"
+                    className="flex flex-col items-center justify-center p-0 h-auto bg-green-700 hover:bg-green-800 shadow-sm transition-all rounded-lg overflow-hidden border-0"
                     onClick={() => navigate('/admin/job-listings')}
                   >
                     <div className="w-full flex flex-col items-center py-5">
@@ -801,7 +801,7 @@ function AdminDashboard() {
                     </div>
                   </Button>
                   <Button
-                    className="flex flex-col items-center justify-center p-0 h-auto bg-slate-600 hover:bg-slate-700 shadow-sm transition-all rounded-lg overflow-hidden border-0"
+                    className="flex flex-col items-center justify-center p-0 h-auto bg-slate-700 hover:bg-slate-800 shadow-sm transition-all rounded-lg overflow-hidden border-0"
                     onClick={() => navigate('/admin/api-keys')}
                   >
                     <div className="w-full flex flex-col items-center py-5">
