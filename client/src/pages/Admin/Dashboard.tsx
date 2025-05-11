@@ -40,6 +40,7 @@ import {
 import DraftManagement from './DraftManagement';
 import PublishedContent from './PublishedContent';
 import UserManagement from './UserManagement';
+import MediaLibrary from './MediaLibrary';
 
 interface Article {
   id: number;
@@ -780,15 +781,7 @@ function AdminDashboard() {
         </TabsContent>
         
         <TabsContent value="media" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Media Library</CardTitle>
-              <CardDescription>Manage uploads and media</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Media library tab content will go here.</p>
-            </CardContent>
-          </Card>
+          <MediaLibrary />
         </TabsContent>
         
         <TabsContent value="settings" className="mt-6">
