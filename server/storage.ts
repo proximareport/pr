@@ -397,46 +397,31 @@ export class DatabaseStorage implements IStorage {
         throw new Error("Author ID is required for article creation");
       }
       
-      // Create the article using direct SQL to avoid schema mismatches
-      // Only include columns that actually exist in the database
-      const query = `
-        INSERT INTO articles (
-          title, slug, summary, content, author_id, published_at, featured_image, 
-          is_breaking, read_time, tags, category, status
-        ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
-        ) RETURNING *
-      `;
-      
+      // Create the article using direct SQL with inline values to avoid parameter binding issues
       // Process content field if it's a string
       const contentToSave = typeof articleData.content === 'string' 
         ? { content: articleData.content } 
         : articleData.content;
       
-      const values = [
-        articleData.title,
-        articleData.slug,
-        articleData.summary || '',
-        contentToSave,
-        authorIdToUse,
-        articleData.publishedAt || null,
-        articleData.featuredImage || '',
-        articleData.isBreaking || false,
-        articleData.readTime || 5,
-        articleData.tags || [],
-        articleData.category,
-        articleData.status || 'draft'
-      ];
+      const contentForDb = JSON.stringify(contentToSave).replace(/'/g, "''"); // Escape single quotes for PostgreSQL
+      const summary = (articleData.summary || '').replace(/'/g, "''");
+      const title = articleData.title.replace(/'/g, "''");
+      const slug = articleData.slug.replace(/'/g, "''");
+      const category = articleData.category.replace(/'/g, "''");
+      const status = (articleData.status || 'draft').replace(/'/g, "''");
       
-      console.log("Executing article insert with values:", JSON.stringify({
-        title: articleData.title,
-        slug: articleData.slug,
-        authorId: authorIdToUse,
-        category: articleData.category,
-        status: articleData.status || 'draft'
-      }));
+      // Use a minimal set of columns that we know exist in the database
+      const query = `
+        INSERT INTO articles 
+          (title, slug, summary, content, author_id, category, status) 
+        VALUES 
+          ('${title}', '${slug}', '${summary}', '${contentForDb}', ${authorIdToUse}, '${category}', '${status}')
+        RETURNING *
+      `;
       
-      const result = await db.execute(query, values);
+      console.log("Executing article insert with direct SQL");
+      
+      const result = await pool.query(query);
       
       if (!result.rows || result.rows.length === 0) {
         throw new Error("Article creation failed - no rows returned");
