@@ -1635,6 +1635,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // The Space Devs Launch Library API - Get all previous launches
+  app.get("/api/launches/previous", async (req, res) => {
+    try {
+      const cacheKey = '/api/launches/previous';
+      const now = Date.now();
+      
+      // Check if we have a cached response that's still valid
+      if (apiCache[cacheKey] && now - apiCache[cacheKey].timestamp < CACHE_TTL) {
+        return res.json(apiCache[cacheKey].data);
+      }
+      
+      // Otherwise, fetch fresh data
+      const response = await axios.get('https://ll.thespacedevs.com/2.2.0/launch/previous/', {
+        headers: {
+          'User-Agent': 'Proxima-Report/1.0'
+        }
+      });
+      
+      // Cache the response
+      apiCache[cacheKey] = {
+        data: response.data,
+        timestamp: now
+      };
+      
+      res.json(response.data);
+    } catch (error) {
+      console.error("Error fetching previous launches from The Space Devs:", error);
+      res.status(500).json({ message: "Error fetching previous launches" });
+    }
+  });
+  
+  // The Space Devs Launch Library API - Get launch details by ID
+  app.get("/api/launches/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const cacheKey = `/api/launches/${id}`;
+      const now = Date.now();
+      
+      // Check if we have a cached response that's still valid
+      if (apiCache[cacheKey] && now - apiCache[cacheKey].timestamp < CACHE_TTL) {
+        return res.json(apiCache[cacheKey].data);
+      }
+      
+      // Otherwise, fetch fresh data
+      const response = await axios.get(`https://ll.thespacedevs.com/2.2.0/launch/${id}/`, {
+        headers: {
+          'User-Agent': 'Proxima-Report/1.0'
+        }
+      });
+      
+      // Cache the response
+      apiCache[cacheKey] = {
+        data: response.data,
+        timestamp: now
+      };
+      
+      res.json(response.data);
+    } catch (error) {
+      console.error(`Error fetching launch details for ID ${req.params.id}:`, error);
+      res.status(500).json({ message: "Error fetching launch details" });
+    }
+  });
+  
   // ISS Current Location API
   app.get("/api/iss/location", async (req, res) => {
     try {

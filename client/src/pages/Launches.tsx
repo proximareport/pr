@@ -213,9 +213,17 @@ function Launches() {
   });
   
   // Fetch past launches from SpaceX
-  const { data: pastLaunches, isLoading: isLoadingPast } = useQuery<SpaceXLaunch[]>({
+  const { data: spacexPastLaunches, isLoading: isLoadingSpaceXPast } = useQuery<SpaceXLaunch[]>({
     queryKey: ['/api/spacex/launches'],
   });
+  
+  // Fetch past launches from The Space Devs
+  const { data: tsdPastData, isLoading: isLoadingTSDPast } = useQuery({
+    queryKey: ['/api/launches/previous'],
+  });
+  
+  // Combined past launches state
+  const [combinedPastLaunches, setCombinedPastLaunches] = useState<CombinedLaunch[]>([]);
   
   // Fetch ISS location data
   const { data: issData, isLoading: isLoadingISS } = useQuery<ISSPosition>({
@@ -335,21 +343,101 @@ function Launches() {
     return launch.agency?.toLowerCase().includes(filterAgency.toLowerCase());
   });
   
-  // Sort and filter past launches
-  const filteredPastLaunches = pastLaunches 
-    ? pastLaunches
+  // Process past launch data and combine from multiple sources
+  useEffect(() => {
+    const combined: CombinedLaunch[] = [];
+    
+    // Add SpaceX past launches
+    if (spacexPastLaunches) {
+      spacexPastLaunches
         .filter(launch => !launch.upcoming)
-        .filter(launch => {
-          if (filterStatus === "all") return true;
-          if (filterStatus === "success") return launch.success === true;
-          if (filterStatus === "failed") return launch.success === false;
-          return true;
-        })
-        .sort((a, b) => {
-          // Sort by date descending (newest first)
-          return new Date(b.date_utc).getTime() - new Date(a.date_utc).getTime();
-        })
-    : [];
+        .forEach(launch => {
+          combined.push({
+            id: launch.id,
+            source: 'spacex',
+            name: launch.name,
+            date: launch.date_utc,
+            details: launch.details,
+            upcoming: false,
+            success: launch.success,
+            agency: 'SpaceX',
+            rocket: {
+              name: launch.rocket?.name || 'Unknown Rocket',
+            },
+            location: {
+              name: launch.launchpad?.name || 'Unknown Location',
+              locality: launch.launchpad?.locality,
+              country: launch.launchpad?.region,
+            },
+            image: launch.links?.patch?.small,
+            links: {
+              webcast: launch.links?.webcast,
+              wiki: launch.links?.wikipedia,
+              article: launch.links?.article,
+            }
+          });
+        });
+    }
+    
+    // Add The Space Devs past launch data
+    if (tsdPastData && (tsdPastData as any).results) {
+      (tsdPastData as any).results.forEach((launch: any) => {
+        // Skip if it's a SpaceX launch to avoid duplicates
+        if (launch.rocket?.configuration?.manufacturer?.name === "SpaceX") {
+          return;
+        }
+        
+        let success: boolean | undefined = undefined;
+        if (launch.status?.abbrev === "Success") success = true;
+        else if (launch.status?.abbrev === "Failure") success = false;
+        
+        combined.push({
+          id: launch.id,
+          source: 'thespacedevs',
+          name: launch.name,
+          date: launch.net,
+          details: launch.mission?.description,
+          upcoming: false,
+          success: success,
+          agency: launch.rocket?.configuration?.manufacturer?.name,
+          rocket: {
+            name: launch.rocket?.configuration?.full_name || launch.rocket?.configuration?.name || "Unknown Rocket",
+            manufacturer: launch.rocket?.configuration?.manufacturer?.name,
+          },
+          location: {
+            name: launch.pad?.name || "Unknown Location",
+            locality: launch.pad?.location?.name,
+            country: launch.pad?.location?.country_code,
+          },
+          mission: {
+            name: launch.mission?.name,
+            type: launch.mission?.type,
+          },
+          image: launch.image,
+          links: {
+            webcast: launch.vidURLs?.length > 0 ? launch.vidURLs[0].url : undefined,
+            info: launch.infoURLs?.length > 0 ? launch.infoURLs[0].url : undefined,
+          }
+        });
+      });
+    }
+    
+    // Sort by date descending (newest first)
+    combined.sort((a, b) => {
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
+    
+    setCombinedPastLaunches(combined);
+  }, [spacexPastLaunches, tsdPastData]);
+  
+  // Filter past launches
+  const filteredPastLaunches = combinedPastLaunches
+    .filter(launch => {
+      if (filterStatus === "all") return true;
+      if (filterStatus === "success") return launch.success === true;
+      if (filterStatus === "failed") return launch.success === false;
+      return true;
+    });
   
   // Format date for display
   const formatLaunchDate = (dateString: string) => {
