@@ -1,4 +1,4 @@
-import React, { useTransition } from 'react';
+import React, { useTransition, useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -7,7 +7,6 @@ import { useLocation } from 'wouter';
 import { insertAdvertisementSchema } from '@shared/schema';
 import { useMutation } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import { useAuth } from '@/hooks/useAuth';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import {
@@ -50,7 +49,33 @@ type AdFormValues = z.infer<typeof adFormSchema>;
 function Advertise() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
-  const { user } = useAuth();
+  
+  // Track authentication state manually to avoid suspension
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  
+  // Check authentication status on component mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/me', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+    
+    checkAuth();
+  }, []);
+  
   const isAuthenticated = !!user;
   
   // Add useTransition to prevent Suspense during form submission
@@ -105,6 +130,14 @@ function Advertise() {
     });
   };
   
+  // Loading indicator component
+  const LoadingSpinner = () => (
+    <div className="flex justify-center py-12">
+      <div className="animate-spin h-8 w-8 border-4 border-purple-500 border-t-transparent rounded-full"></div>
+    </div>
+  );
+
+  // Rendering with error handling and fallbacks to prevent suspense errors
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
@@ -128,130 +161,22 @@ function Advertise() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                      <FormField
-                        control={form.control}
-                        name="title"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Advertisement Title</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter a title for your advertisement" {...field} />
-                            </FormControl>
-                            <FormDescription>
-                              This will not be displayed to users but helps us identify your ad.
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="linkUrl"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Destination URL</FormLabel>
-                            <FormControl>
-                              <Input placeholder="https://example.com/your-landing-page" {...field} />
-                            </FormControl>
-                            <FormDescription>
-                              The URL where users will be directed when they click your ad.
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="imageUrl"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Image URL (Optional)</FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="https://example.com/your-image.jpg" 
-                                {...field} 
-                                value={field.value || ''} 
-                              />
-                            </FormControl>
-                            <FormDescription>
-                              A direct link to your advertisement image. Leave blank for text-only ads.
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="placement"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Placement</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select ad placement" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="homepage">Homepage Banner</SelectItem>
-                                <SelectItem value="sidebar">Sidebar</SelectItem>
-                                <SelectItem value="article">In-Article</SelectItem>
-                                <SelectItem value="newsletter">Newsletter</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormDescription>
-                              Where would you like your advertisement to appear?
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+                  {authLoading ? (
+                    <LoadingSpinner />
+                  ) : (
+                    <Form {...form}>
+                      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                         <FormField
                           control={form.control}
-                          name="startDate"
+                          name="title"
                           render={({ field }) => (
-                            <FormItem className="flex flex-col">
-                              <FormLabel>Start Date</FormLabel>
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <FormControl>
-                                    <Button
-                                      variant={"outline"}
-                                      className={cn(
-                                        "pl-3 text-left font-normal",
-                                        !field.value && "text-muted-foreground"
-                                      )}
-                                    >
-                                      {field.value ? (
-                                        format(field.value, "PPP")
-                                      ) : (
-                                        <span>Pick a date</span>
-                                      )}
-                                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                    </Button>
-                                  </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                  <Calendar
-                                    mode="single"
-                                    selected={field.value}
-                                    onSelect={field.onChange}
-                                    disabled={(date) =>
-                                      date < new Date(new Date().setHours(0, 0, 0, 0))
-                                    }
-                                    initialFocus
-                                  />
-                                </PopoverContent>
-                              </Popover>
+                            <FormItem>
+                              <FormLabel>Advertisement Title</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter a title for your advertisement" {...field} />
+                              </FormControl>
                               <FormDescription>
-                                When should the ad campaign start?
+                                This will not be displayed to users but helps us identify your ad.
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
@@ -260,55 +185,167 @@ function Advertise() {
                         
                         <FormField
                           control={form.control}
-                          name="endDate"
+                          name="linkUrl"
                           render={({ field }) => (
-                            <FormItem className="flex flex-col">
-                              <FormLabel>End Date</FormLabel>
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <FormControl>
-                                    <Button
-                                      variant={"outline"}
-                                      className={cn(
-                                        "pl-3 text-left font-normal",
-                                        !field.value && "text-muted-foreground"
-                                      )}
-                                    >
-                                      {field.value ? (
-                                        format(field.value, "PPP")
-                                      ) : (
-                                        <span>Pick a date</span>
-                                      )}
-                                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                    </Button>
-                                  </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                  <Calendar
-                                    mode="single"
-                                    selected={field.value}
-                                    onSelect={field.onChange}
-                                    disabled={(date) =>
-                                      date <= (form.getValues().startDate || new Date())
-                                    }
-                                    initialFocus
-                                  />
-                                </PopoverContent>
-                              </Popover>
+                            <FormItem>
+                              <FormLabel>Destination URL</FormLabel>
+                              <FormControl>
+                                <Input placeholder="https://example.com/your-landing-page" {...field} />
+                              </FormControl>
                               <FormDescription>
-                                When should the ad campaign end?
+                                The URL where users will be directed when they click your ad.
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
-                      </div>
-                      
-                      <Button type="submit" className="w-full" disabled={isPendingTransition || isMutating}>
-                        {isPendingTransition || isMutating ? "Submitting..." : "Submit Advertisement"}
-                      </Button>
-                    </form>
-                  </Form>
+                        
+                        <FormField
+                          control={form.control}
+                          name="imageUrl"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Image URL (Optional)</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  placeholder="https://example.com/your-image.jpg" 
+                                  {...field} 
+                                  value={field.value || ''} 
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                A direct link to your advertisement image. Leave blank for text-only ads.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="placement"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Placement</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select ad placement" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="homepage">Homepage Banner</SelectItem>
+                                  <SelectItem value="sidebar">Sidebar</SelectItem>
+                                  <SelectItem value="article">In-Article</SelectItem>
+                                  <SelectItem value="newsletter">Newsletter</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormDescription>
+                                Where would you like your advertisement to appear?
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+                          <FormField
+                            control={form.control}
+                            name="startDate"
+                            render={({ field }) => (
+                              <FormItem className="flex flex-col">
+                                <FormLabel>Start Date</FormLabel>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <FormControl>
+                                      <Button
+                                        variant={"outline"}
+                                        className={cn(
+                                          "pl-3 text-left font-normal",
+                                          !field.value && "text-muted-foreground"
+                                        )}
+                                      >
+                                        {field.value ? (
+                                          format(field.value, "PPP")
+                                        ) : (
+                                          <span>Pick a date</span>
+                                        )}
+                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                      </Button>
+                                    </FormControl>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                      mode="single"
+                                      selected={field.value}
+                                      onSelect={field.onChange}
+                                      disabled={(date) =>
+                                        date < new Date(new Date().setHours(0, 0, 0, 0))
+                                      }
+                                      initialFocus
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                                <FormDescription>
+                                  When should the ad campaign start?
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name="endDate"
+                            render={({ field }) => (
+                              <FormItem className="flex flex-col">
+                                <FormLabel>End Date</FormLabel>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <FormControl>
+                                      <Button
+                                        variant={"outline"}
+                                        className={cn(
+                                          "pl-3 text-left font-normal",
+                                          !field.value && "text-muted-foreground"
+                                        )}
+                                      >
+                                        {field.value ? (
+                                          format(field.value, "PPP")
+                                        ) : (
+                                          <span>Pick a date</span>
+                                        )}
+                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                      </Button>
+                                    </FormControl>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                      mode="single"
+                                      selected={field.value}
+                                      onSelect={field.onChange}
+                                      disabled={(date) =>
+                                        date <= (form.getValues().startDate || new Date())
+                                      }
+                                      initialFocus
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                                <FormDescription>
+                                  When should the ad campaign end?
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        
+                        <Button type="submit" className="w-full" disabled={isPendingTransition || isMutating}>
+                          {isPendingTransition || isMutating ? "Submitting..." : "Submit Advertisement"}
+                        </Button>
+                      </form>
+                    </Form>
+                  )}
                 </CardContent>
               </Card>
             </div>
