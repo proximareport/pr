@@ -19,7 +19,8 @@ import {
   FileEditIcon,
   DollarSignIcon,
   BellIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  AlertTriangleIcon
 } from 'lucide-react';
 import DraftManagement from './DraftManagement';
 import PublishedContent from './PublishedContent';
@@ -61,7 +62,7 @@ function AdminDashboard() {
           <TabsTrigger value="content">Content</TabsTrigger>
           <TabsTrigger value="advertisements" className="flex items-center">
             <DollarSignIcon className="h-4 w-4 mr-1 text-green-600" />
-            Advertisements
+            Ad Overview
             {pendingAdsCount > 0 && (
               <span className="ml-1.5 bg-red-100 text-red-800 text-xs font-semibold px-1.5 py-0.5 rounded-full">
                 {pendingAdsCount}
@@ -382,9 +383,9 @@ function AdminDashboard() {
             <CardHeader>
               <CardTitle className="flex items-center">
                 <DollarSignIcon className="h-5 w-5 mr-2 text-green-600" />
-                Advertisement Management
+                Advertisement Overview
               </CardTitle>
-              <CardDescription>Review, approve, and manage advertisements</CardDescription>
+              <CardDescription>Quick overview of advertisement status and metrics</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
@@ -448,19 +449,21 @@ function AdminDashboard() {
                     onClick={() => navigate('/admin/advertisements')}
                   >
                     <DollarSignIcon className="mr-2 h-5 w-5" />
-                    Manage All Advertisements
+                    Go to Ad Management Console
                   </Button>
                   
                   {pendingAdsCount > 0 && (
-                    <Button 
-                      variant="outline" 
-                      size="lg"
-                      className="border-amber-500 text-amber-600 hover:bg-amber-50"
-                      onClick={() => navigate('/admin/advertisements')}
-                    >
-                      <BellIcon className="mr-2 h-5 w-5" />
-                      Review Pending Ads ({pendingAdsCount})
-                    </Button>
+                    <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                      <h4 className="text-amber-800 font-semibold flex items-center">
+                        <AlertTriangleIcon className="h-5 w-5 mr-2 text-amber-600" />
+                        Important Note
+                      </h4>
+                      <p className="text-amber-700 mt-1">
+                        There are {pendingAdsCount} advertisements waiting for your review. 
+                        Please use the sidebar <b>Ad Management</b> link or the button above to access the complete
+                        ad management interface.
+                      </p>
+                    </div>
                   )}
                 </div>
               </div>
