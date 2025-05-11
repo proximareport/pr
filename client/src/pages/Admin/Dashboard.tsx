@@ -58,9 +58,14 @@ interface Article {
 
 function AdminDashboard() {
   const { user, isAdmin } = useAuth();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Parse URL query parameters for tab selection
+  const urlParams = new URLSearchParams(window.location.search);
+  const tabFromUrl = urlParams.get('tab');
+  const subTabFromUrl = urlParams.get('subtab');
 
   // ContentStatus state
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
@@ -300,7 +305,16 @@ function AdminDashboard() {
       
       <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
       
-      <Tabs defaultValue="overview" className="w-full">
+      <Tabs 
+        defaultValue={tabFromUrl || "overview"} 
+        className="w-full"
+        onValueChange={(value) => {
+          // Update URL when tab changes without forcing a page reload
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.set('tab', value);
+          window.history.pushState({}, '', newUrl.toString());
+        }}
+      >
         <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="content">Content</TabsTrigger>
@@ -520,7 +534,16 @@ function AdminDashboard() {
         
         <TabsContent value="content" className="mt-6">
           <div className="space-y-6">
-            <Tabs defaultValue="published" className="w-full">
+            <Tabs 
+              defaultValue={subTabFromUrl || "published"} 
+              className="w-full"
+              onValueChange={(value) => {
+                // Update URL when subtab changes without forcing a page reload
+                const newUrl = new URL(window.location.href);
+                newUrl.searchParams.set('subtab', value);
+                window.history.pushState({}, '', newUrl.toString());
+              }}
+            >
               <TabsList className="w-full">
                 <TabsTrigger value="published">Published Content</TabsTrigger>
                 <TabsTrigger value="drafts">Draft Management</TabsTrigger>

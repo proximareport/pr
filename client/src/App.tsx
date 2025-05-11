@@ -1,5 +1,5 @@
 import React from "react";
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -58,12 +58,12 @@ function Router() {
         );
       }} />
       <Route path="/admin/content-status" component={() => {
-        const ContentStatusPage = React.lazy(() => import('./pages/Admin/ContentStatus'));
-        return (
-          <React.Suspense fallback={<div>Loading...</div>}>
-            <ContentStatusPage />
-          </React.Suspense>
-        );
+        // Redirect to dashboard with content tab pre-selected
+        const [, navigate] = useLocation();
+        React.useEffect(() => {
+          navigate('/admin?tab=content&subtab=content_status');
+        }, [navigate]);
+        return <div className="flex justify-center items-center h-screen">Redirecting...</div>;
       }} />
       <Route path="/admin/api-keys" component={() => {
         const ApiKeyManagementPage = React.lazy(() => import('./pages/Admin/ApiKeyManagement'));
