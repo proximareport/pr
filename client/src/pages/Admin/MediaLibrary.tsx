@@ -577,6 +577,13 @@ const MediaLibrary = () => {
   const [selectedItem, setSelectedItem] = useState<MediaItem | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<"date" | "name" | "size">("date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [selectedItems, setSelectedItems] = useState<MediaItem[]>([]);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
 
   // Query to fetch media items
   const { data: mediaItems, isLoading, isError } = useQuery({
@@ -606,11 +613,42 @@ const MediaLibrary = () => {
     }
   });
 
-  // Filter media items based on active tab and search query
+  // Filter and sort media items based on active tab, search query, and sort options
   const filteredMedia = React.useMemo(() => {
     if (!mediaItems) return [];
-    return mediaItems;
-  }, [mediaItems]);
+    
+    // Apply sorting
+    return [...mediaItems].sort((a, b) => {
+      if (sortBy === 'date') {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+      } 
+      else if (sortBy === 'name') {
+        return sortOrder === 'asc' 
+          ? a.fileName.localeCompare(b.fileName) 
+          : b.fileName.localeCompare(a.fileName);
+      } 
+      else if (sortBy === 'size') {
+        return sortOrder === 'asc' 
+          ? a.fileSize - b.fileSize 
+          : b.fileSize - a.fileSize;
+      }
+      return 0;
+    });
+  }, [mediaItems, sortBy, sortOrder]);
+  
+  // Paginate the results
+  const paginatedMedia = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredMedia.slice(startIndex, endIndex);
+  }, [filteredMedia, currentPage, itemsPerPage]);
+  
+  // Calculate total pages
+  const totalPages = React.useMemo(() => {
+    return Math.ceil(filteredMedia.length / itemsPerPage);
+  }, [filteredMedia.length, itemsPerPage]);
 
   const handleEditItem = (item: MediaItem) => {
     setSelectedItem(item);
