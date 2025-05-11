@@ -1671,8 +1671,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           price = 1000 * durationDays; // $10/day default
       }
       
-      // Create the advertisement
-      const ad = await storage.createAdvertisement({
+      // Create the advertisement with base fields
+      const adData: any = {
         title,
         imageUrl,
         linkUrl,
@@ -1680,10 +1680,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         startDate: new Date(startDate),
         endDate: new Date(endDate),
         userId,
+        price,
+      };
+      
+      // Add status fields directly to the database query
+      const ad = await storage.createAdvertisementWithStatus({
+        ...adData,
         isApproved: false,
         status: 'pending',
         paymentStatus: 'pending',
-        price,
       });
       
       res.status(201).json(ad);

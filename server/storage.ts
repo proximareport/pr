@@ -743,6 +743,11 @@ export class DatabaseStorage implements IStorage {
     const [newAd] = await db.insert(advertisements).values(ad).returning();
     return newAd;
   }
+  
+  async createAdvertisementWithStatus(ad: any): Promise<Advertisement> {
+    const [newAd] = await db.insert(advertisements).values(ad).returning();
+    return newAd;
+  }
 
   async approveAdvertisement(id: number): Promise<Advertisement | undefined> {
     const [ad] = await db
