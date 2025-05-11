@@ -343,13 +343,42 @@ export class DatabaseStorage implements IStorage {
 
   async getArticleById(id: number): Promise<Article | undefined> {
     try {
-      const result = await db.execute(sql`
-        SELECT * FROM articles 
-        WHERE id = ${id}
-        LIMIT 1
-      `);
+      // Use direct pool query to ensure we're using the exact column names from the DB
+      const result = await pool.query(
+        `SELECT 
+          id, 
+          title, 
+          slug, 
+          summary, 
+          content, 
+          author_id as "primaryAuthorId", 
+          published_at as "publishedAt", 
+          created_at as "createdAt", 
+          updated_at as "updatedAt", 
+          featured_image as "featuredImage", 
+          is_breaking as "isBreaking", 
+          read_time as "readTime",
+          view_count as "viewCount",
+          tags,
+          category,
+          status,
+          last_edited_by as "lastEditedBy",
+          last_edited_at as "lastEditedAt",
+          is_collaborative as "isCollaborative",
+          collaborative_session_id as "collaborativeSessionId"
+        FROM articles 
+        WHERE id = $1
+        LIMIT 1`,
+        [id]
+      );
       
-      return result.rows[0] as Article | undefined;
+      if (result.rows.length > 0) {
+        console.log("Article found:", result.rows[0]);
+        return result.rows[0] as Article;
+      }
+      
+      console.log("No article found with id:", id);
+      return undefined;
     } catch (error) {
       console.error("Error in getArticleById:", error);
       return undefined;
