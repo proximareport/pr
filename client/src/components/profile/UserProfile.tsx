@@ -170,21 +170,28 @@ const UserProfile = ({ username, isEditable = false }: ProfileProps) => {
     setIsLoading(true);
     try {
       // Build profile customization object based on membership tier
-      const profileCustomization: any = {
+      const profileCustomizationObj: any = {
         color: customColor
       };
       
       // Add pro features if user is pro
       if (currentUser?.membershipTier === "pro") {
-        profileCustomization.backgroundColor = customBgColor;
-        profileCustomization.animatedBackground = isAnimatedBg;
+        profileCustomizationObj.backgroundColor = customBgColor;
+        profileCustomizationObj.animatedBackground = isAnimatedBg;
       }
+      
+      console.log("Sending profile update:", {
+        bio,
+        profilePicture,
+        themePreference: selectedTheme,
+        profileCustomization: profileCustomizationObj
+      });
       
       const response = await apiRequest("PUT", "/api/me", {
         bio,
         profilePicture,
         themePreference: selectedTheme,
-        profileCustomization
+        profileCustomization: profileCustomizationObj
       });
       
       // Update current user in auth context

@@ -269,13 +269,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updateSchema = z.object({
         username: z.string().optional(),
         email: z.string().email().optional(),
-        bio: z.string().max(150).optional(),
+        bio: z.string().max(500).optional(),
         profilePicture: z.string().optional(),
         themePreference: z.string().optional(),
-        profileCustomization: z.record(z.any()).optional(),
+        profileCustomization: z.any().optional(), // Allow any JSON structure
       });
       
       const updateData = updateSchema.parse(req.body);
+      console.log("Updating user profile:", updateData);
+      
       const updatedUser = await storage.updateUser(userId, updateData);
       
       if (!updatedUser) {
@@ -293,6 +295,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get user profile by username
+  // Profile picture upload endpoint
+  app.post("/api/users/profile-picture", requireAuth, async (req, res) => {
+    try {
+      // For now simply return success
+      // In a production app, we would handle file upload and storage
+      res.json({ success: true, profilePicture: req.body.profilePicture || "" });
+    } catch (error) {
+      console.error('Error uploading profile picture:', error);
+      res.status(500).json({ message: "Error uploading profile picture" });
+    }
+  });
+
   app.get("/api/users/profile/:username", async (req, res) => {
     try {
       const { username } = req.params;
