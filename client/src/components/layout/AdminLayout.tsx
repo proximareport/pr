@@ -82,7 +82,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         </span>
       ) : null
     },
-    { label: 'Content Status', icon: <BookOpenCheck className="h-5 w-5" />, path: '/admin/content-status' },
+    /* Content Status removed as it's now integrated in dashboard */
     { label: 'Draft Management', icon: <FileText className="h-5 w-5" />, path: '/admin/drafts' },
     { label: 'Users', icon: <Users className="h-5 w-5" />, path: '/admin/users' },
     { label: 'Tags & Categories', icon: <Tag className="h-5 w-5" />, path: '/admin/categories-tags' },

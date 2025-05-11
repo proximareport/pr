@@ -66,6 +66,62 @@ function AdminDashboard() {
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   
+  const renderArticleTable = (filteredArticles: Article[]) => {
+    if (!filteredArticles || filteredArticles.length === 0) {
+      return <div className="text-center py-8 text-gray-500">No articles found</div>;
+    }
+
+    return (
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Title</TableHead>
+            <TableHead>Author</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Last Updated</TableHead>
+            <TableHead>Published</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {filteredArticles.map((article: Article) => (
+            <TableRow key={article.id}>
+              <TableCell className="font-medium">{article.title}</TableCell>
+              <TableCell>
+                {article.authors && article.authors.map((author, idx) => (
+                  <span key={author.user.id}>
+                    {author.user.username}
+                    {idx < article.authors!.length - 1 ? ', ' : ''}
+                  </span>
+                ))}
+              </TableCell>
+              <TableCell>{getStatusBadge(article.status)}</TableCell>
+              <TableCell>{formatDate(article.updatedAt)}</TableCell>
+              <TableCell>{formatDate(article.publishedAt)}</TableCell>
+              <TableCell className="text-right">
+                <div className="flex justify-end space-x-2">
+                  <Button asChild size="sm" variant="ghost">
+                    <Link href={`/article/${article.slug}`}>
+                      <Eye className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button asChild size="sm" variant="ghost">
+                    <Link href={`/admin/edit-article/${article.id}`}>
+                      <FileEditIcon className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => openStatusDialog(article)}>
+                    <CheckCircleIcon className="h-4 w-4" />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    );
+  };
+  
   // Fetch all advertisements to count pending ones
   const { data: advertisements = [] } = useQuery({
     queryKey: ['/api/advertisements/all'],
@@ -146,7 +202,7 @@ function AdminDashboard() {
   };
 
   const getArticlesByStatus = (status: string | string[]) => {
-    if (!articles) return [];
+    if (!articles || !Array.isArray(articles)) return [];
     
     if (Array.isArray(status)) {
       return articles.filter((article: Article) => status.includes(article.status));
@@ -174,6 +230,74 @@ function AdminDashboard() {
 
   return (
     <div className="container py-8">
+      {/* Status Update Dialog */}
+      <Dialog open={!!selectedArticle} onOpenChange={(open) => !open && setSelectedArticle(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Article Status</DialogTitle>
+            <DialogDescription>
+              {selectedArticle?.title}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            <RadioGroup
+              value={selectedStatus}
+              onValueChange={setSelectedStatus}
+              className="space-y-3"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="draft" id="draft" />
+                <Label htmlFor="draft" className="flex items-center">
+                  <Badge className="ml-2 bg-gray-100 text-gray-800 border-gray-200">Draft</Badge>
+                  <span className="ml-2">Work in progress</span>
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="needs_edits" id="needs_edits" />
+                <Label htmlFor="needs_edits" className="flex items-center">
+                  <Badge className="ml-2 bg-yellow-100 text-yellow-800 border-yellow-200">Needs Edits</Badge>
+                  <span className="ml-2">Requires revisions before publishing</span>
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="good_to_publish" id="good_to_publish" />
+                <Label htmlFor="good_to_publish" className="flex items-center">
+                  <Badge className="ml-2 bg-blue-100 text-blue-800 border-blue-200">Good to Publish</Badge>
+                  <span className="ml-2">Ready for publication</span>
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="do_not_publish" id="do_not_publish" />
+                <Label htmlFor="do_not_publish" className="flex items-center">
+                  <Badge className="ml-2 bg-red-100 text-red-800 border-red-200">Do Not Publish</Badge>
+                  <span className="ml-2">Content rejected - do not publish</span>
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="published" id="published" />
+                <Label htmlFor="published" className="flex items-center">
+                  <Badge className="ml-2 bg-green-100 text-green-800 border-green-200">Published</Badge>
+                  <span className="ml-2">Live on the site</span>
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSelectedArticle(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleStatusUpdate}
+              disabled={updateStatusMutation.isPending || selectedStatus === selectedArticle?.status}
+            >
+              {updateStatusMutation.isPending ? 'Updating...' : 'Update Status'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
       
       <Tabs defaultValue="overview" className="w-full">
@@ -437,19 +561,19 @@ function AdminDashboard() {
                       </div>
 
                       <TabsContent value="all">
-                        {renderArticleTable(articles)}
+                        {Array.isArray(articles) && renderArticleTable(articles)}
                       </TabsContent>
                       <TabsContent value="needs_edits">
-                        {renderArticleTable(getArticlesByStatus('needs_edits'))}
+                        {Array.isArray(articles) && renderArticleTable(getArticlesByStatus('needs_edits'))}
                       </TabsContent>
                       <TabsContent value="good_to_publish">
-                        {renderArticleTable(getArticlesByStatus('good_to_publish'))}
+                        {Array.isArray(articles) && renderArticleTable(getArticlesByStatus('good_to_publish'))}
                       </TabsContent>
                       <TabsContent value="do_not_publish">
-                        {renderArticleTable(getArticlesByStatus('do_not_publish'))}
+                        {Array.isArray(articles) && renderArticleTable(getArticlesByStatus('do_not_publish'))}
                       </TabsContent>
                       <TabsContent value="published">
-                        {renderArticleTable(getArticlesByStatus('published'))}
+                        {Array.isArray(articles) && renderArticleTable(getArticlesByStatus('published'))}
                       </TabsContent>
                     </Tabs>
                   )}
@@ -488,14 +612,7 @@ function AdminDashboard() {
                     <AlertOctagonIcon className="h-5 w-5 mb-2" />
                     <span>Emergency Banner</span>
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="h-auto py-4 flex flex-col items-center justify-center"
-                    onClick={() => navigate('/admin/content-status')}
-                  >
-                    <FileEditIcon className="h-5 w-5 mb-2" />
-                    <span>Content Status</span>
-                  </Button>
+                  {/* Content Status button removed as functionality is integrated in the dashboard */}
                 </div>
               </CardContent>
             </Card>
