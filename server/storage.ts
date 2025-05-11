@@ -984,16 +984,47 @@ export class DatabaseStorage implements IStorage {
   
   async updateSiteSettings(settingsId: number, data: Partial<SiteSettings>, updatedBy: number): Promise<SiteSettings | undefined> {
     try {
+      console.log("Storage: Updating site settings with ID:", settingsId);
+      console.log("Storage: Update data:", data);
+      console.log("Storage: Updated by user ID:", updatedBy);
+      
+      // First check if the settings exist
+      const existingSettings = await db
+        .select()
+        .from(siteSettings)
+        .where(eq(siteSettings.id, settingsId))
+        .limit(1);
+        
+      if (!existingSettings || existingSettings.length === 0) {
+        console.error("Settings with ID", settingsId, "not found");
+        return undefined;
+      }
+      
+      console.log("Storage: Existing settings found:", existingSettings[0]);
+      
+      // Prepare data for update, filtering out any null/undefined values
+      const updateData: Record<string, any> = { 
+        updatedAt: new Date(),
+        updatedBy 
+      };
+      
+      // Only include defined values from the input data
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined) {
+          updateData[key] = value;
+        }
+      });
+      
+      console.log("Storage: Final update data:", updateData);
+      
+      // Perform the update
       const [updatedSettings] = await db
         .update(siteSettings)
-        .set({
-          ...data,
-          updatedAt: new Date(),
-          updatedBy,
-        })
+        .set(updateData)
         .where(eq(siteSettings.id, settingsId))
         .returning();
         
+      console.log("Storage: Update result:", updatedSettings);
       return updatedSettings;
     } catch (error) {
       console.error("Error updating site settings:", error);

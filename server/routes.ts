@@ -1786,33 +1786,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const settingsId = parseInt(req.params.id);
       const updateData = req.body;
       
+      console.log("Received update request for site settings ID:", settingsId);
+      console.log("Update data:", updateData);
+      
       if (!settingsId || isNaN(settingsId)) {
+        console.error("Invalid settings ID:", req.params.id);
         return res.status(400).json({ message: "Invalid settings ID" });
       }
       
       // Validate the update data
-      const result = updateSiteSettingsSchema.safeParse(updateData);
-      if (!result.success) {
-        return res.status(400).json({ 
-          message: "Invalid settings data", 
-          errors: result.error.format() 
-        });
+      try {
+        // First try to use the schema
+        const result = updateSiteSettingsSchema.safeParse(updateData);
+        if (!result.success) {
+          console.error("Schema validation failed:", result.error.format());
+          return res.status(400).json({ 
+            message: "Invalid settings data", 
+            errors: result.error.format() 
+          });
+        }
+        console.log("Data validation passed");
+      } catch (validationError) {
+        console.error("Schema validation error:", validationError);
+        return res.status(400).json({ message: "Error validating data" });
       }
       
-      const updatedSettings = await storage.updateSiteSettings(
-        settingsId, 
-        updateData, 
-        req.session.userId
-      );
+      console.log("User ID from session:", req.session.userId);
       
-      if (!updatedSettings) {
-        return res.status(404).json({ message: "Settings not found" });
+      try {
+        const updatedSettings = await storage.updateSiteSettings(
+          settingsId, 
+          updateData, 
+          req.session.userId
+        );
+        
+        console.log("Update result:", updatedSettings);
+        
+        if (!updatedSettings) {
+          console.error("Settings not found after update attempt");
+          return res.status(404).json({ message: "Settings not found" });
+        }
+        
+        res.json(updatedSettings);
+      } catch (storageError) {
+        console.error("Storage error when updating settings:", storageError);
+        return res.status(500).json({ message: "Database error updating settings" });
       }
-      
-      res.json(updatedSettings);
     } catch (error) {
-      console.error("Error updating site settings:", error);
-      res.status(500).json({ message: "Failed to update site settings" });
+      console.error("General error updating site settings:", error);
+      res.status(500).json({ message: "Failed to update site settings", error: String(error) });
     }
   });
   
