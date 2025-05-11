@@ -6,6 +6,7 @@ import { z } from "zod";
 // Enums for role and membership tiers
 export const roleEnum = pgEnum("role", ["user", "author", "editor", "admin"]);
 export const membershipTierEnum = pgEnum("membership_tier", ["free", "supporter", "pro"]);
+export const mediaTypeEnum = pgEnum("media_type", ["image", "video", "document", "audio"]);
 
 // Users
 export const users = pgTable("users", {
@@ -160,6 +161,26 @@ export const emergencyBanners = pgTable("emergency_banners", {
   createdBy: integer("created_by").references(() => users.id),
 });
 
+// Media Library for storing and managing uploaded files
+export const mediaLibrary = pgTable("media_library", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  fileName: text("file_name").notNull(),
+  fileUrl: text("file_url").notNull(),
+  fileSize: integer("file_size").notNull(),
+  fileType: mediaTypeEnum("file_type").notNull(),
+  mimeType: text("mime_type").notNull(),
+  altText: text("alt_text"),
+  caption: text("caption"),
+  width: integer("width"),
+  height: integer("height"),
+  duration: integer("duration"), // For videos and audio in seconds
+  isPublic: boolean("is_public").default(true).notNull(),
+  tags: text("tags").array(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Relations
 // API Keys for external applications
 export const apiKeys = pgTable("api_keys", {
@@ -182,6 +203,7 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   advertisements: many(advertisements),
   apiKeys: many(apiKeys),
   lastEditedArticles: many(articles, { relationName: "lastEditor" }),
+  mediaFiles: many(mediaLibrary),
 }));
 
 export const articlesRelations = relations(articles, ({ one, many }) => ({
@@ -262,6 +284,13 @@ export const advertisementsRelations = relations(advertisements, ({ one }) => ({
   }),
 }));
 
+export const mediaLibraryRelations = relations(mediaLibrary, ({ one }) => ({
+  user: one(users, {
+    fields: [mediaLibrary.userId],
+    references: [users.id],
+  }),
+}));
+
 // Zod Schemas for validation
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true, 
@@ -338,6 +367,12 @@ export const insertApiKeySchema = createInsertSchema(apiKeys).omit({
   key: true // We'll generate this
 });
 
+export const insertMediaLibrarySchema = createInsertSchema(mediaLibrary).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type Article = typeof articles.$inferSelect;
@@ -350,6 +385,7 @@ export type Category = typeof categories.$inferSelect;
 export type Vote = typeof votes.$inferSelect;
 export type ApiKey = typeof apiKeys.$inferSelect;
 export type ArticleAuthor = typeof articleAuthors.$inferSelect;
+export type MediaLibraryItem = typeof mediaLibrary.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertArticle = z.infer<typeof insertArticleSchema>;
@@ -359,3 +395,4 @@ export type InsertAstronomyPhoto = z.infer<typeof insertAstronomyPhotoSchema>;
 export type InsertJobListing = z.infer<typeof insertJobListingSchema>;
 export type InsertAdvertisement = z.infer<typeof insertAdvertisementSchema>;
 export type InsertApiKey = z.infer<typeof insertApiKeySchema>;
+export type InsertMediaLibraryItem = z.infer<typeof insertMediaLibrarySchema>;
