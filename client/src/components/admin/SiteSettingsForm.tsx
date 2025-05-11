@@ -69,13 +69,13 @@ const SiteSettingsForm = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // Cast the settings type for TypeScript
-  type SettingsType = {
+  // Define the settings type for TypeScript
+  interface SettingsType {
     id: number;
     siteName: string;
     siteTagline: string;
     siteDescription: string;
-    siteKeywords: string[] | any; // Handle different potential formats
+    siteKeywords: string[] | string;
     logoUrl: string | null;
     faviconUrl: string | null;
     primaryColor: string;
@@ -92,7 +92,7 @@ const SiteSettingsForm = () => {
     maintenanceMode: boolean;
     updatedAt: string;
     updatedBy: number;
-  };
+  }
 
   // Fetch current settings
   const { data: settings, isLoading, error } = useQuery<SettingsType>({
@@ -129,43 +129,40 @@ const SiteSettingsForm = () => {
     if (settings) {
       console.log("Settings loaded:", settings);
       
-      // Cast settings to our expected type
-      const typedSettings = settings as unknown as SettingsType;
-      
       // Ensure siteKeywords is an array
       let formattedKeywords: string[] = [];
       
-      if (Array.isArray(typedSettings.siteKeywords)) {
-        formattedKeywords = typedSettings.siteKeywords;
-      } else if (typeof typedSettings.siteKeywords === 'string') {
+      if (Array.isArray(settings.siteKeywords)) {
+        formattedKeywords = settings.siteKeywords;
+      } else if (typeof settings.siteKeywords === 'string') {
         try {
           // Try to parse JSON string
-          formattedKeywords = JSON.parse(typedSettings.siteKeywords);
+          formattedKeywords = JSON.parse(settings.siteKeywords);
         } catch (e) {
           // If parsing fails, use string as a single keyword
-          formattedKeywords = [typedSettings.siteKeywords];
+          formattedKeywords = [settings.siteKeywords];
         }
       }
       
       form.reset({
-        siteName: typedSettings.siteName || '',
-        siteTagline: typedSettings.siteTagline || '',
-        siteDescription: typedSettings.siteDescription || '',
+        siteName: settings.siteName || '',
+        siteTagline: settings.siteTagline || '',
+        siteDescription: settings.siteDescription || '',
         siteKeywords: formattedKeywords,
-        logoUrl: typedSettings.logoUrl || '',
-        faviconUrl: typedSettings.faviconUrl || '',
-        primaryColor: typedSettings.primaryColor || '#0f172a',
-        secondaryColor: typedSettings.secondaryColor || '#4f46e5',
-        googleAnalyticsId: typedSettings.googleAnalyticsId || '',
-        facebookAppId: typedSettings.facebookAppId || '',
-        twitterUsername: typedSettings.twitterUsername || '',
-        contactEmail: typedSettings.contactEmail || '',
-        allowComments: typedSettings.allowComments ?? true,
-        requireCommentApproval: typedSettings.requireCommentApproval ?? false,
-        allowUserRegistration: typedSettings.allowUserRegistration ?? true,
-        supporterTierPrice: typedSettings.supporterTierPrice || 200,
-        proTierPrice: typedSettings.proTierPrice || 400,
-        maintenanceMode: typedSettings.maintenanceMode ?? false,
+        logoUrl: settings.logoUrl || '',
+        faviconUrl: settings.faviconUrl || '',
+        primaryColor: settings.primaryColor || '#0f172a',
+        secondaryColor: settings.secondaryColor || '#4f46e5',
+        googleAnalyticsId: settings.googleAnalyticsId || '',
+        facebookAppId: settings.facebookAppId || '',
+        twitterUsername: settings.twitterUsername || '',
+        contactEmail: settings.contactEmail || '',
+        allowComments: settings.allowComments ?? true,
+        requireCommentApproval: settings.requireCommentApproval ?? false,
+        allowUserRegistration: settings.allowUserRegistration ?? true,
+        supporterTierPrice: settings.supporterTierPrice || 200,
+        proTierPrice: settings.proTierPrice || 400,
+        maintenanceMode: settings.maintenanceMode ?? false,
       });
     }
   }, [settings, form]);
