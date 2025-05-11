@@ -9,8 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { SaveIcon, UploadIcon, PlusIcon, XIcon } from 'lucide-react';
+import { SaveIcon, UploadIcon, PlusIcon, XIcon, ImageIcon } from 'lucide-react';
 import RichTextEditor from '@/components/article/RichTextEditor';
+import MediaSelector from '@/components/MediaSelector';
 import { EditorLayout, EditorMainCard, EditorSideCard } from '@/components/admin/EditorLayout';
 import { 
   TextFormField, 
