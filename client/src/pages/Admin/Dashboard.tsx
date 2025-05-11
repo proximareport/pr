@@ -14,7 +14,8 @@ import {
   BarChart3Icon,
   TagIcon,
   KeyIcon,
-  FileEditIcon
+  FileEditIcon,
+  DollarSignIcon
 } from 'lucide-react';
 import DraftManagement from './DraftManagement';
 import PublishedContent from './PublishedContent';
@@ -272,6 +273,34 @@ function AdminDashboard() {
                     <FileEditIcon className="h-5 w-5 mb-2" />
                     <span>Content Status</span>
                   </Button>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Advertisement Management</CardTitle>
+                <CardDescription>Approve and manage advertisements</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-2">Review pending advertisements and manage existing ads</p>
+                    <Button 
+                      variant="default" 
+                      onClick={() => navigate('/admin/advertisements')}
+                      className="gap-2"
+                    >
+                      <DollarSignIcon className="h-4 w-4" />
+                      Manage Advertisements
+                    </Button>
+                  </div>
+                  <div className="hidden md:block">
+                    <div className="bg-orange-100 text-orange-800 text-sm p-3 rounded-lg">
+                      <p className="font-semibold">Pending Approval</p>
+                      <p className="text-2xl font-bold mt-1">New Ads</p>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
