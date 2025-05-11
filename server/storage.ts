@@ -100,6 +100,7 @@ export interface IStorage {
   getAdvertisements(placement?: string): Promise<Advertisement[]>;
   getAdvertisementById(id: number): Promise<Advertisement | undefined>;
   createAdvertisement(ad: InsertAdvertisement): Promise<Advertisement>;
+  createAdvertisementWithStatus(ad: any): Promise<Advertisement>;
   updateAdvertisement(id: number, data: Partial<Advertisement>): Promise<Advertisement | undefined>;
   approveAdvertisement(id: number): Promise<Advertisement | undefined>;
   deleteAdvertisement(id: number): Promise<boolean>;

@@ -95,7 +95,7 @@ function Advertise() {
   });
   
   const { mutate, isPending: isMutating } = useMutation({
-    mutationFn: async (data: AdFormValues) => {
+    mutationFn: async (data: any) => {
       return await apiRequest("POST", "/api/advertisements", data);
     },
     onSuccess: () => {
@@ -124,9 +124,21 @@ function Advertise() {
       return;
     }
     
+    // Ensure dates are properly formatted as ISO strings for the API
+    const formattedData = {
+      title: data.title,
+      linkUrl: data.linkUrl,
+      placement: data.placement,
+      imageUrl: data.imageUrl || null,
+      startDate: data.startDate.toISOString(),
+      endDate: data.endDate.toISOString()
+    };
+    
+    console.log("Submitting formatted data:", formattedData);
+    
     // Wrap mutation in startTransition to prevent React suspending during synchronous updates
     startTransition(() => {
-      mutate(data);
+      mutate(formattedData);
     });
   };
   
@@ -163,11 +175,12 @@ function Advertise() {
                   <LoadingSpinner />
                 ) : (
                   <Form {...form}>
-                    <form onSubmit={(e) => {
-                      e.preventDefault();
-                      console.log("Form submitted, calling form.handleSubmit");
-                      form.handleSubmit(onSubmit)(e);
-                    }} className="space-y-6">
+                    <form 
+                      onSubmit={form.handleSubmit((data) => {
+                        console.log("Form validated successfully:", data);
+                        onSubmit(data);
+                      })} 
+                      className="space-y-6">
                       <FormField
                         control={form.control}
                         name="title"
@@ -342,7 +355,12 @@ function Advertise() {
                         />
                       </div>
                       
-                      <Button type="submit" className="w-full" disabled={isPendingTransition || isMutating}>
+                      <Button 
+                        type="submit" 
+                        className="w-full" 
+                        disabled={isPendingTransition || isMutating}
+                        onClick={() => console.log("Button clicked, form state:", form.formState)}
+                      >
                         {isPendingTransition || isMutating ? "Submitting..." : "Submit Advertisement"}
                       </Button>
                     </form>
