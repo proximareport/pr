@@ -1,229 +1,306 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { queryClient } from '@/lib/queryClient';
-import AdminLayout from '@/components/layout/AdminLayout';
-import { Button } from '@/components/ui/button';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { formatDistanceToNow } from 'date-fns';
-import { Link } from 'wouter';
-import { Loader2, ExternalLink } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import AdminLayout from '@/components/layout/AdminLayout';
+import { apiRequest } from '@/lib/queryClient';
+import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CheckCircle, XCircle, AlertTriangle, Eye, FileEdit } from 'lucide-react';
+import { Link } from 'wouter';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 interface Article {
   id: number;
   title: string;
   slug: string;
   status: string;
+  publishedAt: string | null;
+  createdAt: string;
   updatedAt: string;
-  publishedAt?: string;
   authors?: Array<{
-    id: number;
-    username: string;
-    profilePicture?: string;
-    role: string;
+    user: {
+      id: number;
+      username: string;
+    };
   }>;
 }
 
 function ContentStatus() {
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<string>('');
   const { toast } = useToast();
-  
-  // Fetch all articles for editors and admins
-  const { data: articles, isLoading, isError } = useQuery<Article[]>({
+  const queryClient = useQueryClient();
+
+  const { data: articles = [], isLoading } = useQuery({
     queryKey: ['/api/articles/all'],
     retry: false,
   });
-  
-  // Status mutation
+
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: number; status: string }) => {
-      const response = await fetch(`/api/articles/${id}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to update article status');
-      }
-      
-      return response.json();
+    mutationFn: async ({
+      articleId,
+      status,
+    }: {
+      articleId: number;
+      status: string;
+    }) => {
+      return await apiRequest('PATCH', `/api/articles/${articleId}/status`, { status });
     },
     onSuccess: () => {
-      // Invalidate the articles query to refresh the data
       queryClient.invalidateQueries({ queryKey: ['/api/articles/all'] });
       toast({
-        title: 'Status updated',
-        description: 'The article status has been updated successfully.',
+        title: 'Success',
+        description: 'Article status updated successfully',
       });
+      setSelectedArticle(null);
     },
-    onError: (error) => {
-      console.error('Error updating article status:', error);
+    onError: () => {
       toast({
         title: 'Error',
-        description: 'Failed to update article status. Please try again.',
+        description: 'Failed to update article status',
         variant: 'destructive',
       });
     },
   });
-  
-  // Handle status change
-  const handleStatusChange = (id: number, status: string) => {
-    updateStatusMutation.mutate({ id, status });
-  };
-  
-  // Status badge color mapping
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'published':
-        return 'bg-green-500';
-      case 'draft':
-        return 'bg-gray-500';
-      case 'needs_edits':
-        return 'bg-yellow-500';
-      case 'good_to_publish':
-        return 'bg-blue-500';
-      case 'do_not_publish':
-        return 'bg-red-500';
-      default:
-        return 'bg-gray-500';
+
+  const handleStatusUpdate = () => {
+    if (selectedArticle && selectedStatus) {
+      updateStatusMutation.mutate({
+        articleId: selectedArticle.id,
+        status: selectedStatus,
+      });
     }
   };
-  
-  // Status display mapping
-  const getStatusDisplay = (status: string) => {
+
+  const openStatusDialog = (article: Article) => {
+    setSelectedArticle(article);
+    setSelectedStatus(article.status);
+  };
+
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case 'published':
-        return 'Published';
+        return <Badge className="bg-green-100 text-green-800 border-green-200">Published</Badge>;
       case 'draft':
-        return 'Draft';
+        return <Badge className="bg-gray-100 text-gray-800 border-gray-200">Draft</Badge>;
       case 'needs_edits':
-        return 'Needs Edits';
+        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Needs Edits</Badge>;
       case 'good_to_publish':
-        return 'Good to Publish';
+        return <Badge className="bg-blue-100 text-blue-800 border-blue-200">Good to Publish</Badge>;
       case 'do_not_publish':
-        return 'Do Not Publish';
+        return <Badge className="bg-red-100 text-red-800 border-red-200">Do Not Publish</Badge>;
       default:
-        return status;
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
-  
+
+  const getArticlesByStatus = (status: string | string[]) => {
+    if (!articles) return [];
+    
+    if (Array.isArray(status)) {
+      return articles.filter((article: Article) => status.includes(article.status));
+    }
+    
+    return articles.filter((article: Article) => article.status === status);
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Not published';
+    const date = new Date(dateString);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+  };
+
+  const renderArticleTable = (filteredArticles: Article[]) => {
+    if (filteredArticles.length === 0) {
+      return <div className="text-center py-8 text-gray-500">No articles found</div>;
+    }
+
+    return (
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Title</TableHead>
+            <TableHead>Author</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Last Updated</TableHead>
+            <TableHead>Published</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {filteredArticles.map((article: Article) => (
+            <TableRow key={article.id}>
+              <TableCell className="font-medium">{article.title}</TableCell>
+              <TableCell>
+                {article.authors && article.authors.map((author, idx) => (
+                  <span key={author.user.id}>
+                    {author.user.username}
+                    {idx < article.authors!.length - 1 ? ', ' : ''}
+                  </span>
+                ))}
+              </TableCell>
+              <TableCell>{getStatusBadge(article.status)}</TableCell>
+              <TableCell>{formatDate(article.updatedAt)}</TableCell>
+              <TableCell>{formatDate(article.publishedAt)}</TableCell>
+              <TableCell className="text-right">
+                <div className="flex justify-end space-x-2">
+                  <Button asChild size="sm" variant="ghost">
+                    <Link href={`/article/${article.slug}`}>
+                      <Eye className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button asChild size="sm" variant="ghost">
+                    <Link href={`/admin/edit-article/${article.id}`}>
+                      <FileEdit className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => openStatusDialog(article)}>
+                    <CheckCircle className="h-4 w-4" />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    );
+  };
+
   return (
     <AdminLayout>
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Content Status</h1>
-          <Link href="/admin/articles/new">
-            <Button>Create New Article</Button>
-          </Link>
+      <div className="container mx-auto py-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold tracking-tight">Content Status</h1>
         </div>
-        
+
         {isLoading ? (
-          <div className="flex items-center justify-center p-8">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <span className="ml-2">Loading articles...</span>
-          </div>
-        ) : isError ? (
-          <div className="bg-red-100 p-4 rounded-md text-red-700">
-            Failed to load articles. Please refresh the page or try again later.
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         ) : (
-          <div className="bg-white rounded-md shadow overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead className="w-[300px]">Title</TableHead>
-                  <TableHead>Authors</TableHead>
-                  <TableHead>Last Updated</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {articles && articles.length > 0 ? (
-                  articles.map((article) => (
-                    <TableRow key={article.id}>
-                      <TableCell className="font-medium">{article.title}</TableCell>
-                      <TableCell>
-                        {article.authors ? (
-                          article.authors.map((author, index) => (
-                            <span key={author.id}>
-                              {author.username}
-                              {index < article.authors!.length - 1 ? ', ' : ''}
-                            </span>
-                          ))
-                        ) : (
-                          'No authors'
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {formatDistanceToNow(new Date(article.updatedAt), { addSuffix: true })}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getStatusColor(article.status)}>
-                          {getStatusDisplay(article.status)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Select
-                          defaultValue={article.status}
-                          onValueChange={(value) => handleStatusChange(article.id, value)}
-                          disabled={updateStatusMutation.isPending}
-                        >
-                          <SelectTrigger className="w-32 h-8">
-                            <SelectValue placeholder="Change status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="draft">Draft</SelectItem>
-                            <SelectItem value="needs_edits">Needs Edits</SelectItem>
-                            <SelectItem value="good_to_publish">Good to Publish</SelectItem>
-                            <SelectItem value="do_not_publish">Do Not Publish</SelectItem>
-                            <SelectItem value="published">Published</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        
-                        <Link href={`/admin/articles/edit/${article.id}`}>
-                          <Button variant="outline" size="sm">Edit</Button>
-                        </Link>
-                        
-                        {article.status === 'published' && (
-                          <a href={`/article/${article.slug}`} target="_blank" rel="noopener noreferrer">
-                            <Button variant="ghost" size="sm">
-                              <ExternalLink className="h-4 w-4 mr-1" />
-                              View
-                            </Button>
-                          </a>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8">
-                      No articles found. Create your first article to get started.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <Tabs defaultValue="all">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-4">
+              <TabsList className="grid grid-cols-5 max-w-md mx-auto">
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="needs_edits" className="flex gap-2 items-center">
+                  <AlertTriangle className="h-4 w-4" /> Needs Edits
+                </TabsTrigger>
+                <TabsTrigger value="good_to_publish" className="flex gap-2 items-center">
+                  <CheckCircle className="h-4 w-4" /> Good to Publish
+                </TabsTrigger>
+                <TabsTrigger value="do_not_publish" className="flex gap-2 items-center">
+                  <XCircle className="h-4 w-4" /> Do Not Publish
+                </TabsTrigger>
+                <TabsTrigger value="published">Published</TabsTrigger>
+              </TabsList>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Article Management</CardTitle>
+                <CardDescription>Review and manage article status</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TabsContent value="all">
+                  {renderArticleTable(articles)}
+                </TabsContent>
+                <TabsContent value="needs_edits">
+                  {renderArticleTable(getArticlesByStatus('needs_edits'))}
+                </TabsContent>
+                <TabsContent value="good_to_publish">
+                  {renderArticleTable(getArticlesByStatus('good_to_publish'))}
+                </TabsContent>
+                <TabsContent value="do_not_publish">
+                  {renderArticleTable(getArticlesByStatus('do_not_publish'))}
+                </TabsContent>
+                <TabsContent value="published">
+                  {renderArticleTable(getArticlesByStatus('published'))}
+                </TabsContent>
+              </CardContent>
+            </Card>
+          </Tabs>
         )}
+
+        {/* Status Update Dialog */}
+        <Dialog open={!!selectedArticle} onOpenChange={(open) => !open && setSelectedArticle(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Update Article Status</DialogTitle>
+              <DialogDescription>
+                {selectedArticle?.title}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="py-4">
+              <RadioGroup
+                value={selectedStatus}
+                onValueChange={setSelectedStatus}
+                className="space-y-3"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="draft" id="draft" />
+                  <Label htmlFor="draft" className="flex items-center">
+                    <Badge className="ml-2 bg-gray-100 text-gray-800 border-gray-200">Draft</Badge>
+                    <span className="ml-2">Work in progress</span>
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="needs_edits" id="needs_edits" />
+                  <Label htmlFor="needs_edits" className="flex items-center">
+                    <Badge className="ml-2 bg-yellow-100 text-yellow-800 border-yellow-200">Needs Edits</Badge>
+                    <span className="ml-2">Requires revisions before publishing</span>
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="good_to_publish" id="good_to_publish" />
+                  <Label htmlFor="good_to_publish" className="flex items-center">
+                    <Badge className="ml-2 bg-blue-100 text-blue-800 border-blue-200">Good to Publish</Badge>
+                    <span className="ml-2">Ready for publication</span>
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="do_not_publish" id="do_not_publish" />
+                  <Label htmlFor="do_not_publish" className="flex items-center">
+                    <Badge className="ml-2 bg-red-100 text-red-800 border-red-200">Do Not Publish</Badge>
+                    <span className="ml-2">Content rejected - do not publish</span>
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="published" id="published" />
+                  <Label htmlFor="published" className="flex items-center">
+                    <Badge className="ml-2 bg-green-100 text-green-800 border-green-200">Published</Badge>
+                    <span className="ml-2">Live on the site</span>
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSelectedArticle(null)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleStatusUpdate}
+                disabled={updateStatusMutation.isPending || selectedStatus === selectedArticle?.status}
+              >
+                {updateStatusMutation.isPending ? 'Updating...' : 'Update Status'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
   );
