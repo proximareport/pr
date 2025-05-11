@@ -1,0 +1,720 @@
+Warning: findDOMNode is deprecated and will be removed in the next major release. Instead, add a ref directly to the element you want to reference. Learn more about using refs safely here: https://reactjs.org/link/strict-mode-find-node
+    at ReactQuill2 (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-quill.js?v=bc020cd0:11416:30)
+    at div
+    at div
+    at div
+    at _c (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/components/ui/card.tsx:20:11)
+    at RichTextEditor (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/components/article/RichTextEditor.tsx:26:3)
+    at div
+    at div
+    at _c9 (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/components/ui/card.tsx:114:12)
+    at div
+    at _c (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/components/ui/card.tsx:20:11)
+    at EditorMainCard (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/components/admin/EditorLayout.tsx:110:3)
+    at form
+    at div
+    at div
+    at div
+    at EditorLayout (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/components/admin/EditorLayout.tsx:22:32)
+    at AdminArticleEditor (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/pages/Admin/NewArticleEditor.tsx:42:18)
+    at Route (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=bc020cd0:323:16)
+    at Switch (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=bc020cd0:379:17)
+    at Router
+    at main
+    at div
+    at MainApp (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/App.tsx?v=384Gh2c6uNm8ynN0HnDFx:330:43)
+    at Provider (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=bc020cd0:38:15)
+    at TooltipProvider (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=bc020cd0:62:5)
+    at AuthProvider (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/lib/AuthContext.tsx:23:32)
+    at QueryClientProvider (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=bc020cd0:2805:3)
+    at App
+    at V (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/next-themes.js?v=bc020cd0:44:25)
+    at J (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/next-themes.js?v=bc020cd0:42:18)
+    at ThemeProvider (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/components/ThemeProvider.tsx:19:33)
+printWarning @ react-dom.development.js:86
+error @ react-dom.development.js:60
+findDOMNode @ react-dom.development.js:29666
+ReactQuill2.getEditingArea @ index.tsx:439
+ReactQuill2.instantiateEditor @ index.tsx:291
+ReactQuill2.componentDidMount @ index.tsx:253
+commitLayoutEffectOnFiber @ react-dom.development.js:23344
+commitLayoutMountEffects_complete @ react-dom.development.js:24727
+commitLayoutEffects_begin @ react-dom.development.js:24713
+commitLayoutEffects @ react-dom.development.js:24651
+commitRootImpl @ react-dom.development.js:26862
+commitRoot @ react-dom.development.js:26721
+performSyncWorkOnRoot @ react-dom.development.js:26156
+flushSyncCallbacks @ react-dom.development.js:12042
+(anonymous) @ react-dom.development.js:25690
+quill.js:4237  [Deprecation] Listener added for a 'DOMNodeInserted' mutation event. Support for this event type has been removed, and this event will no longer be fired. See https://chromestatus.com/feature/5083947249172480 for more information.
+Scroll2 @ quill.js:4237
+create @ quill.js:184
+Quill2 @ quill.js:1153
+ReactQuill2.createEditor @ index.tsx:332
+ReactQuill2.instantiateEditor @ index.tsx:290
+ReactQuill2.componentDidMount @ index.tsx:253
+commitLayoutEffectOnFiber @ react-dom.development.js:23344
+commitLayoutMountEffects_complete @ react-dom.development.js:24727
+commitLayoutEffects_begin @ react-dom.development.js:24713
+commitLayoutEffects @ react-dom.development.js:24651
+commitRootImpl @ react-dom.development.js:26862
+commitRoot @ react-dom.development.js:26721
+performSyncWorkOnRoot @ react-dom.development.js:26156
+flushSyncCallbacks @ react-dom.development.js:12042
+(anonymous) @ react-dom.development.js:25690
+queryClient.ts:30 API Request: GET /api/categories undefined
+queryClient.ts:30 API Request: GET /api/tags undefined
+queryClient.ts:30 API Request: GET /api/users undefined
+queryClient.ts:40 API Response status: 200 Response {type: 'basic', url: 'https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/tags', redirected: false, status: 200, ok: true, …}
+queryClient.ts:40 API Response status: 200 Response {type: 'basic', url: 'https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/categories', redirected: false, status: 200, ok: true, …}
+queryClient.ts:40 API Response status: 200 Response {type: 'basic', url: 'https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/users', redirected: false, status: 200, ok: true, …}
+queryClient.ts:30 API Request: POST /api/articles {title: 'test', slug: 'test-72092', summary: '', content: '', category: 'space-exploration', …}
+queryClient.ts:33 
+            
+            
+            POST https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/articles 500 (Internal Server Error)
+apiRequest @ queryClient.ts:33
+mutationFn @ NewArticleEditor.tsx:175
+fn @ mutation.ts:170
+run @ retryer.ts:153
+start @ retryer.ts:218
+execute @ mutation.ts:208
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+(anonymous) @ NewArticleEditor.tsx:315
+(anonymous) @ NewArticleEditor.tsx:331
+setTimeout
+(anonymous) @ NewArticleEditor.tsx:330
+(anonymous) @ NewArticleEditor.tsx:342
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+commitRootImpl @ react-dom.development.js:26974
+commitRoot @ react-dom.development.js:26721
+performSyncWorkOnRoot @ react-dom.development.js:26156
+flushSyncCallbacks @ react-dom.development.js:12042
+flushSync @ react-dom.development.js:26240
+finishEventHandler @ react-dom.development.js:3976
+batchedUpdates @ react-dom.development.js:3994
+dispatchEventForPluginEventSystem @ react-dom.development.js:9287
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ react-dom.development.js:6465
+dispatchEvent @ react-dom.development.js:6457
+dispatchDiscreteEvent @ react-dom.development.js:6430
+queryClient.ts:40 API Response status: 500 Response {type: 'basic', url: 'https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/articles', redirected: false, status: 500, ok: false, …}
+queryClient.ts:47  API Error Response: {message: 'Error creating article', error: 'column "id" of relation "article_authors" does not exist'}
+apiRequest @ queryClient.ts:47
+await in apiRequest
+mutationFn @ NewArticleEditor.tsx:175
+fn @ mutation.ts:170
+run @ retryer.ts:153
+start @ retryer.ts:218
+execute @ mutation.ts:208
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+(anonymous) @ NewArticleEditor.tsx:315
+(anonymous) @ NewArticleEditor.tsx:331
+setTimeout
+(anonymous) @ NewArticleEditor.tsx:330
+(anonymous) @ NewArticleEditor.tsx:342
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+commitRootImpl @ react-dom.development.js:26974
+commitRoot @ react-dom.development.js:26721
+performSyncWorkOnRoot @ react-dom.development.js:26156
+flushSyncCallbacks @ react-dom.development.js:12042
+flushSync @ react-dom.development.js:26240
+finishEventHandler @ react-dom.development.js:3976
+batchedUpdates @ react-dom.development.js:3994
+dispatchEventForPluginEventSystem @ react-dom.development.js:9287
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ react-dom.development.js:6465
+dispatchEvent @ react-dom.development.js:6457
+dispatchDiscreteEvent @ react-dom.development.js:6430
+queryClient.ts:56  API Request Failed: Error: 500: Error creating article
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (NewArticleEditor.tsx:175:22)
+apiRequest @ queryClient.ts:56
+await in apiRequest
+mutationFn @ NewArticleEditor.tsx:175
+fn @ mutation.ts:170
+run @ retryer.ts:153
+start @ retryer.ts:218
+execute @ mutation.ts:208
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+(anonymous) @ NewArticleEditor.tsx:315
+(anonymous) @ NewArticleEditor.tsx:331
+setTimeout
+(anonymous) @ NewArticleEditor.tsx:330
+(anonymous) @ NewArticleEditor.tsx:342
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+commitRootImpl @ react-dom.development.js:26974
+commitRoot @ react-dom.development.js:26721
+performSyncWorkOnRoot @ react-dom.development.js:26156
+flushSyncCallbacks @ react-dom.development.js:12042
+flushSync @ react-dom.development.js:26240
+finishEventHandler @ react-dom.development.js:3976
+batchedUpdates @ react-dom.development.js:3994
+dispatchEventForPluginEventSystem @ react-dom.development.js:9287
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ react-dom.development.js:6465
+dispatchEvent @ react-dom.development.js:6457
+dispatchDiscreteEvent @ react-dom.development.js:6430
+NewArticleEditor.tsx:186  Autosave request error: Error: 500: Error creating article
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (NewArticleEditor.tsx:175:22)
+mutationFn @ NewArticleEditor.tsx:186
+await in mutationFn
+fn @ mutation.ts:170
+run @ retryer.ts:153
+start @ retryer.ts:218
+execute @ mutation.ts:208
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+(anonymous) @ NewArticleEditor.tsx:315
+(anonymous) @ NewArticleEditor.tsx:331
+setTimeout
+(anonymous) @ NewArticleEditor.tsx:330
+(anonymous) @ NewArticleEditor.tsx:342
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+commitRootImpl @ react-dom.development.js:26974
+commitRoot @ react-dom.development.js:26721
+performSyncWorkOnRoot @ react-dom.development.js:26156
+flushSyncCallbacks @ react-dom.development.js:12042
+flushSync @ react-dom.development.js:26240
+finishEventHandler @ react-dom.development.js:3976
+batchedUpdates @ react-dom.development.js:3994
+dispatchEventForPluginEventSystem @ react-dom.development.js:9287
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ react-dom.development.js:6465
+dispatchEvent @ react-dom.development.js:6457
+dispatchDiscreteEvent @ react-dom.development.js:6430
+NewArticleEditor.tsx:207  Autosave error: Error: Failed to save draft
+    at Object.mutationFn (NewArticleEditor.tsx:187:15)
+onError @ NewArticleEditor.tsx:207
+execute @ mutation.ts:243
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+(anonymous) @ NewArticleEditor.tsx:315
+(anonymous) @ NewArticleEditor.tsx:331
+setTimeout
+(anonymous) @ NewArticleEditor.tsx:330
+(anonymous) @ NewArticleEditor.tsx:342
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+commitRootImpl @ react-dom.development.js:26974
+commitRoot @ react-dom.development.js:26721
+performSyncWorkOnRoot @ react-dom.development.js:26156
+flushSyncCallbacks @ react-dom.development.js:12042
+flushSync @ react-dom.development.js:26240
+finishEventHandler @ react-dom.development.js:3976
+batchedUpdates @ react-dom.development.js:3994
+dispatchEventForPluginEventSystem @ react-dom.development.js:9287
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ react-dom.development.js:6465
+dispatchEvent @ react-dom.development.js:6457
+dispatchDiscreteEvent @ react-dom.development.js:6430
+queryClient.ts:30 API Request: POST /api/articles {title: 'test', slug: 'test-72092', summary: '', content: '', category: 'space-exploration', …}
+queryClient.ts:33 
+            
+            
+            POST https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/articles 400 (Bad Request)
+apiRequest @ queryClient.ts:33
+mutationFn @ NewArticleEditor.tsx:175
+fn @ mutation.ts:170
+run @ retryer.ts:153
+start @ retryer.ts:218
+execute @ mutation.ts:208
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+(anonymous) @ NewArticleEditor.tsx:315
+(anonymous) @ NewArticleEditor.tsx:331
+setTimeout
+(anonymous) @ NewArticleEditor.tsx:330
+onChange @ NewArticleEditor.tsx:505
+(anonymous) @ RichTextEditor.tsx:27
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+queryClient.ts:40 API Response status: 400 Response {type: 'basic', url: 'https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/articles', redirected: false, status: 400, ok: false, …}
+queryClient.ts:47  API Error Response: {message: 'slug already exists', error: 'An article with this slug already exists. Please choose a different slug.', detail: 'Key (slug)=(test-72092) already exists.', code: 'DUPLICATE_SLUG'}
+apiRequest @ queryClient.ts:47
+await in apiRequest
+mutationFn @ NewArticleEditor.tsx:175
+fn @ mutation.ts:170
+run @ retryer.ts:153
+start @ retryer.ts:218
+execute @ mutation.ts:208
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+(anonymous) @ NewArticleEditor.tsx:315
+(anonymous) @ NewArticleEditor.tsx:331
+setTimeout
+(anonymous) @ NewArticleEditor.tsx:330
+onChange @ NewArticleEditor.tsx:505
+(anonymous) @ RichTextEditor.tsx:27
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+queryClient.ts:56  API Request Failed: Error: 400: slug already exists
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (NewArticleEditor.tsx:175:22)
+apiRequest @ queryClient.ts:56
+await in apiRequest
+mutationFn @ NewArticleEditor.tsx:175
+fn @ mutation.ts:170
+run @ retryer.ts:153
+start @ retryer.ts:218
+execute @ mutation.ts:208
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+(anonymous) @ NewArticleEditor.tsx:315
+(anonymous) @ NewArticleEditor.tsx:331
+setTimeout
+(anonymous) @ NewArticleEditor.tsx:330
+onChange @ NewArticleEditor.tsx:505
+(anonymous) @ RichTextEditor.tsx:27
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+NewArticleEditor.tsx:186  Autosave request error: Error: 400: slug already exists
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (NewArticleEditor.tsx:175:22)
+mutationFn @ NewArticleEditor.tsx:186
+await in mutationFn
+fn @ mutation.ts:170
+run @ retryer.ts:153
+start @ retryer.ts:218
+execute @ mutation.ts:208
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+(anonymous) @ NewArticleEditor.tsx:315
+(anonymous) @ NewArticleEditor.tsx:331
+setTimeout
+(anonymous) @ NewArticleEditor.tsx:330
+onChange @ NewArticleEditor.tsx:505
+(anonymous) @ RichTextEditor.tsx:27
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+NewArticleEditor.tsx:207  Autosave error: Error: Failed to save draft
+    at Object.mutationFn (NewArticleEditor.tsx:187:15)
+onError @ NewArticleEditor.tsx:207
+execute @ mutation.ts:243
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+(anonymous) @ NewArticleEditor.tsx:315
+(anonymous) @ NewArticleEditor.tsx:331
+setTimeout
+(anonymous) @ NewArticleEditor.tsx:330
+onChange @ NewArticleEditor.tsx:505
+(anonymous) @ RichTextEditor.tsx:27
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+queryClient.ts:30 API Request: POST /api/articles {title: 'test', slug: 'test-72092', summary: '', content: '', category: 'space-exploration', …}
+queryClient.ts:33 
+            
+            
+            POST https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/articles 400 (Bad Request)
+apiRequest @ queryClient.ts:33
+mutationFn @ NewArticleEditor.tsx:175
+fn @ mutation.ts:170
+run @ retryer.ts:153
+start @ retryer.ts:218
+execute @ mutation.ts:208
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+(anonymous) @ NewArticleEditor.tsx:315
+(anonymous) @ NewArticleEditor.tsx:331
+setTimeout
+(anonymous) @ NewArticleEditor.tsx:330
+onChange @ NewArticleEditor.tsx:505
+(anonymous) @ RichTextEditor.tsx:27
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+commitRootImpl @ react-dom.development.js:26974
+commitRoot @ react-dom.development.js:26721
+performSyncWorkOnRoot @ react-dom.development.js:26156
+flushSyncCallbacks @ react-dom.development.js:12042
+(anonymous) @ react-dom.development.js:25690
+setTimeout
+scheduleFn @ notifyManager.ts:22
+flush @ notifyManager.ts:37
+batch @ notifyManager.ts:56
+dispatch_fn2 @ mutation.ts:331
+execute @ mutation.ts:266
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+(anonymous) @ NewArticleEditor.tsx:315
+(anonymous) @ NewArticleEditor.tsx:331
+setTimeout
+(anonymous) @ NewArticleEditor.tsx:330
+onChange @ NewArticleEditor.tsx:505
+(anonymous) @ RichTextEditor.tsx:27
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+queryClient.ts:40 API Response status: 400 Response {type: 'basic', url: 'https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/articles', redirected: false, status: 400, ok: false, …}
+queryClient.ts:47  API Error Response: {message: 'slug already exists', error: 'An article with this slug already exists. Please choose a different slug.', detail: 'Key (slug)=(test-72092) already exists.', code: 'DUPLICATE_SLUG'}
+apiRequest @ queryClient.ts:47
+await in apiRequest
+mutationFn @ NewArticleEditor.tsx:175
+fn @ mutation.ts:170
+run @ retryer.ts:153
+start @ retryer.ts:218
+execute @ mutation.ts:208
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+(anonymous) @ NewArticleEditor.tsx:315
+(anonymous) @ NewArticleEditor.tsx:331
+setTimeout
+(anonymous) @ NewArticleEditor.tsx:330
+onChange @ NewArticleEditor.tsx:505
+(anonymous) @ RichTextEditor.tsx:27
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+commitRootImpl @ react-dom.development.js:26974
+commitRoot @ react-dom.development.js:26721
+performSyncWorkOnRoot @ react-dom.development.js:26156
+flushSyncCallbacks @ react-dom.development.js:12042
+(anonymous) @ react-dom.development.js:25690
+setTimeout
+scheduleFn @ notifyManager.ts:22
+flush @ notifyManager.ts:37
+batch @ notifyManager.ts:56
+dispatch_fn2 @ mutation.ts:331
+execute @ mutation.ts:266
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+(anonymous) @ NewArticleEditor.tsx:315
+(anonymous) @ NewArticleEditor.tsx:331
+setTimeout
+(anonymous) @ NewArticleEditor.tsx:330
+onChange @ NewArticleEditor.tsx:505
+(anonymous) @ RichTextEditor.tsx:27
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+queryClient.ts:56  API Request Failed: Error: 400: slug already exists
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (NewArticleEditor.tsx:175:22)
+apiRequest @ queryClient.ts:56
+await in apiRequest
+mutationFn @ NewArticleEditor.tsx:175
+fn @ mutation.ts:170
+run @ retryer.ts:153
+start @ retryer.ts:218
+execute @ mutation.ts:208
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+(anonymous) @ NewArticleEditor.tsx:315
+(anonymous) @ NewArticleEditor.tsx:331
+setTimeout
+(anonymous) @ NewArticleEditor.tsx:330
+onChange @ NewArticleEditor.tsx:505
+(anonymous) @ RichTextEditor.tsx:27
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+commitRootImpl @ react-dom.development.js:26974
+commitRoot @ react-dom.development.js:26721
+performSyncWorkOnRoot @ react-dom.development.js:26156
+flushSyncCallbacks @ react-dom.development.js:12042
+(anonymous) @ react-dom.development.js:25690
+setTimeout
+scheduleFn @ notifyManager.ts:22
+flush @ notifyManager.ts:37
+batch @ notifyManager.ts:56
+dispatch_fn2 @ mutation.ts:331
+execute @ mutation.ts:266
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+(anonymous) @ NewArticleEditor.tsx:315
+(anonymous) @ NewArticleEditor.tsx:331
+setTimeout
+(anonymous) @ NewArticleEditor.tsx:330
+onChange @ NewArticleEditor.tsx:505
+(anonymous) @ RichTextEditor.tsx:27
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+NewArticleEditor.tsx:186  Autosave request error: Error: 400: slug already exists
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (NewArticleEditor.tsx:175:22)
+mutationFn @ NewArticleEditor.tsx:186
+await in mutationFn
+fn @ mutation.ts:170
+run @ retryer.ts:153
+start @ retryer.ts:218
+execute @ mutation.ts:208
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+(anonymous) @ NewArticleEditor.tsx:315
+(anonymous) @ NewArticleEditor.tsx:331
+setTimeout
+(anonymous) @ NewArticleEditor.tsx:330
+onChange @ NewArticleEditor.tsx:505
+(anonymous) @ RichTextEditor.tsx:27
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+commitRootImpl @ react-dom.development.js:26974
+commitRoot @ react-dom.development.js:26721
+performSyncWorkOnRoot @ react-dom.development.js:26156
+flushSyncCallbacks @ react-dom.development.js:12042
+(anonymous) @ react-dom.development.js:25690
+setTimeout
+scheduleFn @ notifyManager.ts:22
+flush @ notifyManager.ts:37
+batch @ notifyManager.ts:56
+dispatch_fn2 @ mutation.ts:331
+execute @ mutation.ts:266
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+(anonymous) @ NewArticleEditor.tsx:315
+(anonymous) @ NewArticleEditor.tsx:331
+setTimeout
+(anonymous) @ NewArticleEditor.tsx:330
+onChange @ NewArticleEditor.tsx:505
+(anonymous) @ RichTextEditor.tsx:27
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+NewArticleEditor.tsx:207  Autosave error: Error: Failed to save draft
+    at Object.mutationFn (NewArticleEditor.tsx:187:15)
+onError @ NewArticleEditor.tsx:207
+execute @ mutation.ts:243
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+(anonymous) @ NewArticleEditor.tsx:315
+(anonymous) @ NewArticleEditor.tsx:331
+setTimeout
+(anonymous) @ NewArticleEditor.tsx:330
+onChange @ NewArticleEditor.tsx:505
+(anonymous) @ RichTextEditor.tsx:27
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+commitRootImpl @ react-dom.development.js:26974
+commitRoot @ react-dom.development.js:26721
+performSyncWorkOnRoot @ react-dom.development.js:26156
+flushSyncCallbacks @ react-dom.development.js:12042
+(anonymous) @ react-dom.development.js:25690
+setTimeout
+scheduleFn @ notifyManager.ts:22
+flush @ notifyManager.ts:37
+batch @ notifyManager.ts:56
+dispatch_fn2 @ mutation.ts:331
+execute @ mutation.ts:266
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+(anonymous) @ NewArticleEditor.tsx:315
+(anonymous) @ NewArticleEditor.tsx:331
+setTimeout
+(anonymous) @ NewArticleEditor.tsx:330
+onChange @ NewArticleEditor.tsx:505
+(anonymous) @ RichTextEditor.tsx:27
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533

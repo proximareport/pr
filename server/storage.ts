@@ -458,9 +458,16 @@ export class DatabaseStorage implements IStorage {
       }
       
       return newArticle;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating article:", error);
-      throw error;
+      
+      // Pass through Postgres errors with their codes intact
+      if (error.code) {
+        throw error;
+      }
+      
+      // Format other errors
+      throw new Error(`Error creating article: ${error.message || String(error)}`);
     }
   }
 
@@ -602,11 +609,34 @@ export class DatabaseStorage implements IStorage {
   
   // Article Author operations
   async addAuthorToArticle(articleId: number, userId: number, role = "author"): Promise<ArticleAuthor> {
-    const [authorRecord] = await db.insert(articleAuthors)
-      .values({ articleId, userId, role })
-      .returning();
-    
-    return authorRecord;
+    try {
+      // Use direct SQL to avoid schema mismatches
+      const query = `
+        INSERT INTO article_authors
+          (article_id, user_id, role, created_at, updated_at)
+        VALUES 
+          (${articleId}, ${userId}, '${role}', NOW(), NOW())
+        RETURNING *
+      `;
+      
+      const result = await pool.query(query);
+      
+      if (!result.rows || result.rows.length === 0) {
+        throw new Error("Failed to add author to article");
+      }
+      
+      // Map snake_case to camelCase
+      const authorRecord = result.rows[0];
+      authorRecord.articleId = authorRecord.article_id;
+      authorRecord.userId = authorRecord.user_id;
+      authorRecord.createdAt = authorRecord.created_at;
+      authorRecord.updatedAt = authorRecord.updated_at;
+      
+      return authorRecord;
+    } catch (error) {
+      console.error("Error adding author to article:", error);
+      throw error;
+    }
   }
 
   async removeAuthorFromArticle(articleId: number, userId: number): Promise<boolean> {
