@@ -24,6 +24,7 @@ import multer from "multer";
 import fs from "fs";
 import { pipeline } from "stream/promises";
 import { v4 as uuidv4 } from "uuid";
+import { Readable } from "stream";
 
 // Setup file uploads
 const storage_engine = multer.memoryStorage();
@@ -3006,7 +3007,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Save file to disk
       const filePath = path.join(uploadsDir, fileName);
       const fileStream = fs.createWriteStream(filePath);
-      await pipeline(file.buffer, fileStream);
+      const readableStream = new Readable();
+      readableStream.push(file.buffer);
+      readableStream.push(null);
+      await pipeline(readableStream, fileStream);
       
       // Generate file URL
       const fileUrl = `/uploads/${fileName}`;

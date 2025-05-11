@@ -81,6 +81,14 @@ function Router() {
           </React.Suspense>
         );
       }} />
+      <Route path="/admin/media-library" component={() => {
+        const MediaLibraryPage = React.lazy(() => import('./pages/Admin/MediaLibrary'));
+        return (
+          <React.Suspense fallback={<div>Loading...</div>}>
+            <MediaLibraryPage />
+          </React.Suspense>
+        );
+      }} />
       <Route path="/advertise" component={() => {
         const AdvertisePage = React.lazy(() => import('./pages/Advertise-new'));
         return (

@@ -84,6 +84,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     },
     /* Content Status removed as it's now integrated in dashboard */
     { label: 'Draft Management', icon: <FileText className="h-5 w-5" />, path: '/admin/drafts' },
+    { label: 'Media Library', icon: <Image className="h-5 w-5 text-purple-600" />, path: '/admin/media-library' },
     { label: 'Users', icon: <Users className="h-5 w-5" />, path: '/admin/users' },
     { label: 'Tags & Categories', icon: <Tag className="h-5 w-5" />, path: '/admin/categories-tags' },
     { label: 'Comments', icon: <MessageSquare className="h-5 w-5" />, path: '/admin/comments' },
