@@ -156,9 +156,20 @@ const SiteSettingsForm = () => {
   });
   
   const onSubmit = (data: SiteSettingsFormValues) => {
+    console.log("Form submit handler called");
     console.log("Submitting form data:", data);
     console.log("Settings ID:", settings?.id);
-    updateSettingsMutation.mutate(data);
+    
+    if (settings?.id) {
+      updateSettingsMutation.mutate(data);
+    } else {
+      console.error("Cannot update settings: No settings ID available");
+      toast({
+        title: "Update failed",
+        description: "Could not locate settings ID. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
   
   if (isLoading) {
@@ -641,7 +652,16 @@ const SiteSettingsForm = () => {
             Reset
           </Button>
           <Button 
-            type="submit" 
+            type="button" 
+            onClick={() => {
+              const values = form.getValues();
+              console.log("Manually submitting form with values:", values);
+              if (settings?.id) {
+                updateSettingsMutation.mutate(values);
+              } else {
+                console.error("No settings ID available");
+              }
+            }}
             disabled={updateSettingsMutation.isPending}
             className="flex items-center"
           >
