@@ -3094,7 +3094,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Delete media item
+  // Bulk delete media items - this route must be defined BEFORE the /:id route
+  app.delete("/api/media/bulk", requireAuth, async (req, res) => {
+    try {
+      const { userId } = req.session;
+      const { ids } = req.body;
+      
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "Invalid or empty ids array" });
+      }
+      
+      // Get the requesting user to check admin status
+      const requestingUser = await storage.getUser(userId);
+      const isAdmin = requestingUser?.role === 'admin';
+      
+      // Get all media items
+      const mediaItems = await Promise.all(
+        ids.map(id => storage.getMediaLibraryItemById(parseInt(id)))
+      );
+      
+      // Filter out any null items (not found)
+      const foundItems = mediaItems.filter(item => item !== undefined);
+      
+      if (foundItems.length !== ids.length) {
+        return res.status(404).json({ message: "One or more media items not found" });
+      }
+      
+      // Check permissions
+      if (!isAdmin) {
+        const unauthorizedItems = foundItems.filter(item => item && item.userId !== userId);
+        if (unauthorizedItems.length > 0) {
+          return res.status(403).json({ 
+            message: "You don't have permission to delete one or more of these media items"
+          });
+        }
+      }
+      
+      // Delete files from disk and remove from database
+      const results = await Promise.all(
+        foundItems.map(async (item) => {
+          try {
+            // Delete file from disk
+            const filePath = path.join(process.cwd(), 'public', item.fileUrl);
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+            }
+            
+            // Delete from database
+            await storage.deleteMediaLibraryItem(item.id);
+            return true;
+          } catch (error) {
+            console.error(`Error deleting media item ${item.id}:`, error);
+            return false;
+          }
+        })
+      );
+      
+      const successCount = results.filter(Boolean).length;
+      
+      if (successCount === ids.length) {
+        res.json({ 
+          success: true, 
+          message: `Successfully deleted ${successCount} media items`,
+          deletedCount: successCount
+        });
+      } else {
+        res.status(207).json({ 
+          success: successCount > 0,
+          message: `Partially deleted media items: ${successCount} of ${ids.length} successful`,
+          deletedCount: successCount
+        });
+      }
+    } catch (error) {
+      console.error("Error bulk deleting media items:", error);
+      res.status(500).json({ message: "Error deleting media items" });
+    }
+  });
+  
+  // Delete single media item
   app.delete("/api/media/:id", requireAuth, async (req, res) => {
     try {
       const itemId = parseInt(req.params.id);
