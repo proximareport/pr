@@ -1,26 +1,25 @@
-import React, { useEffect, useState } from 'react';
-import { useLocation } from 'wouter';
-import { useAuth } from '@/lib/AuthContext';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { apiRequest, queryClient } from '@/lib/queryClient';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  ArrowLeftIcon, 
-  SearchIcon, 
-  UserIcon, 
-  ShieldIcon, 
-  MoreHorizontalIcon,
-  AlertCircleIcon,
-  CheckCircleIcon,
-  BanIcon,
-  CrownIcon
-} from 'lucide-react';
+import { apiRequest } from '@/lib/queryClient';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,315 +28,366 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import {
+  PencilIcon,
+  UserIcon,
+  ShieldIcon,
+  CheckIcon,
+  MoreHorizontalIcon,
+  StarIcon,
+} from 'lucide-react';
 
-function formatDate(dateString: string) {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  role: string;
+  membershipTier: string;
+  profilePicture?: string;
+  createdAt: string;
+  lastLoginAt?: string;
+  hasStripeAccount: boolean;
 }
 
-function UserManagement() {
-  const { user: currentUser, isAdmin } = useAuth();
-  const [, navigate] = useLocation();
+export default function UserManagement() {
   const { toast } = useToast();
-  
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterRole, setFilterRole] = useState('all');
-  const [filterMembership, setFilterMembership] = useState('all');
-  
-  // Fetch users
-  const { data: users, isLoading } = useQuery({
-    queryKey: ['/api/users'],
-    queryFn: () => apiRequest('GET', '/api/users').then(res => res.json()),
-  });
-  
-  // User role update mutation
-  const updateUserRoleMutation = useMutation({
-    mutationFn: ({ userId, role }: { userId: number, role: string }) => 
-      apiRequest('PATCH', `/api/users/${userId}/role`, { role }).then(res => res.json()),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
-      toast({
-        title: "User role updated",
-        description: "The user role has been successfully updated.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Failed to update user role",
-        description: error.message || "There was an error updating the user role.",
-        variant: "destructive",
-      });
-    }
-  });
-  
-  // User ban mutation
-  const toggleUserBanMutation = useMutation({
-    mutationFn: ({ userId, banned }: { userId: number, banned: boolean }) => 
-      apiRequest('PATCH', `/api/users/${userId}/ban`, { banned }).then(res => res.json()),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
-      toast({
-        title: "User ban status updated",
-        description: "The user ban status has been successfully updated.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Failed to update user ban status",
-        description: error.message || "There was an error updating the user ban status.",
-        variant: "destructive",
-      });
-    }
-  });
-  
-  // Filter and search users
-  const filteredUsers = users?.filter((user: any) => {
-    let matchesSearch = true;
-    let matchesRole = true;
-    let matchesMembership = true;
-    
-    if (searchQuery) {
-      matchesSearch = 
-        user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (user.email && user.email.toLowerCase().includes(searchQuery.toLowerCase()));
-    }
-    
-    if (filterRole !== 'all') {
-      matchesRole = user.role === filterRole;
-    }
-    
-    if (filterMembership !== 'all') {
-      matchesMembership = user.membershipTier === filterMembership;
-    }
-    
-    return matchesSearch && matchesRole && matchesMembership;
-  }) || [];
-  
-  // Redirect if not admin
-  useEffect(() => {
-    if (!isAdmin) {
-      navigate('/');
-    }
-  }, [isAdmin, navigate]);
+  const queryClient = useQueryClient();
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
+  const [isMembershipDialogOpen, setIsMembershipDialogOpen] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<string>('');
+  const [selectedMembership, setSelectedMembership] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
-  if (!isAdmin) {
-    return null;
-  }
+  // Fetch users with admin flag for detailed info
+  const { data: users = [], isLoading } = useQuery({
+    queryKey: ['/api/users', { admin: true }],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/users?admin=true');
+      return await response.json();
+    },
+    enabled: true,
+  });
+
+  // Update user role mutation
+  const updateRoleMutation = useMutation({
+    mutationFn: async ({ userId, role }: { userId: number; role: string }) => {
+      return await apiRequest('PATCH', `/api/users/${userId}/role`, { role });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({
+        title: 'Success',
+        description: 'User role updated successfully',
+      });
+      setIsRoleDialogOpen(false);
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to update user role',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Update membership tier mutation
+  const updateMembershipMutation = useMutation({
+    mutationFn: async ({ userId, tier }: { userId: number; tier: string }) => {
+      return await apiRequest('PATCH', `/api/users/${userId}/membership`, { tier });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({
+        title: 'Success',
+        description: 'User membership updated successfully',
+      });
+      setIsMembershipDialogOpen(false);
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to update user membership',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const openRoleDialog = (user: User) => {
+    setSelectedUser(user);
+    setSelectedRole(user.role);
+    setIsRoleDialogOpen(true);
+  };
+
+  const openMembershipDialog = (user: User) => {
+    setSelectedUser(user);
+    setSelectedMembership(user.membershipTier);
+    setIsMembershipDialogOpen(true);
+  };
+
+  const handleRoleUpdate = () => {
+    if (selectedUser && selectedRole) {
+      updateRoleMutation.mutate({
+        userId: selectedUser.id,
+        role: selectedRole,
+      });
+    }
+  };
+
+  const handleMembershipUpdate = () => {
+    if (selectedUser && selectedMembership) {
+      updateMembershipMutation.mutate({
+        userId: selectedUser.id,
+        tier: selectedMembership,
+      });
+    }
+  };
+
+  const getRoleBadge = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return <Badge className="bg-red-100 text-red-800 border-red-200">Admin</Badge>;
+      case 'editor':
+        return <Badge className="bg-purple-100 text-purple-800 border-purple-200">Editor</Badge>;
+      case 'author':
+        return <Badge className="bg-blue-100 text-blue-800 border-blue-200">Author</Badge>;
+      default:
+        return <Badge className="bg-gray-100 text-gray-800 border-gray-200">User</Badge>;
+    }
+  };
+
+  const getMembershipBadge = (tier: string) => {
+    switch (tier) {
+      case 'pro':
+        return <Badge className="bg-green-100 text-green-800 border-green-200">Pro</Badge>;
+      case 'supporter':
+        return <Badge className="bg-amber-100 text-amber-800 border-amber-200">Supporter</Badge>;
+      default:
+        return <Badge className="bg-gray-100 text-gray-800 border-gray-200">Free</Badge>;
+    }
+  };
+
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+  };
+
+  // Filter users based on search query
+  const filteredUsers = searchQuery 
+    ? users.filter((user: User) => 
+        user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : users;
 
   return (
-    <div className="container py-8">
-      <div className="flex items-center mb-6">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="mr-4"
-          onClick={() => navigate('/admin')}
-        >
-          <ArrowLeftIcon className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-        <h1 className="text-3xl font-bold">User Management</h1>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center mb-4">
+        <div className="relative w-full max-w-sm">
+          <Input
+            type="search"
+            placeholder="Search users by name or email..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+          <UserIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="font-normal text-xs">
+            {filteredUsers.length} users
+          </Badge>
+        </div>
       </div>
-      
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>Users</CardTitle>
-          <CardDescription>Manage registered users and their permissions</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center">
-            <div className="relative flex-1">
-              <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-              <Input
-                placeholder="Search users..."
-                className="pl-8"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            
-            <div className="flex gap-2">
-              <Select value={filterRole} onValueChange={setFilterRole}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="Filter by role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Roles</SelectItem>
-                  <SelectItem value="user">Users</SelectItem>
-                  <SelectItem value="admin">Admins</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Select value={filterMembership} onValueChange={setFilterMembership}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue placeholder="Filter by membership" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Memberships</SelectItem>
-                  <SelectItem value="free">Free</SelectItem>
-                  <SelectItem value="supporter">Supporter</SelectItem>
-                  <SelectItem value="pro">Pro</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      ) : filteredUsers.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">No users found</div>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>User</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Membership</TableHead>
+              <TableHead>Joined</TableHead>
+              <TableHead>Last Login</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredUsers.map((user: User) => (
+              <TableRow key={user.id}>
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-2">
+                    {user.profilePicture ? (
+                      <img
+                        src={user.profilePicture}
+                        alt={user.username}
+                        className="h-8 w-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
+                        <UserIcon className="h-4 w-4 text-gray-500" />
+                      </div>
+                    )}
+                    <span>{user.username}</span>
+                  </div>
+                </TableCell>
+                <TableCell>{user.email}</TableCell>
+                <TableCell>{getRoleBadge(user.role)}</TableCell>
+                <TableCell>{getMembershipBadge(user.membershipTier)}</TableCell>
+                <TableCell>{formatDate(user.createdAt)}</TableCell>
+                <TableCell>{formatDate(user.lastLoginAt)}</TableCell>
+                <TableCell className="text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreHorizontalIcon className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => openRoleDialog(user)}>
+                        <ShieldIcon className="mr-2 h-4 w-4" />
+                        Change role
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => openMembershipDialog(user)}>
+                        <StarIcon className="mr-2 h-4 w-4" />
+                        Change membership
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+
+      {/* User Role Dialog */}
+      <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change User Role</DialogTitle>
+            <DialogDescription>
+              Update role for <span className="font-medium">{selectedUser?.username}</span>
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            <RadioGroup
+              value={selectedRole}
+              onValueChange={setSelectedRole}
+              className="space-y-3"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="user" id="user-role" />
+                <Label htmlFor="user-role" className="flex items-center">
+                  <Badge className="ml-2 bg-gray-100 text-gray-800 border-gray-200">User</Badge>
+                  <span className="ml-2">Basic access</span>
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="author" id="author-role" />
+                <Label htmlFor="author-role" className="flex items-center">
+                  <Badge className="ml-2 bg-blue-100 text-blue-800 border-blue-200">Author</Badge>
+                  <span className="ml-2">Can create and edit own content</span>
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="editor" id="editor-role" />
+                <Label htmlFor="editor-role" className="flex items-center">
+                  <Badge className="ml-2 bg-purple-100 text-purple-800 border-purple-200">Editor</Badge>
+                  <span className="ml-2">Can manage all content</span>
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="admin" id="admin-role" />
+                <Label htmlFor="admin-role" className="flex items-center">
+                  <Badge className="ml-2 bg-red-100 text-red-800 border-red-200">Admin</Badge>
+                  <span className="ml-2">Full access to the platform</span>
+                </Label>
+              </div>
+            </RadioGroup>
           </div>
-          
-          <div className="border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[250px]">User</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Membership</TableHead>
-                  <TableHead>Joined</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
-                      Loading users...
-                    </TableCell>
-                  </TableRow>
-                ) : filteredUsers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
-                      No users found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredUsers.map((user: any) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center space-x-3">
-                          <div className="flex-shrink-0">
-                            {user.profilePicture ? (
-                              <img 
-                                src={user.profilePicture} 
-                                alt={user.username}
-                                className="w-8 h-8 rounded-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                                <UserIcon className="h-4 w-4 text-gray-500" />
-                              </div>
-                            )}
-                          </div>
-                          <div>
-                            <div className="font-medium">{user.username}</div>
-                            <div className="text-sm text-gray-500">{user.email}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {user.banned ? (
-                          <Badge variant="destructive" className="flex w-fit items-center gap-1">
-                            <BanIcon className="h-3 w-3" />
-                            Banned
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="flex w-fit items-center gap-1 bg-green-50 text-green-600 border-green-200">
-                            <CheckCircleIcon className="h-3 w-3" />
-                            Active
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {user.role === 'admin' ? (
-                          <Badge variant="secondary" className="flex w-fit items-center gap-1">
-                            <ShieldIcon className="h-3 w-3" />
-                            Admin
-                          </Badge>
-                        ) : (
-                          <span className="text-sm">User</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {user.membershipTier === 'pro' ? (
-                          <Badge className="bg-purple-100 text-purple-800 border-purple-200 flex w-fit items-center gap-1">
-                            <CrownIcon className="h-3 w-3" />
-                            Pro
-                          </Badge>
-                        ) : user.membershipTier === 'supporter' ? (
-                          <Badge className="bg-blue-100 text-blue-800 border-blue-200 flex w-fit items-center gap-1">
-                            Supporter
-                          </Badge>
-                        ) : (
-                          <span className="text-sm">Free</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm">{formatDate(user.createdAt)}</span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontalIcon className="h-4 w-4" />
-                              <span className="sr-only">Open menu</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => navigate(`/profile/${user.username}`)}>
-                              View Profile
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            
-                            {user.id !== currentUser?.id && (
-                              <>
-                                {user.role === 'admin' ? (
-                                  <DropdownMenuItem 
-                                    onClick={() => updateUserRoleMutation.mutate({ userId: user.id, role: 'user' })}
-                                  >
-                                    Remove Admin Status
-                                  </DropdownMenuItem>
-                                ) : (
-                                  <DropdownMenuItem 
-                                    onClick={() => updateUserRoleMutation.mutate({ userId: user.id, role: 'admin' })}
-                                  >
-                                    Make Admin
-                                  </DropdownMenuItem>
-                                )}
-                                
-                                <DropdownMenuSeparator />
-                                
-                                {user.banned ? (
-                                  <DropdownMenuItem 
-                                    onClick={() => toggleUserBanMutation.mutate({ userId: user.id, banned: false })}
-                                  >
-                                    <CheckCircleIcon className="mr-2 h-4 w-4 text-green-500" />
-                                    <span>Unban User</span>
-                                  </DropdownMenuItem>
-                                ) : (
-                                  <DropdownMenuItem 
-                                    onClick={() => toggleUserBanMutation.mutate({ userId: user.id, banned: true })}
-                                    className="text-red-600"
-                                  >
-                                    <BanIcon className="mr-2 h-4 w-4" />
-                                    <span>Ban User</span>
-                                  </DropdownMenuItem>
-                                )}
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRoleDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleRoleUpdate}
+              disabled={updateRoleMutation.isPending || selectedRole === selectedUser?.role}
+            >
+              {updateRoleMutation.isPending ? 'Updating...' : 'Update Role'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Membership Dialog */}
+      <Dialog open={isMembershipDialogOpen} onOpenChange={setIsMembershipDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Membership Tier</DialogTitle>
+            <DialogDescription>
+              Update membership for <span className="font-medium">{selectedUser?.username}</span>
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            <RadioGroup
+              value={selectedMembership}
+              onValueChange={setSelectedMembership}
+              className="space-y-3"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="free" id="free-tier" />
+                <Label htmlFor="free-tier" className="flex items-center">
+                  <Badge className="ml-2 bg-gray-100 text-gray-800 border-gray-200">Free</Badge>
+                  <span className="ml-2">Basic features</span>
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="supporter" id="supporter-tier" />
+                <Label htmlFor="supporter-tier" className="flex items-center">
+                  <Badge className="ml-2 bg-amber-100 text-amber-800 border-amber-200">Supporter</Badge>
+                  <span className="ml-2">$2/month - Enhanced features</span>
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="pro" id="pro-tier" />
+                <Label htmlFor="pro-tier" className="flex items-center">
+                  <Badge className="ml-2 bg-green-100 text-green-800 border-green-200">Pro</Badge>
+                  <span className="ml-2">$4/month - All features</span>
+                </Label>
+              </div>
+            </RadioGroup>
           </div>
-        </CardContent>
-      </Card>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsMembershipDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleMembershipUpdate}
+              disabled={updateMembershipMutation.isPending || selectedMembership === selectedUser?.membershipTier}
+            >
+              {updateMembershipMutation.isPending ? 'Updating...' : 'Update Membership'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-
-export default UserManagement;

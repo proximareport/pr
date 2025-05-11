@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import DraftManagement from './DraftManagement';
 import PublishedContent from './PublishedContent';
+import UserManagement from './UserManagement';
 
 interface Article {
   id: number;
@@ -673,11 +674,14 @@ function AdminDashboard() {
         <TabsContent value="users" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>User Management</CardTitle>
-              <CardDescription>Manage users and permissions</CardDescription>
+              <CardTitle className="flex items-center">
+                <UsersIcon className="h-5 w-5 mr-2 text-blue-600" />
+                User Management
+              </CardTitle>
+              <CardDescription>Manage user accounts, roles, and membership tiers</CardDescription>
             </CardHeader>
             <CardContent>
-              <p>User management tab content will go here.</p>
+              <UserManagement />
             </CardContent>
           </Card>
         </TabsContent>
