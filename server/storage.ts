@@ -44,6 +44,7 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByRole(role: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, data: Partial<User>): Promise<User | undefined>;
   updateUserMembership(id: number, tier: 'free' | 'supporter' | 'pro'): Promise<User | undefined>;
@@ -160,6 +161,20 @@ export class DatabaseStorage implements IStorage {
       .where(sql`LOWER(${users.email}) = LOWER(${email})`);
     
     return results[0];
+  }
+  
+  async getUserByRole(role: string): Promise<User | undefined> {
+    try {
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.role, role))
+        .limit(1);
+      return user;
+    } catch (error) {
+      console.error("Error getting user by role:", error);
+      return undefined;
+    }
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
@@ -1002,16 +1017,21 @@ export class DatabaseStorage implements IStorage {
       
       console.log("Storage: Existing settings found:", existingSettings[0]);
       
-      // Prepare data for update, filtering out any null/undefined values
+      // Prepare data for update, filtering out any null/undefined values and ensuring proper date types
       const updateData: Record<string, any> = { 
         updatedAt: new Date(),
         updatedBy 
       };
       
-      // Only include defined values from the input data
+      // Only include defined values from the input data, convert string dates to Date objects
       Object.entries(data).forEach(([key, value]) => {
         if (value !== undefined) {
-          updateData[key] = value;
+          // Check if this is a date field that needs conversion
+          if (key === 'updatedAt' && typeof value === 'string') {
+            updateData[key] = new Date(value);
+          } else {
+            updateData[key] = value;
+          }
         }
       });
       

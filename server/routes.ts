@@ -3314,6 +3314,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error deleting media item" });
     }
   });
+  
+  // Site Settings routes
+  app.get('/api/site-settings', async (req, res) => {
+    try {
+      const settings = await storage.getSiteSettings();
+      
+      if (!settings) {
+        const adminUser = await storage.getUserByRole('admin');
+        if (!adminUser) {
+          return res.status(500).json({ message: "No admin user found to create default settings" });
+        }
+        
+        const defaultSettings = await storage.createDefaultSiteSettings(adminUser.id);
+        return res.json(defaultSettings);
+      }
+      
+      return res.json(settings);
+    } catch (error) {
+      console.error("Error fetching site settings:", error);
+      res.status(500).json({ message: "Error fetching site settings" });
+    }
+  });
+  
+  app.patch('/api/site-settings/:id', requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const settingsId = parseInt(id, 10);
+      const userId = req.session.userId;
+      
+      console.log("PATCH /api/site-settings/:id - Request received");
+      console.log("Settings ID:", settingsId);
+      console.log("Request body:", req.body);
+      console.log("User ID from session:", userId);
+      
+      // Validate the data
+      if (!req.body) {
+        return res.status(400).json({ message: "No data provided" });
+      }
+      
+      console.log("Data validation passed");
+      
+      // Update the settings
+      const updatedSettings = await storage.updateSiteSettings(
+        settingsId,
+        req.body,
+        userId
+      );
+      
+      if (!updatedSettings) {
+        console.log("Settings not found after update attempt");
+        return res.status(404).json({ message: "Settings not found" });
+      }
+      
+      return res.json(updatedSettings);
+    } catch (error) {
+      console.error("Error updating site settings:", error);
+      res.status(500).json({ message: "Error updating site settings" });
+    }
+  });
 
   const httpServer = createServer(app);
 
