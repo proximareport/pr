@@ -231,6 +231,27 @@ function AdminArticleEditor() {
       setIsFeatured(initialArticle.isFeatured || false);
       setIsCollaborative(initialArticle.isCollaborative || false);
       
+      // Initialize the lastSavedContentRef with the initial article data
+      // This prevents unnecessary autosaves when initially loading the article
+      setTimeout(() => {
+        const initialArticleData = {
+          title: initialArticle.title || '',
+          slug: initialArticle.slug || '',
+          summary: initialArticle.summary || '',
+          content: typeof initialArticle.content === 'string' ? initialArticle.content : JSON.stringify(initialArticle.content),
+          category: initialArticle.category || 'space-exploration',
+          tags: initialArticle.tags || [],
+          featuredImage: initialArticle.featuredImage || '',
+          readTime: initialArticle.readTime || 5,
+          status: initialArticle.status || 'draft',
+          isBreaking: initialArticle.isBreaking || false,
+          isFeatured: initialArticle.isFeatured || false,
+          isCollaborative: initialArticle.isCollaborative || false
+        };
+        lastSavedContentRef.current = JSON.stringify(initialArticleData);
+        console.log('Initialized lastSavedContentRef with initial article data');
+      }, 100); // Small delay to ensure state is updated
+      
       // Handle authors
       if (initialArticle.authors && initialArticle.authors.length > 0) {
         // Filter out the current user (primary author) from coauthors list
@@ -313,17 +334,37 @@ function AdminArticleEditor() {
 
   // Function definitions for autosave
   const doAutosave = useCallback(() => {
-    if (!title.trim()) return;
+    // Don't autosave if title is empty
+    if (!title.trim()) {
+      console.log('Title is empty, skipping autosave');
+      return;
+    }
     
     const articleData = prepareArticleData(false); // Always save as draft
     
     // Convert current content to string for comparison
     const currentContentString = JSON.stringify(articleData);
     
-    // Check if content has changed since last save
-    if (currentContentString === lastSavedContentRef.current) {
-      console.log('Content unchanged, skipping autosave');
-      return; // Skip save if content hasn't changed
+    if (!lastSavedContentRef.current) {
+      console.log('No previous saved content reference, saving...');
+    } else {
+      // Check if content has changed since last save
+      if (currentContentString === lastSavedContentRef.current) {
+        console.log('Content unchanged since last save, skipping autosave');
+        return; // Skip save if content hasn't changed
+      }
+      
+      // Find what changed for debugging purposes
+      const prevData = JSON.parse(lastSavedContentRef.current);
+      const fieldsChanged = Object.keys(articleData).filter(key => {
+        // Special handling for arrays or objects that need deep comparison
+        if (Array.isArray(articleData[key]) || typeof articleData[key] === 'object') {
+          return JSON.stringify(articleData[key]) !== JSON.stringify(prevData[key]);
+        }
+        return articleData[key] !== prevData[key];
+      });
+      
+      console.log('Content changed in fields:', fieldsChanged, 'Autosaving...');
     }
     
     // Update the last saved content reference
