@@ -119,18 +119,10 @@ function AdvertiserDashboard() {
   
   // Fetch user's advertisements
   const { data: advertisements, isLoading, isError } = useQuery({
-    queryKey: ['/api/advertisements/user'],
+    queryKey: ['/api/user-advertisements'],
     enabled: !!user,
-    onSuccess: (data) => {
-      console.log("Fetched advertisements:", data);
-      
-      if (data) {
-        const pendingAds = (data as Advertisement[]).filter(ad => 
-          ad.status === 'pending' || ad.status === 'approved_pending_payment'
-        );
-        console.log("Pending ads in client:", pendingAds);
-      }
-    }
+    retry: 3,
+    refetchOnWindowFocus: false
   });
   
   // Function to create a checkout session for an ad
@@ -290,7 +282,7 @@ function AdvertiserDashboard() {
           <p className="text-muted-foreground">Manage your advertisements and track performance</p>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/advertisements/user'] })} className="gap-1">
+          <Button variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/user-advertisements'] })} className="gap-1">
             <RefreshCw className="h-4 w-4" /> Refresh
           </Button>
           <Button className="gap-1" onClick={() => setLocation('/advertise')}>
@@ -308,7 +300,7 @@ function AdvertiserDashboard() {
           <AlertTriangle className="h-10 w-10 mx-auto text-red-500 mb-4" />
           <h3 className="text-xl font-semibold mb-2">Error Loading Advertisements</h3>
           <p className="mb-4 text-gray-600">There was a problem loading your advertisements. Please try again.</p>
-          <Button variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/advertisements/user'] })}>
+          <Button variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/user-advertisements'] })}>
             Try Again
           </Button>
         </div>

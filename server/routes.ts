@@ -2452,44 +2452,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get advertisements for the logged-in user
-  app.get("/api/advertisements/user", async (req, res) => {
+  // Create a completely new endpoint for user ads
+  app.get("/api/user-advertisements", requireAuth, async (req, res) => {
     try {
-      console.log("Debug: Advertisement user endpoint accessed");
+      const userId = req.session.userId!;
+      console.log("NEW ENDPOINT: Fetching ads for user", userId);
       
-      // Get the user ID from the session if available
-      const userId = req.session?.userId;
-      console.log(`Looking for ads for user ID: ${userId || 'not logged in'}`);
+      // Execute SQL directly from our existing connection
+      const { rows } = await db.execute(`SELECT * FROM advertisements WHERE user_id = ${userId}`);
       
-      if (!userId) {
-        console.log('No user ID in session, returning empty array');
-        return res.json([]);
+      console.log(`Found ${rows.length} advertisements from direct pool query`);
+      if (rows.length > 0) {
+        console.log('Example ad from database:', {
+          id: rows[0].id,
+          title: rows[0].title,
+          user_id: rows[0].user_id,
+          is_approved: rows[0].is_approved
+        });
       }
       
-      // Direct database query for maximum reliability
-      console.log(`Executing raw SQL query to get user advertisements for user ID ${userId}`);
-      const query = "SELECT * FROM advertisements WHERE user_id = " + userId;
-      console.log(`Executing query: ${query}`);
-      const result = await db.execute(query);
-      const { rows } = result;
-      
-      if (!rows || rows.length === 0) {
-        console.log(`No advertisements found for user ${userId}`);
-        return res.json([]);
-      }
-      
-      console.log(`Found ${rows.length} advertisements for user ${userId}`);
-      
-      // Transform database rows to client-friendly format
-      const ads = rows.map(ad => ({
+      // Format the data for the client
+      const formattedAds = rows.map(ad => ({
         id: ad.id,
         title: ad.title,
-        imageUrl: ad.image_url || '',
+        imageUrl: ad.image_url || null,
         linkUrl: ad.link_url || '',
-        placement: ad.placement,
+        placement: ad.placement || '',
         startDate: ad.start_date,
         endDate: ad.end_date,
         userId: ad.user_id,
-        isApproved: ad.is_approved === true,
+        isApproved: !!ad.is_approved,
         createdAt: ad.created_at,
         impressions: ad.impressions || 0,
         clicks: ad.clicks || 0,
@@ -2500,20 +2492,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         adminNotes: ad.admin_notes || null
       }));
       
-      // Debug: Log the first advertisement details
-      if (ads.length > 0) {
-        console.log('First ad details:', {
-          id: ads[0].id,
-          title: ads[0].title,
-          isApproved: ads[0].isApproved,
-          status: ads[0].status
-        });
-      }
+      return res.json(formattedAds);
+    } catch (error) {
+      console.error("Error in NEW user ads endpoint:", error);
+      return res.status(500).json({ message: "Failed to fetch your advertisements" });
+    }
+  });
+  
+  // Keep the original endpoint for backward compatibility
+  app.get("/api/advertisements/user", requireAuth, async (req, res) => {
+    try {
+      console.log("OLD ENDPOINT: Redirecting to new endpoint");
+      const userId = req.session.userId!;
+      
+      // Simple direct database query
+      const { rows } = await db.execute(`SELECT * FROM advertisements WHERE user_id = ${userId}`);
+      console.log(`OLD ENDPOINT: Found ${rows?.length || 0} advertisements`);
+      
+      const ads = (rows || []).map(ad => ({
+        id: ad.id,
+        title: ad.title,
+        imageUrl: ad.image_url || '',
+        linkUrl: ad.link_url || '',
+        placement: ad.placement || '',
+        startDate: ad.start_date,
+        endDate: ad.end_date,
+        userId: ad.user_id,
+        isApproved: !!ad.is_approved,
+        createdAt: ad.created_at,
+        impressions: ad.impressions || 0,
+        clicks: ad.clicks || 0,
+        status: ad.status || 'pending',
+        paymentStatus: ad.payment_status || null,
+        paymentId: ad.payment_id || null,
+        price: ad.price || 0,
+        adminNotes: ad.admin_notes || null
+      }));
       
       return res.json(ads);
     } catch (error) {
-      console.error("Error fetching user advertisements:", error);
-      return res.status(500).json({ message: "Error fetching advertisements" });
+      console.error("Error in old user advertisements endpoint:", error);
+      return res.status(500).json([]);
     }
   });
   
