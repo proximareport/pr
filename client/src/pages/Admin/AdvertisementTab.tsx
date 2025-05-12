@@ -52,45 +52,58 @@ function AdvertisementTab() {
     queryKey: ['/api/advertisements/all'],
     retry: 3,
     refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    staleTime: 10000, // Refetch data if older than 10 seconds
     select: (data: any): Advertisement[] => {
-      // Ensure data is always returned as an array
+      // Handle null response from the API
       if (!data) {
-        console.log('No data returned from API');
+        console.error('API returned null for advertisements');
         return [];
       }
       
       // If it's already an array, return it
       if (Array.isArray(data)) {
-        console.log('Advertisement data is an array with length:', data.length);
+        console.log(`Advertisement data is an array with ${data.length} items`);
         return data;
       }
       
-      // If it's an object, try to convert it to an array
+      // Handle object response
       if (typeof data === 'object') {
         console.log('Advertisement data is an object, converting to array');
-        return Object.values(data);
+        const adArray = Object.values(data);
+        console.log(`Converted object to array with ${adArray.length} items`);
+        return adArray;
       }
       
-      console.warn('Unexpected data format from API:', typeof data);
+      console.warn(`Unexpected advertisement data format: ${typeof data}`);
       return [];
-    },
-    onSuccess: (data) => {
-      console.log('Advertisement data retrieved:', data.length, 'advertisements');
-      
-      // Show the distribution of statuses
-      const statusCounts: Record<string, number> = {};
-      data.forEach(ad => {
-        statusCounts[ad.status] = (statusCounts[ad.status] || 0) + 1;
-      });
-      
-      console.log('Advertisement status distribution:', statusCounts);
-      console.log('Pending count:', data.filter(ad => ad.status === 'pending').length);
-      console.log('Approved count:', data.filter(ad => ad.isApproved).length);
-    },
-    onError: (err) => {
-      console.error('Error loading advertisements:', err);
     }
   });
+  
+  // Log data on component render for debugging
+  React.useEffect(() => {
+    if (advertisements && advertisements.length > 0) {
+      console.log('Advertisements loaded:', advertisements.length);
+      
+      // Log specific details about advertisements
+      const pendingCount = advertisements.filter(ad => !ad.isApproved || ad.status === 'pending').length;
+      const approvedCount = advertisements.filter(ad => ad.isApproved).length;
+      
+      console.log(`Advertisement counts - Total: ${advertisements.length}, Pending: ${pendingCount}, Approved: ${approvedCount}`);
+      
+      // Log the first advertisement as an example
+      if (advertisements[0]) {
+        console.log('First advertisement:', {
+          id: advertisements[0].id,
+          title: advertisements[0].title,
+          status: advertisements[0].status,
+          isApproved: advertisements[0].isApproved
+        });
+      }
+    } else {
+      console.log('No advertisements loaded yet or empty array returned');
+    }
+  }, [advertisements]);
   
   const approveMutation = useMutation({
     mutationFn: async (adId: number) => {
@@ -157,7 +170,7 @@ function AdvertisementTab() {
     },
   });
   
-  // Make sure advertisements is an array before using filter
+  // Improved pending ads filter that uses both status and isApproved fields
   const getPendingAds = () => {
     console.log('Getting pending ads. advertisements type:', typeof advertisements, Array.isArray(advertisements) ? 'is array' : 'not array', advertisements);
     
@@ -166,7 +179,10 @@ function AdvertisementTab() {
       return [];
     }
     
-    return advertisements.filter((ad: Advertisement) => !ad.isApproved);
+    return advertisements.filter((ad: Advertisement) => 
+      // Check for pending status or use isApproved flag as fallback
+      ad.status === 'pending' || (!ad.isApproved && ad.status !== 'rejected')
+    );
   };
   
   const getActiveAds = () => {
