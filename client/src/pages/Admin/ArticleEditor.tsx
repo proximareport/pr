@@ -69,12 +69,21 @@ function AdminArticleEditor() {
       // Log response for debugging
       console.log("Article create response:", response);
       
+      // Extract the new article ID from the response
+      const newArticleId = response?.id || response?.article?.id;
+      
       queryClient.invalidateQueries({ queryKey: ['/api/articles'] });
       toast({
         title: "Article created successfully",
         description: `Article ${isDraft ? 'saved as draft' : 'published'} successfully.`,
       });
-      navigate('/admin');
+      
+      // Redirect to edit page if we got an article ID, otherwise to admin dashboard
+      if (newArticleId) {
+        navigate(`/admin/articles/${newArticleId}/edit`);
+      } else {
+        navigate('/admin');
+      }
     },
     onError: (error: any) => {
       console.error("Article creation error:", error);
@@ -109,8 +118,8 @@ function AdminArticleEditor() {
         description: `Article ${isDraft ? 'saved as draft' : 'published'} successfully.`,
       });
       
-      // Navigate back to admin dashboard with fixed path
-      navigate('/admin');
+      // Stay on the same page - no navigation needed
+      // This prevents the undefined redirects
     },
     onError: (error: any) => {
       console.error("Article update error:", error);
@@ -172,14 +181,21 @@ function AdminArticleEditor() {
         publishedAt: !newIsDraft ? new Date().toISOString() : null
       };
       
-      // Use the PATCH endpoint for status updates
-      const response = await apiRequest(
-        'PATCH', 
-        `/api/articles/${params.id}`, 
-        statusUpdateData
-      ).then(res => res.json());
+      // Use the direct PATCH endpoint for status updates
+      const response = await fetch(`/api/articles/${params.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(statusUpdateData)
+      });
       
-      console.log("Status update response:", response);
+      if (!response.ok) {
+        throw new Error(`Status update failed with status ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log("Status update response:", data);
       
       // Update local state
       setIsDraft(newIsDraft);
