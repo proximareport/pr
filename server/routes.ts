@@ -2259,9 +2259,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all advertisements (accessible to admins and ad creators)
   app.get("/api/advertisements/all", async (req, res) => {
     try {
-      console.log('Fetching all advertisements, auth state:', req.isAuthenticated(), 'Session:', req.session);
-      
-      // Check authentication - even though we removed requireAuth middleware, we still want to check
+      console.log('Fetching admin advertisements, auth state:', req.isAuthenticated());
+
+      // Check authentication
       if (!req.isAuthenticated()) {
         console.log('User not authenticated, responding with 401');
         return res.status(401).json({ message: "Authentication required" });
@@ -2270,19 +2270,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.session.userId;
       console.log('Request from user ID:', userId);
       
+      // The key issue: For the admin panel, we want ALL ads without filtering by placement
+      // So we need a completely separate SQL query that doesn't filter by placement
       try {
-        // Execute raw SQL query using parameterized statements to protect against SQL injection
+        // Note: We're using a raw SQL query for maximum reliability and transparency
         const query = `
           SELECT a.*, u.username, u.email 
           FROM advertisements a 
           LEFT JOIN users u ON a.user_id = u.id
+          ORDER BY a.created_at DESC;
         `;
         
+        console.log("Executing SQL query to fetch ALL advertisements regardless of placement");
         const { rows } = await db.execute(query);
         console.log(`SQL query found ${rows.length} advertisements in total`);
         
         if (rows.length > 0) {
-          console.log(`Sample ad data: ID=${rows[0].id}, title=${rows[0].title}, isApproved=${rows[0].is_approved}`);
+          // Output detailed diagnostic information
+          console.log('First few advertisements from database:');
+          for (let i = 0; i < Math.min(3, rows.length); i++) {
+            console.log(`Ad ${i+1}: ID=${rows[i].id}, Title="${rows[i].title}", Status=${rows[i].status}, IsApproved=${rows[i].is_approved}, Placement=${rows[i].placement}`);
+          }
           
           // Transform database rows to client-friendly format
           const enhancedAds = rows.map(ad => ({
@@ -2298,18 +2306,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             createdAt: ad.created_at,
             impressions: ad.impressions || 0,
             clicks: ad.clicks || 0,
-            status: ad.status,
-            paymentStatus: ad.payment_status,
+            status: ad.status || 'pending', // Provide default for compatibility
+            paymentStatus: ad.payment_status || 'pending',
             paymentId: ad.payment_id,
-            price: ad.price,
+            price: ad.price || 0,
             adminNotes: ad.admin_notes,
             user: {
-              username: ad.username,
-              email: ad.email
+              username: ad.username || 'Unknown',
+              email: ad.email || 'Unknown'
             }
           }));
           
-          console.log(`Returning ${enhancedAds.length} advertisements to client`);
+          console.log(`SUCCESS: Returning ${enhancedAds.length} advertisements to client`);
           return res.json(enhancedAds);
         } else {
           console.log('No advertisements found in the database');
@@ -2318,31 +2326,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (sqlError) {
         console.error("Error in SQL query:", sqlError);
         
-        // Fallback to Drizzle ORM if the SQL query fails
-        console.log("Falling back to Drizzle ORM for advertisement retrieval");
+        // Last resort: Try a direct simplified query
         try {
-          const allAds = await db.select().from(advertisements);
-          console.log(`Drizzle found ${allAds.length} advertisements`);
+          console.log("FALLBACK: Trying simplified SQL query");
+          const { rows } = await db.execute("SELECT * FROM advertisements");
           
-          if (allAds.length > 0) {
-            // Include user information with each ad
-            const enhancedAds = await Promise.all(allAds.map(async (ad) => {
-              const adUser = await storage.getUser(ad.userId);
-              return {
-                ...ad,
-                user: adUser ? {
-                  username: adUser.username,
-                  email: adUser.email
-                } : undefined
-              };
-            }));
-            
-            return res.json(enhancedAds);
+          if (rows && rows.length > 0) {
+            console.log(`Simplified query found ${rows.length} ads`);
+            return res.json(rows.map(ad => ({
+              id: ad.id,
+              title: ad.title,
+              imageUrl: ad.image_url,
+              linkUrl: ad.link_url || 'https://example.com',
+              placement: ad.placement,
+              startDate: ad.start_date,
+              endDate: ad.end_date,
+              userId: ad.user_id,
+              isApproved: ad.is_approved,
+              status: ad.status || 'pending',
+              createdAt: ad.created_at
+            })));
           } else {
+            console.log("No advertisements found with simplified query either");
             return res.json([]);
           }
-        } catch (drizzleError) {
-          console.error("Drizzle fallback also failed:", drizzleError);
+        } catch (simplifiedError) {
+          console.error("Both SQL queries failed:", simplifiedError);
           return res.status(500).json({ message: "Error fetching advertisements" });
         }
       }
