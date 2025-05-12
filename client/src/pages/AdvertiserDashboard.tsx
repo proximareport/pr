@@ -121,6 +121,16 @@ function AdvertiserDashboard() {
   const { data: advertisements, isLoading, isError } = useQuery({
     queryKey: ['/api/advertisements/user'],
     enabled: !!user,
+    onSuccess: (data) => {
+      console.log("Fetched advertisements:", data);
+      
+      if (data) {
+        const pendingAds = (data as Advertisement[]).filter(ad => 
+          ad.status === 'pending' || ad.status === 'approved_pending_payment'
+        );
+        console.log("Pending ads in client:", pendingAds);
+      }
+    }
   });
   
   // Function to create a checkout session for an ad

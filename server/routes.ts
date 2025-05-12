@@ -273,21 +273,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/login", async (req, res) => {
     try {
-      console.log("Login attempt for:", req.body.email);
-      const { email, password } = req.body;
+      console.log("Login attempt with body:", req.body);
+      // Support both email and username based login
+      const { email, password, username } = req.body;
       
-      if (!email || !password) {
-        return res.status(400).json({ message: "Email and password are required" });
+      if ((!email && !username) || !password) {
+        return res.status(400).json({ message: "Email/username and password are required" });
       }
       
-      // Find user
-      const user = await storage.getUserByEmail(email);
+      // Find user by email or username
+      let user;
+      if (email) {
+        user = await storage.getUserByEmail(email);
+        if (!user) {
+          console.log("User not found by email:", email);
+        }
+      }
+      
+      if (!user && username) {
+        user = await storage.getUserByUsername(username);
+        if (!user) {
+          console.log("User not found by username:", username);
+        }
+      }
+      
       if (!user) {
-        console.log("User not found:", email);
         return res.status(400).json({ message: "Invalid credentials" });
       }
       
-      console.log("User found, checking password...");
+      console.log("User found:", user.id, user.username, "checking password...");
       
       // Add this for debugging - log password length and hash format
       console.log("Password length:", password?.length);
