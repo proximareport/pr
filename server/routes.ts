@@ -1872,13 +1872,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/advertisements/:placement", async (req, res) => {
     try {
       const { placement } = req.params;
+      console.log(`Fetching advertisements for placement: ${placement}`);
       const adsForPlacement = await storage.getAdvertisements(placement);
+      console.log(`Found ${adsForPlacement.length} approved ads for placement ${placement}`);
       
       // If multiple ads exist for this placement, randomly select one
       if (adsForPlacement.length > 0) {
         const randomIndex = Math.floor(Math.random() * adsForPlacement.length);
         res.json(adsForPlacement[randomIndex]);
       } else {
+        // This is where we fall through when no approved ads exist
+        console.log(`No approved ads found for placement ${placement}, checking if any exist regardless of approval`);
+        // Check if there are any ads at all for debugging
+        const allAdsQuery = await db
+          .select()
+          .from(advertisements)
+          .where(eq(advertisements.placement, placement));
+        
+        console.log(`Found ${allAdsQuery.length} total ads (including unapproved) for placement ${placement}`);
+        if (allAdsQuery.length > 0) {
+          console.log(`Unapproved ad example: ${JSON.stringify({
+            id: allAdsQuery[0].id,
+            title: allAdsQuery[0].title,
+            isApproved: allAdsQuery[0].isApproved,
+            placement: allAdsQuery[0].placement,
+            startDate: allAdsQuery[0].startDate,
+            endDate: allAdsQuery[0].endDate
+          })}`);
+        }
+        
         res.json(null);
       }
     } catch (error) {
