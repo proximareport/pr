@@ -55,6 +55,7 @@ function AdminArticleEditor() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [autosaveError, setAutosaveError] = useState<string | null>(null);
   const autosaveTimeoutRef = useRef<number | null>(null);
+  const lastSavedContentRef = useRef<string>(''); // Track the last saved content to avoid unnecessary saves
   const [availableUsers, setAvailableUsers] = useState<Array<{id: number, username: string, profilePicture?: string}>>([]);
   
   // Fetch available users for coauthor selection
@@ -200,6 +201,11 @@ function AdminArticleEditor() {
       // Clear any autosave error
       setAutosaveError(null);
       
+      // Store the last saved content string for comparison to prevent unnecessary saves
+      const savedArticleData = prepareArticleData(false);
+      lastSavedContentRef.current = JSON.stringify(savedArticleData);
+      console.log('Content saved, updated lastSavedContentRef');
+      
       // Invalidate the articles query
       queryClient.invalidateQueries({ queryKey: ['/api/articles'] });
     },
@@ -311,9 +317,21 @@ function AdminArticleEditor() {
     
     const articleData = prepareArticleData(false); // Always save as draft
     
+    // Convert current content to string for comparison
+    const currentContentString = JSON.stringify(articleData);
+    
+    // Check if content has changed since last save
+    if (currentContentString === lastSavedContentRef.current) {
+      console.log('Content unchanged, skipping autosave');
+      return; // Skip save if content hasn't changed
+    }
+    
+    // Update the last saved content reference
+    lastSavedContentRef.current = currentContentString;
+    
     // Perform the autosave
     autosaveArticleMutation(articleData);
-  }, [title, prepareArticleData, autosaveArticleMutation]);
+  }, [title, prepareArticleData, autosaveArticleMutation, lastSavedContentRef]);
   
   const scheduleAutosave = useCallback(() => {
     // Clear any existing timeout
