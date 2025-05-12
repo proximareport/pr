@@ -749,22 +749,28 @@ function AdminArticleEditor() {
       if (!articleId) throw new Error("No article ID");
       
       // Use dedicated status endpoint instead of PATCH endpoint
-      return await apiRequest(
+      const response = await apiRequest(
         "POST", 
         `/api/articles/${articleId}/status`, 
         { status: newStatus }
       );
+      
+      return response.json();
     },
     onSuccess: (data) => {
       // Invalidate article cache
       queryClient.invalidateQueries({ queryKey: [`/api/articles/${articleId}`] });
+      
       // Show success message
       toast({
-        title: data.status === 'published' ? "Article Published" : "Article Saved as Draft",
+        title: data.article?.status === 'published' ? "Article Published" : "Article Saved as Draft",
         description: data.message || "Status updated successfully",
       });
-      // Update local state
-      setIsDraft(data.article.status === 'draft');
+      
+      // Update local state to match what came back from the server
+      if (data.article && data.article.status) {
+        setIsDraft(data.article.status === 'draft');
+      }
     },
     onError: (error) => {
       console.error("Error updating article status:", error);
@@ -790,11 +796,28 @@ function AdminArticleEditor() {
       return;
     }
     
-    // Ensure article is saved first
-    handleSubmit(submitSave)();
+    // First ensure article is saved before changing status
+    // Use the current form state
+    const formData = form.getValues();
+    console.log("Form data before status change:", formData);
     
-    // Use the dedicated status mutation
-    statusMutation.mutate(newStatus);
+    // Convert form data to article data and save it first
+    const articleData = prepareArticleData(null);
+    mutate(articleData, {
+      onSuccess: () => {
+        console.log("Article saved, now changing status to:", newStatus);
+        // After successful save, change status
+        statusMutation.mutate(newStatus);
+      },
+      onError: (error) => {
+        console.error("Failed to save article before status change:", error);
+        toast({
+          title: "Save Failed",
+          description: "Could not save article changes before updating status.",
+          variant: "destructive"
+        });
+      }
+    });
   };
 
   const addTag = (tag: string) => {
@@ -984,20 +1007,38 @@ function AdminArticleEditor() {
                 type="button"
                 onClick={() => handlePublishToggle(true)}
                 className="w-full bg-green-600 hover:bg-green-700"
-                disabled={isSubmitting}
+                disabled={isSubmitting || statusMutation.isPending}
               >
-                <UploadIcon className="h-4 w-4 mr-2" />
-                Publish Article Now
+                {statusMutation.isPending ? (
+                  <>
+                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Publishing...
+                  </>
+                ) : (
+                  <>
+                    <UploadIcon className="h-4 w-4 mr-2" />
+                    Publish Article Now
+                  </>
+                )}
               </Button>
             ) : (
               <Button 
                 type="button"
                 onClick={() => handlePublishToggle(false)}
                 className="w-full bg-red-600 hover:bg-red-700"
-                disabled={isSubmitting}
+                disabled={isSubmitting || statusMutation.isPending}
               >
-                <UploadIcon className="h-4 w-4 mr-2" />
-                Unpublish to Draft
+                {statusMutation.isPending ? (
+                  <>
+                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Unpublishing...
+                  </>
+                ) : (
+                  <>
+                    <UploadIcon className="h-4 w-4 mr-2" />
+                    Unpublish to Draft
+                  </>
+                )}
               </Button>
             )}
           </div>
