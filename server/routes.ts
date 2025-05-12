@@ -2430,6 +2430,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.session.userId!;
       const ads = await storage.getAdvertisementsByUser(userId);
+      console.log(`Fetched ${ads.length} ads for user ${userId}`);
+      
+      // Debug: Log ads with pending/approved_pending_payment status
+      const pendingAds = ads.filter(ad => 
+        ad.status === 'pending' || ad.status === 'approved_pending_payment'
+      );
+      
+      console.log(`Found ${pendingAds.length} pending ads: ${JSON.stringify(pendingAds.map(ad => ({
+        id: ad.id,
+        title: ad.title,
+        status: ad.status,
+        isApproved: ad.isApproved
+      })))}`);
+      
       res.json(ads);
     } catch (error) {
       console.error("Error fetching user advertisements:", error);
