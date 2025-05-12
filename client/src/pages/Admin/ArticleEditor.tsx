@@ -65,15 +65,19 @@ function AdminArticleEditor() {
   const createArticleMutation = useMutation({
     mutationFn: (articleData: any) => 
       apiRequest('POST', '/api/articles', articleData).then(res => res.json()),
-    onSuccess: () => {
+    onSuccess: (response) => {
+      // Log response for debugging
+      console.log("Article create response:", response);
+      
       queryClient.invalidateQueries({ queryKey: ['/api/articles'] });
       toast({
         title: "Article created successfully",
-        description: "Your article has been published.",
+        description: `Article ${isDraft ? 'saved as draft' : 'published'} successfully.`,
       });
       navigate('/admin');
     },
     onError: (error: any) => {
+      console.error("Article creation error:", error);
       toast({
         title: "Failed to create article",
         description: error.message || "There was an error publishing your article.",
@@ -145,6 +149,60 @@ function AdminArticleEditor() {
     const newTitle = e.target.value;
     setTitle(newTitle);
     setSlug(generateSlug(newTitle));
+  };
+  
+  // Handle status change for an existing article
+  const handleStatusChange = async (newIsDraft: boolean) => {
+    if (!isEditing || !params.id) {
+      // Can't change status of an article that doesn't exist yet
+      toast({
+        title: "Save article first",
+        description: "Please save the article before changing its publication status.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      console.log(`Changing article status to ${newIsDraft ? "draft" : "published"}`);
+      
+      // Create a minimal update payload with just the status change
+      const statusUpdateData = {
+        status: newIsDraft ? "draft" : "published",
+        publishedAt: !newIsDraft ? new Date().toISOString() : null
+      };
+      
+      // Use the PATCH endpoint for status updates
+      const response = await apiRequest(
+        'PATCH', 
+        `/api/articles/${params.id}`, 
+        statusUpdateData
+      ).then(res => res.json());
+      
+      console.log("Status update response:", response);
+      
+      // Update local state
+      setIsDraft(newIsDraft);
+      
+      // Show success message
+      toast({
+        title: newIsDraft ? "Article unpublished" : "Article published",
+        description: newIsDraft 
+          ? "Article is now a draft and not visible to the public" 
+          : "Article is now published and visible to the public",
+      });
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/articles'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/articles', params.id] });
+    } catch (error) {
+      console.error("Error updating article status:", error);
+      toast({
+        title: "Status update failed",
+        description: "There was an error updating the article status.",
+        variant: "destructive",
+      });
+    }
   };
   
   // Handle form submission
@@ -389,25 +447,47 @@ function AdminArticleEditor() {
           {(createArticleMutation.isPending || updateArticleMutation.isPending) 
             ? 'Saving...' 
             : isEditing 
-              ? isDraft ? 'Save as Draft' : 'Update & Publish'
-              : isDraft ? 'Save as Draft' : 'Publish Article'
+              ? 'Save Changes'
+              : isDraft ? 'Create Draft' : 'Create & Publish'
           }
         </Button>
       }
     >
-      {/* Draft Mode Toggle */}
+      {/* Publication Controls */}
       <div className="space-y-6 mb-6">
-        <div className="flex items-center justify-between bg-[#1E1E2D] p-4 rounded-lg border border-white/10">
-          <div>
-            <h4 className="font-medium">Draft Mode</h4>
-            <p className="text-xs text-white/60">
-              {isDraft ? 'Save as draft (not visible to public)' : 'Ready to publish'}
-            </p>
+        <div className="bg-[#1E1E2D] p-4 rounded-lg border border-white/10">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h4 className="font-medium">Draft Mode</h4>
+              <p className="text-xs text-white/60">
+                {isDraft ? 'Save as draft (not visible to public)' : 'Ready to publish'}
+              </p>
+            </div>
+            <Switch 
+              checked={isDraft} 
+              onCheckedChange={setIsDraft}
+            />
           </div>
-          <Switch 
-            checked={isDraft} 
-            onCheckedChange={setIsDraft}
-          />
+          
+          {isEditing && (
+            <div className="mt-4 border-t border-white/10 pt-4">
+              <Button
+                type="button"
+                variant={isDraft ? "default" : "outline"}
+                className={`w-full ${isDraft ? "bg-green-600 hover:bg-green-700" : "border-red-500 text-red-400 hover:bg-red-900/20"}`}
+                onClick={() => handleStatusChange(!isDraft)}
+              >
+                {isDraft 
+                  ? <><span className="mr-2">🚀</span> Publish Article Now</> 
+                  : <><span className="mr-2">📝</span> Unpublish to Draft</>}
+              </Button>
+              <p className="text-xs text-white/60 mt-2 text-center">
+                {isDraft 
+                  ? "This will make the article visible to the public immediately" 
+                  : "This will hide the article from the public"}
+              </p>
+            </div>
+          )}
         </div>
       </div>
       
