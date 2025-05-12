@@ -28,6 +28,26 @@ interface SearchSuggestionsResponse {
   data: SearchArticleSuggestion[];
 }
 
+interface SearchArticle {
+  id: number;
+  title: string;
+  slug: string;
+  summary: string;
+  category: string;
+  tags: string[];
+  publishedAt: string;
+  featuredImage?: string;
+  authorId: number;
+  viewCount: number;
+}
+
+interface SearchResultData {
+  data: SearchArticle[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
 interface SearchBarProps {
   inHeader?: boolean;
   placeholder?: string;
@@ -44,10 +64,18 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
 
   // Fetch search suggestions based on the debounced query
   const { data: suggestions, isLoading } = useQuery<SearchSuggestionsResponse>({
-    queryKey: ["/api/search", { q: debouncedQuery, limit: 5 }],
+    queryKey: ["/api/search/suggestions", { q: debouncedQuery, limit: 5 }],
     enabled: debouncedQuery.length > 2,
     staleTime: 1000 * 60 * 5, // 5 minutes
     retry: 1, // Only retry once to avoid excessive requests
+  });
+  
+  // Fetch more comprehensive search results for dropdown
+  const { data: searchResults, isLoading: isLoadingResults } = useQuery<SearchResultData>({
+    queryKey: ["/api/search", { q: debouncedQuery, limit: 10 }],
+    enabled: debouncedQuery.length > 2 && open,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 1,
   });
 
   // Handle navigation to search results page
@@ -129,25 +157,28 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
               </Button>
             )}
           </div>
-          <CommandList>
+          <CommandList className="max-h-[70vh] overflow-auto">
             <CommandEmpty>
-              {isLoading ? (
+              {isLoading || isLoadingResults ? (
                 <div className="flex items-center justify-center py-6">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
               ) : (
-                <p>No results found.</p>
+                <p className="p-4 text-center">No results found.</p>
               )}
             </CommandEmpty>
+            
+            {/* Quick Suggestions */}
             {debouncedQuery.length > 2 && suggestions?.data && suggestions.data.length > 0 && (
-              <CommandGroup heading="Articles">
+              <CommandGroup heading="Quick Suggestions">
                 {suggestions.data.map((item: SearchArticleSuggestion) => (
                   <CommandItem
-                    key={item.id}
+                    key={`suggestion-${item.id}`}
                     onSelect={() => {
                       setLocation(`/articles/${item.slug}`);
                       setOpen(false);
                     }}
+                    className="py-2"
                   >
                     <div className="flex flex-col">
                       <span>{item.title}</span>
@@ -157,14 +188,54 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
                     </div>
                   </CommandItem>
                 ))}
-                <CommandItem
-                  onSelect={() => {
-                    handleSearch();
-                  }}
-                  className="justify-center text-primary"
-                >
-                  See all results for &quot;{debouncedQuery}&quot;
-                </CommandItem>
+              </CommandGroup>
+            )}
+            
+            {/* Full Search Results */}
+            {debouncedQuery.length > 2 && searchResults?.data && searchResults.data.length > 0 && (
+              <CommandGroup heading="Search Results">
+                {searchResults.data.map((article: SearchArticle) => (
+                  <CommandItem
+                    key={`result-${article.id}`}
+                    onSelect={() => {
+                      setLocation(`/articles/${article.slug}`);
+                      setOpen(false);
+                    }}
+                    className="py-3 px-2"
+                  >
+                    <div className="flex w-full gap-3">
+                      {article.featuredImage && (
+                        <div className="flex-shrink-0 h-16 w-16 rounded overflow-hidden">
+                          <img 
+                            src={article.featuredImage} 
+                            alt={article.title}
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                      )}
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <span className="font-medium line-clamp-1">{article.title}</span>
+                        <span className="text-xs text-muted-foreground mb-1">
+                          {article.category} • {new Date(article.publishedAt).toLocaleDateString()}
+                        </span>
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {article.summary}
+                        </p>
+                      </div>
+                    </div>
+                  </CommandItem>
+                ))}
+                
+                {searchResults.total > searchResults.data.length && (
+                  <CommandItem
+                    onSelect={() => {
+                      handleSearch();
+                    }}
+                    className="justify-center text-primary border-t"
+                  >
+                    View all {searchResults.total} results for &quot;{debouncedQuery}&quot;
+                  </CommandItem>
+                )}
               </CommandGroup>
             )}
           </CommandList>
@@ -210,13 +281,13 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
         </PopoverTrigger>
         <PopoverContent
           align="start"
-          className="w-[calc(100vw-2rem)] p-0 sm:w-[500px]"
+          className="w-[calc(100vw-2rem)] p-0 sm:w-[650px]"
           sideOffset={10}
         >
           <Command className="w-full">
-            <CommandList>
+            <CommandList className="max-h-[80vh] overflow-auto">
               <CommandEmpty>
-                {isLoading ? (
+                {isLoading || isLoadingResults ? (
                   <div className="flex items-center justify-center py-6">
                     <Loader2 className="h-6 w-6 animate-spin text-primary" />
                   </div>
@@ -226,15 +297,18 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
                   </p>
                 )}
               </CommandEmpty>
+              
+              {/* Quick Suggestions */}
               {debouncedQuery.length > 2 && suggestions?.data && suggestions.data.length > 0 && (
-                <CommandGroup heading="Articles">
+                <CommandGroup heading="Quick Suggestions">
                   {suggestions.data.map((item: SearchArticleSuggestion) => (
                     <CommandItem
-                      key={item.id}
+                      key={`suggestion-${item.id}`}
                       onSelect={() => {
                         setLocation(`/articles/${item.slug}`);
                         setOpen(false);
                       }}
+                      className="py-2"
                     >
                       <div className="flex flex-col">
                         <span>{item.title}</span>
@@ -244,14 +318,54 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
                       </div>
                     </CommandItem>
                   ))}
-                  <CommandItem
-                    onSelect={() => {
-                      handleSearch();
-                    }}
-                    className="justify-center text-primary"
-                  >
-                    See all results for &quot;{debouncedQuery}&quot;
-                  </CommandItem>
+                </CommandGroup>
+              )}
+              
+              {/* Full Search Results */}
+              {debouncedQuery.length > 2 && searchResults && searchResults.data && searchResults.data.length > 0 && (
+                <CommandGroup heading="Search Results">
+                  {searchResults.data.map((article: SearchArticle) => (
+                    <CommandItem
+                      key={`result-${article.id}`}
+                      onSelect={() => {
+                        setLocation(`/articles/${article.slug}`);
+                        setOpen(false);
+                      }}
+                      className="py-3 px-2"
+                    >
+                      <div className="flex w-full gap-3">
+                        {article.featuredImage && (
+                          <div className="flex-shrink-0 h-16 w-16 rounded overflow-hidden">
+                            <img 
+                              src={article.featuredImage} 
+                              alt={article.title}
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                        )}
+                        <div className="flex flex-col flex-1 min-w-0">
+                          <span className="font-medium line-clamp-1">{article.title}</span>
+                          <span className="text-xs text-muted-foreground mb-1">
+                            {article.category} • {new Date(article.publishedAt).toLocaleDateString()}
+                          </span>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {article.summary}
+                          </p>
+                        </div>
+                      </div>
+                    </CommandItem>
+                  ))}
+                  
+                  {searchResults.total > searchResults.data.length && (
+                    <CommandItem
+                      onSelect={() => {
+                        handleSearch();
+                      }}
+                      className="justify-center text-primary border-t"
+                    >
+                      View all {searchResults.total} results for &quot;{debouncedQuery}&quot;
+                    </CommandItem>
+                  )}
                 </CommandGroup>
               )}
             </CommandList>
