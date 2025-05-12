@@ -184,6 +184,19 @@ function AdminArticleEditor() {
       }
     },
     onSuccess: (data) => {
+      console.log("API success response:", data);
+      
+      // Ensure we have a valid response with article data
+      if (!data || !data.id) {
+        console.error("Invalid response data received:", data);
+        toast({
+          title: "Warning",
+          description: "Received incomplete response from server",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       // Display a toast with a different message based on the action
       const action = data.status === 'published' 
         ? 'published'
@@ -204,9 +217,15 @@ function AdminArticleEditor() {
       // Update the isDraft state to match the returned data
       setIsDraft(data.status === 'draft');
       
-      // Only navigate if this is a new article being created
-      if (!isEditing) {
+      // Only navigate if this is a new article being created (not editing an existing one)
+      if (!isEditing && data.id) {
+        // Ensure we have a valid ID before navigating
         navigate(`/admin/articles/${data.id}/edit`);
+      } else if (isEditing && !articleId && data.id) {
+        // Edge case: we're editing but somehow don't have articleId in state
+        // Update URL without navigation
+        setArticleId(data.id);
+        window.history.replaceState(null, '', `/admin/articles/${data.id}/edit`);
       }
     },
     onError: (error: any) => {
@@ -422,22 +441,31 @@ function AdminArticleEditor() {
   };
 
   // Function to prepare article data for saving
-  const prepareArticleData = useCallback((statusOverride?: 'published' | 'draft' | null): ArticleFormData => {
+  const prepareArticleData = useCallback((statusOverride?: 'published' | 'draft' | boolean | null): ArticleFormData => {
     // All articles need at least the current user as author
     const authors = [
       { id: user?.id, role: "primary" },
       ...coauthors
     ];
     
-    // Determine status based on the statusOverride parameter
-    // If statusOverride is 'published', explicitly set to 'published'
-    // If statusOverride is 'draft', explicitly set to 'draft'
-    // If statusOverride is null/undefined, keep current status (for regular saves)
-    const newStatus = statusOverride !== undefined && statusOverride !== null
-      ? statusOverride
-      : isDraft ? 'draft' : 'published';
+    // Handle different types of statusOverride
+    let effectiveStatus: 'published' | 'draft';
     
-    console.log("Preparing article data with status:", newStatus, "isDraft:", isDraft, "statusOverride:", statusOverride);
+    if (statusOverride === true) {
+      // True means publish
+      effectiveStatus = 'published';
+    } else if (statusOverride === false) {
+      // False means draft
+      effectiveStatus = 'draft';
+    } else if (statusOverride === 'published' || statusOverride === 'draft') {
+      // Explicit string status
+      effectiveStatus = statusOverride;
+    } else {
+      // Use current state if no override
+      effectiveStatus = isDraft ? 'draft' : 'published';
+    }
+    
+    console.log("Preparing article data with status:", effectiveStatus, "isDraft:", isDraft, "statusOverride:", statusOverride);
     
     return {
       title,
@@ -448,7 +476,7 @@ function AdminArticleEditor() {
       tags,
       featuredImage,
       readTime: Number(readTime),
-      status: newStatus,
+      status: effectiveStatus,
       isBreaking,
       isFeatured,
       isCollaborative,
@@ -710,14 +738,21 @@ function AdminArticleEditor() {
     e.preventDefault();
     
     // Just save with current status (don't toggle status)
-    const articleData = prepareArticleData(false);
+    // Pass null to indicate we don't want to change the status
+    const articleData = prepareArticleData(null);
     mutate(articleData);
   };
   
   // Dedicated function to explicitly publish or unpublish an article
   const handlePublishToggle = (shouldPublish: boolean) => {
+    console.log("Publish toggle called with shouldPublish:", shouldPublish);
+    
     // Create article data with explicit published/draft status
-    const articleData = prepareArticleData(shouldPublish);
+    const newStatus = shouldPublish ? 'published' : 'draft';
+    console.log("Setting article status to:", newStatus);
+    
+    const articleData = prepareArticleData(newStatus);
+    console.log("Article data prepared:", JSON.stringify(articleData));
     
     // Use the same mutation but with status explicitly set
     mutate(articleData);
