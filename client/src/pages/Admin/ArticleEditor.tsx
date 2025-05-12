@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { SaveIcon, ImageIcon, UploadIcon, ArrowLeft as ArrowLeftIcon } from 'lucide-react';
@@ -41,6 +42,7 @@ function AdminArticleEditor() {
   const [content, setContent] = useState<any[]>([]);
   const [category, setCategory] = useState('');
   const [isBreaking, setIsBreaking] = useState(false);
+  const [isDraft, setIsDraft] = useState(true); // Add draft mode state
   const [readTime, setReadTime] = useState(5);
   const [featuredImage, setFeaturedImage] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -194,8 +196,8 @@ function AdminArticleEditor() {
       isBreaking,
       readTime: Number(readTime) || 5,
       featuredImage: imageUrl,
-      status: "published", // Explicitly set published status
-      publishedAt: new Date().toISOString(), // Set publish date to now in ISO format
+      status: isDraft ? "draft" : "published", // Use draft status if isDraft is true
+      publishedAt: !isDraft ? new Date().toISOString() : null, // Only set publishedAt for published articles
       authorId: user?.id,
     };
     
@@ -236,6 +238,7 @@ function AdminArticleEditor() {
       
       setCategory(article.category || '');
       setIsBreaking(article.isBreaking || false);
+      setIsDraft(article.status === 'draft');
       setReadTime(article.readTime || 5);
       setFeaturedImage(article.featuredImage || '');
       if (article.featuredImage) {
@@ -371,11 +374,29 @@ function AdminArticleEditor() {
           <SaveIcon className="h-4 w-4 mr-2" />
           {(createArticleMutation.isPending || updateArticleMutation.isPending) 
             ? 'Saving...' 
-            : isEditing ? 'Update Article' : 'Publish Article'
+            : isEditing 
+              ? isDraft ? 'Save as Draft' : 'Update & Publish'
+              : isDraft ? 'Save as Draft' : 'Publish Article'
           }
         </Button>
       }
     >
+      {/* Draft Mode Toggle */}
+      <div className="space-y-6 mb-6">
+        <div className="flex items-center justify-between bg-[#1E1E2D] p-4 rounded-lg border border-white/10">
+          <div>
+            <h4 className="font-medium">Draft Mode</h4>
+            <p className="text-xs text-white/60">
+              {isDraft ? 'Save as draft (not visible to public)' : 'Ready to publish'}
+            </p>
+          </div>
+          <Switch 
+            checked={isDraft} 
+            onCheckedChange={setIsDraft}
+          />
+        </div>
+      </div>
+      
       {/* Featured Image Section */}
       <div className="space-y-3">
         <Label className="text-lg font-medium">Featured Image</Label>
