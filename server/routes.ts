@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { pool } from "./db";
 import { ZodError } from "zod";
 import { updateArticleStatus } from "./articleStatusRoute";
+import { registerNewsletterAndSearchRoutes } from "./newsletterRoutes";
 import { searchArticles, searchUsers, getPopularSearches } from "./searchService";
 import { subscribeToNewsletter, unsubscribeFromNewsletter, verifySubscription, sendNewsletterEmail } from "./emailService";
 import {
@@ -227,6 +228,9 @@ const requireEditor = async (req: Request, res: Response, next: NextFunction) =>
 export async function registerRoutes(app: Express): Promise<Server> {
   // Use session middleware
   app.use(session(sessionConfig));
+  
+  // Register newsletter and search routes
+  registerNewsletterAndSearchRoutes(app);
   
   // Apply maintenance mode check to all routes
   app.use(checkMaintenanceMode);
