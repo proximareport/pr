@@ -19,18 +19,27 @@ export default function NewsletterVerify() {
     enabled: !!token,
     refetchOnWindowFocus: false,
     staleTime: Infinity,
-    onSuccess: (data: any) => {
-      if (data.success) {
-        setStatus("success");
-        setMessage(data.message || "Your subscription has been verified!");
-      } else {
+    queryFn: async () => {
+      if (!token) return null;
+      
+      try {
+        const response = await fetch(`/api/newsletter/verify/${token}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+          setStatus("success");
+          setMessage(data.message || "Your subscription has been verified!");
+        } else {
+          setStatus("error");
+          setMessage(data.message || "Failed to verify your subscription. The token may be invalid or expired.");
+        }
+        
+        return data;
+      } catch (error) {
         setStatus("error");
-        setMessage(data.message || "Failed to verify your subscription. The token may be invalid or expired.");
+        setMessage("An error occurred while verifying your subscription. Please try again later.");
+        throw error;
       }
-    },
-    onError: () => {
-      setStatus("error");
-      setMessage("An error occurred while verifying your subscription. Please try again later.");
     }
   });
 

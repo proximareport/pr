@@ -64,6 +64,8 @@ function Router() {
       <Route path="/subscription/success" component={SubscriptionSuccess} />
       <Route path="/tag/:tagName" component={TagView} />
       <Route path="/search" component={SearchResults} />
+      <Route path="/newsletter/verify" component={NewsletterVerify} />
+      <Route path="/newsletter/unsubscribe" component={NewsletterUnsubscribe} />
       
       {/* Main Admin Dashboard */}
       <Route path="/admin" component={AdminDashboard} />

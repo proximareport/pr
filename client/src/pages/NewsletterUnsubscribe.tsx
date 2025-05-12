@@ -19,18 +19,27 @@ export default function NewsletterUnsubscribe() {
     enabled: !!token,
     refetchOnWindowFocus: false,
     staleTime: Infinity,
-    onSuccess: (data: any) => {
-      if (data.success) {
-        setStatus("success");
-        setMessage(data.message || "You have been successfully unsubscribed.");
-      } else {
+    queryFn: async () => {
+      if (!token) return null;
+      
+      try {
+        const response = await fetch(`/api/newsletter/unsubscribe/${token}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+          setStatus("success");
+          setMessage(data.message || "You have been successfully unsubscribed.");
+        } else {
+          setStatus("error");
+          setMessage(data.message || "Failed to unsubscribe. The token may be invalid or expired.");
+        }
+        
+        return data;
+      } catch (error) {
         setStatus("error");
-        setMessage(data.message || "Failed to unsubscribe. The token may be invalid or expired.");
+        setMessage("An error occurred while processing your unsubscribe request. Please try again later.");
+        throw error;
       }
-    },
-    onError: () => {
-      setStatus("error");
-      setMessage("An error occurred while processing your unsubscribe request. Please try again later.");
     }
   });
 
