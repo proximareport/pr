@@ -2455,22 +2455,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/advertisements/user", requireAuth, async (req, res) => {
     try {
       const userId = req.session.userId!;
-      const ads = await storage.getAdvertisementsByUser(userId);
-      console.log(`Fetched ${ads.length} ads for user ${userId}`);
       
-      // Debug: Log ads with pending/approved_pending_payment status
-      const pendingAds = ads.filter(ad => 
-        ad.status === 'pending' || ad.status === 'approved_pending_payment'
-      );
+      console.log(`DIRECT DATABASE QUERY: Fetching advertisements for user ${userId}`);
+      // Use direct SQL query to avoid any filtering issues
+      const query = `
+        SELECT * FROM advertisements 
+        WHERE user_id = $1
+        ORDER BY created_at DESC
+      `;
       
-      console.log(`Found ${pendingAds.length} pending ads: ${JSON.stringify(pendingAds.map(ad => ({
+      const result = await db.execute(query, [userId]);
+      
+      if (!result || !result.rows) {
+        console.log("No advertisements found for this user");
+        return res.json([]);
+      }
+      
+      console.log(`Found ${result.rows.length} advertisements for user ${userId}`);
+      
+      // Transform the database rows to client format
+      const ads = result.rows.map(ad => ({
         id: ad.id,
         title: ad.title,
-        status: ad.status,
-        isApproved: ad.isApproved
-      })))}`);
+        imageUrl: ad.image_url || '',
+        linkUrl: ad.link_url || '',
+        placement: ad.placement,
+        startDate: ad.start_date,
+        endDate: ad.end_date,
+        userId: ad.user_id,
+        isApproved: ad.is_approved === true,
+        createdAt: ad.created_at,
+        impressions: ad.impressions || 0,
+        clicks: ad.clicks || 0,
+        status: ad.status || 'pending',
+        paymentStatus: ad.payment_status || 'pending',
+        paymentId: ad.payment_id || null,
+        price: ad.price || 0,
+        adminNotes: ad.admin_notes || null
+      }));
       
-      res.json(ads);
+      // Log information about pending ads for debugging
+      const pendingAds = ads.filter(ad => 
+        ad.status === 'pending' || ad.status === 'approved_pending_payment' || !ad.isApproved
+      );
+      
+      console.log(`Found ${pendingAds.length} pending ads for user ${userId}`);
+      
+      return res.json(ads);
     } catch (error) {
       console.error("Error fetching user advertisements:", error);
       res.status(500).json({ message: "Error fetching user advertisements" });
