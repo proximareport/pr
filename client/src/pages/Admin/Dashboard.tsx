@@ -43,6 +43,7 @@ import DraftManagement from './DraftManagement';
 import PublishedContent from './PublishedContent';
 import UserManagement from './UserManagement';
 import MediaLibraryTab from './MediaLibraryTab';
+import AdvertisementTab from './AdvertisementTab';
 import SiteSettingsForm from '@/components/admin/SiteSettingsForm';
 
 interface Article {
