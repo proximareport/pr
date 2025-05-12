@@ -146,10 +146,39 @@ function AdminArticleEditor() {
   // Create/Update article mutation
   const { mutate, isPending: isSubmitting } = useMutation({
     mutationFn: async (articleData: ArticleFormData) => {
-      if (isEditing) {
-        return apiRequest('PATCH', `/api/articles/${id}`, articleData).then(r => r.json());
-      } else {
-        return apiRequest('POST', '/api/articles', articleData).then(r => r.json());
+      try {
+        let response;
+        if (isEditing) {
+          response = await apiRequest('PATCH', `/api/articles/${id}`, articleData);
+        } else {
+          response = await apiRequest('POST', '/api/articles', articleData);
+        }
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('Expected JSON response from server');
+        }
+        
+        // Check for HTTP error status
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          throw new Error(
+            errorData?.message || 
+            `Server error: ${response.status} ${response.statusText}`
+          );
+        }
+        
+        return response.json();
+      } catch (error: any) {
+        console.error('Article save request error:', error);
+        
+        // Extract meaningful error information to help with debugging
+        const errorMessage = error.response?.statusText || 
+                            error.message || 
+                            'Unknown error saving article';
+        
+        throw new Error(`Failed to save article: ${errorMessage}`);
       }
     },
     onSuccess: (data) => {
@@ -161,10 +190,21 @@ function AdminArticleEditor() {
       navigate(`/admin/articles/${data.id}/edit`);
     },
     onError: (error: any) => {
+      console.error('Article save error:', error);
+      
+      // Extract detailed error information
+      const errorMessage = error.message || `Failed to ${isEditing ? 'update' : 'create'} article`;
+      
+      // Show a detailed error message to help the user understand what went wrong
       toast({
-        title: 'Error',
-        description: `Failed to ${isEditing ? 'update' : 'create'} article: ${error.message}`,
+        title: 'Error Saving Article',
+        description: errorMessage.includes('permission') 
+          ? `You don't have permission to ${isEditing ? 'update' : 'create'} this article. Please check your access rights.`
+          : errorMessage.includes('validation') 
+            ? `Your article has validation errors: ${errorMessage}. Please check all required fields.`
+            : `Failed to ${isEditing ? 'update' : 'create'} article: ${errorMessage}`,
         variant: 'destructive',
+        duration: 7000 // Show longer for serious errors
       });
     },
   });
@@ -186,10 +226,25 @@ function AdminArticleEditor() {
           throw new Error('Expected JSON response from server');
         }
         
+        // Check for HTTP error status
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          throw new Error(
+            errorData?.message || 
+            `Server error: ${response.status} ${response.statusText}`
+          );
+        }
+        
         return response.json();
       } catch (error: any) {
         console.error('Autosave request error:', error);
-        throw new Error('Failed to save draft');
+        
+        // Extract meaningful error information to help with debugging
+        const errorMessage = error.response?.statusText || 
+                            error.message || 
+                            'Unknown error saving draft';
+        
+        throw new Error(`Failed to save draft: ${errorMessage}`);
       }
     },
     onSuccess: (data) => {
@@ -215,7 +270,21 @@ function AdminArticleEditor() {
     },
     onError: (error: any) => {
       console.error('Autosave error:', error);
-      setAutosaveError(error.message || 'Failed to autosave');
+      
+      // Store detailed error information for display in the UI
+      const errorMessage = error.message || 'Failed to autosave';
+      setAutosaveError(errorMessage);
+      
+      // Only show a toast for non-transient errors that might need user attention
+      if (errorMessage.includes('network') || errorMessage.includes('timeout') || 
+          errorMessage.includes('permission') || errorMessage.includes('schema')) {
+        toast({
+          title: 'Autosave Warning',
+          description: `Unable to save your work: ${errorMessage}. Changes may be lost if you leave this page.`,
+          variant: 'destructive',
+          duration: 5000 // Show longer
+        });
+      }
     },
   });
 
