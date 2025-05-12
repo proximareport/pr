@@ -2256,108 +2256,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get all advertisements (accessible to admins and ad creators)
-  app.get("/api/advertisements/all", async (req, res) => {
+  // ADMIN ONLY endpoint for the advertisement management panel - simplified reliable version
+  app.get("/api/admin/advertisements", requireAuth, requireAdmin, async (req, res) => {
     try {
-      console.log('Fetching admin advertisements, auth state:', req.isAuthenticated());
-
-      // Check authentication
-      if (!req.isAuthenticated()) {
-        console.log('User not authenticated, responding with 401');
-        return res.status(401).json({ message: "Authentication required" });
+      console.log('Admin advertisement endpoint called by user:', req.session.userId);
+      
+      // Direct database query - simplest approach
+      const result = await db.execute("SELECT * FROM advertisements ORDER BY created_at DESC");
+      
+      if (!result || !result.rows || result.rows.length === 0) {
+        console.log('No advertisements found in the database');
+        return res.json([]);
       }
       
-      const userId = req.session.userId;
-      console.log('Request from user ID:', userId);
+      console.log(`Found ${result.rows.length} advertisements in database`);
       
-      // The key issue: For the admin panel, we want ALL ads without filtering by placement
-      // So we need a completely separate SQL query that doesn't filter by placement
-      try {
-        // Note: We're using a raw SQL query for maximum reliability and transparency
-        const query = `
-          SELECT a.*, u.username, u.email 
-          FROM advertisements a 
-          LEFT JOIN users u ON a.user_id = u.id
-          ORDER BY a.created_at DESC;
-        `;
-        
-        console.log("Executing SQL query to fetch ALL advertisements regardless of placement");
-        const { rows } = await db.execute(query);
-        console.log(`SQL query found ${rows.length} advertisements in total`);
-        
-        if (rows.length > 0) {
-          // Output detailed diagnostic information
-          console.log('First few advertisements from database:');
-          for (let i = 0; i < Math.min(3, rows.length); i++) {
-            console.log(`Ad ${i+1}: ID=${rows[i].id}, Title="${rows[i].title}", Status=${rows[i].status}, IsApproved=${rows[i].is_approved}, Placement=${rows[i].placement}`);
-          }
-          
-          // Transform database rows to client-friendly format
-          const enhancedAds = rows.map(ad => ({
-            id: ad.id,
-            title: ad.title,
-            imageUrl: ad.image_url,
-            linkUrl: ad.link_url,
-            placement: ad.placement,
-            startDate: ad.start_date,
-            endDate: ad.end_date,
-            userId: ad.user_id,
-            isApproved: ad.is_approved,
-            createdAt: ad.created_at,
-            impressions: ad.impressions || 0,
-            clicks: ad.clicks || 0,
-            status: ad.status || 'pending', // Provide default for compatibility
-            paymentStatus: ad.payment_status || 'pending',
-            paymentId: ad.payment_id,
-            price: ad.price || 0,
-            adminNotes: ad.admin_notes,
-            user: {
-              username: ad.username || 'Unknown',
-              email: ad.email || 'Unknown'
-            }
-          }));
-          
-          console.log(`SUCCESS: Returning ${enhancedAds.length} advertisements to client`);
-          return res.json(enhancedAds);
-        } else {
-          console.log('No advertisements found in the database');
-          return res.json([]);
-        }
-      } catch (sqlError) {
-        console.error("Error in SQL query:", sqlError);
-        
-        // Last resort: Try a direct simplified query
-        try {
-          console.log("FALLBACK: Trying simplified SQL query");
-          const { rows } = await db.execute("SELECT * FROM advertisements");
-          
-          if (rows && rows.length > 0) {
-            console.log(`Simplified query found ${rows.length} ads`);
-            return res.json(rows.map(ad => ({
-              id: ad.id,
-              title: ad.title,
-              imageUrl: ad.image_url,
-              linkUrl: ad.link_url || 'https://example.com',
-              placement: ad.placement,
-              startDate: ad.start_date,
-              endDate: ad.end_date,
-              userId: ad.user_id,
-              isApproved: ad.is_approved,
-              status: ad.status || 'pending',
-              createdAt: ad.created_at
-            })));
-          } else {
-            console.log("No advertisements found with simplified query either");
-            return res.json([]);
-          }
-        } catch (simplifiedError) {
-          console.error("Both SQL queries failed:", simplifiedError);
-          return res.status(500).json({ message: "Error fetching advertisements" });
-        }
+      // Log the first few ads for debugging
+      for (let i = 0; i < Math.min(3, result.rows.length); i++) {
+        const ad = result.rows[i];
+        console.log(`Ad ${i+1}: ID=${ad.id}, Title=${ad.title}, Status=${ad.status}, Approved=${ad.is_approved}`);
       }
+      
+      // Map the raw database results to our client-side format
+      const ads = result.rows.map(ad => ({
+        id: ad.id,
+        title: ad.title,
+        imageUrl: ad.image_url || '',
+        linkUrl: ad.link_url || 'https://example.com',
+        placement: ad.placement,
+        startDate: ad.start_date,
+        endDate: ad.end_date,
+        userId: ad.user_id,
+        isApproved: ad.is_approved === true,
+        createdAt: ad.created_at,
+        impressions: ad.impressions || 0,
+        clicks: ad.clicks || 0,
+        status: ad.status || 'pending',
+        paymentStatus: ad.payment_status || 'pending',
+        paymentId: ad.payment_id || null,
+        price: ad.price || 0,
+        adminNotes: ad.admin_notes || null
+      }));
+      
+      console.log(`Successfully mapped ${ads.length} advertisements for client`);
+      return res.json(ads);
     } catch (error) {
-      console.error("Error in advertisement endpoint:", error);
-      res.status(500).json({ message: "Error fetching all advertisements" });
+      console.error('Error fetching admin advertisements:', error);
+      return res.status(500).json({ message: 'Failed to fetch advertisements' });
     }
   });
   

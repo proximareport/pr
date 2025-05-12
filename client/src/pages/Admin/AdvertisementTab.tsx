@@ -47,13 +47,13 @@ function AdvertisementTab() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // Use the direct SQL endpoint for reliable ad retrieval
+  // Use a completely new and direct endpoint specifically for the admin panel
   const { data: advertisements = [], isLoading, error } = useQuery({
-    queryKey: ['/api/advertisements/all'],
+    queryKey: ['/api/admin/advertisements'],
     retry: 3,
     refetchOnWindowFocus: false,
     refetchOnMount: true,
-    staleTime: 10000, // Refetch data if older than 10 seconds
+    staleTime: 5000, // Refetch data every 5 seconds
     select: (data: any): Advertisement[] => {
       // Handle null response from the API
       if (!data) {
@@ -110,7 +110,7 @@ function AdvertisementTab() {
       return await apiRequest('POST', `/api/advertisements/${adId}/approve`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/advertisements/all'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/advertisements'] });
       toast({
         title: 'Success',
         description: 'Advertisement approved successfully',
@@ -133,7 +133,7 @@ function AdvertisementTab() {
       return await apiRequest('POST', `/api/advertisements/${adId}/reject`, { adminNotes: reason });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/advertisements/all'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/advertisements'] });
       toast({
         title: 'Success',
         description: 'Advertisement rejected',
@@ -155,7 +155,7 @@ function AdvertisementTab() {
       return await apiRequest('DELETE', `/api/advertisements/${adId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/advertisements/all'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/advertisements'] });
       toast({
         title: 'Success',
         description: 'Advertisement deleted successfully',
