@@ -751,14 +751,23 @@ function AdminArticleEditor() {
     const newStatus = shouldPublish ? 'published' : 'draft';
     console.log("Setting article status to:", newStatus);
     
+    // If the article is already in the requested state, don't do anything
+    if ((newStatus === 'published' && !isDraft) || (newStatus === 'draft' && isDraft)) {
+      console.log("Article is already in the requested state, skipping update");
+      return;
+    }
+    
+    // Use explicit status string, not boolean
     const articleData = prepareArticleData(newStatus);
     console.log("Article data prepared:", JSON.stringify(articleData));
     
-    // Use the same mutation but with status explicitly set
-    mutate(articleData);
-    
-    // Update local state to reflect new status
-    setIsDraft(!shouldPublish);
+    // Update database first before updating UI state to prevent inconsistency
+    mutate(articleData, {
+      onSuccess: () => {
+        // Update local state to reflect new status only after successful save
+        setIsDraft(newStatus === 'draft');
+      }
+    });
   };
 
   const addTag = (tag: string) => {
@@ -976,10 +985,20 @@ function AdminArticleEditor() {
               </p>
             </div>
             <Switch 
+              // Switch should be checked when it's in DRAFT mode
               checked={isDraft} 
-              onCheckedChange={(value) => {
-                // Use our explicit publish toggle function instead of just local state
-                handlePublishToggle(!value);
+              onCheckedChange={(newValue) => {
+                console.log(`Switch toggled from ${isDraft} to ${newValue}`);
+                // When switch is toggled ON (true), that means we want to set to DRAFT mode
+                // When switch is toggled OFF (false), that means we want to PUBLISH (not draft)
+                
+                // newValue is the new isDraft state (true = draft, false = published)
+                // handlePublishToggle expects (true = publish, false = draft)
+                // So we need to pass the OPPOSITE of newValue
+                
+                // If the new switch value is true (draft), we pass false (unpublish)
+                // If the new switch value is false (published), we pass true (publish)
+                handlePublishToggle(!newValue);
               }}
             />
           </div>
