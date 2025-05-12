@@ -15,8 +15,11 @@ import {
   type User,
   type MediaLibraryItem,
   type SiteSettings,
-  type UpdateSiteSettings
+  type UpdateSiteSettings,
+  advertisements
 } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { handleStripeWebhook, createStripeCheckoutSession, stripe, SUBSCRIPTION_PRICES } from "./stripe";
 import session from "express-session";
@@ -2243,7 +2246,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
-      const ads = await storage.getAdvertisements();
+      // Pass true to include unapproved ads in the admin dashboard
+      const ads = await storage.getAdvertisements(undefined, true);
+      console.log(`Found ${ads.length} total ads for admin dashboard`);
       
       // Include user information with each ad
       const enhancedAds = await Promise.all(ads.map(async (ad) => {

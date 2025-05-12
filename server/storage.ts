@@ -996,21 +996,28 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Advertisement operations
-  async getAdvertisements(placement?: string): Promise<Advertisement[]> {
-    let query = db
-      .select()
-      .from(advertisements)
-      .where(and(
+  async getAdvertisements(placement?: string, includeNotApproved: boolean = false): Promise<Advertisement[]> {
+    let baseQuery = db.select().from(advertisements);
+    
+    // Only apply approval and date filters if we're not including unapproved ads
+    if (!includeNotApproved) {
+      baseQuery = baseQuery.where(and(
         eq(advertisements.isApproved, true),
         sql`${advertisements.startDate} <= NOW()`,
         sql`${advertisements.endDate} >= NOW()`
       ));
-    
-    if (placement) {
-      query = query.where(eq(advertisements.placement, placement));
     }
     
-    return await query;
+    // Add placement filter if provided
+    if (placement) {
+      baseQuery = baseQuery.where(eq(advertisements.placement, placement));
+    }
+    
+    console.log('Running advertisement query with params:', { placement, includeNotApproved });
+    const results = await baseQuery;
+    console.log(`Found ${results.length} advertisements`);
+    
+    return results;
   }
 
   async createAdvertisement(ad: InsertAdvertisement): Promise<Advertisement> {
