@@ -7,6 +7,7 @@ import { z } from "zod";
 export const roleEnum = pgEnum("role", ["user", "author", "editor", "admin"]);
 export const membershipTierEnum = pgEnum("membership_tier", ["free", "supporter", "pro"]);
 export const mediaTypeEnum = pgEnum("media_type", ["image", "video", "document", "audio"]);
+export const emailFrequencyEnum = pgEnum("email_frequency", ["daily", "weekly", "monthly", "immediately"]);
 
 // Users
 export const users = pgTable("users", {
@@ -49,6 +50,8 @@ export const articles = pgTable("articles", {
   lastEditedAt: timestamp("last_edited_at"),
   isCollaborative: boolean("is_collaborative").default(false),
   collaborativeSessionId: text("collaborative_session_id"),
+  isNewsletter: boolean("is_newsletter").default(false),
+  newsletterSentAt: timestamp("newsletter_sent_at"),
 });
 
 // Article Authors (many-to-many table for multiple authors per article)
@@ -222,6 +225,43 @@ export const apiKeys = pgTable("api_keys", {
   expiresAt: timestamp("expires_at"),
 });
 
+// Newsletter Subscriptions
+export const newsletterSubscriptions = pgTable("newsletter_subscriptions", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
+  isVerified: boolean("is_verified").default(false).notNull(),
+  verificationToken: text("verification_token"),
+  frequency: emailFrequencyEnum("frequency").default("weekly").notNull(),
+  categories: text("categories").array().default([]).notNull(),
+  unsubscribeToken: text("unsubscribe_token").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  lastEmailSentAt: timestamp("last_email_sent_at"),
+  isActive: boolean("is_active").default(true).notNull(),
+});
+
+// Newsletter Sent History
+export const newsletterSentHistory = pgTable("newsletter_sent_history", {
+  id: serial("id").primaryKey(),
+  articleId: integer("article_id").references(() => articles.id, { onDelete: "cascade" }),
+  sentAt: timestamp("sent_at").defaultNow().notNull(),
+  recipientCount: integer("recipient_count").default(0).notNull(),
+  openCount: integer("open_count").default(0).notNull(),
+  clickCount: integer("click_count").default(0).notNull(),
+  subject: text("subject").notNull(),
+});
+
+// Search History
+export const searchHistory = pgTable("search_history", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }),
+  query: text("query").notNull(),
+  searchedAt: timestamp("searched_at").defaultNow().notNull(),
+  resultCount: integer("result_count").default(0),
+  filters: jsonb("filters").default({}),
+  isAnonymous: boolean("is_anonymous").default(false).notNull(),
+});
+
 export const usersRelations = relations(users, ({ many, one }) => ({
   primaryAuthorArticles: many(articles, { relationName: "primaryAuthor" }),
   authoredArticles: many(articleAuthors, { relationName: "articleAuthor" }),
@@ -232,6 +272,8 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   apiKeys: many(apiKeys),
   lastEditedArticles: many(articles, { relationName: "lastEditor" }),
   mediaFiles: many(mediaLibrary),
+  newsletterSubscriptions: many(newsletterSubscriptions),
+  searchHistory: many(searchHistory),
 }));
 
 export const articlesRelations = relations(articles, ({ one, many }) => ({
@@ -247,6 +289,7 @@ export const articlesRelations = relations(articles, ({ one, many }) => ({
   }),
   authors: many(articleAuthors),
   comments: many(comments),
+  newsletterHistory: many(newsletterSentHistory),
 }));
 
 export const articleAuthorsRelations = relations(articleAuthors, ({ one }) => ({
@@ -326,6 +369,27 @@ export const siteSettingsRelations = relations(siteSettings, ({ one }) => ({
   }),
 }));
 
+export const newsletterSubscriptionsRelations = relations(newsletterSubscriptions, ({ one }) => ({
+  user: one(users, {
+    fields: [newsletterSubscriptions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const newsletterSentHistoryRelations = relations(newsletterSentHistory, ({ one }) => ({
+  article: one(articles, {
+    fields: [newsletterSentHistory.articleId],
+    references: [articles.id],
+  }),
+}));
+
+export const searchHistoryRelations = relations(searchHistory, ({ one }) => ({
+  user: one(users, {
+    fields: [searchHistory.userId],
+    references: [users.id],
+  }),
+}));
+
 // Zod Schemas for validation
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true, 
@@ -346,6 +410,7 @@ export const insertArticleSchema = createInsertSchema(articles)
     lastEditedAt: true,
     lastEditedBy: true,
     collaborativeSessionId: true,
+    newsletterSentAt: true,
   })
   // Add extra fields that aren't in the table but are needed for the API
   .extend({
@@ -422,6 +487,20 @@ export const updateSiteSettingsSchema = createInsertSchema(siteSettings).omit({
     if (val === '') return null;
     return val;
   }),
+});
+
+export const insertNewsletterSubscriptionSchema = createInsertSchema(newsletterSubscriptions).omit({
+  id: true,
+  createdAt: true,
+  verificationToken: true,
+  unsubscribeToken: true,
+  lastEmailSentAt: true,
+  isVerified: true,
+});
+
+export const insertSearchHistorySchema = createInsertSchema(searchHistory).omit({
+  id: true,
+  searchedAt: true,
 });
 
 // Types
