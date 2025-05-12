@@ -424,7 +424,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Valid article ID is required" });
       }
       
-      const article = await storage.getArticle(articleId);
+      const article = await storage.getArticleById(articleId);
       
       if (!article) {
         return res.status(404).json({ message: "Article not found" });
@@ -464,7 +464,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const article = await storage.getArticle(articleId);
+      const article = await storage.getArticleById(articleId);
       
       if (!article) {
         return res.status(404).json({ message: "Article not found" });
@@ -722,7 +722,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid article ID" });
       }
       
-      const article = await storage.getArticle(id);
+      const article = await storage.getArticleById(id);
       
       if (!article) {
         return res.status(404).json({ message: "Article not found" });
@@ -881,7 +881,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if article exists
-      const article = await storage.getArticle(id);
+      const article = await storage.getArticleById(id);
       
       if (!article) {
         return res.status(404).json({ message: "Article not found" });
@@ -946,7 +946,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if article exists
-      const article = await storage.getArticle(articleId);
+      const article = await storage.getArticleById(articleId);
       
       if (!article) {
         return res.status(404).json({ message: "Article not found" });
@@ -1743,7 +1743,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Fetch approved ads for the requested placement
       // (or include unapproved if user is admin and requested them)
-      const ads = await storage.getAdvertisementsByPlacement(
+      const ads = await storage.getAdvertisements(
         placement, 
         isAdmin && includeNotApproved
       );
@@ -1754,7 +1754,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("Found 0 advertisements (approved only)");
         
         // Check if there are any ads at all for this placement (approved or not)
-        const allAds = await storage.getAdvertisementsByPlacement(placement, true);
+        const allAds = await storage.getAdvertisements(placement, true);
         console.log(`Found ${allAds.length} ads for placement ${placement}, of which ${allAds.filter(ad => ad.isApproved).length} are actually approved`);
         
         if (allAds.length === 0) {
