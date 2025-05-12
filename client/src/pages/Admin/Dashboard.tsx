@@ -525,7 +525,7 @@ function AdminDashboard() {
                 <Button 
                   variant="default" 
                   className={`w-full ${pendingAdsCount > 0 ? 'bg-amber-600 hover:bg-amber-700' : 'bg-emerald-600 hover:bg-emerald-700'} text-white font-medium py-6`}
-                  onClick={() => setActiveTab("advertisements")}
+                  onClick={() => handleTabChange("advertisements")}
                 >
                   {pendingAdsCount > 0 ? (
                     <>
@@ -970,7 +970,7 @@ function AdminDashboard() {
                     <p className="text-sm text-muted-foreground mb-2">Review pending advertisements and manage existing ads</p>
                     <Button 
                       variant="default" 
-                      onClick={() => setActiveTab("advertisements")}
+                      onClick={() => handleTabChange("advertisements")}
                       className="gap-2"
                     >
                       <DollarSignIcon className="h-4 w-4" />
