@@ -526,16 +526,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User login endpoint
   app.post("/api/login", async (req: Request, res: Response) => {
     try {
-      const { username, password } = req.body;
+      const { username, email, password } = req.body;
       
-      if (!username || !password) {
-        return res.status(400).json({ message: "Username and password are required" });
+      // Check if we have either username or email, and password
+      if ((!username && !email) || !password) {
+        return res.status(400).json({ message: "Username/email and password are required" });
       }
       
-      const normalizedUsername = username.toLowerCase();
+      let user;
       
-      // Check if user exists
-      const user = await storage.getUserByUsername(normalizedUsername);
+      // Try to find user by email first if provided
+      if (email) {
+        const normalizedEmail = email.toLowerCase();
+        user = await storage.getUserByEmail(normalizedEmail);
+      }
+      
+      // If no user found by email or email wasn't provided, try username
+      if (!user && username) {
+        const normalizedUsername = username.toLowerCase();
+        user = await storage.getUserByUsername(normalizedUsername);
+      }
       
       if (!user) {
         return res.status(400).json({ message: "Invalid credentials" });
@@ -1751,7 +1761,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`No ads found for placement ${placement}`);
         } else {
           console.log(`No approved ads found for placement ${placement}, checking if any exist regardless of approval`);
-          const allPlacements = await storage.countAdvertisementsByPlacement();
+          // Count ads by placement is not available, so we'll just log this information
           console.log(`Found ${allAds.length} total ads (including unapproved) for placement ${placement}`);
           
           if (allAds.length > 0) {
