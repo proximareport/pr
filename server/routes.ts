@@ -1269,7 +1269,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updateData.tags = Array.isArray(tags) ? tags : [];
       }
       if (category !== undefined) updateData.category = category || '';
-      if (status !== undefined) updateData.status = status || 'draft';
+      if (status !== undefined) {
+        updateData.status = status || 'draft';
+        
+        // If status is changing to published and the article is not already published,
+        // make sure to set the published_at date
+        if (status === 'published' && article.status !== 'published') {
+          // Check if user has permission to publish
+          const canPublish = user.role === 'admin' || user.role === 'editor';
+          if (!canPublish) {
+            return res.status(403).json({ 
+              message: "Only editors and admins can publish articles" 
+            });
+          }
+          
+          // Ensure a published article always has a published_at date
+          updateData.publishedAt = new Date();
+          console.log("Setting publishedAt for newly published article:", updateData.publishedAt);
+        }
+      }
       
       // Check if the column exists in the database
       const columnCheckResult = await pool.query(
@@ -1581,6 +1599,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!status) {
         return res.status(400).json({ message: "Status is required" });
+      }
+      
+      // Ensure published articles always have a published_at date
+      if (status === 'published') {
+        // Update both status and published_at
+        const updateResult = await pool.query(
+          `UPDATE articles 
+           SET status = $1, 
+               published_at = COALESCE(published_at, NOW()) 
+           WHERE id = $2 
+           RETURNING *`,
+          [status, articleId]
+        );
+        
+        if (updateResult.rowCount > 0) {
+          return res.json({ 
+            success: true, 
+            article: updateResult.rows[0],
+            message: "Article published successfully"
+          });
+        }
       }
       
       // Validate status value
