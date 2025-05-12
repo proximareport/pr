@@ -4,9 +4,8 @@ import { storage } from "./storage";
 import { pool } from "./db";
 import { ZodError } from "zod";
 import { updateArticleStatus } from "./articleStatusRoute";
-import { registerNewsletterAndSearchRoutes } from "./newsletterRoutes";
-import { searchArticles, searchUsers, getPopularSearches } from "./searchService";
-import { subscribeToNewsletter, unsubscribeFromNewsletter, verifySubscription, sendNewsletterEmail } from "./emailService";
+import { searchArticles, searchUsers, getPopularSearches, saveSearch } from "./searchService";
+// Note: We will directly register search routes here instead of using the separate function
 import {
   insertUserSchema,
   insertArticleSchema,
@@ -229,8 +228,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Use session middleware
   app.use(session(sessionConfig));
   
-  // Register newsletter and search routes
-  registerNewsletterAndSearchRoutes(app);
+  // Register search routes directly
+  // Main search endpoint for articles
+  app.get("/api/search", async (req: Request, res: Response) => {
+    try {
+      console.log("Search API called with query params:", req.query);
+      
+      const query = req.query.q as string || "";
+      const page = req.query.page ? parseInt(req.query.page as string) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      const orderBy = req.query.orderBy as string || "publishedAt";
+      const orderDirection = req.query.orderDirection as "asc" | "desc" || "desc";
+      const category = req.query.category as string;
+      const tags = req.query.tags ? (req.query.tags as string).split(",") : undefined;
+      const authorId = req.query.author ? parseInt(req.query.author as string) : undefined;
+      const dateFrom = req.query.from ? new Date(req.query.from as string) : undefined;
+      const dateTo = req.query.to ? new Date(req.query.to as string) : undefined;
+      
+      const options = { page, limit, orderBy, orderDirection };
+      const filters = { 
+        category,
+        tags,
+        author: authorId,
+        dateFrom,
+        dateTo
+      };
+      
+      console.log("Calling searchArticles with:", { query, options, filters });
+      const results = await searchArticles(query, options, filters);
+      console.log("Search results count:", results.total);
+      
+      // Save search to history if user is logged in
+      const userId = req.session?.userId;
+      if (query && query.trim().length > 0) {
+        saveSearch(query, userId || null, results.total, filters);
+      }
+      
+      res.json(results);
+    } catch (error) {
+      console.error("Search error:", error);
+      res.status(500).json({ message: "Error processing search", error: String(error) });
+    }
+  });
+  
+  // Search suggestions for autocomplete
+  app.get("/api/search/suggestions", async (req: Request, res: Response) => {
+    try {
+      console.log("Search suggestions API called with query params:", req.query);
+      const query = req.query.q as string || "";
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
+      
+      if (!query || query.trim().length < 2) {
+        return res.json({ data: [] });
+      }
+      
+      // Get article suggestions based on the query
+      const results = await searchArticles(query, {
+        page: 1,
+        limit,
+        orderBy: 'publishedAt',
+        orderDirection: 'desc'
+      });
+      
+      // Format the results to match the expected structure
+      const suggestions = results.data.map(article => ({
+        id: article.id,
+        title: article.title,
+        slug: article.slug,
+        category: article.category,
+        publishedAt: article.publishedAt
+      }));
+      
+      res.json({ data: suggestions });
+    } catch (error) {
+      console.error("Search suggestions error:", error);
+      res.status(500).json({ message: "Error fetching search suggestions" });
+    }
+  });
+  
+  // Popular searches endpoint
+  app.get("/api/search/popular", async (req: Request, res: Response) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
+      const popularSearches = await getPopularSearches(limit);
+      res.json(popularSearches);
+    } catch (error) {
+      console.error("Popular searches error:", error);
+      res.status(500).json({ message: "Error fetching popular searches" });
+    }
+  });
+  
+  // Endpoint for saving search history
+  app.post("/api/search/history", async (req: Request, res: Response) => {
+    try {
+      const query = req.body.query;
+      const filters = req.body.filters || {};
+      
+      if (!query || typeof query !== 'string') {
+        return res.status(400).json({ message: "Search query is required" });
+      }
+      
+      const userId = req.session?.userId;
+      await saveSearch(query, userId || null, 0, filters);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Search history error:", error);
+      res.status(500).json({ message: "Error saving search history" });
+    }
+  });
   
   // Apply maintenance mode check to all routes
   app.use(checkMaintenanceMode);
