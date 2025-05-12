@@ -44,6 +44,7 @@ import PublishedContent from './PublishedContent';
 import UserManagement from './UserManagement';
 import MediaLibraryTab from './MediaLibraryTab';
 import AdvertisementTab from './AdvertisementTab';
+import EmergencyBannerTab from './EmergencyBannerTab';
 import SiteSettingsForm from '@/components/admin/SiteSettingsForm';
 
 interface Article {
@@ -1223,11 +1224,7 @@ function AdminDashboard() {
                   <CardDescription>Display critical site-wide announcements</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <iframe 
-                    src="/admin/emergency-banner" 
-                    className="w-full h-[calc(100vh-300px)] min-h-[600px] border-0 rounded-lg overflow-hidden"
-                    title="Emergency Banner Management"
-                  />
+                  <EmergencyBannerTab />
                 </CardContent>
               </Card>
             </TabsContent>
