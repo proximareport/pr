@@ -85,14 +85,21 @@ function AdminArticleEditor() {
   // Update article mutation
   const updateArticleMutation = useMutation({
     mutationFn: (articleData: any) => 
-      apiRequest('PUT', `/api/articles/${params.id}`, articleData).then(res => res.json()),
-    onSuccess: () => {
+      apiRequest('PATCH', `/api/articles/${params.id}`, articleData).then(res => res.json()),
+    onSuccess: (data) => {
+      // First invalidate queries
       queryClient.invalidateQueries({ queryKey: ['/api/articles'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/articles', params.id] });
+      if (params.id) {
+        queryClient.invalidateQueries({ queryKey: ['/api/articles', params.id] });
+      }
+      
+      // Show success message
       toast({
         title: "Article updated successfully",
         description: "Your changes have been saved.",
       });
+      
+      // Navigate back to admin dashboard
       navigate('/admin');
     },
     onError: (error: any) => {
