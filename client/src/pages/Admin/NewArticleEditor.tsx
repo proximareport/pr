@@ -58,6 +58,7 @@ function AdminArticleEditor() {
   // Autosave related state
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [autosaveError, setAutosaveError] = useState<string | null>(null);
+  const [isAutosaving, setIsAutosaving] = useState<boolean>(false); // Track if autosave is in progress
   const autosaveTimeoutRef = useRef<number | null>(null);
   const lastSavedContentRef = useRef<string>(''); // Track the last saved content to avoid unnecessary saves
   const [availableUsers, setAvailableUsers] = useState<Array<{id: number, username: string, profilePicture?: string}>>([]);
@@ -424,85 +425,181 @@ function AdminArticleEditor() {
     };
   }, [title, slug, summary, content, category, tags, featuredImage, readTime, isBreaking, isFeatured, isCollaborative, coauthors, user?.id]);
 
-  // Function to compare deeply two ArticleFormData objects
+  // Function to compare deeply two ArticleFormData objects with detailed change tracking
   const hasContentChanged = useCallback((current: ArticleFormData, previous: ArticleFormData | null): boolean => {
-    if (!previous) return true;
-    
-    // Compare primitive fields
-    if (current.title !== previous.title) return true;
-    if (current.slug !== previous.slug) return true;
-    if (current.summary !== previous.summary) return true;
-    if (current.content !== previous.content) return true;
-    if (current.category !== previous.category) return true;
-    if (current.readTime !== previous.readTime) return true;
-    if (current.status !== previous.status) return true;
-    if (current.isBreaking !== previous.isBreaking) return true;
-    if (current.isFeatured !== previous.isFeatured) return true;
-    if (current.isCollaborative !== previous.isCollaborative) return true;
-    if (current.featuredImage !== previous.featuredImage) return true;
-    
-    // Compare tags array (order-sensitive)
-    if (current.tags.length !== previous.tags.length) return true;
-    for (let i = 0; i < current.tags.length; i++) {
-      if (current.tags[i] !== previous.tags[i]) return true;
+    if (!previous) {
+      console.log('Content changed: No previous version available');
+      return true;
     }
     
-    // Compare authors array (order-sensitive)
-    if (current.authors.length !== previous.authors.length) return true;
-    for (let i = 0; i < current.authors.length; i++) {
-      if (current.authors[i].id !== previous.authors[i].id || 
-          current.authors[i].role !== previous.authors[i].role) {
+    // For logging changes
+    const changes: string[] = [];
+    
+    // Helper function to track and log field changes
+    const checkField = (fieldName: string, currentValue: any, previousValue: any): boolean => {
+      if (JSON.stringify(currentValue) !== JSON.stringify(previousValue)) {
+        // For debugging, don't log the full content which could be very large
+        if (fieldName === 'content') {
+          changes.push(`${fieldName}: [content modified]`);
+        } else {
+          // Trim long values for readable logs
+          const formatValue = (val: any) => {
+            const str = typeof val === 'string' ? val : JSON.stringify(val);
+            return str.length > 50 ? str.substring(0, 47) + '...' : str;
+          };
+          changes.push(`${fieldName}: ${formatValue(previousValue)} → ${formatValue(currentValue)}`);
+        }
         return true;
+      }
+      return false;
+    };
+    
+    // Compare primitive fields
+    let hasChanged = false;
+    
+    // Essential fields that always trigger an autosave
+    if (checkField('title', current.title, previous.title)) hasChanged = true;
+    if (checkField('slug', current.slug, previous.slug)) hasChanged = true;
+    if (checkField('summary', current.summary, previous.summary)) hasChanged = true;
+    if (checkField('content', current.content, previous.content)) hasChanged = true;
+    
+    // Secondary fields - also important but grouped for logging
+    if (checkField('category', current.category, previous.category)) hasChanged = true;
+    if (checkField('readTime', current.readTime, previous.readTime)) hasChanged = true;
+    if (checkField('status', current.status, previous.status)) hasChanged = true;
+    if (checkField('featuredImage', current.featuredImage, previous.featuredImage)) hasChanged = true;
+    
+    // Boolean properties - grouped for simpler logging
+    const booleanChecks = [
+      { name: 'isBreaking', current: current.isBreaking, previous: previous.isBreaking },
+      { name: 'isFeatured', current: current.isFeatured, previous: previous.isFeatured },
+      { name: 'isCollaborative', current: current.isCollaborative, previous: previous.isCollaborative }
+    ];
+    
+    for (const check of booleanChecks) {
+      if (checkField(check.name, check.current, check.previous)) hasChanged = true;
+    }
+    
+    // Compare tags array - simpler to just check the whole array
+    if (!arraysEqual(current.tags, previous.tags)) {
+      changes.push(`tags: ${JSON.stringify(previous.tags)} → ${JSON.stringify(current.tags)}`);
+      hasChanged = true;
+    }
+    
+    // Compare authors array more thoroughly
+    if (current.authors.length !== previous.authors.length) {
+      changes.push(`authors length: ${previous.authors.length} → ${current.authors.length}`);
+      hasChanged = true;
+    } else {
+      // Check individual authors
+      for (let i = 0; i < current.authors.length; i++) {
+        const currentAuthor = current.authors[i];
+        const previousAuthor = previous.authors[i];
+        
+        if (currentAuthor.id !== previousAuthor.id || currentAuthor.role !== previousAuthor.role) {
+          changes.push(`author[${i}]: ${JSON.stringify(previousAuthor)} → ${JSON.stringify(currentAuthor)}`);
+          hasChanged = true;
+        }
       }
     }
     
-    // If we get here, nothing has changed
-    return false;
+    // Log all changes for debugging
+    if (hasChanged && changes.length > 0) {
+      console.log(`Content changes detected (${changes.length}):`);
+      changes.forEach(change => console.log(`- ${change}`));
+    }
+    
+    return hasChanged;
   }, [/* No dependencies needed as this is a pure comparison function */]);
+  
+  // Helper function to compare arrays for equality
+  const arraysEqual = (arr1: any[], arr2: any[]): boolean => {
+    if (arr1.length !== arr2.length) return false;
+    
+    // Handle primitive arrays
+    if (typeof arr1[0] !== 'object') {
+      return JSON.stringify(arr1) === JSON.stringify(arr2);
+    }
+    
+    // For arrays of objects, we need to compare each element
+    for (let i = 0; i < arr1.length; i++) {
+      if (JSON.stringify(arr1[i]) !== JSON.stringify(arr2[i])) {
+        return false;
+      }
+    }
+    
+    return true;
+  };
 
-  // Function definitions for autosave
+  // Function definitions for autosave with enhanced change detection and error prevention
   const doAutosave = useCallback(() => {
-    // Don't autosave if title is empty
+    // Check minimum required content
     if (!title.trim()) {
       console.log('Title is empty, skipping autosave');
       return;
     }
     
+    // Ensure slug exists, create one from title if needed
+    const currentSlug = slug || title.toLowerCase().replace(/[^\w\s]/gi, '').replace(/\s+/g, '-');
+    if (!slug && currentSlug) {
+      setSlug(currentSlug);
+    }
+    
     const currentArticleData = prepareArticleData(false); // Always save as draft
+    
+    // Validation check before attempting to save
+    const validationErrors = validateArticleData(currentArticleData);
+    if (validationErrors.length > 0) {
+      console.log('Skipping autosave due to validation errors:', validationErrors);
+      setAutosaveError(`Validation errors: ${validationErrors.join(', ')}`);
+      return;
+    }
     
     // If no previous save reference exists, do the first save
     if (!lastSavedContentRef.current) {
-      console.log('No previous saved content reference, saving...');
+      console.log('First save of article content...');
     } else {
-      // Parse previous data for typed comparison
-      const previousArticleData: ArticleFormData = JSON.parse(lastSavedContentRef.current);
-      
-      // Use our deep comparison function to check for changes
-      if (!hasContentChanged(currentArticleData, previousArticleData)) {
-        console.log('Content unchanged since last save, skipping autosave');
-        return; // Skip save if content hasn't changed
-      }
-      
-      // For debugging, find what specific fields changed
-      const fieldsChanged = Object.keys(currentArticleData).filter(key => {
-        const currentValue = currentArticleData[key as keyof ArticleFormData];
-        const previousValue = previousArticleData[key as keyof ArticleFormData];
+      try {
+        // Parse previous data for typed comparison
+        const previousArticleData: ArticleFormData = JSON.parse(lastSavedContentRef.current);
         
-        // Special handling for arrays or objects that need deep comparison
-        if (Array.isArray(currentValue) || typeof currentValue === 'object') {
-          return JSON.stringify(currentValue) !== JSON.stringify(previousValue);
+        // Use our deep comparison function to check for changes
+        if (!hasContentChanged(currentArticleData, previousArticleData)) {
+          console.log('Content unchanged since last save, skipping autosave');
+          // Update last save timestamp without actual saving to show recent check
+          setLastSaved(new Date());
+          return;
         }
-        return currentValue !== previousValue;
-      });
-      
-      console.log('Content changed in fields:', fieldsChanged, 'Autosaving...');
+        
+        console.log('Changes detected, proceeding with autosave...');
+      } catch (error) {
+        console.error('Error comparing content for autosave:', error);
+        // Continue with save since we couldn't properly compare
+        console.log('Continuing with autosave due to error in comparison');
+      }
     }
     
-    // Update the last saved content reference using new variable name
-    lastSavedContentRef.current = JSON.stringify(currentArticleData);
+    // Basic validation for article size/limits
+    if (currentArticleData.content && typeof currentArticleData.content === 'string' && 
+        currentArticleData.content.length > 1000000) { // ~1MB content limit
+      console.warn('Article content exceeds recommended size limit');
+      // Continue with save but log warning
+    }
     
-    // Perform the autosave
-    autosaveArticleMutation(currentArticleData);
+    // Execute the autosave with detailed error handling
+    setAutosaveError(null); // Clear any previous errors
+    console.log(`Starting autosave: ${new Date().toLocaleTimeString()}`);
+    
+    // Set saving indicator
+    setIsAutosaving(true);
+    
+    // Execute the save mutation, providing the updated article data
+    autosaveArticleMutation(currentArticleData, {
+      onSettled: () => {
+        // Always clear the autosaving indicator, whether success or error
+        setIsAutosaving(false);
+      }
+    });
   }, [title, prepareArticleData, autosaveArticleMutation, lastSavedContentRef, hasContentChanged]);
   
   const scheduleAutosave = useCallback(() => {
