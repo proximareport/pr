@@ -184,12 +184,30 @@ function AdminArticleEditor() {
       }
     },
     onSuccess: (data) => {
+      // Display a toast with a different message based on the action
+      const action = data.status === 'published' 
+        ? 'published'
+        : data.status === 'draft' && !isDraft
+        ? 'unpublished to draft'
+        : isEditing 
+        ? 'updated' 
+        : 'created';
+        
       toast({
-        title: isEditing ? 'Article updated' : 'Article created',
-        description: `Successfully ${isEditing ? 'updated' : 'created'} the article "${data.title}"`,
+        title: `Article ${action}`,
+        description: `Successfully ${action} the article "${data.title}"`,
       });
+      
+      // Invalidate the articles query to refresh lists
       queryClient.invalidateQueries({ queryKey: ['/api/articles'] });
-      navigate(`/admin/articles/${data.id}/edit`);
+      
+      // Update the isDraft state to match the returned data
+      setIsDraft(data.status === 'draft');
+      
+      // Only navigate if this is a new article being created
+      if (!isEditing) {
+        navigate(`/admin/articles/${data.id}/edit`);
+      }
     },
     onError: (error: any) => {
       console.error('Article save error:', error);
@@ -411,6 +429,16 @@ function AdminArticleEditor() {
       ...coauthors
     ];
     
+    // Determine status based on the forPublishing flag
+    // If forPublishing is true, explicitly set to 'published'
+    // If forPublishing is false, explicitly set to 'draft' 
+    // If forPublishing is undefined or null, keep current status (for regular saves)
+    const newStatus = forPublishing === true 
+      ? 'published' 
+      : forPublishing === false 
+      ? 'draft'
+      : isDraft ? 'draft' : 'published';
+    
     return {
       title,
       slug,
@@ -420,14 +448,14 @@ function AdminArticleEditor() {
       tags,
       featuredImage,
       readTime: Number(readTime),
-      status: forPublishing ? 'published' : 'draft',
+      status: newStatus,
       isBreaking,
       isFeatured,
       isCollaborative,
       authors,
       primaryAuthorId: user?.id // Add primary author ID for database requirements
     };
-  }, [title, slug, summary, content, category, tags, featuredImage, readTime, isBreaking, isFeatured, isCollaborative, coauthors, user?.id]);
+  }, [title, slug, summary, content, category, tags, featuredImage, readTime, isBreaking, isFeatured, isCollaborative, coauthors, user?.id, isDraft]);
 
   // Function to compare deeply two ArticleFormData objects with detailed change tracking
   const hasContentChanged = useCallback((current: ArticleFormData, previous: ArticleFormData | null): boolean => {
@@ -867,15 +895,41 @@ function AdminArticleEditor() {
           </div>
         }
         footer={
-          <Button 
-            type="submit" 
-            onClick={() => document.querySelector('form')?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }))}
-            className="w-full"
-            disabled={isSubmitting}
-          >
-            <SaveIcon className="h-4 w-4 mr-2" />
-            {isSubmitting ? 'Saving...' : isEditing ? 'Update Article' : 'Publish Article'}
-          </Button>
+          <div className="flex flex-col gap-3 w-full">
+            {/* Save button */}
+            <Button 
+              type="submit" 
+              onClick={() => document.querySelector('form')?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }))}
+              className="w-full"
+              disabled={isSubmitting}
+            >
+              <SaveIcon className="h-4 w-4 mr-2" />
+              {isSubmitting ? 'Saving...' : 'Save Changes'}
+            </Button>
+            
+            {/* Publish/Unpublish button */}
+            {isDraft ? (
+              <Button 
+                type="button"
+                onClick={() => handlePublishToggle(true)}
+                className="w-full bg-green-600 hover:bg-green-700"
+                disabled={isSubmitting}
+              >
+                <UploadIcon className="h-4 w-4 mr-2" />
+                Publish Article Now
+              </Button>
+            ) : (
+              <Button 
+                type="button"
+                onClick={() => handlePublishToggle(false)}
+                className="w-full bg-red-600 hover:bg-red-700"
+                disabled={isSubmitting}
+              >
+                <UploadIcon className="h-4 w-4 mr-2" />
+                Unpublish to Draft
+              </Button>
+            )}
+          </div>
         }
       >
         <div className="space-y-6">
@@ -889,8 +943,8 @@ function AdminArticleEditor() {
             <Switch 
               checked={isDraft} 
               onCheckedChange={(value) => {
-                setIsDraft(value);
-                scheduleAutosave();
+                // Use our explicit publish toggle function instead of just local state
+                handlePublishToggle(!value);
               }}
             />
           </div>
