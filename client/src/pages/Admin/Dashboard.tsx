@@ -119,7 +119,9 @@ function AdminDashboard() {
                         key={`author-${idx}-${article.id}`} 
                         className="inline-flex items-center px-2 py-1 bg-gray-700 text-xs rounded-full font-medium text-gray-300"
                       >
-                        {author.user?.username || (author.user?.id === 1 || author.userId === 1 ? 'Admin' : `Author #${author.user?.id || author.userId || idx}`)}
+                        {author.user?.username || 
+                         (author.user?.id === 1 || author.userId === 1 ? 'Admin' : 
+                          `Author #${author.user?.id || author.userId || idx+1}`)}
                       </span>
                     ))}
                     {(!article.authors || article.authors.length === 0) && (
