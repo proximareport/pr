@@ -9,7 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { SaveIcon, UploadIcon, PlusIcon, XIcon, ImageIcon } from 'lucide-react';
+import { Save as SaveIcon, Upload as UploadIcon, Plus as PlusIcon, X as XIcon, Image as ImageIcon } from 'lucide-react';
+
+// Constant for autosave delay in milliseconds (2 seconds)
+const AUTOSAVE_DELAY = 2000;
 import RichTextEditor from '@/components/article/RichTextEditor';
 import MediaSelector from '@/components/MediaSelector';
 import { EditorLayout, EditorMainCard, EditorSideCard } from '@/components/admin/EditorLayout';
@@ -358,10 +361,13 @@ function AdminArticleEditor() {
       const prevData = JSON.parse(lastSavedContentRef.current);
       const fieldsChanged = Object.keys(articleData).filter(key => {
         // Special handling for arrays or objects that need deep comparison
-        if (Array.isArray(articleData[key]) || typeof articleData[key] === 'object') {
-          return JSON.stringify(articleData[key]) !== JSON.stringify(prevData[key]);
+        if (Array.isArray(articleData[key as keyof typeof articleData]) || 
+            typeof articleData[key as keyof typeof articleData] === 'object') {
+          return JSON.stringify(articleData[key as keyof typeof articleData]) !== 
+                 JSON.stringify(prevData[key as keyof typeof prevData]);
         }
-        return articleData[key] !== prevData[key];
+        return articleData[key as keyof typeof articleData] !== 
+               prevData[key as keyof typeof prevData];
       });
       
       console.log('Content changed in fields:', fieldsChanged, 'Autosaving...');
@@ -378,15 +384,20 @@ function AdminArticleEditor() {
     // Clear any existing timeout
     if (autosaveTimeoutRef.current) {
       window.clearTimeout(autosaveTimeoutRef.current);
+      console.log('Cleared existing autosave timeout');
     }
     
     // Don't autosave if title is empty
     if (!title.trim()) {
+      console.log('Title is empty, not scheduling autosave');
       return;
     }
     
+    console.log(`Scheduling autosave in ${AUTOSAVE_DELAY}ms`);
+    
     // Set a new timeout for autosave (2 seconds after user stops typing/editing)
     autosaveTimeoutRef.current = window.setTimeout(() => {
+      console.log('Autosave timeout triggered, executing save...');
       doAutosave();
     }, 2000);
   }, [title, doAutosave]);
