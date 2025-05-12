@@ -17,7 +17,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { RocketIcon, MenuIcon, SearchIcon, LogOutIcon, UserIcon, SettingsIcon, ShieldIcon, LineChartIcon } from "lucide-react";
+import { MenuIcon, SearchIcon, LogOutIcon, UserIcon, SettingsIcon, ShieldIcon, LineChartIcon } from "lucide-react";
+
+// Import logo images
+import desktopLogo from "../../assets/images/proxima-logo-desktop.png";
+import mobileLogo from "../../assets/images/proxima-logo-mobile.png";
 
 function Header() {
   const [location] = useLocation();
@@ -45,13 +49,13 @@ function Header() {
             <Link href="/" className="flex items-center">
               {/* Desktop logo (visible on md and larger screens) */}
               <img 
-                src="/assets/images/proxima-logo-desktop.png" 
+                src={desktopLogo} 
                 alt="Proxima Report" 
                 className="hidden md:block h-8" 
               />
               {/* Mobile logo (visible on smaller screens) */}
               <img 
-                src="/assets/images/proxima-logo-mobile.png" 
+                src={mobileLogo} 
                 alt="Proxima Report" 
                 className="block md:hidden h-10 w-10" 
               />
@@ -159,12 +163,12 @@ function Header() {
                   <div className="py-6">
                     <div className="flex items-center mb-6">
                       <img 
-                        src="/assets/images/proxima-logo-mobile.png" 
+                        src={mobileLogo} 
                         alt="Proxima Report" 
                         className="h-10 w-10" 
                       />
                       <img 
-                        src="/assets/images/proxima-logo-desktop.png" 
+                        src={desktopLogo} 
                         alt="Proxima Report" 
                         className="ml-2 h-6" 
                       />
