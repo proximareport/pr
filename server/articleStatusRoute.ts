@@ -33,8 +33,10 @@ export async function updateArticleStatus(req: Request, res: Response) {
       return res.status(404).json({ message: "Article not found" });
     }
     
-    // Check permissions
-    const isAuthor = await storage.isAuthorOfArticle(userId, articleId);
+    // Check permissions - see if user is author of this article
+    // Get the article authors
+    const articleAuthors = await storage.getArticleAuthors(articleId);
+    const isAuthor = articleAuthors.some(aa => aa.user.id === userId);
     const canModify = user.role === 'admin' || user.role === 'editor' || isAuthor;
     
     if (!canModify) {

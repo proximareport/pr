@@ -743,6 +743,39 @@ function AdminArticleEditor() {
     mutate(articleData);
   };
   
+  // Direct status change mutation
+  const statusMutation = useMutation({
+    mutationFn: async (newStatus: 'published' | 'draft') => {
+      if (!articleId) throw new Error("No article ID");
+      
+      // Use dedicated status endpoint instead of PATCH endpoint
+      return await apiRequest(
+        "POST", 
+        `/api/articles/${articleId}/status`, 
+        { status: newStatus }
+      );
+    },
+    onSuccess: (data) => {
+      // Invalidate article cache
+      queryClient.invalidateQueries({ queryKey: [`/api/articles/${articleId}`] });
+      // Show success message
+      toast({
+        title: data.status === 'published' ? "Article Published" : "Article Saved as Draft",
+        description: data.message || "Status updated successfully",
+      });
+      // Update local state
+      setIsDraft(data.article.status === 'draft');
+    },
+    onError: (error) => {
+      console.error("Error updating article status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update article status. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+  
   // Dedicated function to explicitly publish or unpublish an article
   const handlePublishToggle = (shouldPublish: boolean) => {
     console.log("Publish toggle called with shouldPublish:", shouldPublish);
@@ -757,17 +790,11 @@ function AdminArticleEditor() {
       return;
     }
     
-    // Use explicit status string, not boolean
-    const articleData = prepareArticleData(newStatus);
-    console.log("Article data prepared:", JSON.stringify(articleData));
+    // Ensure article is saved first
+    handleSubmit(submitSave)();
     
-    // Update database first before updating UI state to prevent inconsistency
-    mutate(articleData, {
-      onSuccess: () => {
-        // Update local state to reflect new status only after successful save
-        setIsDraft(newStatus === 'draft');
-      }
-    });
+    // Use the dedicated status mutation
+    statusMutation.mutate(newStatus);
   };
 
   const addTag = (tag: string) => {

@@ -1062,6 +1062,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Get draft articles (only for authors/editors/admins) - DUPLICATE REMOVED
   
+  // Special endpoint just for changing article status
+  app.post("/api/articles/:id/status", requireAuth, updateArticleStatus);
+
   app.post("/api/articles", requireAuthor, async (req, res) => {
     try {
       if (!req.session.isAdmin) {
