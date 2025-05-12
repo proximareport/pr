@@ -72,6 +72,18 @@ function AdminDashboard() {
   const urlParams = new URLSearchParams(window.location.search);
   const tabFromUrl = urlParams.get('tab');
   const subTabFromUrl = urlParams.get('subtab');
+  
+  // Active tab state
+  const [activeTab, setActiveTab] = useState<string>(tabFromUrl || "overview");
+  
+  // Function to set active tab and update URL
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    // Update URL when tab changes without forcing a page reload
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.set('tab', value);
+    window.history.pushState({}, '', newUrl.toString());
+  };
 
   // ContentStatus state
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
@@ -387,14 +399,10 @@ function AdminDashboard() {
       </div>
 
       <Tabs 
-        defaultValue={tabFromUrl || "overview"} 
+        defaultValue={activeTab}
+        value={activeTab}
         className="w-full"
-        onValueChange={(value) => {
-          // Update URL when tab changes without forcing a page reload
-          const newUrl = new URL(window.location.href);
-          newUrl.searchParams.set('tab', value);
-          window.history.pushState({}, '', newUrl.toString());
-        }}
+        onValueChange={handleTabChange}
       >
         <div className="border-b border-gray-700 mb-8">
           <TabsList className="bg-transparent justify-start gap-8">
@@ -517,7 +525,7 @@ function AdminDashboard() {
                 <Button 
                   variant="default" 
                   className={`w-full ${pendingAdsCount > 0 ? 'bg-amber-600 hover:bg-amber-700' : 'bg-emerald-600 hover:bg-emerald-700'} text-white font-medium py-6`}
-                  onClick={() => navigate('/admin/advertisements')}
+                  onClick={() => setActiveTab("advertisements")}
                 >
                   {pendingAdsCount > 0 ? (
                     <>
@@ -962,7 +970,7 @@ function AdminDashboard() {
                     <p className="text-sm text-muted-foreground mb-2">Review pending advertisements and manage existing ads</p>
                     <Button 
                       variant="default" 
-                      onClick={() => navigate('/admin/advertisements')}
+                      onClick={() => setActiveTab("advertisements")}
                       className="gap-2"
                     >
                       <DollarSignIcon className="h-4 w-4" />
