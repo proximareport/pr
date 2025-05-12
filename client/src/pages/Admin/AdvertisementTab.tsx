@@ -47,9 +47,31 @@ function AdvertisementTab() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const { data: advertisements = [], isLoading } = useQuery<Advertisement[]>({
+  // Add debug logs to help troubleshoot the advertisement issue
+  const { data: advertisements = [], isLoading, error } = useQuery<Advertisement[]>({
     queryKey: ['/api/advertisements/all'],
     retry: false,
+    onSuccess: (data) => {
+      console.log('Advertisement data loaded successfully:', {
+        count: data.length,
+        pendingCount: data.filter(ad => !ad.isApproved).length,
+        approvedCount: data.filter(ad => ad.isApproved).length
+      });
+      
+      if (data.length > 0) {
+        console.log('Sample ad data:', {
+          id: data[0].id,
+          title: data[0].title,
+          isApproved: data[0].isApproved,
+          placement: data[0].placement
+        });
+      } else {
+        console.log('No advertisements found in response');
+      }
+    },
+    onError: (err) => {
+      console.error('Error loading advertisements:', err);
+    }
   });
   
   const approveMutation = useMutation({

@@ -2252,24 +2252,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
-      // Pass true to include unapproved ads in the admin dashboard
-      const ads = await storage.getAdvertisements('all', true);
-      console.log(`Found ${ads.length} total ads for admin dashboard including approved and unapproved`);
-      
-      // Fetch ALL ads directly from DB for debugging
+      // DIRECTLY fetch all ads from the database to ensure we get everything
+      // This bypasses any filtering in the storage method
       const allAdsInDb = await db.select().from(advertisements);
-      console.log(`Direct DB query shows ${allAdsInDb.length} total ads exist in the database`);
+      console.log(`Direct DB query shows ${allAdsInDb.length} total ads in the database`);
+      
       if (allAdsInDb.length > 0) {
-        console.log(`Sample ad from DB: ${JSON.stringify({
-          id: allAdsInDb[0].id,
-          title: allAdsInDb[0].title,
-          isApproved: allAdsInDb[0].isApproved,
-          placement: allAdsInDb[0].placement
-        })}`);
+        allAdsInDb.forEach(ad => {
+          console.log(`Ad from DB: ID=${ad.id}, Title="${ad.title}", IsApproved=${ad.isApproved}, Placement=${ad.placement}`);
+        });
+      } else {
+        console.log('No advertisements found in the database at all');
       }
       
       // Include user information with each ad
-      const enhancedAds = await Promise.all(ads.map(async (ad) => {
+      const enhancedAds = await Promise.all(allAdsInDb.map(async (ad) => {
         const adUser = await storage.getUser(ad.userId);
         return {
           ...ad,

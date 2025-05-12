@@ -1006,16 +1006,17 @@ export class DatabaseStorage implements IStorage {
       conditions.push(sql`${advertisements.endDate} >= NOW()`);
     }
     
-    // Add placement filter if provided
+    // Add placement filter if provided and not 'all'
     if (placement && placement !== 'all') {
       conditions.push(eq(advertisements.placement, placement));
     }
     
-    // Build the query with all conditions
+    // Build the query with conditions if any exist
     let query;
     if (conditions.length > 0) {
       query = db.select().from(advertisements).where(and(...conditions));
     } else {
+      // If no conditions (or 'all' with includeNotApproved=true), just get all ads
       query = db.select().from(advertisements);
     }
     
@@ -1023,8 +1024,16 @@ export class DatabaseStorage implements IStorage {
     const results = await query;
     console.log(`Found ${results.length} advertisements` + (includeNotApproved ? ' (including unapproved)' : ' (approved only)'));
     
-    if (results.length > 0 && !includeNotApproved) {
-      console.log(`Verified approved ads: ${results.filter(ad => ad.isApproved).length}/${results.length}`);
+    // Log a more detailed breakdown
+    if (results.length > 0) {
+      console.log(`Ad distribution: approved=${results.filter(ad => ad.isApproved).length}, unapproved=${results.filter(ad => !ad.isApproved).length}`);
+      
+      if (results.length <= 5) {
+        // Log each ad for debugging when there aren't too many
+        results.forEach(ad => {
+          console.log(`Ad ID ${ad.id}: "${ad.title}" - isApproved=${ad.isApproved}, placement=${ad.placement}`);
+        });
+      }
     }
     
     return results;
