@@ -71,8 +71,9 @@ function Router() {
       <Route path="/admin/categories-tags" component={() => <RedirectToDashboardTab tab="content" subtab="categories" />} />
       <Route path="/admin/content-status" component={() => <RedirectToDashboardTab tab="content" subtab="status" />} />
       <Route path="/admin/api-keys" component={() => <RedirectToDashboardTab tab="settings" subtab="api" />} />
+      <Route path="/admin/emergency-banner" component={() => <RedirectToDashboardTab tab="settings" subtab="emergency" />} />
       <Route path="/admin/media-library" component={() => <RedirectToDashboardTab tab="media" />} />
-      <Route path="/admin/advertisements" component={() => <RedirectToDashboardTab tab="ads" />} />
+      <Route path="/admin/advertisements" component={() => <RedirectToDashboardTab tab="advertisements" />} />
       <Route path="/admin/settings" component={() => <RedirectToDashboardTab tab="settings" />} />
       
       {/* Advertiser pages */}
@@ -99,7 +100,7 @@ function Router() {
         
         // If the user is an admin or editor, redirect them to the admin dashboard
         if (!isLoading && user && (user.role === 'admin' || user.role === 'editor')) {
-          return <RedirectToDashboardTab tab="ads" />;
+          return <RedirectToDashboardTab tab="advertisements" />;
         }
         
         // Otherwise load the advertiser dashboard
