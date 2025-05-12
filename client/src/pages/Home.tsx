@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import ArticleCard from "@/components/article/ArticleCard";
-import LaunchCountdown from "@/components/article/LaunchCountdown";
 import Advertisement from "@/components/Advertisement";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,7 +26,6 @@ interface Article {
 function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [showLaunch, setShowLaunch] = useState(true);
 
   // Get articles with pagination
   const { data: articles, isLoading, refetch } = useQuery<Article[]>({
@@ -52,24 +50,6 @@ function Home() {
 
   return (
     <div className="bg-[#0D0D17] min-h-screen">
-      {/* Show Launch Countdown only occasionally */}
-      {showLaunch && (
-        <div className="py-4 bg-[#14141E] border-b border-white/10">
-          <div className="container mx-auto px-4">
-            <div className="flex justify-between items-center">
-              <LaunchCountdown compact={true} />
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setShowLaunch(false)}
-                className="text-white/60 hover:text-white"
-              >
-                ×
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Article Feed */}
       <section className="py-8">
@@ -135,11 +115,6 @@ function Home() {
                   <div>
                     <h3 className="text-lg font-bold mb-4">Sponsored</h3>
                     <Advertisement placement="sidebar" className="mb-6" />
-                  </div>
-                  
-                  <div className="bg-[#14141E] rounded-xl border border-white/10 p-5">
-                    <h3 className="text-lg font-bold mb-4">Featured Launch</h3>
-                    <LaunchCountdown compact={false} />
                   </div>
                 </div>
               </div>
