@@ -481,7 +481,7 @@ function AdvertiserDashboard() {
                 
                 <div className="grid grid-cols-[100px_1fr] gap-2">
                   <div className="font-medium">Status:</div>
-                  <div>{previewAd && getStatusBadge(previewAd.status)}</div>
+                  <div>{previewAd && getStatusBadge(previewAd.status, previewAd.isApproved)}</div>
                 </div>
                 
                 <div className="grid grid-cols-[100px_1fr] gap-2">
@@ -635,7 +635,7 @@ function AdTable({
           {advertisements.map((ad) => (
             <TableRow key={ad.id}>
               <TableCell className="font-medium">{ad.title}</TableCell>
-              <TableCell>{getStatusBadge(ad.status)}</TableCell>
+              <TableCell>{getStatusBadge(ad.status, ad.isApproved)}</TableCell>
               <TableCell>{getPlacementName(ad.placement)}</TableCell>
               <TableCell className="text-right">{formatPrice(ad.price)}</TableCell>
               <TableCell className="text-right">

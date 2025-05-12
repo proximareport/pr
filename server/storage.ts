@@ -999,9 +999,13 @@ export class DatabaseStorage implements IStorage {
   async getAdvertisements(placement?: string, includeNotApproved: boolean = false): Promise<Advertisement[]> {
     let conditions = [];
     
+    console.log(`Running advertisement query with params:`, { placement, includeNotApproved });
+    
     // Only apply approval and date filters if we're not including unapproved ads
     if (!includeNotApproved) {
+      // Check both isApproved field AND status field for consistency
       conditions.push(eq(advertisements.isApproved, true));
+      conditions.push(sql`${advertisements.status} = 'active'`);
       conditions.push(sql`${advertisements.startDate} <= NOW()`);
       conditions.push(sql`${advertisements.endDate} >= NOW()`);
     }
@@ -1050,11 +1054,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async approveAdvertisement(id: number): Promise<Advertisement | undefined> {
+    // Update both isApproved field and status field for consistency
     const [ad] = await db
       .update(advertisements)
-      .set({ isApproved: true })
+      .set({ 
+        isApproved: true,
+        status: 'active'  // Synchronize status with isApproved
+      })
       .where(eq(advertisements.id, id))
       .returning();
+    
+    console.log(`Advertisement ${id} approved: status=${ad.status}, isApproved=${ad.isApproved}`);
     return ad;
   }
   
