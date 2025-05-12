@@ -43,7 +43,7 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
   const isMobileView = inHeader;
 
   // Fetch search suggestions based on the debounced query
-  const { data: suggestions, isLoading } = useQuery({
+  const { data: suggestions, isLoading } = useQuery<SearchSuggestionsResponse>({
     queryKey: ["/api/search", { q: debouncedQuery, limit: 5 }],
     enabled: debouncedQuery.length > 2,
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -138,9 +138,9 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
                 <p>No results found.</p>
               )}
             </CommandEmpty>
-            {debouncedQuery.length > 2 && suggestions && suggestions.data && suggestions.data.length > 0 && (
+            {debouncedQuery.length > 2 && suggestions?.data && suggestions.data.length > 0 && (
               <CommandGroup heading="Articles">
-                {suggestions.data.map((item: any) => (
+                {suggestions.data.map((item: SearchArticleSuggestion) => (
                   <CommandItem
                     key={item.id}
                     onSelect={() => {
@@ -225,9 +225,9 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
                   </p>
                 )}
               </CommandEmpty>
-              {debouncedQuery.length > 2 && suggestions && suggestions.data && suggestions.data.length > 0 && (
+              {debouncedQuery.length > 2 && suggestions?.data && suggestions.data.length > 0 && (
                 <CommandGroup heading="Articles">
-                  {suggestions.data.map((item: any) => (
+                  {suggestions.data.map((item: SearchArticleSuggestion) => (
                     <CommandItem
                       key={item.id}
                       onSelect={() => {
