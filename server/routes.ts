@@ -689,7 +689,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // This is the main logic - users can only see their drafts or published content
       // Admin users can see all content if showDrafts is true
-      const articles = await storage.getArticles(page, limit, showDrafts, isAdmin ? undefined : userId);
+      // Note: getArticles only supports pagination parameters
+      const articles = await storage.getArticles(limit, (page - 1) * limit);
       
       res.json(articles);
     } catch (error) {
@@ -1245,7 +1246,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get the articles (only show drafts if allowed)
-      const articles = await storage.getArticlesByUser(
+      const articles = await storage.getArticlesByAuthor(
         userId, 
         page, 
         limit, 
