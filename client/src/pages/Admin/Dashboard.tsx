@@ -107,6 +107,17 @@ function AdminDashboard() {
     if (!['content', 'settings'].includes(value)) {
       newUrl.searchParams.delete('subtab');
       setActiveSubTab("");
+    } else {
+      // Set a default subtab for tabs that have subtabs
+      const defaultSubTabs = {
+        'content': 'published',
+        'settings': 'general'
+      };
+      const defaultSubTab = defaultSubTabs[value as keyof typeof defaultSubTabs];
+      if (defaultSubTab && !newUrl.searchParams.has('subtab')) {
+        newUrl.searchParams.set('subtab', defaultSubTab);
+        setActiveSubTab(defaultSubTab);
+      }
     }
     
     window.history.pushState({}, '', newUrl.toString());
@@ -1139,7 +1150,88 @@ function AdminDashboard() {
         </TabsContent>
         
         <TabsContent value="settings" className="mt-6">
-          <SiteSettingsForm />
+          <Tabs 
+            defaultValue={activeSubTab || "general"}
+            value={activeSubTab || "general"} 
+            className="w-full"
+            onValueChange={handleSubTabChange}
+          >
+            <div className="border-b border-gray-200 mb-6">
+              <TabsList className="bg-transparent w-full justify-start gap-8">
+                <TabsTrigger 
+                  value="general" 
+                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
+                >
+                  General Settings
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="api" 
+                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
+                >
+                  API Keys
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="emergency" 
+                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
+                >
+                  Emergency Banner
+                </TabsTrigger>
+              </TabsList>
+            </div>
+            
+            <TabsContent value="general">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Settings className="h-5 w-5 mr-2 text-blue-600" />
+                    Site Settings
+                  </CardTitle>
+                  <CardDescription>Configure general site settings</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <SiteSettingsForm />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="api">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <KeyIcon className="h-5 w-5 mr-2 text-blue-600" />
+                    API Key Management
+                  </CardTitle>
+                  <CardDescription>Manage API keys for external integrations</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <iframe 
+                    src="/admin/api-keys" 
+                    className="w-full h-[calc(100vh-300px)] min-h-[600px] border-0 rounded-lg overflow-hidden"
+                    title="API Key Management"
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="emergency">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <AlertOctagonIcon className="h-5 w-5 mr-2 text-red-600" />
+                    Emergency Banner
+                  </CardTitle>
+                  <CardDescription>Display critical site-wide announcements</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <iframe 
+                    src="/admin/emergency-banner" 
+                    className="w-full h-[calc(100vh-300px)] min-h-[600px] border-0 rounded-lg overflow-hidden"
+                    title="Emergency Banner Management"
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </TabsContent>
       </Tabs>
     </div>
