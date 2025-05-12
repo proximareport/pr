@@ -74,14 +74,7 @@ function Router() {
           </React.Suspense>
         );
       }} />
-      <Route path="/admin/advertisements" component={() => {
-        const AdvertisementManagementPage = React.lazy(() => import('./pages/Admin/AdvertisementManagement'));
-        return (
-          <React.Suspense fallback={<div>Loading...</div>}>
-            <AdvertisementManagementPage />
-          </React.Suspense>
-        );
-      }} />
+      {/* Advertisement management is now integrated in the main dashboard */}
       <Route path="/admin/media-library" component={() => {
         const MediaLibraryPage = React.lazy(() => import('./pages/Admin/MediaLibrary'));
         return (

@@ -997,17 +997,17 @@ function AdminDashboard() {
         </TabsContent>
         
         <TabsContent value="advertisements" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <DollarSignIcon className="h-5 w-5 mr-2 text-green-600" />
-                Advertisement Overview
-              </CardTitle>
-              <CardDescription>Quick overview of advertisement status and metrics</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-6">
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <DollarSignIcon className="h-5 w-5 mr-2 text-green-600" />
+                  Advertisement Dashboard
+                </CardTitle>
+                <CardDescription>Manage all your advertisements in one place</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                     <h3 className="font-semibold text-amber-800 flex items-center">
                       <span className="bg-amber-200 p-2 rounded-full mr-2">
@@ -1059,34 +1059,23 @@ function AdminDashboard() {
                     <p className="text-sm text-blue-700 mt-1">From approved ads</p>
                   </div>
                 </div>
-                
-                <div className="flex flex-col md:flex-row gap-4 mt-8">
+                <div className="mt-4">
                   <Button 
+                    asChild
                     size="lg" 
                     className="bg-purple-600 hover:bg-purple-700"
-                    onClick={() => navigate('/admin/advertisements')}
                   >
-                    <DollarSignIcon className="mr-2 h-5 w-5" />
-                    Go to Ad Management Console
+                    <a href="/advertise" target="_blank" rel="noopener noreferrer">
+                      <DollarSignIcon className="mr-2 h-5 w-5" />
+                      Create New Advertisement
+                    </a>
                   </Button>
-                  
-                  {pendingAdsCount > 0 && (
-                    <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                      <h4 className="text-amber-800 font-semibold flex items-center">
-                        <AlertTriangleIcon className="h-5 w-5 mr-2 text-amber-600" />
-                        Important Note
-                      </h4>
-                      <p className="text-amber-700 mt-1">
-                        There are {pendingAdsCount} advertisements waiting for your review. 
-                        Please use the sidebar <b>Ad Management</b> link or the button above to access the complete
-                        ad management interface.
-                      </p>
-                    </div>
-                  )}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+            
+            <AdvertisementTab />
+          </div>
         </TabsContent>
         
         <TabsContent value="media" className="mt-6">
