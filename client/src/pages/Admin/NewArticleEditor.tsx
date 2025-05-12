@@ -145,7 +145,7 @@ function AdminArticleEditor() {
 
   // Create/Update article mutation
   const { mutate, isPending: isSubmitting } = useMutation({
-    mutationFn: async (articleData: any) => {
+    mutationFn: async (articleData: ArticleFormData) => {
       if (isEditing) {
         return apiRequest('PATCH', `/api/articles/${id}`, articleData).then(r => r.json());
       } else {
@@ -171,7 +171,7 @@ function AdminArticleEditor() {
   
   // Autosave mutation - doesn't show toasts, doesn't redirect
   const { mutate: autosaveArticleMutation, isPending: isAutosaving } = useMutation({
-    mutationFn: async (articleData: InsertArticle & { authors: { id: number, role: string }[] }) => {
+    mutationFn: async (articleData: ArticleFormData) => {
       try {
         let response;
         if (isEditing) {
@@ -326,6 +326,7 @@ function AdminArticleEditor() {
     isFeatured: boolean;
     isCollaborative: boolean;
     authors: { id: number | undefined, role: string }[];
+    primaryAuthorId?: number; // Added to match the InsertArticle schema requirements
   };
 
   // Function to prepare article data for saving
@@ -349,7 +350,8 @@ function AdminArticleEditor() {
       isBreaking,
       isFeatured,
       isCollaborative,
-      authors
+      authors,
+      primaryAuthorId: user?.id // Add primary author ID for database requirements
     };
   }, [title, slug, summary, content, category, tags, featuredImage, readTime, isBreaking, isFeatured, isCollaborative, coauthors, user?.id]);
 
