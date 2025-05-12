@@ -145,7 +145,7 @@ export async function searchArticles(
         status
       FROM articles 
       WHERE ${whereClause}
-      ORDER BY ${orderByClause}
+      ORDER BY ${orderColumn} ${orderDirection}
       LIMIT ${options.limit}
       OFFSET ${offset}
     `;
@@ -223,7 +223,7 @@ export async function searchUsers(
         role
       FROM users
       ${finalWhereClause}
-      ORDER BY ${orderByClause}
+      ORDER BY ${orderColumn} ${orderDirection}
       LIMIT ${options.limit}
       OFFSET ${offset}
     `;

@@ -83,6 +83,40 @@ export function registerNewsletterAndSearchRoutes(app: Express) {
     }
   });
   
+  app.get("/api/search/suggestions", async (req: Request, res: Response) => {
+    try {
+      console.log("Search suggestions API called with query params:", req.query);
+      const query = req.query.q as string || "";
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
+      
+      if (!query || query.trim().length < 2) {
+        return res.json({ data: [] });
+      }
+      
+      // Get article suggestions based on the query
+      const results = await searchArticles(query, {
+        page: 1,
+        limit,
+        orderBy: 'publishedAt',
+        orderDirection: 'desc'
+      });
+      
+      // Format the results to match the expected structure
+      const suggestions = results.data.map(article => ({
+        id: article.id,
+        title: article.title,
+        slug: article.slug,
+        category: article.category,
+        publishedAt: article.publishedAt
+      }));
+      
+      res.json({ data: suggestions });
+    } catch (error) {
+      console.error("Search suggestions error:", error);
+      res.status(500).json({ message: "Error fetching search suggestions" });
+    }
+  });
+  
   app.get("/api/search/popular", async (req: Request, res: Response) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
