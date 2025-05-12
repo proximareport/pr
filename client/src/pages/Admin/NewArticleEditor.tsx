@@ -4,6 +4,7 @@ import { useLocation, useParams } from 'wouter';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { InsertArticle } from '@/../../shared/schema';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -170,7 +171,7 @@ function AdminArticleEditor() {
   
   // Autosave mutation - doesn't show toasts, doesn't redirect
   const { mutate: autosaveArticleMutation, isPending: isAutosaving } = useMutation({
-    mutationFn: async (articleData: any) => {
+    mutationFn: async (articleData: InsertArticle & { authors: { id: number, role: string }[] }) => {
       try {
         let response;
         if (isEditing) {
@@ -310,8 +311,25 @@ function AdminArticleEditor() {
     scheduleAutosave();
   };
 
+  // Define a type for the article data we prepare for saving
+  type ArticleFormData = {
+    title: string;
+    slug: string;
+    summary: string;
+    content: string;
+    category: string;
+    tags: string[];
+    featuredImage: string;
+    readTime: number;
+    status: string;
+    isBreaking: boolean;
+    isFeatured: boolean;
+    isCollaborative: boolean;
+    authors: { id: number | undefined, role: string }[];
+  };
+
   // Function to prepare article data for saving
-  const prepareArticleData = useCallback((forPublishing = false) => {
+  const prepareArticleData = useCallback((forPublishing = false): ArticleFormData => {
     // All articles need at least the current user as author
     const authors = [
       { id: user?.id, role: "primary" },
@@ -395,11 +413,11 @@ function AdminArticleEditor() {
     
     console.log(`Scheduling autosave in ${AUTOSAVE_DELAY}ms`);
     
-    // Set a new timeout for autosave (2 seconds after user stops typing/editing)
+    // Set a new timeout for autosave (configurable delay after user stops typing/editing)
     autosaveTimeoutRef.current = window.setTimeout(() => {
       console.log('Autosave timeout triggered, executing save...');
       doAutosave();
-    }, 2000);
+    }, AUTOSAVE_DELAY);
   }, [title, doAutosave]);
   
   // Format the last saved time
