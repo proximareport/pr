@@ -211,7 +211,7 @@ function AdminArticleEditor() {
   });
   
   // Autosave mutation - doesn't show toasts, doesn't redirect
-  const { mutate: autosaveArticleMutation, isPending: isAutosaving } = useMutation({
+  const { mutate: autosaveArticleMutation, isPending: isAutosavePending } = useMutation({
     mutationFn: async (articleData: ArticleFormData) => {
       try {
         let response;
@@ -547,8 +547,17 @@ function AdminArticleEditor() {
     
     const currentArticleData = prepareArticleData(false); // Always save as draft
     
-    // Validation check before attempting to save
-    const validationErrors = validateArticleData(currentArticleData);
+    // Basic validation before attempting to save
+    const validationErrors = [];
+    
+    if (!currentArticleData.title?.trim()) {
+      validationErrors.push('Title is required');
+    }
+    
+    if (!currentArticleData.slug?.trim()) {
+      validationErrors.push('Slug is required');
+    }
+    
     if (validationErrors.length > 0) {
       console.log('Skipping autosave due to validation errors:', validationErrors);
       setAutosaveError(`Validation errors: ${validationErrors.join(', ')}`);
@@ -590,16 +599,9 @@ function AdminArticleEditor() {
     setAutosaveError(null); // Clear any previous errors
     console.log(`Starting autosave: ${new Date().toLocaleTimeString()}`);
     
-    // Set saving indicator
-    setIsAutosaving(true);
-    
     // Execute the save mutation, providing the updated article data
-    autosaveArticleMutation(currentArticleData, {
-      onSettled: () => {
-        // Always clear the autosaving indicator, whether success or error
-        setIsAutosaving(false);
-      }
-    });
+    // isAutosavePending will be automatically set to true when mutation starts
+    autosaveArticleMutation(currentArticleData);
   }, [title, prepareArticleData, autosaveArticleMutation, lastSavedContentRef, hasContentChanged]);
   
   const scheduleAutosave = useCallback(() => {
