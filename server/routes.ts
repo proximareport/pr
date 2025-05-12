@@ -2266,32 +2266,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
-      // DIRECTLY fetch all ads from the database to ensure we get everything
-      // This bypasses any filtering in the storage method
-      const allAdsInDb = await db.select().from(advertisements);
-      console.log(`Direct DB query shows ${allAdsInDb.length} total ads in the database`);
-      
-      if (allAdsInDb.length > 0) {
-        allAdsInDb.forEach(ad => {
-          console.log(`Ad from DB: ID=${ad.id}, Title="${ad.title}", IsApproved=${ad.isApproved}, Placement=${ad.placement}`);
-        });
-      } else {
-        console.log('No advertisements found in the database at all');
+      try {
+        // First try a direct SQL query to diagnose issues
+        const sqlQuery = "SELECT * FROM advertisements;";
+        const { rows } = await db.execute(sqlQuery);
+        console.log(`SQL direct query found ${rows.length} advertisements`);
+        if (rows.length > 0) {
+          console.log(`First ad from SQL: ${JSON.stringify(rows[0])}`);
+        }
+      } catch (sqlError) {
+        console.error("SQL diagnostic query error:", sqlError);
       }
       
-      // Include user information with each ad
-      const enhancedAds = await Promise.all(allAdsInDb.map(async (ad) => {
-        const adUser = await storage.getUser(ad.userId);
-        return {
-          ...ad,
-          user: adUser ? {
-            username: adUser.username,
-            email: adUser.email
-          } : undefined
-        };
-      }));
-      
-      res.json(enhancedAds);
+      // DIRECTLY fetch all ads from the database to ensure we get everything
+      // This bypasses any filtering in the storage method
+      try {
+        const allAdsInDb = await db.select().from(advertisements);
+        console.log(`Direct DB query shows ${allAdsInDb.length} total ads in the database`);
+        
+        if (allAdsInDb.length > 0) {
+          console.log(`First ad: ID=${allAdsInDb[0].id}, Title="${allAdsInDb[0].title}", IsApproved=${allAdsInDb[0].isApproved}`);
+        } else {
+          console.log('No advertisements found in the database at all using Drizzle');
+        }
+        
+        // Include user information with each ad
+        const enhancedAds = await Promise.all(allAdsInDb.map(async (ad) => {
+          const adUser = await storage.getUser(ad.userId);
+          return {
+            ...ad,
+            user: adUser ? {
+              username: adUser.username,
+              email: adUser.email
+            } : undefined
+          };
+        }));
+        
+        res.json(enhancedAds);
+      } catch (drizzleError) {
+        console.error("Drizzle query error:", drizzleError);
+        res.status(500).json({ message: "Error fetching advertisements with Drizzle" });
+      }
     } catch (error) {
       console.error("Error fetching all advertisements:", error);
       res.status(500).json({ message: "Error fetching all advertisements" });
