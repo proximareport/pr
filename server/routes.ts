@@ -835,7 +835,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if article exists
-      const article = await storage.getArticle(id);
+      const article = await storage.getArticleById(id);
       
       if (!article) {
         return res.status(404).json({ message: "Article not found" });
