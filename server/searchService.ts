@@ -86,7 +86,10 @@ export async function searchArticles(
     
     // Add author filter
     if (filters.author) {
+      // First check primary author
       conditions.push(eq(articles.primaryAuthorId, filters.author));
+      // Note: In a more comprehensive implementation, we would also check the articleAuthors table
+      // to find articles where the user is a non-primary author
     }
     
     // Add date range filters
