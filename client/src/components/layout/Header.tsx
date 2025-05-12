@@ -51,13 +51,13 @@ function Header() {
               <img 
                 src={desktopLogo} 
                 alt="Proxima Report" 
-                className="hidden md:block h-6 max-w-[200px]" 
+                className="hidden md:block h-auto w-auto max-h-5 max-w-[180px] object-contain" 
               />
               {/* Mobile logo (visible on smaller screens) */}
               <img 
                 src={mobileLogo} 
                 alt="Proxima Report" 
-                className="block md:hidden h-12 w-12" 
+                className="block md:hidden h-auto w-auto max-h-12 max-w-[48px] object-contain" 
               />
             </Link>
             
@@ -165,12 +165,12 @@ function Header() {
                       <img 
                         src={mobileLogo} 
                         alt="Proxima Report" 
-                        className="h-14 w-14" 
+                        className="h-auto w-auto max-h-14 max-w-[56px] object-contain" 
                       />
                       <img 
                         src={desktopLogo} 
                         alt="Proxima Report" 
-                        className="ml-3 h-5 max-w-[150px]" 
+                        className="ml-3 h-auto w-auto max-h-4 max-w-[120px] object-contain" 
                       />
                     </div>
                     
