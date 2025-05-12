@@ -18,7 +18,7 @@ import Astronomy from "@/pages/Astronomy";
 import Subscribe from "@/pages/Subscribe";
 import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
 import TagView from "@/pages/TagView";
-import SearchResults from "@/pages/SearchResults";
+// SearchResults page removed as it's now integrated into the search bar
 import NewsletterVerify from "@/pages/NewsletterVerify";
 import NewsletterUnsubscribe from "@/pages/NewsletterUnsubscribe";
 import MaintenanceMode from "@/components/MaintenanceMode";
@@ -63,7 +63,7 @@ function Router() {
       <Route path="/subscribe" component={Subscribe} />
       <Route path="/subscription/success" component={SubscriptionSuccess} />
       <Route path="/tag/:tagName" component={TagView} />
-      <Route path="/search" component={SearchResults} />
+      {/* Search page removed - now directly integrated into the dropdown */}
       <Route path="/newsletter/verify" component={NewsletterVerify} />
       <Route path="/newsletter/unsubscribe" component={NewsletterUnsubscribe} />
       

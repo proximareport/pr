@@ -101,15 +101,20 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
     setOpen(false);
   };
   
-  // Handle full search
+  // Navigate to user profile when clicking a user result
+  const navigateToUserProfile = (username: string) => {
+    setLocation(`/profile/${username}`);
+    setOpen(false);
+  };
+  
+  // Handle view all results
   const handleFullSearch = () => {
-    if (query.trim()) {
-      if (onSearch) {
-        onSearch(query);
-      } else {
-        setLocation(`/search?q=${encodeURIComponent(query.trim())}`);
-      }
-      setOpen(false);
+    // Just close the dialog - we don't navigate to a separate search page anymore
+    setOpen(false);
+    
+    // If an onSearch callback was provided, call it
+    if (onSearch && query.trim()) {
+      onSearch(query);
     }
   };
 
@@ -221,9 +226,9 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
                   </CommandGroup>
                 )}
                 
-                {/* Full search results */}
+                {/* Article search results */}
                 {hasResults && (
-                  <CommandGroup heading="Search Results">
+                  <CommandGroup heading="Articles">
                     {searchData.data.map((article) => (
                       <CommandItem
                         key={`result-${article.id}`}
@@ -252,17 +257,54 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
                         </div>
                       </CommandItem>
                     ))}
-                    
-                    {/* View more results link */}
-                    {searchData.total > searchData.data.length && (
-                      <CommandItem
-                        onSelect={handleFullSearch}
-                        className="justify-center text-primary border-t"
-                      >
-                        View all {searchData.total} results for "{debouncedQuery}"
-                      </CommandItem>
-                    )}
                   </CommandGroup>
+                )}
+                
+                {/* User search results */}
+                {hasUserResults && searchData?.users && (
+                  <CommandGroup heading="Authors">
+                    {searchData.users.map((user) => (
+                      <CommandItem
+                        key={`user-${user.id}`}
+                        onSelect={() => navigateToUserProfile(user.username)}
+                        className="py-2 px-2"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="flex-shrink-0 h-10 w-10 rounded-full overflow-hidden bg-muted">
+                            {user.profilePicture ? (
+                              <img 
+                                src={user.profilePicture} 
+                                alt={user.username}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center bg-primary/10 text-primary">
+                                {user.username.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium">{user.username}</div>
+                            {user.bio && (
+                              <p className="text-sm text-muted-foreground line-clamp-1">
+                                {user.bio}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                )}
+                
+                {/* View more results link */}
+                {(hasResults || hasUserResults) && searchData.total > searchData.data.length && (
+                  <CommandItem
+                    onSelect={handleFullSearch}
+                    className="justify-center text-primary border-t"
+                  >
+                    View all {searchData.total} results for "{debouncedQuery}"
+                  </CommandItem>
                 )}
               </>
             )}
@@ -351,9 +393,9 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
                     </CommandGroup>
                   )}
                   
-                  {/* Full search results */}
+                  {/* Article search results */}
                   {hasResults && (
-                    <CommandGroup heading="Search Results">
+                    <CommandGroup heading="Articles">
                       {searchData.data.map((article) => (
                         <CommandItem
                           key={`result-${article.id}`}
@@ -382,17 +424,54 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
                           </div>
                         </CommandItem>
                       ))}
-                      
-                      {/* View more results link */}
-                      {searchData.total > searchData.data.length && (
-                        <CommandItem
-                          onSelect={handleFullSearch}
-                          className="justify-center text-primary border-t"
-                        >
-                          View all {searchData.total} results for "{debouncedQuery}"
-                        </CommandItem>
-                      )}
                     </CommandGroup>
+                  )}
+                  
+                  {/* User search results */}
+                  {hasUserResults && searchData?.users && (
+                    <CommandGroup heading="Authors">
+                      {searchData.users.map((user) => (
+                        <CommandItem
+                          key={`user-${user.id}`}
+                          onSelect={() => navigateToUserProfile(user.username)}
+                          className="py-2 px-2"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="flex-shrink-0 h-10 w-10 rounded-full overflow-hidden bg-muted">
+                              {user.profilePicture ? (
+                                <img 
+                                  src={user.profilePicture} 
+                                  alt={user.username}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <div className="h-full w-full flex items-center justify-center bg-primary/10 text-primary">
+                                  {user.username.charAt(0).toUpperCase()}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium">{user.username}</div>
+                              {user.bio && (
+                                <p className="text-sm text-muted-foreground line-clamp-1">
+                                  {user.bio}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  )}
+                  
+                  {/* View more results link */}
+                  {(hasResults || hasUserResults) && searchData.total > searchData.data.length && (
+                    <CommandItem
+                      onSelect={handleFullSearch}
+                      className="justify-center text-primary border-t"
+                    >
+                      View all {searchData.total} results for "{debouncedQuery}"
+                    </CommandItem>
                   )}
                 </>
               )}
