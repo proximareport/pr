@@ -1073,12 +1073,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/articles", requireAuthor, async (req, res) => {
     try {
-      if (!req.session.isAdmin) {
-        return res.status(403).json({ message: "Only admins can create articles" });
-      }
-      
       // Get the current user ID
       const userId = req.session.userId!;
+      
+      // Verify the user exists and has proper permissions
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      // Double-check user has author, editor, or admin role
+      if (user.role !== 'author' && user.role !== 'editor' && user.role !== 'admin') {
+        return res.status(403).json({ message: "Author permission required to create articles" });
+      }
       
       // Preprocess the request data
       const requestData = {...req.body};
