@@ -677,11 +677,25 @@ function AdminArticleEditor() {
     };
   }, [title, doAutosave]);
   
+  // Function to save the article without changing publish status
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    const articleData = prepareArticleData(!isDraft);
+    // Just save with current status (don't toggle status)
+    const articleData = prepareArticleData(false);
     mutate(articleData);
+  };
+  
+  // Dedicated function to explicitly publish or unpublish an article
+  const handlePublishToggle = (shouldPublish: boolean) => {
+    // Create article data with explicit published/draft status
+    const articleData = prepareArticleData(shouldPublish);
+    
+    // Use the same mutation but with status explicitly set
+    mutate(articleData);
+    
+    // Update local state to reflect new status
+    setIsDraft(!shouldPublish);
   };
 
   const addTag = (tag: string) => {
