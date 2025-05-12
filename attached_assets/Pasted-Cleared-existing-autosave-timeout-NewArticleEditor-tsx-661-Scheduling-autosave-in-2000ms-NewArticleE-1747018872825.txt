@@ -1,0 +1,205 @@
+Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:348 Initialized lastSavedContentRef with initial article data
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+queryClient.ts:30 API Request: PATCH /api/articles/27 {title: 'test articl', slug: 'test-94861', summary: ' test', content: '', category: 'space-exploration', …}
+queryClient.ts:40 API Response status: 200 Response {type: 'basic', url: 'https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/articles/27', redirected: false, status: 200, ok: true, …}
+queryClient.ts:30 API Request: GET /api/articles/27 undefined
+App.tsx:130 Maintenance check: {isMaintenanceMode: false, isAdmin: true, maintenanceEnabled: false}
+App.tsx:145 MainApp render check: {path: '/admin/articles/27/edit', isMaintenanceMode: false, isAdmin: true, isAdminPage: true, isAuthPage: false, …}
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+queryClient.ts:40 API Response status: 200 Response {type: 'basic', url: 'https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/articles/27', redirected: false, status: 200, ok: true, …}
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:348 Initialized lastSavedContentRef with initial article data
+NewArticleEditor.tsx:665 Autosave timeout triggered, executing save...
+NewArticleEditor.tsx:623  Error comparing content for autosave: TypeError: Cannot read properties of undefined (reading 'length')
+    at NewArticleEditor.tsx:522:53
+    at NewArticleEditor.tsx:614:14
+    at NewArticleEditor.tsx:666:7
+(anonymous) @ NewArticleEditor.tsx:623
+(anonymous) @ NewArticleEditor.tsx:666
+setTimeout
+(anonymous) @ NewArticleEditor.tsx:664
+(anonymous) @ NewArticleEditor.tsx:684
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+NewArticleEditor.tsx:625 Continuing with autosave due to error in comparison
+NewArticleEditor.tsx:638 Starting autosave: 10:00:45 PM
+queryClient.ts:30 API Request: PATCH /api/articles/27 {title: 'test articl', slug: 'test-94861', summary: ' test', content: '', category: 'space-exploration', …}
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+queryClient.ts:40 API Response status: 200 Response {type: 'basic', url: 'https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/articles/27', redirected: false, status: 200, ok: true, …}
+NewArticleEditor.tsx:286 Content saved, updated lastSavedContentRef
+queryClient.ts:30 API Request: GET /api/articles/27 undefined
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+queryClient.ts:40 API Response status: 200 Response {type: 'basic', url: 'https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/articles/27', redirected: false, status: 200, ok: true, …}
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:348 Initialized lastSavedContentRef with initial article data
+App.tsx:130 Maintenance check: {isMaintenanceMode: false, isAdmin: true, maintenanceEnabled: false}
+App.tsx:145 MainApp render check: {path: '/admin/articles/27/edit', isMaintenanceMode: false, isAdmin: true, isAdminPage: true, isAuthPage: false, …}
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+queryClient.ts:30 API Request: PATCH /api/articles/27 {title: 'test articl', slug: 'test-94861', summary: ' test', content: '', category: 'space-exploration', …}
+queryClient.ts:40 API Response status: 200 Response {type: 'basic', url: 'https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/articles/27', redirected: false, status: 200, ok: true, …}
+queryClient.ts:30 API Request: GET /api/articles/27 undefined
+App.tsx:130 Maintenance check: {isMaintenanceMode: false, isAdmin: true, maintenanceEnabled: false}
+App.tsx:145 MainApp render check: {path: '/admin/articles/27/edit', isMaintenanceMode: false, isAdmin: true, isAdminPage: true, isAuthPage: false, …}
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+queryClient.ts:40 API Response status: 200 Response {type: 'basic', url: 'https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/articles/27', redirected: false, status: 200, ok: true, …}
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:348 Initialized lastSavedContentRef with initial article data
+NewArticleEditor.tsx:665 Autosave timeout triggered, executing save...
+NewArticleEditor.tsx:623  Error comparing content for autosave: TypeError: Cannot read properties of undefined (reading 'length')
+    at NewArticleEditor.tsx:522:53
+    at NewArticleEditor.tsx:614:14
+    at NewArticleEditor.tsx:666:7
+(anonymous) @ NewArticleEditor.tsx:623
+(anonymous) @ NewArticleEditor.tsx:666
+setTimeout
+(anonymous) @ NewArticleEditor.tsx:664
+(anonymous) @ NewArticleEditor.tsx:684
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+NewArticleEditor.tsx:625 Continuing with autosave due to error in comparison
+NewArticleEditor.tsx:638 Starting autosave: 10:00:50 PM
+queryClient.ts:30 API Request: PATCH /api/articles/27 {title: 'test articl', slug: 'test-94861', summary: ' test', content: '', category: 'space-exploration', …}
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+queryClient.ts:40 API Response status: 200 Response {type: 'basic', url: 'https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/articles/27', redirected: false, status: 200, ok: true, …}
+NewArticleEditor.tsx:286 Content saved, updated lastSavedContentRef
+queryClient.ts:30 API Request: GET /api/articles/27 undefined
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+queryClient.ts:40 API Response status: 200 Response {type: 'basic', url: 'https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/articles/27', redirected: false, status: 200, ok: true, …}
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:348 Initialized lastSavedContentRef with initial article data
+NewArticleEditor.tsx:665 Autosave timeout triggered, executing save...
+NewArticleEditor.tsx:623  Error comparing content for autosave: TypeError: Cannot read properties of undefined (reading 'length')
+    at NewArticleEditor.tsx:522:53
+    at NewArticleEditor.tsx:614:14
+    at NewArticleEditor.tsx:666:7
+(anonymous) @ NewArticleEditor.tsx:623
+(anonymous) @ NewArticleEditor.tsx:666
+setTimeout
+(anonymous) @ NewArticleEditor.tsx:664
+(anonymous) @ NewArticleEditor.tsx:684
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+NewArticleEditor.tsx:625 Continuing with autosave due to error in comparison
+NewArticleEditor.tsx:638 Starting autosave: 10:00:52 PM
+queryClient.ts:30 API Request: PATCH /api/articles/27 {title: 'test articl', slug: 'test-94861', summary: ' test', content: '', category: 'space-exploration', …}
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+queryClient.ts:40 API Response status: 200 Response {type: 'basic', url: 'https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/articles/27', redirected: false, status: 200, ok: true, …}
+NewArticleEditor.tsx:286 Content saved, updated lastSavedContentRef
+queryClient.ts:30 API Request: GET /api/articles/27 undefined
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+queryClient.ts:40 API Response status: 200 Response {type: 'basic', url: 'https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/articles/27', redirected: false, status: 200, ok: true, …}
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:652 Cleared existing autosave timeout
+NewArticleEditor.tsx:661 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:348 Initialized lastSavedContentRef with initial article data

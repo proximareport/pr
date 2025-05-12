@@ -422,22 +422,22 @@ function AdminArticleEditor() {
   };
 
   // Function to prepare article data for saving
-  const prepareArticleData = useCallback((forPublishing = false): ArticleFormData => {
+  const prepareArticleData = useCallback((statusOverride?: 'published' | 'draft' | null): ArticleFormData => {
     // All articles need at least the current user as author
     const authors = [
       { id: user?.id, role: "primary" },
       ...coauthors
     ];
     
-    // Determine status based on the forPublishing flag
-    // If forPublishing is true, explicitly set to 'published'
-    // If forPublishing is false, explicitly set to 'draft' 
-    // If forPublishing is undefined or null, keep current status (for regular saves)
-    const newStatus = forPublishing === true 
-      ? 'published' 
-      : forPublishing === false 
-      ? 'draft'
+    // Determine status based on the statusOverride parameter
+    // If statusOverride is 'published', explicitly set to 'published'
+    // If statusOverride is 'draft', explicitly set to 'draft'
+    // If statusOverride is null/undefined, keep current status (for regular saves)
+    const newStatus = statusOverride !== undefined && statusOverride !== null
+      ? statusOverride
       : isDraft ? 'draft' : 'published';
+    
+    console.log("Preparing article data with status:", newStatus, "isDraft:", isDraft, "statusOverride:", statusOverride);
     
     return {
       title,
