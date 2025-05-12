@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import EmergencyBanner from "@/components/layout/EmergencyBanner";
 import Home from "@/pages/Home";
 import Article from "@/pages/Article";
 import Login from "@/pages/Login";
@@ -158,6 +159,7 @@ function MainApp() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
+      <EmergencyBanner />
       <main className="flex-grow">
         <Router />
       </main>
