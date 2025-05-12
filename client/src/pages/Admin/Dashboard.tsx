@@ -73,8 +73,28 @@ function AdminDashboard() {
   const tabFromUrl = urlParams.get('tab');
   const subTabFromUrl = urlParams.get('subtab');
   
-  // Active tab state
+  // Active tab states
   const [activeTab, setActiveTab] = useState<string>(tabFromUrl || "overview");
+  const [activeSubTab, setActiveSubTab] = useState<string>(subTabFromUrl || "");
+  
+  // Effect to handle URL parameter changes
+  useEffect(() => {
+    // Update active tab and subtab states when URL parameters change
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabFromUrl = urlParams.get('tab');
+    const subTabFromUrl = urlParams.get('subtab');
+    
+    if (tabFromUrl) {
+      setActiveTab(tabFromUrl);
+    }
+    
+    if (subTabFromUrl) {
+      setActiveSubTab(subTabFromUrl);
+    } else {
+      // Reset subtab when main tab changes and no subtab is specified
+      setActiveSubTab("");
+    }
+  }, [location]); // dependency on location to detect URL changes
   
   // Function to set active tab and update URL
   const handleTabChange = (value: string) => {
@@ -82,6 +102,22 @@ function AdminDashboard() {
     // Update URL when tab changes without forcing a page reload
     const newUrl = new URL(window.location.href);
     newUrl.searchParams.set('tab', value);
+    
+    // Remove subtab parameter if switching to a main tab that doesn't have subtabs
+    if (!['content', 'settings'].includes(value)) {
+      newUrl.searchParams.delete('subtab');
+      setActiveSubTab("");
+    }
+    
+    window.history.pushState({}, '', newUrl.toString());
+  };
+  
+  // Function to set active subtab and update URL
+  const handleSubTabChange = (value: string) => {
+    setActiveSubTab(value);
+    // Update URL when subtab changes without forcing a page reload
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.set('subtab', value);
     window.history.pushState({}, '', newUrl.toString());
   };
 
@@ -837,14 +873,10 @@ function AdminDashboard() {
         <TabsContent value="content" className="mt-8">
           <div className="space-y-8">
             <Tabs 
-              defaultValue={subTabFromUrl || "published"} 
+              defaultValue={activeSubTab || "published"}
+              value={activeSubTab || "published"} 
               className="w-full"
-              onValueChange={(value) => {
-                // Update URL when subtab changes without forcing a page reload
-                const newUrl = new URL(window.location.href);
-                newUrl.searchParams.set('subtab', value);
-                window.history.pushState({}, '', newUrl.toString());
-              }}
+              onValueChange={handleSubTabChange}
             >
               <div className="border-b border-gray-200 mb-6">
                 <TabsList className="bg-transparent w-full justify-start gap-8">
@@ -861,10 +893,16 @@ function AdminDashboard() {
                     Draft Management
                   </TabsTrigger>
                   <TabsTrigger 
-                    value="content_status" 
+                    value="status" 
                     className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
                   >
                     Content Status
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="categories" 
+                    className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
+                  >
+                    Tags & Categories
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -878,7 +916,7 @@ function AdminDashboard() {
                   <DraftManagement />
                 </div>
               </TabsContent>
-              <TabsContent value="content_status">
+              <TabsContent value="status">
                 <div className="mt-4">
                   {articlesLoading ? (
                     <div className="flex justify-center items-center h-64">
@@ -919,6 +957,16 @@ function AdminDashboard() {
                       </TabsContent>
                     </Tabs>
                   )}
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="categories">
+                <div className="mt-4">
+                  <iframe 
+                    src="/admin/categories-tags" 
+                    className="w-full h-[calc(100vh-300px)] min-h-[600px] border-0 rounded-lg overflow-hidden"
+                    title="Categories and Tags Management"
+                  />
                 </div>
               </TabsContent>
             </Tabs>
