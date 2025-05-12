@@ -16,7 +16,8 @@ import {
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-interface SearchArticleSuggestion {
+// Types for search suggestions (quick results)
+interface ArticleSuggestion {
   id: number;
   title: string;
   slug: string;
@@ -24,11 +25,12 @@ interface SearchArticleSuggestion {
   publishedAt: string;
 }
 
-interface SearchSuggestionsResponse {
-  data: SearchArticleSuggestion[];
+interface SuggestionsResponse {
+  data: ArticleSuggestion[];
 }
 
-interface SearchArticle {
+// Types for full search results
+interface Article {
   id: number;
   title: string;
   slug: string;
@@ -41,8 +43,8 @@ interface SearchArticle {
   viewCount: number;
 }
 
-interface SearchResultData {
-  data: SearchArticle[];
+interface SearchResponse {
+  data: Article[];
   total: number;
   page: number;
   totalPages: number;
@@ -60,26 +62,36 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
   const debouncedQuery = useDebounce(query, 300);
   const inputRef = useRef<HTMLInputElement>(null);
   const [, setLocation] = useLocation();
-  const isMobileView = inHeader;
-
-  // Fetch search suggestions based on the debounced query
-  const { data: suggestions, isLoading } = useQuery<SearchSuggestionsResponse>({
+  
+  // Fetch quick suggestions
+  const { data: suggestionsData, isLoading: loadingSuggestions } = useQuery<SuggestionsResponse>({
     queryKey: ["/api/search/suggestions", { q: debouncedQuery, limit: 5 }],
     enabled: debouncedQuery.length > 2,
     staleTime: 1000 * 60 * 5, // 5 minutes
-    retry: 1, // Only retry once to avoid excessive requests
+    retry: 1,
   });
   
-  // Fetch more comprehensive search results for dropdown
-  const { data: searchResults, isLoading: isLoadingResults } = useQuery<SearchResultData>({
+  // Fetch full search results
+  const { data: searchData, isLoading: loadingResults } = useQuery<SearchResponse>({
     queryKey: ["/api/search", { q: debouncedQuery, limit: 10 }],
     enabled: debouncedQuery.length > 2 && open,
     staleTime: 1000 * 60 * 5, // 5 minutes
     retry: 1,
   });
+  
+  // Check if we have results to display
+  const hasSuggestions = !!suggestionsData?.data && suggestionsData.data.length > 0;
+  const hasResults = !!searchData?.data && searchData.data.length > 0;
+  const isLoading = loadingSuggestions || loadingResults;
 
-  // Handle navigation to search results page
-  const handleSearch = () => {
+  // Navigate to article page when clicking a result
+  const navigateToArticle = (slug: string) => {
+    setLocation(`/articles/${slug}`);
+    setOpen(false);
+  };
+  
+  // Handle full search
+  const handleFullSearch = () => {
     if (query.trim()) {
       if (onSearch) {
         onSearch(query);
@@ -90,7 +102,7 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
     }
   };
 
-  // Handle keyboard shortcut
+  // Setup keyboard shortcut (Cmd+K or Ctrl+K)
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "/" && (e.metaKey || e.ctrlKey)) {
@@ -103,17 +115,18 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
     return () => document.removeEventListener("keydown", down);
   }, []);
 
-  // Focus on input when opened
+  // Focus input when opened
   useEffect(() => {
     if (open) {
       inputRef.current?.focus();
     }
   }, [open]);
 
-  // Mobile search as a dialog
-  if (isMobileView) {
+  // MOBILE VERSION (in header)
+  if (inHeader) {
     return (
       <>
+        {/* Mobile search icon button */}
         <Button
           variant="ghost"
           size="icon"
@@ -123,6 +136,8 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
         >
           <Search className="h-5 w-5" />
         </Button>
+        
+        {/* Desktop search button */}
         <div className="hidden md:flex relative max-w-md">
           <Button
             variant="outline"
@@ -137,6 +152,8 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
             </kbd>
           </Button>
         </div>
+        
+        {/* Search dialog for mobile */}
         <CommandDialog open={open} onOpenChange={setOpen}>
           <div className="flex items-center border-b px-3">
             <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
@@ -145,7 +162,7 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
               value={query}
               onValueChange={setQuery}
               placeholder="Search articles, topics, authors..."
-              className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none"
             />
             {query && (
               <Button
@@ -157,9 +174,11 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
               </Button>
             )}
           </div>
+          
+          {/* Search results list */}
           <CommandList className="max-h-[70vh] overflow-auto">
             <CommandEmpty>
-              {isLoading || isLoadingResults ? (
+              {isLoading ? (
                 <div className="flex items-center justify-center py-6">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
@@ -168,75 +187,73 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
               )}
             </CommandEmpty>
             
-            {/* Quick Suggestions */}
-            {debouncedQuery.length > 2 && suggestions?.data && suggestions.data.length > 0 && (
-              <CommandGroup heading="Quick Suggestions">
-                {suggestions.data.map((item: SearchArticleSuggestion) => (
-                  <CommandItem
-                    key={`suggestion-${item.id}`}
-                    onSelect={() => {
-                      setLocation(`/articles/${item.slug}`);
-                      setOpen(false);
-                    }}
-                    className="py-2"
-                  >
-                    <div className="flex flex-col">
-                      <span>{item.title}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {item.category} • {new Date(item.publishedAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
-            
-            {/* Full Search Results */}
-            {debouncedQuery.length > 2 && searchResults?.data && searchResults.data.length > 0 && (
-              <CommandGroup heading="Search Results">
-                {searchResults.data.map((article: SearchArticle) => (
-                  <CommandItem
-                    key={`result-${article.id}`}
-                    onSelect={() => {
-                      setLocation(`/articles/${article.slug}`);
-                      setOpen(false);
-                    }}
-                    className="py-3 px-2"
-                  >
-                    <div className="flex w-full gap-3">
-                      {article.featuredImage && (
-                        <div className="flex-shrink-0 h-16 w-16 rounded overflow-hidden">
-                          <img 
-                            src={article.featuredImage} 
-                            alt={article.title}
-                            className="h-full w-full object-cover"
-                          />
+            {/* Display search results */}
+            {debouncedQuery.length > 2 && (
+              <>
+                {/* Quick suggestions */}
+                {hasSuggestions && (
+                  <CommandGroup heading="Quick Suggestions">
+                    {suggestionsData.data.map((item) => (
+                      <CommandItem
+                        key={`suggestion-${item.id}`}
+                        onSelect={() => navigateToArticle(item.slug)}
+                        className="py-2"
+                      >
+                        <div className="flex flex-col">
+                          <span>{item.title}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {item.category} • {new Date(item.publishedAt).toLocaleDateString()}
+                          </span>
                         </div>
-                      )}
-                      <div className="flex flex-col flex-1 min-w-0">
-                        <span className="font-medium line-clamp-1">{article.title}</span>
-                        <span className="text-xs text-muted-foreground mb-1">
-                          {article.category} • {new Date(article.publishedAt).toLocaleDateString()}
-                        </span>
-                        <p className="text-sm text-muted-foreground line-clamp-2">
-                          {article.summary}
-                        </p>
-                      </div>
-                    </div>
-                  </CommandItem>
-                ))}
-                
-                {searchResults.total > searchResults.data.length && (
-                  <CommandItem
-                    onSelect={() => {
-                      handleSearch();
-                    }}
-                    className="justify-center text-primary border-t"
-                  >
-                    View all {searchResults.total} results for &quot;{debouncedQuery}&quot;
-                  </CommandItem>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
                 )}
-              </CommandGroup>
+                
+                {/* Full search results */}
+                {hasResults && (
+                  <CommandGroup heading="Search Results">
+                    {searchData.data.map((article) => (
+                      <CommandItem
+                        key={`result-${article.id}`}
+                        onSelect={() => navigateToArticle(article.slug)}
+                        className="py-3 px-2"
+                      >
+                        <div className="flex w-full gap-3">
+                          {article.featuredImage && (
+                            <div className="flex-shrink-0 h-16 w-16 rounded overflow-hidden">
+                              <img 
+                                src={article.featuredImage} 
+                                alt={article.title}
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                          )}
+                          <div className="flex flex-col flex-1 min-w-0">
+                            <span className="font-medium line-clamp-1">{article.title}</span>
+                            <span className="text-xs text-muted-foreground mb-1">
+                              {article.category} • {new Date(article.publishedAt).toLocaleDateString()}
+                            </span>
+                            <p className="text-sm text-muted-foreground line-clamp-2">
+                              {article.summary}
+                            </p>
+                          </div>
+                        </div>
+                      </CommandItem>
+                    ))}
+                    
+                    {/* View more results link */}
+                    {searchData.total > searchData.data.length && (
+                      <CommandItem
+                        onSelect={handleFullSearch}
+                        className="justify-center text-primary border-t"
+                      >
+                        View all {searchData.total} results for "{debouncedQuery}"
+                      </CommandItem>
+                    )}
+                  </CommandGroup>
+                )}
+              </>
             )}
           </CommandList>
         </CommandDialog>
@@ -244,7 +261,7 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
     );
   }
 
-  // Desktop search as a popover
+  // DESKTOP VERSION (standalone search)
   return (
     <div className="relative w-full max-w-md">
       <Popover open={open} onOpenChange={setOpen}>
@@ -259,7 +276,7 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
               className="w-full pl-9 pr-12"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
-                  handleSearch();
+                  handleFullSearch();
                 }
               }}
             />
@@ -279,6 +296,8 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
             </div>
           </div>
         </PopoverTrigger>
+        
+        {/* Dropdown content */}
         <PopoverContent
           align="start"
           className="w-[calc(100vw-2rem)] p-0 sm:w-[650px]"
@@ -287,7 +306,7 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
           <Command className="w-full">
             <CommandList className="max-h-[80vh] overflow-auto">
               <CommandEmpty>
-                {isLoading || isLoadingResults ? (
+                {isLoading ? (
                   <div className="flex items-center justify-center py-6">
                     <Loader2 className="h-6 w-6 animate-spin text-primary" />
                   </div>
@@ -298,75 +317,73 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
                 )}
               </CommandEmpty>
               
-              {/* Quick Suggestions */}
-              {debouncedQuery.length > 2 && suggestions?.data && suggestions.data.length > 0 && (
-                <CommandGroup heading="Quick Suggestions">
-                  {suggestions.data.map((item: SearchArticleSuggestion) => (
-                    <CommandItem
-                      key={`suggestion-${item.id}`}
-                      onSelect={() => {
-                        setLocation(`/articles/${item.slug}`);
-                        setOpen(false);
-                      }}
-                      className="py-2"
-                    >
-                      <div className="flex flex-col">
-                        <span>{item.title}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {item.category} • {new Date(item.publishedAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
-              
-              {/* Full Search Results */}
-              {debouncedQuery.length > 2 && searchResults && searchResults.data && searchResults.data.length > 0 && (
-                <CommandGroup heading="Search Results">
-                  {searchResults.data.map((article: SearchArticle) => (
-                    <CommandItem
-                      key={`result-${article.id}`}
-                      onSelect={() => {
-                        setLocation(`/articles/${article.slug}`);
-                        setOpen(false);
-                      }}
-                      className="py-3 px-2"
-                    >
-                      <div className="flex w-full gap-3">
-                        {article.featuredImage && (
-                          <div className="flex-shrink-0 h-16 w-16 rounded overflow-hidden">
-                            <img 
-                              src={article.featuredImage} 
-                              alt={article.title}
-                              className="h-full w-full object-cover"
-                            />
+              {/* Display search results */}
+              {debouncedQuery.length > 2 && (
+                <>
+                  {/* Quick suggestions */}
+                  {hasSuggestions && (
+                    <CommandGroup heading="Quick Suggestions">
+                      {suggestionsData.data.map((item) => (
+                        <CommandItem
+                          key={`suggestion-${item.id}`}
+                          onSelect={() => navigateToArticle(item.slug)}
+                          className="py-2"
+                        >
+                          <div className="flex flex-col">
+                            <span>{item.title}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {item.category} • {new Date(item.publishedAt).toLocaleDateString()}
+                            </span>
                           </div>
-                        )}
-                        <div className="flex flex-col flex-1 min-w-0">
-                          <span className="font-medium line-clamp-1">{article.title}</span>
-                          <span className="text-xs text-muted-foreground mb-1">
-                            {article.category} • {new Date(article.publishedAt).toLocaleDateString()}
-                          </span>
-                          <p className="text-sm text-muted-foreground line-clamp-2">
-                            {article.summary}
-                          </p>
-                        </div>
-                      </div>
-                    </CommandItem>
-                  ))}
-                  
-                  {searchResults.total > searchResults.data.length && (
-                    <CommandItem
-                      onSelect={() => {
-                        handleSearch();
-                      }}
-                      className="justify-center text-primary border-t"
-                    >
-                      View all {searchResults.total} results for &quot;{debouncedQuery}&quot;
-                    </CommandItem>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
                   )}
-                </CommandGroup>
+                  
+                  {/* Full search results */}
+                  {hasResults && (
+                    <CommandGroup heading="Search Results">
+                      {searchData.data.map((article) => (
+                        <CommandItem
+                          key={`result-${article.id}`}
+                          onSelect={() => navigateToArticle(article.slug)}
+                          className="py-3 px-2"
+                        >
+                          <div className="flex w-full gap-3">
+                            {article.featuredImage && (
+                              <div className="flex-shrink-0 h-16 w-16 rounded overflow-hidden">
+                                <img 
+                                  src={article.featuredImage} 
+                                  alt={article.title}
+                                  className="h-full w-full object-cover"
+                                />
+                              </div>
+                            )}
+                            <div className="flex flex-col flex-1 min-w-0">
+                              <span className="font-medium line-clamp-1">{article.title}</span>
+                              <span className="text-xs text-muted-foreground mb-1">
+                                {article.category} • {new Date(article.publishedAt).toLocaleDateString()}
+                              </span>
+                              <p className="text-sm text-muted-foreground line-clamp-2">
+                                {article.summary}
+                              </p>
+                            </div>
+                          </div>
+                        </CommandItem>
+                      ))}
+                      
+                      {/* View more results link */}
+                      {searchData.total > searchData.data.length && (
+                        <CommandItem
+                          onSelect={handleFullSearch}
+                          className="justify-center text-primary border-t"
+                        >
+                          View all {searchData.total} results for "{debouncedQuery}"
+                        </CommandItem>
+                      )}
+                    </CommandGroup>
+                  )}
+                </>
               )}
             </CommandList>
           </Command>
