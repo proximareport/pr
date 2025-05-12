@@ -725,25 +725,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const offset = parseInt(req.query.offset as string) || 0;
       const articles = await storage.getArticles(limit, offset);
       
-      // Enhance collaborative articles with author information
+      // Enhance ALL articles with author information
       const enhancedArticles = await Promise.all(articles.map(async (article) => {
-        if (article.isCollaborative) {
-          // Fetch authors for collaborative articles
-          const authors = await storage.getArticleAuthors(article.id);
-          // Map to a simplified author structure
-          const authorData = authors.map(authorRecord => ({
-            id: authorRecord.user.id,
-            username: authorRecord.user.username,
-            profilePicture: authorRecord.user.profilePicture,
-            role: authorRecord.role
-          }));
-          
-          return {
-            ...article,
-            authors: authorData
-          };
-        }
-        return article;
+        // Fetch authors for all articles
+        const authors = await storage.getArticleAuthors(article.id);
+        // Map to a simplified author structure
+        const authorData = authors.map(authorRecord => ({
+          id: authorRecord.user.id,
+          username: authorRecord.user.username,
+          profilePicture: authorRecord.user.profilePicture,
+          role: authorRecord.role
+        }));
+        
+        // For backward compatibility, also include primary author in the traditional 'author' field
+        const primaryAuthor = authorData.find(author => author.id === article.primaryAuthorId) || 
+          (authorData.length > 0 ? authorData[0] : null);
+        
+        return {
+          ...article,
+          authors: authorData,
+          author: primaryAuthor // Add primary author for backwards compatibility
+        };
       }));
       
       res.json(enhancedArticles);
