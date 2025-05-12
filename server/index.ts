@@ -38,23 +38,28 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Register main routes
+  // First register all API routes
   const server = await registerRoutes(app);
   
   // Register newsletter and search routes
+  // These must be registered BEFORE Vite middleware
   registerNewsletterAndSearchRoutes(app);
 
+  // Global error handler for API routes
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
-    throw err;
+    console.error("API Error:", err);
+    
+    // Only send response if headers haven't been sent yet
+    if (!res.headersSent) {
+      res.status(status).json({ message });
+    }
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
+  // Setup Vite AFTER all API routes are registered
+  // This ensures the catch-all doesn't interfere with API routes
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
