@@ -52,6 +52,26 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
   // Helper function for active menu items - needs to be defined before it's used but after all hooks
   const isActive = (path: string) => {
+    // For dashboard links with query parameters, we need to match just the path part
+    // or match the exact path with query parameters
+    if (path.includes('?')) {
+      const [basePath, queryString] = path.split('?');
+      const queryParams = new URLSearchParams(queryString);
+      const currentParams = new URLSearchParams(window.location.search);
+      
+      // Check if the base URL matches and any query parameters match
+      const baseMatches = location === basePath;
+      const tabMatches = queryParams.get('tab') === currentParams.get('tab');
+      const subtabMatches = 
+        !queryParams.has('subtab') || 
+        queryParams.get('subtab') === currentParams.get('subtab');
+        
+      return (baseMatches && tabMatches && subtabMatches)
+        ? 'bg-primary/10 text-primary font-medium'
+        : 'text-gray-600 hover:bg-gray-100 hover:text-primary';
+    }
+    
+    // For regular paths, just do an exact match
     return location === path
       ? 'bg-primary/10 text-primary font-medium'
       : 'text-gray-600 hover:bg-gray-100 hover:text-primary';
@@ -70,30 +90,26 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     return null;
   }
   
+  // The new menu structure uses URL parameters to select tabs in the main dashboard
   const menuItems = [
     { label: 'Dashboard', icon: <Home className="h-5 w-5" />, path: '/admin' },
     { 
       label: 'Ad Management', 
       icon: <DollarSign className="h-5 w-5 text-green-600" />, 
-      path: '/admin/advertisements',
+      path: '/admin?tab=ads',
       badge: pendingAdsCount > 0 ? (
         <span className="ml-auto bg-orange-100 text-orange-800 text-xs font-medium mr-2 px-2 py-0.5 rounded flex items-center">
           <BellRing className="h-3 w-3 mr-1" /> {pendingAdsCount}
         </span>
       ) : null
     },
-    /* Content Status removed as it's now integrated in dashboard */
-    { label: 'Draft Management', icon: <FileText className="h-5 w-5" />, path: '/admin/drafts' },
-    { label: 'Media Library', icon: <Image className="h-5 w-5 text-purple-600" />, path: '/admin/media-library' },
-    { label: 'Users', icon: <Users className="h-5 w-5" />, path: '/admin/users' },
-    { label: 'Tags & Categories', icon: <Tag className="h-5 w-5" />, path: '/admin/categories-tags' },
-    { label: 'Comments', icon: <MessageSquare className="h-5 w-5" />, path: '/admin/comments' },
-    { label: 'Astronomy Photos', icon: <Image className="h-5 w-5" />, path: '/admin/astronomy-photos' },
-    { label: 'Job Listings', icon: <Briefcase className="h-5 w-5" />, path: '/admin/job-listings' },
-    { label: 'Archives', icon: <Archive className="h-5 w-5" />, path: '/admin/archives' },
-    { label: 'Emergency Banner', icon: <AlertTriangle className="h-5 w-5" />, path: '/admin/emergency-banner' },
-    { label: 'API Keys', icon: <Settings className="h-5 w-5" />, path: '/admin/api-keys' },
-    { label: 'Settings', icon: <Settings className="h-5 w-5" />, path: '/admin/settings' },
+    { label: 'Content Management', icon: <BookOpenCheck className="h-5 w-5" />, path: '/admin?tab=content' },
+    { label: 'Draft Management', icon: <FileText className="h-5 w-5" />, path: '/admin?tab=content&subtab=drafts' },
+    { label: 'Media Library', icon: <Image className="h-5 w-5 text-purple-600" />, path: '/admin?tab=media' },
+    { label: 'Users', icon: <Users className="h-5 w-5" />, path: '/admin?tab=users' },
+    { label: 'Tags & Categories', icon: <Tag className="h-5 w-5" />, path: '/admin?tab=content&subtab=categories' },
+    { label: 'API Keys', icon: <Settings className="h-5 w-5" />, path: '/admin?tab=settings&subtab=api' },
+    { label: 'Settings', icon: <Settings className="h-5 w-5" />, path: '/admin?tab=settings' },
   ];
 
   return (

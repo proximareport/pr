@@ -20,12 +20,33 @@ import TagView from "@/pages/TagView";
 import MaintenanceMode from "@/components/MaintenanceMode";
 import AdminDashboard from "@/pages/Admin/Dashboard";
 import AdminArticleEditor from "@/pages/Admin/NewArticleEditor";
-import AdminUserManagement from "@/pages/Admin/UserManagement";
 import { useAuth, AuthProvider } from "@/lib/AuthContext";
+
+// Redirect component to navigate to the main admin dashboard with a specific tab
+const RedirectToDashboardTab = ({ tab, subtab }: { tab: string, subtab?: string }) => {
+  const [, navigate] = useLocation();
+  
+  React.useEffect(() => {
+    const url = new URL(window.location.origin + '/admin');
+    url.searchParams.set('tab', tab);
+    if (subtab) {
+      url.searchParams.set('subtab', subtab);
+    }
+    navigate(url.pathname + url.search);
+  }, [navigate, tab, subtab]);
+  
+  return <div className="flex justify-center items-center h-screen">
+    <div className="flex flex-col items-center">
+      <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mb-4"></div>
+      <div>Redirecting to admin dashboard...</div>
+    </div>
+  </div>;
+};
 
 function Router() {
   return (
     <Switch>
+      {/* Public routes */}
       <Route path="/" component={Home} />
       <Route path="/article/:slug" component={Article} />
       <Route path="/login" component={Login} />
@@ -38,55 +59,27 @@ function Router() {
       <Route path="/subscribe" component={Subscribe} />
       <Route path="/subscription/success" component={SubscriptionSuccess} />
       <Route path="/tag/:tagName" component={TagView} />
+      
+      {/* Main Admin Dashboard */}
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/articles/new" component={AdminArticleEditor} />
       <Route path="/admin/articles/edit/:id" component={AdminArticleEditor} />
-      <Route path="/admin/users" component={AdminUserManagement} />
-      <Route path="/admin/drafts" component={() => {
-        const DraftManagementPage = React.lazy(() => import('./pages/Admin/DraftManagement'));
-        return (
-          <React.Suspense fallback={<div>Loading...</div>}>
-            <DraftManagementPage />
-          </React.Suspense>
-        );
-      }} />
-      <Route path="/admin/categories-tags" component={() => {
-        const CategoriesAndTagsPage = React.lazy(() => import('./pages/Admin/CategoriesAndTags'));
-        return (
-          <React.Suspense fallback={<div>Loading...</div>}>
-            <CategoriesAndTagsPage />
-          </React.Suspense>
-        );
-      }} />
-      <Route path="/admin/content-status" component={() => {
-        // Redirect to dashboard with content tab pre-selected
-        const [, navigate] = useLocation();
-        React.useEffect(() => {
-          navigate('/admin?tab=content&subtab=content_status');
-        }, [navigate]);
-        return <div className="flex justify-center items-center h-screen">Redirecting...</div>;
-      }} />
-      <Route path="/admin/api-keys" component={() => {
-        const ApiKeyManagementPage = React.lazy(() => import('./pages/Admin/ApiKeyManagement'));
-        return (
-          <React.Suspense fallback={<div>Loading...</div>}>
-            <ApiKeyManagementPage />
-          </React.Suspense>
-        );
-      }} />
-      {/* Advertisement management is now integrated in the main dashboard */}
-      <Route path="/admin/media-library" component={() => {
-        const MediaLibraryPage = React.lazy(() => import('./pages/Admin/MediaLibrary'));
-        return (
-          <React.Suspense fallback={<div>Loading...</div>}>
-            <MediaLibraryPage />
-          </React.Suspense>
-        );
-      }} />
+      
+      {/* Redirects to main dashboard with appropriate tabs */}
+      <Route path="/admin/users" component={() => <RedirectToDashboardTab tab="users" />} />
+      <Route path="/admin/drafts" component={() => <RedirectToDashboardTab tab="content" subtab="drafts" />} />
+      <Route path="/admin/categories-tags" component={() => <RedirectToDashboardTab tab="content" subtab="categories" />} />
+      <Route path="/admin/content-status" component={() => <RedirectToDashboardTab tab="content" subtab="status" />} />
+      <Route path="/admin/api-keys" component={() => <RedirectToDashboardTab tab="settings" subtab="api" />} />
+      <Route path="/admin/media-library" component={() => <RedirectToDashboardTab tab="media" />} />
+      <Route path="/admin/advertisements" component={() => <RedirectToDashboardTab tab="ads" />} />
+      <Route path="/admin/settings" component={() => <RedirectToDashboardTab tab="settings" />} />
+      
+      {/* Advertiser pages */}
       <Route path="/advertise" component={() => {
         const AdvertisePage = React.lazy(() => import('./pages/Advertise-new'));
         return (
-          <React.Suspense fallback={<div className="flex justify-center p-12"><div className="animate-spin h-8 w-8 border-4 border-purple-500 border-t-transparent rounded-full"></div></div>}>
+          <React.Suspense fallback={<div className="flex justify-center p-12"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
             <AdvertisePage />
           </React.Suspense>
         );
@@ -94,19 +87,30 @@ function Router() {
       <Route path="/advertise-success" component={() => {
         const AdvertiseSuccessPage = React.lazy(() => import('./pages/AdvertiseSuccess'));
         return (
-          <React.Suspense fallback={<div className="flex justify-center p-12"><div className="animate-spin h-8 w-8 border-4 border-purple-500 border-t-transparent rounded-full"></div></div>}>
+          <React.Suspense fallback={<div className="flex justify-center p-12"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
             <AdvertiseSuccessPage />
           </React.Suspense>
         );
       }} />
+      
+      {/* Redirect advertiser dashboard to admin dashboard for admins */}
       <Route path="/advertiser-dashboard" component={() => {
+        const { user, isLoading } = useAuth();
+        
+        // If the user is an admin or editor, redirect them to the admin dashboard
+        if (!isLoading && user && (user.role === 'admin' || user.role === 'editor')) {
+          return <RedirectToDashboardTab tab="ads" />;
+        }
+        
+        // Otherwise load the advertiser dashboard
         const AdvertiserDashboardPage = React.lazy(() => import('./pages/AdvertiserDashboard'));
         return (
-          <React.Suspense fallback={<div className="flex justify-center p-12"><div className="animate-spin h-8 w-8 border-4 border-purple-500 border-t-transparent rounded-full"></div></div>}>
+          <React.Suspense fallback={<div className="flex justify-center p-12"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
             <AdvertiserDashboardPage />
           </React.Suspense>
         );
       }} />
+      
       <Route component={NotFound} />
     </Switch>
   );
