@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { pool } from "./db";
 import { ZodError } from "zod";
+import { updateArticleStatus } from "./articleStatusRoute";
 import {
   insertUserSchema,
   insertArticleSchema,
@@ -1402,8 +1403,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         publishedAt?: Date;
       } = { ...updateData };
       
+      console.log("Article update request with status:", updateData.status);
+      console.log("Current article status:", article.status);
+      
       // Check if trying to publish an article
       if (updateData.status === 'published' && article.status !== 'published') {
+        console.log("Publishing article that was previously draft");
+        
         // Only editors and admins can publish
         const canPublish = user.role === 'admin' || user.role === 'editor';
         if (!canPublish) {
@@ -1415,7 +1421,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Set publishedAt date when article is being published
         const publishedAt = new Date();
         finalUpdateData.publishedAt = publishedAt;
-      } else {
+        
+        // Log the state we're about to save
+        console.log("Publishing article, final data:", finalUpdateData);
+      } 
+      else if (updateData.status === 'draft' && article.status === 'published') {
+        console.log("Unpublishing article that was previously published");
+        
+        // When going from published to draft, we keep the publishedAt date
+        // This ensures we don't lose the original publication date
+        
+        // Log the state we're about to save
+        console.log("Unpublishing article, final data:", finalUpdateData);
+      }
+      else {
         // Handle publishedAt separately - convert from ISO string to Date
         let publishedAt = undefined;
         if (req.body.publishedAt) {
@@ -1429,10 +1448,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (publishedAt) {
           finalUpdateData.publishedAt = publishedAt;
         }
+        
+        // Log any other status changes or updates
+        console.log("Regular article update, no status change. Final data:", finalUpdateData);
       }
       
       // Extract authors data
       const { authors } = req.body;
+      
+      // Log the status being sent to storage
+      console.log("Status being sent to updateArticle:", finalUpdateData.status);
+      
+      // If this is a status change, do a direct SQL update to ensure it works
+      if (updateData.status && updateData.status !== article.status) {
+        try {
+          console.log(`Direct status update: ${article.status} → ${updateData.status}`);
+          // Do a direct SQL update for the status field to ensure it works
+          const directSql = `
+            UPDATE articles 
+            SET status = $1, updated_at = $2
+            WHERE id = $3
+          `;
+          await pool.query(directSql, [updateData.status, new Date(), articleId]);
+          
+          // Force refresh our data to include this change
+          finalUpdateData.status = updateData.status;
+          
+          console.log("Direct SQL status update executed");
+        } catch (error) {
+          console.error("Error in direct status update:", error);
+        }
+      }
       
       // Update the article in the database with our final data
       const updatedArticle = await storage.updateArticle(articleId, finalUpdateData);
