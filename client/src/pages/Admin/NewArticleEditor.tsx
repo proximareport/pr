@@ -61,6 +61,7 @@ function AdminArticleEditor() {
   const [isAutosaving, setIsAutosaving] = useState<boolean>(false); // Track if autosave is in progress
   const autosaveTimeoutRef = useRef<number | null>(null);
   const lastSavedContentRef = useRef<string>(''); // Track the last saved content to avoid unnecessary saves
+  const contentModifiedSinceLastSave = useRef<boolean>(false); // Track if content has been modified since last save
   const [availableUsers, setAvailableUsers] = useState<Array<{id: number, username: string, profilePicture?: string}>>([]);
   
   // Fetch available users for coauthor selection
@@ -265,6 +266,9 @@ function AdminArticleEditor() {
       const savedArticleData = prepareArticleData(false);
       lastSavedContentRef.current = JSON.stringify(savedArticleData);
       console.log('Content saved, updated lastSavedContentRef');
+      
+      // Reset the modified flag since content was just saved successfully
+      contentModifiedSinceLastSave.current = false;
       
       // Invalidate the articles query
       queryClient.invalidateQueries({ queryKey: ['/api/articles'] });
@@ -533,6 +537,12 @@ function AdminArticleEditor() {
 
   // Function definitions for autosave with enhanced change detection and error prevention
   const doAutosave = useCallback(() => {
+    // Skip autosave if no content has been modified since last save
+    if (!contentModifiedSinceLastSave.current) {
+      console.log('No content modified since last save, skipping autosave');
+      return;
+    }
+    
     // Check minimum required content
     if (!title.trim()) {
       console.log('Title is empty, skipping autosave');
@@ -602,7 +612,10 @@ function AdminArticleEditor() {
     // Execute the save mutation, providing the updated article data
     // isAutosavePending will be automatically set to true when mutation starts
     autosaveArticleMutation(currentArticleData);
-  }, [title, prepareArticleData, autosaveArticleMutation, lastSavedContentRef, hasContentChanged]);
+    
+    // Reset the modified flag after triggering a save
+    contentModifiedSinceLastSave.current = false;
+  }, [title, prepareArticleData, autosaveArticleMutation, lastSavedContentRef, hasContentChanged, slug]);
   
   const scheduleAutosave = useCallback(() => {
     // Clear any existing timeout
@@ -631,9 +644,6 @@ function AdminArticleEditor() {
     return formatDistanceToNow(date, { addSuffix: true });
   };
   
-  // Track if content has been modified since last save
-  const contentModifiedSinceLastSave = useRef(false);
-
   // Helper function to mark content as modified
   const markContentAsModified = useCallback(() => {
     contentModifiedSinceLastSave.current = true;
