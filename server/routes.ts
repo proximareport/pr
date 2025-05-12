@@ -1876,13 +1876,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { placement } = req.params;
       console.log(`Fetching advertisements for placement: ${placement}`);
-      const adsForPlacement = await storage.getAdvertisements(placement);
-      console.log(`Found ${adsForPlacement.length} approved ads for placement ${placement}`);
       
-      // If multiple ads exist for this placement, randomly select one
-      if (adsForPlacement.length > 0) {
-        const randomIndex = Math.floor(Math.random() * adsForPlacement.length);
-        res.json(adsForPlacement[randomIndex]);
+      // Get only approved ads with proper date filtering
+      // Set includeNotApproved to false to only get approved ads
+      const adsForPlacement = await storage.getAdvertisements(placement, false);
+      
+      // Double check we don't have any unapproved ads in the result
+      const approvedAds = adsForPlacement.filter(ad => ad.isApproved === true);
+      console.log(`Found ${adsForPlacement.length} ads for placement ${placement}, of which ${approvedAds.length} are actually approved`);
+      
+      // If multiple approved ads exist for this placement, randomly select one
+      if (approvedAds.length > 0) {
+        const randomIndex = Math.floor(Math.random() * approvedAds.length);
+        res.json(approvedAds[randomIndex]);
       } else {
         // This is where we fall through when no approved ads exist
         console.log(`No approved ads found for placement ${placement}, checking if any exist regardless of approval`);
@@ -2247,8 +2253,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Pass true to include unapproved ads in the admin dashboard
-      const ads = await storage.getAdvertisements(undefined, true);
-      console.log(`Found ${ads.length} total ads for admin dashboard`);
+      const ads = await storage.getAdvertisements('all', true);
+      console.log(`Found ${ads.length} total ads for admin dashboard including approved and unapproved`);
+      
+      // Fetch ALL ads directly from DB for debugging
+      const allAdsInDb = await db.select().from(advertisements);
+      console.log(`Direct DB query shows ${allAdsInDb.length} total ads exist in the database`);
+      if (allAdsInDb.length > 0) {
+        console.log(`Sample ad from DB: ${JSON.stringify({
+          id: allAdsInDb[0].id,
+          title: allAdsInDb[0].title,
+          isApproved: allAdsInDb[0].isApproved,
+          placement: allAdsInDb[0].placement
+        })}`);
+      }
       
       // Include user information with each ad
       const enhancedAds = await Promise.all(ads.map(async (ad) => {

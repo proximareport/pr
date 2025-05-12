@@ -997,25 +997,35 @@ export class DatabaseStorage implements IStorage {
 
   // Advertisement operations
   async getAdvertisements(placement?: string, includeNotApproved: boolean = false): Promise<Advertisement[]> {
-    let baseQuery = db.select().from(advertisements);
+    let conditions = [];
     
     // Only apply approval and date filters if we're not including unapproved ads
     if (!includeNotApproved) {
-      baseQuery = baseQuery.where(and(
-        eq(advertisements.isApproved, true),
-        sql`${advertisements.startDate} <= NOW()`,
-        sql`${advertisements.endDate} >= NOW()`
-      ));
+      conditions.push(eq(advertisements.isApproved, true));
+      conditions.push(sql`${advertisements.startDate} <= NOW()`);
+      conditions.push(sql`${advertisements.endDate} >= NOW()`);
     }
     
     // Add placement filter if provided
-    if (placement) {
-      baseQuery = baseQuery.where(eq(advertisements.placement, placement));
+    if (placement && placement !== 'all') {
+      conditions.push(eq(advertisements.placement, placement));
+    }
+    
+    // Build the query with all conditions
+    let query;
+    if (conditions.length > 0) {
+      query = db.select().from(advertisements).where(and(...conditions));
+    } else {
+      query = db.select().from(advertisements);
     }
     
     console.log('Running advertisement query with params:', { placement, includeNotApproved });
-    const results = await baseQuery;
-    console.log(`Found ${results.length} advertisements`);
+    const results = await query;
+    console.log(`Found ${results.length} advertisements` + (includeNotApproved ? ' (including unapproved)' : ' (approved only)'));
+    
+    if (results.length > 0 && !includeNotApproved) {
+      console.log(`Verified approved ads: ${results.filter(ad => ad.isApproved).length}/${results.length}`);
+    }
     
     return results;
   }
