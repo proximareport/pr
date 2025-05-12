@@ -164,17 +164,17 @@ export default function SearchResults() {
 
           {/* Category filter */}
           <Select
-            value={category || ""}
-            onValueChange={(value) => setCategory(value || undefined)}
+            value={category || "all"}
+            onValueChange={(value) => setCategory(value === "all" ? undefined : value)}
           >
             <SelectTrigger className="w-full sm:w-[200px]">
               <div className="flex items-center gap-2">
                 <Tag className="h-4 w-4" />
-                <span>{category || "All categories"}</span>
+                <span>{category && category !== "all" ? category : "All categories"}</span>
               </div>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All categories</SelectItem>
+              <SelectItem value="all">All categories</SelectItem>
               {categories.map((cat: any) => (
                 <SelectItem key={cat.name} value={cat.name}>{cat.name}</SelectItem>
               ))}
