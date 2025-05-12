@@ -63,6 +63,8 @@ function Router() {
       {/* Main Admin Dashboard */}
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/articles/new" component={AdminArticleEditor} />
+      <Route path="/admin/articles/:id/edit" component={AdminArticleEditor} />
+      {/* Keep old route format for backward compatibility */}
       <Route path="/admin/articles/edit/:id" component={AdminArticleEditor} />
       
       {/* Redirects to main dashboard with appropriate tabs */}

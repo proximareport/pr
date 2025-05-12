@@ -79,7 +79,7 @@ export function DraftManagement() {
   const displayDrafts: ArticleDraft[] = user?.role === 'author' ? myDrafts : drafts;
 
   const handleEdit = (id: number) => {
-    navigate(`/admin/articles/edit/${id}`);
+    navigate(`/admin/articles/${id}/edit`);
   };
 
   const handlePreview = (slug: string) => {

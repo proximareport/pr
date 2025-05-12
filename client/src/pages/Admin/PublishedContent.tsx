@@ -69,7 +69,7 @@ export function PublishedContent() {
   });
 
   const handleEdit = (id: number) => {
-    navigate(`/admin/articles/edit/${id}`);
+    navigate(`/admin/articles/${id}/edit`);
   };
 
   const handleView = (slug: string) => {
