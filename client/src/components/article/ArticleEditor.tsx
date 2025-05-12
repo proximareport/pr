@@ -137,19 +137,22 @@ function ArticleEditor({ initialArticle, onSave }: ArticleEditorProps) {
       });
   }, [title, slug, summary, content, category, featuredImage, isBreaking, readTime, tags, onSave]);
   
-  // Schedule autosave when content changes
+  // Schedule autosave when content changes (debounced)
   useEffect(() => {
+    // Don't autosave if title is empty
+    if (!title.trim()) {
+      return;
+    }
+    
     // Clear any existing timeout
     if (autosaveTimeoutRef.current) {
       window.clearTimeout(autosaveTimeoutRef.current);
     }
     
-    // Set a new timeout for autosave (60 seconds after last change)
+    // Set a new timeout for autosave (2 seconds after user stops typing/interacting)
     autosaveTimeoutRef.current = window.setTimeout(() => {
-      if (title) {
-        autosaveArticle();
-      }
-    }, 60000);
+      autosaveArticle();
+    }, 2000);
     
     // Cleanup function
     return () => {
