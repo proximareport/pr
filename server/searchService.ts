@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { pool } from "./db";
 import { articles, users, categories } from "../shared/schema";
+// Keep these imports for type checking, but we'll use direct SQL in the implementation
 import { eq, like, and, or, gte, lte, desc, asc, sql, inArray } from "drizzle-orm";
 import { SQL } from "drizzle-orm/sql";
 
@@ -108,8 +109,18 @@ export async function searchArticles(
     const countResult = await pool.query(countQuery, queryParams);
     const total = parseInt(countResult.rows[0].count, 10) || 0;
     
-    // Determine order by clause
-    const orderColumn = options.orderBy || 'published_at';
+    // Determine order by clause - map ORM field names to database column names
+    let orderColumn = options.orderBy || 'published_at';
+    // Convert camelCase to snake_case for the column names
+    if (orderColumn === 'publishedAt') orderColumn = 'published_at';
+    if (orderColumn === 'featuredImage') orderColumn = 'featured_image';
+    if (orderColumn === 'viewCount') orderColumn = 'view_count';
+    if (orderColumn === 'readTime') orderColumn = 'read_time';
+    if (orderColumn === 'isBreaking') orderColumn = 'is_breaking';
+    if (orderColumn === 'authorId') orderColumn = 'author_id';
+    if (orderColumn === 'createdAt') orderColumn = 'created_at';
+    if (orderColumn === 'updatedAt') orderColumn = 'updated_at';
+    
     const orderDirection = options.orderDirection || 'desc';
     const orderByClause = `${orderColumn} ${orderDirection}`;
     
@@ -172,50 +183,54 @@ export async function searchUsers(
   try {
     const offset = (options.page - 1) * options.limit;
     
-    // Create base query conditions
-    const conditions: SQL[] = [];
+    // Build WHERE clause
+    let whereClause = "";
+    const queryParams = [] as any[];
+    let paramIndex = 1;
     
     // Add query search condition if provided
-    if (query) {
-      conditions.push(
-        or(
-          like(users.username, `%${query}%`),
-          like(users.email, `%${query}%`),
-          like(users.bio, `%${query}%`)
-        )
-      );
+    if (query && query.trim()) {
+      const searchTerm = `%${query.trim()}%`;
+      whereClause = `username ILIKE $${paramIndex} OR email ILIKE $${paramIndex} OR bio ILIKE $${paramIndex}`;
+      queryParams.push(searchTerm);
     }
     
-    // Create ordering SQL
-    let orderSql;
-    if (options.orderDirection === 'asc') {
-      orderSql = asc(users[options.orderBy as keyof typeof users]);
-    } else {
-      orderSql = desc(users[options.orderBy as keyof typeof users]);
-    }
+    // Complete WHERE clause if we have search conditions
+    const finalWhereClause = whereClause ? `WHERE ${whereClause}` : '';
     
     // Count total results
-    const countResult = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(users)
-      .where(conditions.length ? and(...conditions) : undefined);
+    const countQuery = `SELECT COUNT(*) FROM users ${finalWhereClause}`;
+    const countResult = await pool.query(countQuery, queryParams);
+    const total = parseInt(countResult.rows[0].count, 10) || 0;
     
-    const total = countResult[0]?.count || 0;
+    // Determine order by clause (map frontend field names to database column names)
+    let orderColumn = options.orderBy || 'username';
+    // Convert camelCase to snake_case for the column names
+    if (orderColumn === 'profilePicture') orderColumn = 'profile_picture';
+    if (orderColumn === 'createdAt') orderColumn = 'created_at';
+    if (orderColumn === 'updatedAt') orderColumn = 'updated_at';
+    
+    const orderDirection = options.orderDirection || 'asc';
+    const orderByClause = `${orderColumn} ${orderDirection}`;
     
     // Fetch paginated results
-    const results = await db
-      .select({
-        id: users.id,
-        username: users.username,
-        profilePicture: users.profilePicture,
-        bio: users.bio,
-        role: users.role,
-      })
-      .from(users)
-      .where(conditions.length ? and(...conditions) : undefined)
-      .orderBy(orderSql)
-      .limit(options.limit)
-      .offset(offset);
+    const sqlQuery = `
+      SELECT 
+        id, 
+        username, 
+        profile_picture as "profilePicture", 
+        bio, 
+        role
+      FROM users
+      ${finalWhereClause}
+      ORDER BY ${orderByClause}
+      LIMIT ${options.limit}
+      OFFSET ${offset}
+    `;
+    
+    console.log("Executing SQL:", sqlQuery.replace(/\s+/g, ' '));
+    const result = await pool.query(sqlQuery, queryParams);
+    const results = result.rows;
     
     return {
       data: results,
@@ -235,23 +250,31 @@ export async function searchUsers(
 }
 
 /**
- * Get popular searches
+ * Get popular searches - dummy implementation until search_history table is created
  */
 export async function getPopularSearches(limit: number = 5): Promise<{ query: string, count: number }[]> {
   try {
-    const result = await db.execute(sql`
+    console.log("Note: Using dummy implementation for popular searches since search_history table doesn't exist");
+    
+    // Return empty array since we don't have a search_history table yet
+    return [];
+    
+    // When search_history table is created, use this implementation:
+    /*
+    const result = await pool.query(`
       SELECT query, COUNT(*) as count
-      FROM ${searchHistory}
+      FROM search_history
       WHERE searched_at > NOW() - INTERVAL '7 days'
       GROUP BY query
       ORDER BY count DESC
-      LIMIT ${limit}
-    `);
+      LIMIT $1
+    `, [limit]);
     
-    return (result.rows as any[]).map(row => ({
+    return result.rows.map(row => ({
       query: row.query,
       count: parseInt(row.count, 10),
     }));
+    */
   } catch (error) {
     console.error("Error fetching popular searches:", error);
     return [];
