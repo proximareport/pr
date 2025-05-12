@@ -18,6 +18,9 @@ import Astronomy from "@/pages/Astronomy";
 import Subscribe from "@/pages/Subscribe";
 import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
 import TagView from "@/pages/TagView";
+import SearchResults from "@/pages/SearchResults";
+import NewsletterVerify from "@/pages/NewsletterVerify";
+import NewsletterUnsubscribe from "@/pages/NewsletterUnsubscribe";
 import MaintenanceMode from "@/components/MaintenanceMode";
 import AdminDashboard from "@/pages/Admin/Dashboard";
 import AdminArticleEditor from "@/pages/Admin/NewArticleEditor";
@@ -60,6 +63,7 @@ function Router() {
       <Route path="/subscribe" component={Subscribe} />
       <Route path="/subscription/success" component={SubscriptionSuccess} />
       <Route path="/tag/:tagName" component={TagView} />
+      <Route path="/search" component={SearchResults} />
       
       {/* Main Admin Dashboard */}
       <Route path="/admin" component={AdminDashboard} />
