@@ -755,21 +755,27 @@ function AdminArticleEditor() {
         { status: newStatus }
       );
       
-      return response.json();
+      // Process the response
+      if (!response.ok) {
+        throw new Error(`Failed to update status: ${response.status}`);
+      }
+      
+      return await response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       // Invalidate article cache
       queryClient.invalidateQueries({ queryKey: [`/api/articles/${articleId}`] });
       
       // Show success message
       toast({
-        title: data.article?.status === 'published' ? "Article Published" : "Article Saved as Draft",
-        description: data.message || "Status updated successfully",
+        title: data?.article?.status === 'published' ? "Article Published" : "Article Saved as Draft",
+        description: data?.message || "Status updated successfully",
       });
       
       // Update local state to match what came back from the server
-      if (data.article && data.article.status) {
+      if (data?.article?.status) {
         setIsDraft(data.article.status === 'draft');
+        console.log("Updated isDraft state to:", data.article.status === 'draft');
       }
     },
     onError: (error) => {
@@ -796,12 +802,8 @@ function AdminArticleEditor() {
       return;
     }
     
-    // First ensure article is saved before changing status
-    // Use the current form state
-    const formData = form.getValues();
-    console.log("Form data before status change:", formData);
-    
-    // Convert form data to article data and save it first
+    // First ensure article is saved before changing status    
+    // Prepare article data using current state
     const articleData = prepareArticleData(null);
     mutate(articleData, {
       onSuccess: () => {
