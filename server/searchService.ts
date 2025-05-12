@@ -86,8 +86,8 @@ export async function searchArticles(
     
     // Add author filter
     if (filters.author) {
-      // First check primary author
-      conditions.push(eq(articles.primaryAuthorId, filters.author));
+      // Check author_id column
+      conditions.push(eq(articles.authorId, filters.author));
       // Note: In a more comprehensive implementation, we would also check the articleAuthors table
       // to find articles where the user is a non-primary author
     }
@@ -128,7 +128,7 @@ export async function searchArticles(
         tags: articles.tags,
         publishedAt: articles.publishedAt,
         featuredImage: articles.featuredImage,
-        primaryAuthorId: articles.primaryAuthorId,
+        authorId: articles.authorId,
         viewCount: articles.viewCount,
       })
       .from(articles)
