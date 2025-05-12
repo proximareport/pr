@@ -17,7 +17,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MenuIcon, SearchIcon, LogOutIcon, UserIcon, SettingsIcon, ShieldIcon, LineChartIcon } from "lucide-react";
+import { MenuIcon, SearchIcon, LogOutIcon, UserIcon, SettingsIcon, ShieldIcon, LineChartIcon, X } from "lucide-react";
+import { SearchBar } from "@/components/search/SearchBar";
 
 // Import logo images
 import desktopLogo from "../../assets/images/proxima-logo-desktop.png";
@@ -79,8 +80,14 @@ function Header() {
           </div>
           
           <div className="flex items-center space-x-4">
+            {/* Desktop search bar (hidden on mobile) */}
+            <div className="hidden md:block">
+              <SearchBar />
+            </div>
+            
+            {/* Mobile search icon */}
             <button 
-              className="text-white/90 hover:text-purple-500 transition"
+              className="md:hidden text-white/90 hover:text-purple-500 transition"
               onClick={() => setIsSearchOpen(!isSearchOpen)}
             >
               <SearchIcon className="h-5 w-5" />
@@ -216,7 +223,23 @@ function Header() {
         </div>
       </div>
       
-      {/* Search Modal would go here */}
+      {/* Mobile Search Modal */}
+      {isSearchOpen && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-start justify-center p-4 md:hidden">
+          <div className="bg-[#14141E] border border-purple-900/30 rounded-lg w-full max-w-md p-4 mt-16">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">Search</h3>
+              <button 
+                onClick={() => setIsSearchOpen(false)}
+                className="text-white/70 hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <SearchBar />
+          </div>
+        </div>
+      )}
     </header>
   );
 }

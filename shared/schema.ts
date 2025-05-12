@@ -517,6 +517,9 @@ export type ApiKey = typeof apiKeys.$inferSelect;
 export type ArticleAuthor = typeof articleAuthors.$inferSelect;
 export type MediaLibraryItem = typeof mediaLibrary.$inferSelect;
 export type SiteSettings = typeof siteSettings.$inferSelect;
+export type NewsletterSubscription = typeof newsletterSubscriptions.$inferSelect;
+export type SearchHistory = typeof searchHistory.$inferSelect;
+export type NewsletterSentHistory = typeof newsletterSentHistory.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertArticle = z.infer<typeof insertArticleSchema>;
