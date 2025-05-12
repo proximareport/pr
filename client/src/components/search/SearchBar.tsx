@@ -16,6 +16,18 @@ import {
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
+interface SearchArticleSuggestion {
+  id: number;
+  title: string;
+  slug: string;
+  category: string;
+  publishedAt: string;
+}
+
+interface SearchSuggestionsResponse {
+  data: SearchArticleSuggestion[];
+}
+
 interface SearchBarProps {
   inHeader?: boolean;
   placeholder?: string;

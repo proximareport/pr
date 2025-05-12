@@ -14,6 +14,33 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
+interface SearchArticle {
+  id: number;
+  title: string;
+  slug: string;
+  summary: string;
+  category: string;
+  tags: string[];
+  publishedAt: string;
+  featuredImage?: string;
+  primaryAuthorId: number;
+  viewCount: number;
+}
+
+interface SearchResultData {
+  data: SearchArticle[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string;
+}
+
 export default function SearchResults() {
   const [location] = useLocation();
   const params = new URLSearchParams(location.split("?")[1]);
@@ -41,7 +68,7 @@ export default function SearchResults() {
   }, [location, params, query]);
 
   // Fetch search results
-  const { data: searchResults, isLoading } = useQuery({
+  const { data: searchResults, isLoading } = useQuery<SearchResultData>({
     queryKey: [
       "/api/search",
       {
@@ -60,7 +87,7 @@ export default function SearchResults() {
   });
 
   // Fetch categories
-  const { data: categoriesData } = useQuery({
+  const { data: categoriesData } = useQuery<{ data: Category[] }>({
     queryKey: ["/api/categories"],
     staleTime: 1000 * 60 * 60, // 1 hour
   });
@@ -96,7 +123,7 @@ export default function SearchResults() {
 
   // Load more results
   const loadMore = () => {
-    if (searchResults && searchResults.page < searchResults.totalPages) {
+    if (searchResults && searchResults?.page < searchResults?.totalPages) {
       setPage((prev) => prev + 1);
     }
   };
@@ -283,9 +310,9 @@ export default function SearchResults() {
         ) : searchResults && searchResults.data && searchResults.data.length > 0 ? (
           <>
             <p className="text-muted-foreground">
-              Found {searchResults.total} results for "{query}"
+              Found {searchResults.total || 0} results for "{query}"
             </p>
-            {searchResults.data.map((article: any) => (
+            {searchResults.data.map((article: SearchArticle) => (
               <Card key={article.id} className="overflow-hidden hover:shadow-md transition-shadow">
                 <div className="flex flex-col md:flex-row">
                   {article.featuredImage && (
@@ -335,7 +362,7 @@ export default function SearchResults() {
                 </div>
               </Card>
             ))}
-            {searchResults.page < searchResults.totalPages && (
+            {searchResults.page && searchResults.totalPages && searchResults.page < searchResults.totalPages && (
               <div className="flex justify-center mt-8">
                 <Button onClick={loadMore} className="min-w-[200px]">
                   Load more results
