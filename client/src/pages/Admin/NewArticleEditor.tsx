@@ -631,8 +631,18 @@ function AdminArticleEditor() {
     return formatDistanceToNow(date, { addSuffix: true });
   };
   
+  // Track if content has been modified since last save
+  const contentModifiedSinceLastSave = useRef(false);
+
+  // Helper function to mark content as modified
+  const markContentAsModified = useCallback(() => {
+    contentModifiedSinceLastSave.current = true;
+  }, []);
+
   // Effect to autosave when any article field changes
   useEffect(() => {
+    // Mark content as modified when any of these fields change
+    markContentAsModified();
     scheduleAutosave();
     
     // Cleanup on unmount
@@ -641,7 +651,7 @@ function AdminArticleEditor() {
         window.clearTimeout(autosaveTimeoutRef.current);
       }
     };
-  }, [title, summary, content, category, tags, featuredImage, readTime, isBreaking, isFeatured, isCollaborative, coauthors, scheduleAutosave]);
+  }, [title, summary, content, category, tags, featuredImage, readTime, isBreaking, isFeatured, isCollaborative, coauthors, scheduleAutosave, markContentAsModified]);
   
   // Effect to handle page unload
   useEffect(() => {
