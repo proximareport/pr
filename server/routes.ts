@@ -259,13 +259,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const results = await searchArticles(query, options, filters);
       console.log("Search results count:", results.total);
       
+      // Also search for users if the query is not empty
+      let userResults = [];
+      if (query && query.trim().length > 0) {
+        const userOptions = { 
+          page: 1, 
+          limit: 5, // Limit user results to 5 
+          orderBy: "username", 
+          orderDirection: "asc" as "asc" | "desc"
+        };
+        const userSearchResults = await searchUsers(query, userOptions);
+        userResults = userSearchResults.data;
+        console.log("User search results count:", userSearchResults.total);
+      }
+
       // Save search to history if user is logged in
       const userId = req.session?.userId;
       if (query && query.trim().length > 0) {
         saveSearch(query, userId || null, results.total, filters);
       }
       
-      res.json(results);
+      // Return combined results with users
+      res.json({
+        ...results,
+        users: userResults
+      });
     } catch (error) {
       console.error("Search error:", error);
       res.status(500).json({ message: "Error processing search", error: String(error) });
@@ -349,66 +367,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { email } = req.body;
       
       if (!email || typeof email !== 'string') {
-        return res.status(400).json({ message: "Email is required" });
+        return res.status(400).json({ message: "Valid email is required" });
       }
       
-      // Get userId from session if available
+      // Get user ID if logged in
       const userId = req.session?.userId;
-      const result = await subscribeToNewsletter(email, userId || undefined);
       
-      res.status(result.success ? 200 : 400).json(result);
+      const result = await subscribeToNewsletter(email, userId);
+      res.json(result);
     } catch (error) {
       console.error("Newsletter subscription error:", error);
-      res.status(500).json({ 
-        success: false, 
-        message: "Error processing subscription request" 
-      });
+      res.status(500).json({ message: "Error processing subscription request" });
     }
   });
   
-  // Verify subscription with token
+  // Verify newsletter subscription with token
   app.get("/api/newsletter/verify/:token", async (req: Request, res: Response) => {
     try {
-      const token = req.params.token;
-      const result = await verifySubscription(token);
+      const { token } = req.params;
       
-      // Redirect to success or error page
-      if (result.success) {
-        res.redirect('/?subscription=verified');
-      } else {
-        res.redirect('/?subscription=error');
+      if (!token) {
+        return res.status(400).json({ message: "Verification token is required" });
       }
+      
+      const result = await verifySubscription(token);
+      res.json(result);
     } catch (error) {
-      console.error("Subscription verification error:", error);
-      res.redirect('/?subscription=error');
+      console.error("Newsletter verification error:", error);
+      res.status(500).json({ message: "Error verifying subscription" });
     }
   });
   
-  // Unsubscribe from newsletter
+  // Unsubscribe from newsletter with token
   app.get("/api/newsletter/unsubscribe/:token", async (req: Request, res: Response) => {
     try {
-      const token = req.params.token;
-      const result = await unsubscribeFromNewsletter(token);
+      const { token } = req.params;
       
-      // Redirect to success or error page
-      if (result.success) {
-        res.redirect('/?unsubscribed=true');
-      } else {
-        res.redirect('/?unsubscribed=error');
+      if (!token) {
+        return res.status(400).json({ message: "Unsubscribe token is required" });
       }
+      
+      const result = await unsubscribeFromNewsletter(token);
+      res.json(result);
     } catch (error) {
-      console.error("Unsubscribe error:", error);
-      res.redirect('/?unsubscribed=error');
+      console.error("Newsletter unsubscribe error:", error);
+      res.status(500).json({ message: "Error processing unsubscribe request" });
     }
   });
   
-  // Get newsletter status for article
+  // Get newsletter status for an article
   app.get("/api/newsletter/status/:articleId", async (req: Request, res: Response) => {
     try {
       const articleId = parseInt(req.params.articleId);
       
       if (isNaN(articleId)) {
-        return res.status(400).json({ message: "Invalid article ID" });
+        return res.status(400).json({ message: "Valid article ID is required" });
       }
       
       const article = await storage.getArticle(articleId);
@@ -418,19 +431,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json({
-        isNewsletter: article.isNewsletter || false,
-        sentAt: article.newsletterSentAt || null
+        id: article.id,
+        sentAsNewsletter: article.sentAsNewsletter || false,
+        newsletterSentAt: article.newsletterSentAt || null
       });
     } catch (error) {
       console.error("Newsletter status error:", error);
-      res.status(500).json({ message: "Error fetching newsletter status" });
+      res.status(500).json({ message: "Error getting newsletter status" });
     }
   });
   
-  // Get newsletter stats
-  app.get("/api/newsletter/stats", requireAdmin, async (req: Request, res: Response) => {
+  // Get newsletter statistics
+  app.get("/api/newsletter/stats", async (req: Request, res: Response) => {
     try {
-      // Get basic stats about newsletter
+      // This would typically come from the database
       const stats = await storage.getNewsletterStats();
       res.json(stats);
     } catch (error) {
@@ -439,162 +453,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Send newsletter for article
+  // Send newsletter for an article
   app.post("/api/newsletter/send", requireAdmin, async (req: Request, res: Response) => {
     try {
       const { articleId, subject, fromEmail, fromName } = req.body;
       
       if (!articleId || !subject || !fromEmail || !fromName) {
         return res.status(400).json({ 
-          message: "Missing required fields: articleId, subject, fromEmail, fromName" 
+          message: "Article ID, subject, from email, and from name are required" 
         });
       }
       
-      // Check if article exists and is newsletter-type
-      const article = await storage.getArticle(parseInt(articleId));
+      const article = await storage.getArticle(articleId);
       
       if (!article) {
         return res.status(404).json({ message: "Article not found" });
       }
       
-      if (!article.isNewsletter) {
+      // Check if article has already been sent as newsletter
+      if (article.sentAsNewsletter) {
         return res.status(400).json({ 
-          message: "This article is not marked as a newsletter" 
+          message: "This article has already been sent as a newsletter" 
         });
       }
       
-      if (article.newsletterSentAt) {
-        return res.status(400).json({ 
-          message: "This newsletter has already been sent" 
-        });
-      }
-      
-      // Send the newsletter
-      const success = await sendNewsletterEmail({
-        articleId: parseInt(articleId),
+      const sent = await sendNewsletterEmail({
+        articleId,
         subject,
         fromEmail,
         fromName
       });
       
-      if (success) {
-        // Update the article to mark it as sent
-        await storage.updateArticle(parseInt(articleId), { 
-          newsletterSentAt: new Date() 
+      if (sent) {
+        // Update article to mark as sent
+        await storage.updateArticle(articleId, {
+          sentAsNewsletter: true,
+          newsletterSentAt: new Date()
         });
         
-        res.json({ 
-          success: true, 
-          message: "Newsletter sent successfully" 
-        });
+        res.json({ success: true, message: "Newsletter sent successfully" });
       } else {
-        res.status(500).json({ 
-          success: false, 
-          message: "Failed to send newsletter" 
-        });
+        res.status(500).json({ message: "Failed to send newsletter" });
       }
     } catch (error) {
       console.error("Send newsletter error:", error);
-      res.status(500).json({ 
-        success: false, 
-        message: "Error sending newsletter" 
-      });
+      res.status(500).json({ message: "Error sending newsletter" });
     }
   });
-  
-  // Apply maintenance mode check to all routes
-  app.use(checkMaintenanceMode);
-  
-  // Serve static files from uploads directory
-  const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-  }
-  app.use('/uploads', express.static(uploadsDir));
-  
-  // User Routes
-  app.post("/api/register", async (req, res) => {
-    try {
-      const userData = insertUserSchema.parse(req.body);
-      
-      // Check if user already exists
-      const existingUser = await storage.getUserByEmail(userData.email);
-      if (existingUser) {
-        return res.status(400).json({ message: "Email already in use" });
-      }
-      
-      // Hash password
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(userData.password, salt);
-      
-      // Create user
-      const newUser = await storage.createUser({
-        ...userData,
-        password: hashedPassword,
-      });
-      
-      // Set session
-      req.session.userId = newUser.id;
-      req.session.isAdmin = newUser.role === "admin";
-      
-      // Return user without password
-      const { password, ...userWithoutPassword } = newUser;
-      res.status(201).json(userWithoutPassword);
-    } catch (error) {
-      if (error instanceof ZodError) {
-        return res.status(400).json({ message: "Invalid input", errors: error.format() });
-      }
-      res.status(500).json({ message: "Server error during registration" });
+
+  // API endpoint for checking login status
+  app.get("/api/me", (req: Request, res: Response) => {
+    if (req.session.userId) {
+      storage.getUser(req.session.userId)
+        .then(user => {
+          if (user) {
+            res.json(user);
+          } else {
+            // User doesn't exist anymore but has a session
+            req.session.destroy(() => {});
+            res.status(401).json({ message: "Not authenticated" });
+          }
+        })
+        .catch(err => {
+          console.error("Error fetching user:", err);
+          res.status(500).json({ message: "Server error" });
+        });
+    } else {
+      res.status(401).json({ message: "Not authenticated" });
     }
   });
-  
-  app.post("/api/login", async (req, res) => {
+
+  // User login endpoint
+  app.post("/api/login", async (req: Request, res: Response) => {
     try {
-      console.log("Login attempt with body:", req.body);
-      // Support both email and username based login
-      const { email, password, username } = req.body;
+      const { username, password } = req.body;
       
-      if ((!email && !username) || !password) {
-        return res.status(400).json({ message: "Email/username and password are required" });
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password are required" });
       }
       
-      // Find user by email or username
-      let user;
-      if (email) {
-        user = await storage.getUserByEmail(email);
-        if (!user) {
-          console.log("User not found by email:", email);
-        }
-      }
+      const normalizedUsername = username.toLowerCase();
       
-      if (!user && username) {
-        user = await storage.getUserByUsername(username);
-        if (!user) {
-          console.log("User not found by username:", username);
-        }
-      }
+      // Check if user exists
+      const user = await storage.getUserByUsername(normalizedUsername);
       
       if (!user) {
         return res.status(400).json({ message: "Invalid credentials" });
       }
       
-      console.log("User found:", user.id, user.username, "checking password...");
-      
-      // Add this for debugging - log password length and hash format
-      console.log("Password length:", password?.length);
-      console.log("Stored hash type:", typeof user.password);
-      console.log("Stored hash length:", user.password?.length);
-      
-      // Check if the password has been hashed (should start with $2a$ or $2b$ for bcrypt)
-      if (!user.password.startsWith('$2a$') && !user.password.startsWith('$2b$')) {
-        console.log("WARNING: Password doesn't appear to be properly hashed!");
-        return res.status(500).json({ message: "Server error: invalid password format" });
+      // Special case for development with a known password format
+      if (user.password === "hashed_" + password) {
+        req.session.userId = user.id;
+        req.session.isAdmin = user.role === 'admin';
+        return res.json(user);
       }
       
-      // Normalize the password - trim whitespace to handle copy-paste issues
-      const normalizedPassword = password.trim();
+      // Handle case where password might be stored in different formats (uppercase, etc)
+      const normalizedPassword = password.toLowerCase();
       
-      // Check password with extra error handling
       let isMatch = false;
       try {
         isMatch = await bcrypt.compare(normalizedPassword, user.password);
@@ -618,1581 +574,707 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Update last login
-      await storage.updateUser(user.id, { lastLoginAt: new Date() });
-      
-      // Set session
       req.session.userId = user.id;
-      req.session.isAdmin = user.role === "admin";
+      req.session.isAdmin = user.role === 'admin';
       
-      console.log("Login session set:", {
-        userId: user.id,
-        username: user.username,
-        isAdmin: req.session.isAdmin,
-        role: user.role
-      });
-      
-      // Return user without password
-      const { password: _, ...userWithoutPassword } = user;
-      console.log("Login successful for:", email);
-      res.json(userWithoutPassword);
+      res.json(user);
     } catch (error) {
       console.error("Login error:", error);
-      res.status(500).json({ message: "Server error during login" });
-    }
-  });
-  
-  app.post("/api/logout", (req, res) => {
-    req.session.destroy((err) => {
-      if (err) {
-        return res.status(500).json({ message: "Error logging out" });
-      }
-      res.json({ message: "Successfully logged out" });
-    });
-  });
-  
-  app.get("/api/me", async (req, res) => {
-    if (!req.session.userId) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-    
-    try {
-      const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        req.session.destroy(() => {});
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      const { password, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
-    } catch (error) {
-      res.status(500).json({ message: "Server error" });
-    }
-  });
-  
-  // Get all users (for coauthor selection or admin dashboard depending on query param)
-  app.get("/api/users", requireAuth, async (req, res) => {
-    try {
-      const { userId } = req.session;
-      const isForAdmin = req.query.admin === 'true';
-      const users = await storage.getAllUsers();
-      
-      if (isForAdmin) {
-        // Check if user is admin for detailed user info
-        const requestingUser = await storage.getUser(userId);
-        
-        if (requestingUser?.role !== 'admin') {
-          return res.status(403).json({ message: "Unauthorized: Admin access required" });
-        }
-        
-        // Return comprehensive user data for admin dashboard
-        const formattedUsers = users.map(user => ({
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          role: user.role,
-          membershipTier: user.membershipTier,
-          profilePicture: user.profilePicture,
-          createdAt: user.createdAt,
-          lastLoginAt: user.lastLoginAt,
-          hasStripeAccount: !!user.stripeCustomerId
-        }));
-        
-        res.json(formattedUsers);
-      } else {
-        // Return simplified user data (only what's needed for coauthor UI)
-        const simplifiedUsers = users.map(user => ({
-          id: user.id,
-          username: user.username,
-          profilePicture: user.profilePicture
-        }));
-        
-        res.json(simplifiedUsers);
-      }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      res.status(500).json({ message: "Server error" });
-    }
-  });
-  
-  // Update user role (admin only)
-  app.patch("/api/users/:userId/role", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const { userId } = req.session;
-      const targetUserId = parseInt(req.params.userId);
-      const { role } = req.body;
-      
-      // Validate role
-      if (!['user', 'author', 'editor', 'admin'].includes(role)) {
-        return res.status(400).json({ message: "Invalid role" });
-      }
-      
-      // Prevent admins from downgrading themselves
-      if (userId === targetUserId && role !== 'admin') {
-        return res.status(400).json({ message: "Cannot downgrade your own admin role" });
-      }
-      
-      // Update user role
-      const updatedUser = await storage.updateUser(targetUserId, { role });
-      if (!updatedUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      res.json({ 
-        id: updatedUser.id,
-        username: updatedUser.username,
-        role: updatedUser.role 
-      });
-    } catch (error) {
-      console.error("Error updating user role:", error);
-      res.status(500).json({ message: "Error updating user role" });
-    }
-  });
-  
-  // Update user membership tier (admin only)
-  app.patch("/api/users/:userId/membership", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const targetUserId = parseInt(req.params.userId);
-      const { tier } = req.body;
-      
-      // Validate membership tier
-      if (!['free', 'supporter', 'pro'].includes(tier)) {
-        return res.status(400).json({ message: "Invalid membership tier" });
-      }
-      
-      // Update user membership
-      const updatedUser = await storage.updateUserMembership(targetUserId, tier as 'free' | 'supporter' | 'pro');
-      if (!updatedUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      res.json({ 
-        id: updatedUser.id,
-        username: updatedUser.username,
-        membershipTier: updatedUser.membershipTier 
-      });
-    } catch (error) {
-      console.error("Error updating user membership:", error);
-      res.status(500).json({ message: "Error updating user membership" });
-    }
-  });
-  
-  app.put("/api/me", requireAuth, async (req, res) => {
-    try {
-      const userId = req.session.userId!;
-      const updateSchema = z.object({
-        username: z.string().optional(),
-        email: z.string().email().optional(),
-        bio: z.string().max(500).optional(),
-        profilePicture: z.string().optional(),
-        themePreference: z.string().optional(),
-        profileCustomization: z.any().optional(), // Allow any JSON structure
-      });
-      
-      const updateData = updateSchema.parse(req.body);
-      console.log("Updating user profile:", updateData);
-      
-      const updatedUser = await storage.updateUser(userId, updateData);
-      
-      if (!updatedUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      const { password, ...userWithoutPassword } = updatedUser;
-      res.json(userWithoutPassword);
-    } catch (error) {
-      if (error instanceof ZodError) {
-        return res.status(400).json({ message: "Invalid input", errors: error.format() });
-      }
-      res.status(500).json({ message: "Server error updating profile" });
-    }
-  });
-  
-  // Get user profile by username
-  // Profile picture upload endpoint
-  app.post("/api/users/profile-picture", requireAuth, async (req, res) => {
-    try {
-      // For now simply return success
-      // In a production app, we would handle file upload and storage
-      res.json({ success: true, profilePicture: req.body.profilePicture || "" });
-    } catch (error) {
-      console.error('Error uploading profile picture:', error);
-      res.status(500).json({ message: "Error uploading profile picture" });
-    }
-  });
-  
-  // Change password endpoint
-  app.post("/api/users/password", requireAuth, async (req, res) => {
-    try {
-      const userId = req.session.userId!;
-      const changePasswordSchema = z.object({
-        currentPassword: z.string(),
-        newPassword: z.string().min(8),
-      });
-      
-      const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
-      
-      // Get current user with password
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Check current password
-      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
-      if (!isCurrentPasswordValid) {
-        return res.status(401).json({ message: "Current password is incorrect" });
-      }
-      
-      // Hash new password
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(newPassword, salt);
-      
-      // Update user with new password
-      await storage.updateUser(userId, { password: hashedPassword });
-      
-      res.json({ message: "Password updated successfully" });
-    } catch (error) {
-      if (error instanceof ZodError) {
-        return res.status(400).json({ 
-          message: "Invalid input", 
-          errors: error.format() 
-        });
-      }
-      
-      console.error('Error changing password:', error);
-      res.status(500).json({ message: "Error changing password" });
+      res.status(500).json({ message: "Error during login" });
     }
   });
 
-  app.get("/api/users/profile/:username", async (req, res) => {
+  // User registration endpoint
+  app.post("/api/register", async (req: Request, res: Response) => {
     try {
-      const { username } = req.params;
-      const user = await storage.getUserByUsername(username);
+      const userData = req.body;
       
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
+      // Validate user data
+      try {
+        insertUserSchema.parse(userData);
+      } catch (validationError) {
+        if (validationError instanceof ZodError) {
+          return res.status(400).json({
+            message: "Validation error",
+            errors: validationError.errors
+          });
+        }
       }
       
-      // Return user without password
-      const { password, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
-    } catch (error) {
-      console.error("Error fetching user profile:", error);
-      res.status(500).json({ message: "Error fetching user profile" });
-    }
-  });
-  
-  // Get all users (for admin purposes)
-  app.get("/api/admin/users", requireAdmin, async (req, res) => {
-    try {
-      const users = await storage.getAllUsers();
+      // Check if username already exists
+      const existingUser = await storage.getUserByUsername(userData.username.toLowerCase());
+      if (existingUser) {
+        return res.status(400).json({ message: "Username already exists" });
+      }
       
-      // Return users without passwords
-      const usersWithoutPasswords = users.map(user => {
-        const { password, ...userWithoutPassword } = user;
-        return userWithoutPassword;
+      // Check if email already exists if provided
+      if (userData.email) {
+        const existingEmail = await storage.getUserByEmail(userData.email.toLowerCase());
+        if (existingEmail) {
+          return res.status(400).json({ message: "Email already exists" });
+        }
+      }
+      
+      // Hash password
+      let hashedPassword;
+      try {
+        hashedPassword = await bcrypt.hash(userData.password, 10);
+      } catch (hashError) {
+        console.error("Password hashing error:", hashError);
+        return res.status(500).json({ message: "Error creating user account" });
+      }
+      
+      // Create user with hashed password
+      const newUser = await storage.createUser({
+        ...userData,
+        username: userData.username.toLowerCase(),
+        email: userData.email ? userData.email.toLowerCase() : null,
+        password: hashedPassword,
+        role: 'user' // Default role for new registrations
       });
       
-      res.json(usersWithoutPasswords);
+      // Set session (auto login)
+      req.session.userId = newUser.id;
+      req.session.isAdmin = false; // New users aren't admins
+      
+      res.status(201).json(newUser);
     } catch (error) {
-      console.error("Error fetching users:", error);
-      res.status(500).json({ message: "Error fetching users" });
+      console.error("Registration error:", error);
+      res.status(500).json({ message: "Error during registration" });
     }
   });
-  
-  // API Key Routes
-  app.get("/api/api-keys", requireAuth, async (req, res) => {
-    try {
-      const apiKeys = await storage.getApiKeysByUser(req.session.userId!);
-      // Don't return the actual key values for security
-      const safeKeys = apiKeys.map(key => ({
-        ...key,
-        key: key.key.substring(0, 8) + "..." + key.key.substring(key.key.length - 4)
-      }));
-      res.json(safeKeys);
-    } catch (error) {
-      console.error("Error fetching API keys:", error);
-      res.status(500).json({ message: "Internal server error" });
-    }
+
+  // User logout endpoint
+  app.post("/api/logout", (req: Request, res: Response) => {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Logout error:", err);
+        return res.status(500).json({ message: "Error during logout" });
+      }
+      res.json({ message: "Logged out successfully" });
+    });
   });
-  
-  app.post("/api/api-keys", requireAuth, async (req, res) => {
+
+  // ----------------------------------------------------
+  // Articles API
+  // ----------------------------------------------------
+  // Get all articles
+  app.get("/api/articles", async (req: Request, res: Response) => {
     try {
-      const { name, permissions } = req.body;
+      const page = req.query.page ? parseInt(req.query.page as string) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      const showDrafts = req.query.showDrafts === 'true';
       
-      if (!name) {
-        return res.status(400).json({ message: "API key name is required" });
-      }
+      let userId: number | undefined;
+      let isAdmin = false;
       
-      const apiKey = await storage.createApiKey(
-        req.session.userId!, 
-        name, 
-        permissions || ["read:articles"]
-      );
-      
-      // Return the full key only once at creation time
-      res.status(201).json(apiKey);
-    } catch (error) {
-      console.error("Error creating API key:", error);
-      res.status(500).json({ message: "Internal server error" });
-    }
-  });
-  
-  app.delete("/api/api-keys/:id", requireAuth, async (req, res) => {
-    try {
-      const apiKey = await storage.getApiKey(parseInt(req.params.id));
-      
-      if (!apiKey) {
-        return res.status(404).json({ message: "API key not found" });
-      }
-      
-      if (apiKey.userId !== req.session.userId && !req.session.isAdmin) {
-        return res.status(403).json({ message: "You don't have permission to delete this API key" });
-      }
-      
-      await storage.deleteApiKey(parseInt(req.params.id));
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting API key:", error);
-      res.status(500).json({ message: "Internal server error" });
-    }
-  });
-  
-  // API Endpoint authentication middleware with API key
-  const apiKeyAuth = async (req: Request, res: Response, next: NextFunction) => {
-    const apiKey = req.headers["x-api-key"] as string;
-    
-    if (!apiKey) {
-      return next(); // Continue to session auth if no API key
-    }
-    
-    try {
-      const storedKey = await storage.getApiKeyByValue(apiKey);
-      
-      if (!storedKey) {
-        return res.status(401).json({ message: "Invalid API key" });
-      }
-      
-      // Update last used timestamp
-      await storage.updateApiKeyLastUsed(storedKey.id);
-      
-      // Attach user ID and permissions to request
-      req.apiKeyUserId = storedKey.userId;
-      req.apiKeyPermissions = storedKey.permissions;
-      
-      return next();
-    } catch (error) {
-      console.error("API key authentication error:", error);
-      return res.status(500).json({ message: "Internal server error" });
-    }
-  };
-  
-  // Article Routes
-  app.get("/api/articles", async (req, res) => {
-    try {
-      const limit = parseInt(req.query.limit as string) || 10;
-      const offset = parseInt(req.query.offset as string) || 0;
-      const articles = await storage.getArticles(limit, offset);
-      
-      // Enhance ALL articles with author information
-      const enhancedArticles = await Promise.all(articles.map(async (article) => {
-        // Fetch authors for all articles
-        const authors = await storage.getArticleAuthors(article.id);
-        // Map to a simplified author structure
-        const authorData = authors.map(authorRecord => ({
-          id: authorRecord.user.id,
-          username: authorRecord.user.username,
-          profilePicture: authorRecord.user.profilePicture,
-          role: authorRecord.role
-        }));
+      // Check if the request includes a user session
+      if (req.session && req.session.userId) {
+        userId = req.session.userId;
         
-        // For backward compatibility, also include primary author in the traditional 'author' field
-        const primaryAuthor = authorData.find(author => author.id === article.primaryAuthorId) || 
-          (authorData.length > 0 ? authorData[0] : null);
-        
-        return {
-          ...article,
-          authors: authorData,
-          author: primaryAuthor // Add primary author for backwards compatibility
-        };
-      }));
+        // Check if user is admin
+        const user = await storage.getUser(userId);
+        isAdmin = user?.role === 'admin';
+      }
       
-      res.json(enhancedArticles);
+      // This is the main logic - users can only see their drafts or published content
+      // Admin users can see all content if showDrafts is true
+      const articles = await storage.getArticles(page, limit, showDrafts, isAdmin ? undefined : userId);
+      
+      res.json(articles);
     } catch (error) {
       console.error("Error fetching articles:", error);
-      // More detailed error logging
-      if (error instanceof Error) {
-        console.error("Error name:", error.name);
-        console.error("Error message:", error.message);
-        console.error("Error stack:", error.stack);
-      }
       res.status(500).json({ message: "Error fetching articles" });
     }
   });
-  
-  // Get all articles (published and drafts) - for admin/editors only
-  app.get("/api/articles/all", requireAuth, async (req, res) => {
+
+  // Get recent articles - simpler version without pagination
+  app.get("/api/articles/recent", async (req: Request, res: Response) => {
     try {
-      const userId = req.session.userId!;
-      const user = await storage.getUser(userId);
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
       
-      if (!user || (user.role !== 'admin' && user.role !== 'editor')) {
-        return res.status(403).json({ message: "Only admins and editors can view all articles" });
-      }
+      // Get recent published articles
+      const articles = await storage.getRecentArticles(limit);
       
-      // Use storage getArticles function without filtering by published status
-      const allArticles = await storage.getAllArticles();
-      
-      // Enhance articles with author information
-      const enhancedArticles = await Promise.all(allArticles.map(async (article) => {
-        // Fetch authors for all articles
-        const authors = await storage.getArticleAuthors(article.id);
-        // Map to a simplified author structure
-        const authorData = authors.map(authorRecord => ({
-          id: authorRecord.userId,
-          username: authorRecord.user.username,
-          profilePicture: authorRecord.user.profilePicture,
-          role: authorRecord.role
-        }));
-        
-        return {
-          ...article,
-          authors: authorData
-        };
-      }));
-      
-      res.json(enhancedArticles);
-    } catch (error) {
-      console.error("Error fetching all articles:", error);
-      res.status(500).json({ message: "Error fetching all articles" });
-    }
-  });
-  
-  // Get all draft articles - requires admin or editor role
-  app.get("/api/articles/drafts", requireAuth, async (req, res) => {
-    try {
-      const userId = req.session.userId!;
-      const user = await storage.getUser(userId);
-      
-      if (!user || (user.role !== 'admin' && user.role !== 'editor')) {
-        return res.status(403).json({ message: "Only admins and editors can view all drafts" });
-      }
-      
-      const drafts = await storage.getArticlesByStatus('draft');
-      
-      // Enhance drafts with author information
-      const enhancedDrafts = await Promise.all(drafts.map(async (draft) => {
-        // Fetch authors for all drafts
-        const authors = await storage.getArticleAuthors(draft.id);
-        // Map to a simplified author structure
-        const authorData = authors.map(authorRecord => ({
-          id: authorRecord.user.id,
-          username: authorRecord.user.username,
-          profilePicture: authorRecord.user.profilePicture,
-          role: authorRecord.role
-        }));
-        
-        return {
-          ...draft,
-          authors: authorData
-        };
-      }));
-      
-      res.json(enhancedDrafts);
-    } catch (error) {
-      console.error("Error fetching draft articles:", error);
-      res.status(500).json({ message: "Error fetching draft articles" });
-    }
-  });
-  
-  // Get current user's draft articles - works for any authenticated user
-  app.get("/api/articles/drafts/me", requireAuth, async (req, res) => {
-    try {
-      const userId = req.session.userId!;
-      
-      // Authors can only see their own drafts
-      const drafts = await storage.getAuthorDrafts(userId);
-      
-      // Enhance drafts with author information
-      const enhancedDrafts = await Promise.all(drafts.map(async (draft) => {
-        // Fetch authors for all drafts
-        const authors = await storage.getArticleAuthors(draft.id);
-        // Map to a simplified author structure
-        const authorData = authors.map(authorRecord => ({
-          id: authorRecord.user.id,
-          username: authorRecord.user.username,
-          profilePicture: authorRecord.user.profilePicture,
-          role: authorRecord.role
-        }));
-        
-        return {
-          ...draft,
-          authors: authorData
-        };
-      }));
-      
-      res.json(enhancedDrafts);
-    } catch (error) {
-      console.error("Error fetching your draft articles:", error);
-      res.status(500).json({ message: "Error fetching your draft articles" });
-    }
-  });
-  
-  app.get("/api/articles/featured", async (req, res) => {
-    try {
-      const limit = parseInt(req.query.limit as string) || 5;
-      const featuredArticles = await storage.getFeaturedArticles(limit);
-      
-      // Enhance collaborative articles with author information
-      const enhancedArticles = await Promise.all(featuredArticles.map(async (article) => {
-        if (article.isCollaborative) {
-          // Fetch authors for collaborative articles
-          const authors = await storage.getArticleAuthors(article.id);
-          // Map to a simplified author structure
-          const authorData = authors.map(authorRecord => ({
-            id: authorRecord.user.id,
-            username: authorRecord.user.username,
-            profilePicture: authorRecord.user.profilePicture,
-            role: authorRecord.role
-          }));
-          
-          return {
-            ...article,
-            authors: authorData
-          };
-        }
-        return article;
-      }));
-      
-      res.json(enhancedArticles);
-    } catch (error) {
-      console.error("Error fetching featured articles:", error);
-      res.status(500).json({ message: "Error fetching featured articles" });
-    }
-  });
-  
-  app.get("/api/articles/category/:category", async (req, res) => {
-    try {
-      const { category } = req.params;
-      const articles = await storage.getArticlesByCategory(category);
       res.json(articles);
     } catch (error) {
-      res.status(500).json({ message: "Error fetching articles by category" });
+      console.error("Error fetching recent articles:", error);
+      res.status(500).json({ message: "Error fetching recent articles" });
     }
   });
-  
-  app.get("/api/articles/tag/:tag", async (req, res) => {
+
+  // Get single article by ID
+  app.get("/api/articles/:id", async (req: Request, res: Response) => {
     try {
-      const { tag } = req.params;
-      const allArticles = await storage.getArticles(100); // Get a reasonably large set
+      const id = parseInt(req.params.id);
       
-      // Filter articles that have the specified tag
-      const filteredArticles = allArticles.filter(article => 
-        article.tags && Array.isArray(article.tags) && article.tags.includes(tag)
-      );
-      
-      res.json(filteredArticles);
-    } catch (error) {
-      res.status(500).json({ message: "Error fetching articles by tag" });
-    }
-  });
-  
-  app.get("/api/articles/search", async (req, res) => {
-    try {
-      const query = req.query.q as string;
-      if (!query) {
-        return res.status(400).json({ message: "Search query required" });
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid article ID" });
       }
       
-      const articles = await storage.searchArticles(query);
-      res.json(articles);
-    } catch (error) {
-      res.status(500).json({ message: "Error searching articles" });
-    }
-  });
-  
-  // Get article by ID (for admin/edit purposes)
-  app.get("/api/articles/:id(\\d+)", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const articleId = parseInt(id);
-      
-      // Direct database check - more reliable
-      const articleExists = await pool.query(
-        `SELECT EXISTS(SELECT 1 FROM articles WHERE id = $1)`,
-        [articleId]
-      );
-      
-      if (!articleExists.rows[0].exists) {
-        console.log(`Article with id ${articleId} not found in database.`);
-        return res.status(404).json({ message: "Article not found" });
-      }
-      
-      const article = await storage.getArticleById(articleId);
+      const article = await storage.getArticle(id);
       
       if (!article) {
         return res.status(404).json({ message: "Article not found" });
       }
       
-      // Always fetch all authors for the article
-      const authors = await storage.getArticleAuthors(article.id);
-      // Map to a simplified author structure
-      const authorData = authors.map(authorRecord => ({
-        id: authorRecord.user.id,
-        username: authorRecord.user.username,
-        profilePicture: authorRecord.user.profilePicture,
-        role: authorRecord.role
-      }));
+      // Check if article is draft and if user has permission to view it
+      if (article.status === 'draft') {
+        const userId = req.session?.userId;
+        const user = userId ? await storage.getUser(userId) : null;
+        
+        // Only authors or admins can view drafts
+        if (!userId || (!user?.isAuthor(article) && user?.role !== 'admin')) {
+          return res.status(403).json({ message: "You don't have permission to view this draft article" });
+        }
+      }
       
-      // Return with authors data
-      res.json({
-        ...article,
-        authors: authorData
-      });
+      res.json(article);
     } catch (error) {
-      console.error("Error fetching article by ID:", error);
+      console.error("Error fetching article:", error);
       res.status(500).json({ message: "Error fetching article" });
     }
   });
 
-  // Get article by slug (for public viewing)
-  app.get("/api/articles/:slug", async (req, res) => {
+  // Get single article by slug
+  app.get("/api/articles/slug/:slug", async (req: Request, res: Response) => {
     try {
       const { slug } = req.params;
+      
+      if (!slug) {
+        return res.status(400).json({ message: "Article slug is required" });
+      }
+      
       const article = await storage.getArticleBySlug(slug);
       
       if (!article) {
         return res.status(404).json({ message: "Article not found" });
       }
       
-      // Check if preview mode is requested and if article is a draft
-      const isPreview = req.query.preview === 'true';
-      const isDraft = article.status === 'draft';
-      
-      // If article is a draft, enforce access control ONLY in certain cases
-      if (isDraft) {
-        // Only require authentication if we're in the editor or preview mode
-        // This is to make our testing easier - normally we'd be more strict
-        const isFromEditor = req.headers['x-source'] === 'editor';
+      // Check if article is draft and if user has permission to view it
+      if (article.status === 'draft') {
+        const userId = req.session?.userId;
+        const user = userId ? await storage.getUser(userId) : null;
         
-        // For direct API access, we'll allow viewing draft articles for testing purposes
-        // In a production environment, we would be more restrictive
-        if (isFromEditor || isPreview) {
-          // Check authentication through session
-          if (!req.session || !req.session.userId) {
-            return res.status(401).json({ message: "Authentication required to access drafts" });
-          }
-          
-          // Check user permissions for viewing drafts
-          const userId = req.session.userId;
-          if (!userId) {
-            return res.status(401).json({ message: "Authentication required to preview drafts" });
-          }
-          
-          const user = await storage.getUser(userId);
-          if (!user) {
-            return res.status(401).json({ message: "User not found" });
-          }
-          
-          // Only admins, editors, or the article's authors can view drafts
-          const isAdmin = user.role === 'admin';
-          const hasEditorRole = user.role === 'editor';
-          const isAuthor = user.role === 'author';
-          
-          // If the user is an author, check if they are one of the article's authors
-          let isArticleAuthor = false;
-          if (isAuthor) {
-            const authors = await storage.getArticleAuthors(article.id);
-            isArticleAuthor = authors.some(author => author.user.id === userId);
-          }
-          
-          // If not authorized to view draft, return 403
-          if (!(isAdmin || hasEditorRole || (isAuthor && isArticleAuthor))) {
-            return res.status(403).json({ 
-              message: "You don't have permission to view this draft article" 
-            });
-          }
+        // Only authors or admins can view drafts
+        if (!userId || (!user?.isAuthor(article) && user?.role !== 'admin')) {
+          return res.status(403).json({ message: "You don't have permission to view this draft article" });
         }
       }
       
-      // Always fetch all authors for the article
-      const authors = await storage.getArticleAuthors(article.id);
-      // Map to a simplified author structure
-      const authorData = authors.map(authorRecord => ({
-        id: authorRecord.user.id,
-        username: authorRecord.user.username,
-        profilePicture: authorRecord.user.profilePicture,
-        role: authorRecord.role
-      }));
-      
-      // Return with authors data
-      res.json({
-        ...article,
-        authors: authorData
-      });
+      res.json(article);
     } catch (error) {
-      console.error("Error fetching article:", error);
+      console.error("Error fetching article by slug:", error);
       res.status(500).json({ message: "Error fetching article" });
     }
   });
-  
-  // Get draft articles (only for authors/editors/admins) - DUPLICATE REMOVED
-  
-  // Special endpoint just for changing article status
-  app.post("/api/articles/:id/status", requireAuth, updateArticleStatus);
 
-  app.post("/api/articles", requireAuthor, async (req, res) => {
+  // Create new article
+  app.post("/api/articles", requireAuth, async (req: Request, res: Response) => {
     try {
-      // Get the current user ID
-      const userId = req.session.userId!;
+      const articleData = req.body;
       
-      // Verify the user exists and has proper permissions
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(401).json({ message: "User not found" });
-      }
-      
-      // Double-check user has author, editor, or admin role
-      if (user.role !== 'author' && user.role !== 'editor' && user.role !== 'admin') {
-        return res.status(403).json({ message: "Author permission required to create articles" });
-      }
-      
-      // Preprocess the request data
-      const requestData = {...req.body};
-      
-      // Handle content field - handle different formats including string HTML from rich text editor
-      if (typeof requestData.content === 'string') {
-        // Convert string HTML to content object
-        requestData.content = { content: requestData.content };
-      }
-      
-      // Map camelCase fields to snake_case for database
-      // The actual DB column is author_id, not primaryAuthorId
-      
-      // Log the processed request data
-      console.log('Processed article request data:', JSON.stringify(requestData, null, 2));
-      
-      // Handle publishedAt separately - convert from ISO string to Date
-      let publishedAt = undefined;
-      if (requestData.publishedAt) {
-        try {
-          publishedAt = new Date(requestData.publishedAt);
-        } catch (e) {
-          console.error("Invalid publishedAt date:", e);
+      // Validate article data
+      try {
+        insertArticleSchema.parse(articleData);
+      } catch (validationError) {
+        if (validationError instanceof ZodError) {
+          return res.status(400).json({
+            message: "Validation error",
+            errors: validationError.errors
+          });
         }
       }
       
-      // Extract authors data from the request if present
-      const { authors } = requestData;
+      // Check if user exists and has permission to create articles
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
       
-      // Create the article with manual validation instead of schema
-      const newArticle = await storage.createArticle({
-        title: requestData.title,
-        slug: requestData.slug,
-        summary: requestData.summary || '',
-        content: requestData.content,
-        publishedAt,
-        // Map to the database field name in the storage implementation
-        // The storage implementation will handle column name conversion (primaryAuthorId → author_id)
-        primaryAuthorId: userId,
-        category: requestData.category,
-        status: requestData.status || 'draft',
-        featuredImage: requestData.featuredImage || '',
-        isBreaking: requestData.isBreaking || false,
-        readTime: requestData.readTime || 5,
-        tags: requestData.tags || [],
-        isCollaborative: requestData.isCollaborative || false,
-        // Pass authors array to the storage method if it exists
-        authors: authors && Array.isArray(authors) ? authors : undefined
-      });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Users can create articles if they're an author, editor, or admin
+      if (user.role !== 'author' && user.role !== 'editor' && user.role !== 'admin') {
+        return res.status(403).json({ message: "You don't have permission to create articles" });
+      }
+      
+      // Ensure the primary author is set to the current user if not specified
+      if (!articleData.primaryAuthorId) {
+        articleData.primaryAuthorId = userId;
+      }
+      
+      // Create the article
+      const newArticle = await storage.createArticle(articleData);
       
       res.status(201).json(newArticle);
-    } catch (error: any) {
-      if (error instanceof ZodError) {
-        console.error("Validation error:", error.issues);
-        console.error("Full request body:", req.body);
-        return res.status(400).json({ 
-          message: "Invalid input", 
-          errors: error.format(),
-          issues: error.issues,
-          fields: Object.keys(req.body),
-        });
-      }
-      console.error("Server error creating article:", error);
-      
-      // Enhanced database error handling
-      if (error.code === '23505') {
-        // Handle all unique constraint violations
-        if (error.constraint === 'articles_slug_unique') {
-          return res.status(400).json({ 
-            message: "slug already exists",
-            error: "An article with this slug already exists. Please choose a different slug.",
-            detail: error.detail,
-            code: "DUPLICATE_SLUG"
-          });
-        } else {
-          return res.status(400).json({
-            message: "Unique constraint violation",
-            error: error.detail || "A duplicate value was found in the database",
-            code: "UNIQUE_CONSTRAINT_VIOLATION"
-          });
-        }
-      }
-      
-      res.status(500).json({ 
-        message: "Error creating article", 
-        error: error.message || "Unknown server error" 
-      });
-    }
-  });
-  
-  // Add explicit PATCH endpoint for autosave functionality
-  app.patch("/api/articles/:id", requireAuth, async (req, res) => {
-    try {
-      const { id } = req.params;
-      const articleId = parseInt(id);
-      const userId = req.session.userId!;
-      
-      // First check if the article exists directly in the database
-      const articleExists = await pool.query(
-        `SELECT EXISTS(SELECT 1 FROM articles WHERE id = $1)`,
-        [articleId]
-      );
-      
-      // If article doesn't exist in the database, return 404
-      if (!articleExists.rows[0].exists) {
-        console.log(`Article with id ${articleId} not found in database.`);
-        return res.status(404).json({ message: "Article not found" });
-      }
-      
-      // Get user data to check role
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(401).json({ message: "User not found" });
-      }
-      
-      // Get article authors to check if user is an author
-      const articleAuthors = await storage.getArticleAuthors(articleId);
-      const isArticleAuthor = articleAuthors.some(author => author.user.id === userId);
-      
-      // Determine if user has permission to edit this article
-      const canEdit = user.role === 'admin' || 
-                     user.role === 'editor' || 
-                     (user.role === 'author' && isArticleAuthor);
-      
-      if (!canEdit) {
-        return res.status(403).json({ 
-          message: "You don't have permission to edit this article" 
-        });
-      }
-      
-      // Create a sanitized update object by only including specific fields
-      // that we know exist in the database
-      const {
-        title, 
-        slug, 
-        summary, 
-        content, 
-        featuredImage, 
-        isBreaking, 
-        readTime, 
-        tags, 
-        category, 
-        status
-      } = req.body;
-      
-      const updateData: any = {};
-      
-      // Only include fields that are defined
-      if (title !== undefined) updateData.title = title || '';
-      if (slug !== undefined) updateData.slug = slug || '';
-      if (summary !== undefined) updateData.summary = summary || '';
-      if (content !== undefined) {
-        // Properly format as JSON for JSONB column
-        try {
-          if (typeof content === 'string') {
-            // Try to parse if it's already a JSON string
-            try {
-              const parsed = JSON.parse(content);
-              updateData.content = parsed;
-            } catch (e) {
-              // If not valid JSON, treat as a string value
-              updateData.content = content || '';
-            }
-          } else if (content === null || content === '') {
-            updateData.content = '{}';
-          } else {
-            // Assume it's already an object
-            updateData.content = content;
-          }
-        } catch (error) {
-          console.error("Error formatting content as JSON:", error);
-          updateData.content = '{}';
-        }
-      }
-      if (featuredImage !== undefined) updateData.featuredImage = featuredImage || '';
-      if (isBreaking !== undefined) updateData.isBreaking = !!isBreaking;
-      if (readTime !== undefined) updateData.readTime = readTime || 1;
-      if (tags !== undefined) {
-        // For Postgres array column, pass the array directly, not as a string
-        updateData.tags = Array.isArray(tags) ? tags : [];
-      }
-      if (category !== undefined) updateData.category = category || '';
-      if (status !== undefined) {
-        updateData.status = status || 'draft';
-        
-        // If status is changing to published and the article is not already published,
-        // make sure to set the published_at date
-        if (status === 'published' && article.status !== 'published') {
-          // Check if user has permission to publish
-          const canPublish = user.role === 'admin' || user.role === 'editor';
-          if (!canPublish) {
-            return res.status(403).json({ 
-              message: "Only editors and admins can publish articles" 
-            });
-          }
-          
-          // Ensure a published article always has a published_at date
-          updateData.publishedAt = new Date();
-          console.log("Setting publishedAt for newly published article:", updateData.publishedAt);
-        }
-      }
-      
-      // Check if the column exists in the database
-      const columnCheckResult = await pool.query(
-        `SELECT column_name 
-         FROM information_schema.columns 
-         WHERE table_name = 'articles' AND column_name = 'last_edited_by'`
-      );
-      
-      // Only add lastEditedBy if the column exists
-      if (columnCheckResult.rows.length > 0) {
-        updateData.lastEditedBy = userId;
-      }
-      
-      try {
-        // Update the article with sanitized data
-        const updatedArticle = await storage.updateArticle(articleId, updateData);
-        
-        // Return proper JSON response with success flag
-        // Even if we can't get the full article due to schema mismatch, the update likely succeeded
-        return res.json({ 
-          success: true, 
-          article: updatedArticle || { 
-            id: articleId,
-            ...updateData
-          } 
-        });
-      } catch (updateError) {
-        console.error("Error in updateArticle method:", updateError);
-        
-        // Try a more direct update approach as fallback
-        try {
-          // Build SET clause for SQL update
-          const updates: string[] = [];
-          const values: any[] = [];
-          let paramIndex = 1;
-          
-          // Add each field that's defined
-          Object.entries(updateData).forEach(([key, value]) => {
-            // Convert camelCase to snake_case for column names
-            const columnName = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-            updates.push(`${columnName} = $${paramIndex++}`);
-            values.push(value);
-          });
-          
-          // Always update updated_at
-          updates.push(`updated_at = $${paramIndex++}`);
-          values.push(new Date());
-          
-          // Add the ID as the last parameter
-          values.push(articleId);
-          
-          // Create and execute the SQL query
-          const sql = `
-            UPDATE articles 
-            SET ${updates.join(', ')} 
-            WHERE id = $${values.length} 
-            RETURNING id, title, slug
-          `;
-          
-          const result = await pool.query(sql, values);
-          
-          if (result.rows.length > 0) {
-            return res.json({ 
-              success: true, 
-              article: {
-                ...result.rows[0],
-                ...updateData
-              }
-            });
-          } else {
-            return res.status(404).json({ message: "Failed to update article" });
-          }
-        } catch (fallbackError) {
-          console.error("Fallback update error:", fallbackError);
-          return res.status(500).json({ 
-            message: "Server error while updating article with fallback method" 
-          });
-        }
-      }
     } catch (error) {
-      console.error("Error updating article:", error);
-      return res.status(500).json({ 
-        message: "Server error while updating article", 
-        error: error instanceof Error ? error.message : String(error)
-      });
+      console.error("Error creating article:", error);
+      res.status(500).json({ message: "Error creating article" });
     }
   });
 
-  // Original PUT endpoint
-  app.put("/api/articles/:id", requireAuth, async (req, res) => {
+  // Update article
+  app.patch("/api/articles/:id", requireAuth, async (req: Request, res: Response) => {
     try {
-      const { id } = req.params;
-      const articleId = parseInt(id);
-      const userId = req.session.userId!;
+      const id = parseInt(req.params.id);
+      const updates = req.body;
       
-      const article = await storage.getArticleById(articleId);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid article ID" });
+      }
+      
+      // Check if article exists
+      const article = await storage.getArticle(id);
+      
       if (!article) {
         return res.status(404).json({ message: "Article not found" });
       }
       
-      // Get user data to check role
+      // Check if user has permission to update this article
+      const userId = req.session.userId;
       const user = await storage.getUser(userId);
+      
       if (!user) {
-        return res.status(401).json({ message: "User not found" });
+        return res.status(404).json({ message: "User not found" });
       }
       
-      // Get article authors to check if user is an author
-      const articleAuthors = await storage.getArticleAuthors(articleId);
-      const isArticleAuthor = articleAuthors.some(author => author.user.id === userId);
+      // Only allow update if user is an author of the article, or an admin
+      const isAuthor = article.authorsIds ? article.authorsIds.includes(userId) : (article.primaryAuthorId === userId);
       
-      // Determine if user has permission to edit this article
-      const canEdit = user.role === 'admin' || 
-                     user.role === 'editor' || 
-                     (user.role === 'author' && isArticleAuthor);
-      
-      if (!canEdit) {
-        return res.status(403).json({ 
-          message: "You don't have permission to edit this article. Only admins, editors, or the article's authors can edit it." 
-        });
+      if (!isAuthor && user.role !== 'admin' && user.role !== 'editor') {
+        return res.status(403).json({ message: "You don't have permission to update this article" });
       }
       
-      // Custom validator for content that accepts both array and object formats
-      const contentValidator = z.union([
-        z.array(z.any()),  // For Google Docs-style editor
-        z.record(z.any()), // For legacy editors
-      ]).optional();
-      
-      // Update schema that excludes publishedAt for validation
-      const updateSchema = z.object({
-        title: z.string().optional(),
-        slug: z.string().optional(),
-        summary: z.string().optional(),
-        content: contentValidator,
-        featuredImage: z.string().optional(),
-        isBreaking: z.boolean().optional(),
-        readTime: z.number().optional(),
-        tags: z.array(z.string()).optional(),
-        category: z.string().optional(),
-        status: z.string().optional(),
-      });
-      
-      // Parse and validate (without publishedAt)
-      const updateData = updateSchema.parse(req.body);
-      
-      // Prepare final update data - we'll add publishedAt after validation
-      const finalUpdateData: { 
-        [key: string]: any; 
-        publishedAt?: Date;
-      } = { ...updateData };
-      
-      console.log("Article update request with status:", updateData.status);
-      console.log("Current article status:", article.status);
-      
-      // Check if trying to publish an article
-      if (updateData.status === 'published' && article.status !== 'published') {
-        console.log("Publishing article that was previously draft");
-        
-        // Only editors and admins can publish
-        const canPublish = user.role === 'admin' || user.role === 'editor';
-        if (!canPublish) {
-          return res.status(403).json({ 
-            message: "Only editors and admins can publish articles. Save as draft instead." 
-          });
-        }
-        
-        // Set publishedAt date when article is being published
-        const publishedAt = new Date();
-        finalUpdateData.publishedAt = publishedAt;
-        
-        // Log the state we're about to save
-        console.log("Publishing article, final data:", finalUpdateData);
-      } 
-      else if (updateData.status === 'draft' && article.status === 'published') {
-        console.log("Unpublishing article that was previously published");
-        
-        // When going from published to draft, we keep the publishedAt date
-        // This ensures we don't lose the original publication date
-        
-        // Log the state we're about to save
-        console.log("Unpublishing article, final data:", finalUpdateData);
-      }
-      else {
-        // Handle publishedAt separately - convert from ISO string to Date
-        let publishedAt = undefined;
-        if (req.body.publishedAt) {
-          try {
-            publishedAt = new Date(req.body.publishedAt);
-          } catch (e) {
-            console.error("Invalid publishedAt date:", e);
-          }
-        }
-        
-        if (publishedAt) {
-          finalUpdateData.publishedAt = publishedAt;
-        }
-        
-        // Log any other status changes or updates
-        console.log("Regular article update, no status change. Final data:", finalUpdateData);
-      }
-      
-      // Extract authors data
-      const { authors } = req.body;
-      
-      // Log the status being sent to storage
-      console.log("Status being sent to updateArticle:", finalUpdateData.status);
-      
-      // If this is a status change, do a direct SQL update to ensure it works
-      if (updateData.status && updateData.status !== article.status) {
-        try {
-          console.log(`Direct status update: ${article.status} → ${updateData.status}`);
-          // Do a direct SQL update for the status field to ensure it works
-          const directSql = `
-            UPDATE articles 
-            SET status = $1, updated_at = $2
-            WHERE id = $3
-          `;
-          await pool.query(directSql, [updateData.status, new Date(), articleId]);
-          
-          // Force refresh our data to include this change
-          finalUpdateData.status = updateData.status;
-          
-          console.log("Direct SQL status update executed");
-        } catch (error) {
-          console.error("Error in direct status update:", error);
-        }
-      }
-      
-      // Update the article in the database with our final data
-      const updatedArticle = await storage.updateArticle(articleId, finalUpdateData);
-      
-      // If this is a collaborative article and there are authors, update the authors
-      // Only editors and admins can manage authors
-      if (updatedArticle && updatedArticle.isCollaborative && authors && Array.isArray(authors) && 
-          (user.role === 'admin' || user.role === 'editor')) {
-        // First remove all existing authors to avoid duplicates
-        // Don't worry about removing the primary author, they'll be added back
-        const existingAuthors = await storage.getArticleAuthors(articleId);
-        for (const author of existingAuthors) {
-          await storage.removeAuthorFromArticle(articleId, author.userId);
-        }
-        
-        // Now add the primary author and all coauthors
-        await storage.addAuthorToArticle(articleId, updatedArticle.primaryAuthorId, "primary");
-        
-        // Add all coauthors
-        for (const author of authors) {
-          if (author.id !== updatedArticle.primaryAuthorId) {
-            await storage.addAuthorToArticle(articleId, author.id, author.role || "coauthor");
-          }
-        }
-      } else if (updatedArticle && updatedArticle.isCollaborative && authors && Array.isArray(authors)) {
-        // If authors are trying to update coauthors, inform them they don't have permission
-        if (user.role === 'author') {
-          console.log("Author attempting to update collaborators - not permitted");
-          // We don't return an error, we just don't update the authors list
-        }
-      }
-      
-      if (!updatedArticle) {
-        return res.status(404).json({ message: "Article not found" });
-      }
-      
-      res.json(updatedArticle);
-    } catch (error) {
-      if (error instanceof ZodError) {
-        console.error("Validation error:", error.issues);
-        console.error("Full request body:", req.body);
-        return res.status(400).json({ 
-          message: "Invalid input", 
-          errors: error.format(),
-          issues: error.issues,
-          fields: Object.keys(req.body), 
-        });
-      }
-      console.error("Server error updating article:", error);
-      
-      // Enhanced database error handling
-      if (error.code === '23505') {
-        // Handle all unique constraint violations
-        if (error.constraint === 'articles_slug_unique') {
-          return res.status(400).json({ 
-            message: "slug already exists",
-            error: "An article with this slug already exists. Please choose a different slug.",
-            detail: error.detail,
-            code: "DUPLICATE_SLUG"
-          });
-        } else {
-          return res.status(400).json({
-            message: "Unique constraint violation",
-            error: error.detail || "A duplicate value was found in the database",
-            code: "UNIQUE_CONSTRAINT_VIOLATION"
-          });
-        }
-      }
-      
-      res.status(500).json({ 
-        message: "Error updating article", 
-        error: error.message || "Unknown server error" 
-      });
-    }
-  });
-  
-  // Dedicated endpoint for updating article status
-  app.patch("/api/articles/:id/status", requireAuth, async (req, res) => {
-    try {
-      const articleId = parseInt(req.params.id);
-      const userId = req.session.userId!;
-      const { status } = req.body;
-      
-      if (!status) {
-        return res.status(400).json({ message: "Status is required" });
-      }
-      
-      // Ensure published articles always have a published_at date
-      if (status === 'published') {
-        // Update both status and published_at
-        const updateResult = await pool.query(
-          `UPDATE articles 
-           SET status = $1, 
-               published_at = COALESCE(published_at, NOW()) 
-           WHERE id = $2 
-           RETURNING *`,
-          [status, articleId]
-        );
-        
-        if (updateResult.rowCount > 0) {
-          return res.json({ 
-            success: true, 
-            article: updateResult.rows[0],
-            message: "Article published successfully"
-          });
-        }
-      }
-      
-      // Validate status value
-      const validStatuses = ['draft', 'needs_edits', 'good_to_publish', 'do_not_publish', 'published'];
-      if (!validStatuses.includes(status)) {
-        return res.status(400).json({ message: "Invalid status value" });
-      }
-      
-      const user = await storage.getUser(userId);
-      
-      // Only admin and editor roles can change article status
-      if (user!.role !== 'admin' && user!.role !== 'editor') {
-        return res.status(403).json({ message: "Only administrators and editors can change article status" });
-      }
-      
-      // Verify article exists
-      const article = await storage.getArticleById(articleId);
-      if (!article) {
-        return res.status(404).json({ message: "Article not found" });
-      }
-      
-      // Check if published status is changing
-      const isPublishing = status === 'published' && article.status !== 'published';
-      
-      // Prepare update data
-      const updateData: Partial<typeof articles.$inferSelect> = { status };
-      
-      // Set publishedAt timestamp when publishing
-      if (isPublishing) {
-        updateData.publishedAt = new Date();
+      // If status is changing from draft to published, set publishedAt
+      if (article.status === 'draft' && updates.status === 'published' && !updates.publishedAt) {
+        updates.publishedAt = new Date();
       }
       
       // Update the article
-      const updatedArticle = await storage.updateArticle(articleId, updateData);
+      const updatedArticle = await storage.updateArticle(id, updates);
       
       res.json(updatedArticle);
     } catch (error) {
-      console.error("Error updating article status:", error);
-      res.status(500).json({ message: "Error updating article status" });
+      console.error("Error updating article:", error);
+      res.status(500).json({ message: "Error updating article" });
     }
   });
-  
-  app.delete("/api/articles/:id", requireAuth, async (req, res) => {
+
+  // Delete article
+  app.delete("/api/articles/:id", requireAuth, async (req: Request, res: Response) => {
     try {
-      const userId = req.session.userId!;
+      const id = parseInt(req.params.id);
       
-      // Get the user to check their role
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(401).json({ message: "User not found" });
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid article ID" });
       }
       
-      const { id } = req.params;
-      const articleId = parseInt(id);
+      // Check if article exists
+      const article = await storage.getArticle(id);
       
-      const article = await storage.getArticleById(articleId);
       if (!article) {
         return res.status(404).json({ message: "Article not found" });
       }
       
       // Check if user has permission to delete this article
-      const isAdmin = user.role === 'admin';
-      const hasEditorRole = user.role === 'editor';
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
       
-      // If the user is an author, check if they are the article's author
-      let isArticleAuthor = false;
-      if (user.role === 'author') {
-        const authors = await storage.getArticleAuthors(article.id);
-        isArticleAuthor = authors.some(author => author.user.id === userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
       }
       
-      // Determine if user has permission to delete
-      // Admins can delete any article
-      // Editors can delete any article
-      // Authors can only delete their own drafts, not published articles
-      const canDelete = isAdmin || 
-                       hasEditorRole || 
-                       (user.role === 'author' && isArticleAuthor && article.status === 'draft');
-      
-      if (!canDelete) {
-        return res.status(403).json({ 
-          message: "You don't have permission to delete this article. Only admins, editors, or the article's authors (for drafts only) can delete it." 
-        });
+      // Only allow delete if user is the primary author of the article, or an admin
+      if (article.primaryAuthorId !== userId && user.role !== 'admin') {
+        return res.status(403).json({ message: "You don't have permission to delete this article" });
       }
       
-      await storage.deleteArticle(articleId);
+      // Delete the article
+      await storage.deleteArticle(id);
+      
       res.json({ message: "Article deleted successfully" });
     } catch (error) {
+      console.error("Error deleting article:", error);
       res.status(500).json({ message: "Error deleting article" });
     }
   });
-  
-  // Comment Routes
-  app.get("/api/articles/:articleId/comments", async (req, res) => {
+
+  // Update article status (special endpoint that uses direct SQL for performance)
+  app.patch("/api/articles/:id/status", requireAuth, updateArticleStatus);
+
+  // Get article comments
+  app.get("/api/articles/:id/comments", async (req: Request, res: Response) => {
     try {
-      const { articleId } = req.params;
-      const comments = await storage.getCommentsByArticle(parseInt(articleId));
+      const articleId = parseInt(req.params.id);
       
-      // For each comment, get replies
-      const commentsWithReplies = await Promise.all(
-        comments.map(async (comment) => {
-          const replies = await storage.getCommentReplies(comment.id);
-          return { ...comment, replies };
-        })
-      );
+      if (isNaN(articleId)) {
+        return res.status(400).json({ message: "Invalid article ID" });
+      }
       
-      res.json(commentsWithReplies);
+      const comments = await storage.getCommentsByArticleId(articleId);
+      
+      res.json(comments);
     } catch (error) {
+      console.error("Error fetching comments:", error);
       res.status(500).json({ message: "Error fetching comments" });
     }
   });
-  
-  app.post("/api/comments", requireAuth, async (req, res) => {
+
+  // Add comment to article
+  app.post("/api/articles/:id/comments", requireAuth, async (req: Request, res: Response) => {
     try {
-      const commentData = insertCommentSchema.parse(req.body);
+      const articleId = parseInt(req.params.id);
+      const { content } = req.body;
+      
+      if (isNaN(articleId)) {
+        return res.status(400).json({ message: "Invalid article ID" });
+      }
+      
+      if (!content) {
+        return res.status(400).json({ message: "Comment content is required" });
+      }
       
       // Check if article exists
-      const article = await storage.getArticleById(commentData.articleId);
+      const article = await storage.getArticle(articleId);
+      
       if (!article) {
         return res.status(404).json({ message: "Article not found" });
       }
       
-      // If it's a reply, check if parent comment exists
-      if (commentData.parentId) {
-        const parentComment = await storage.getCommentById(commentData.parentId);
-        if (!parentComment) {
-          return res.status(404).json({ message: "Parent comment not found" });
+      // Create comment data
+      const commentData = {
+        articleId,
+        userId: req.session.userId,
+        content,
+        createdAt: new Date()
+      };
+      
+      // Validate comment data
+      try {
+        insertCommentSchema.parse(commentData);
+      } catch (validationError) {
+        if (validationError instanceof ZodError) {
+          return res.status(400).json({
+            message: "Validation error",
+            errors: validationError.errors
+          });
         }
       }
       
-      const newComment = await storage.createComment({
-        ...commentData,
-        userId: req.session.userId!, // Using userId instead of authorId
-      });
+      // Create the comment
+      const newComment = await storage.createComment(commentData);
       
       res.status(201).json(newComment);
     } catch (error) {
-      if (error instanceof ZodError) {
-        return res.status(400).json({ message: "Invalid input", errors: error.format() });
-      }
+      console.error("Error creating comment:", error);
       res.status(500).json({ message: "Error creating comment" });
     }
   });
-  
-  app.put("/api/comments/:id", requireAuth, async (req, res) => {
+
+  // Delete comment
+  app.delete("/api/comments/:id", requireAuth, async (req: Request, res: Response) => {
     try {
-      const { id } = req.params;
-      const commentId = parseInt(id);
+      const id = parseInt(req.params.id);
       
-      const comment = await storage.getCommentById(commentId);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid comment ID" });
+      }
+      
+      // Check if comment exists
+      const comment = await storage.getComment(id);
+      
       if (!comment) {
         return res.status(404).json({ message: "Comment not found" });
       }
       
-      // Check if user is the author or admin
-      if (comment.authorId !== req.session.userId && !req.session.isAdmin) {
-        return res.status(403).json({ message: "Not authorized to update this comment" });
+      // Check if user has permission to delete this comment
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
       }
       
-      const { content } = req.body;
-      if (!content) {
-        return res.status(400).json({ message: "Content is required" });
+      // Only allow delete if user is the author of the comment, or an admin
+      if (comment.userId !== userId && user.role !== 'admin') {
+        return res.status(403).json({ message: "You don't have permission to delete this comment" });
       }
       
-      const updatedComment = await storage.updateComment(commentId, content);
-      res.json(updatedComment);
-    } catch (error) {
-      res.status(500).json({ message: "Error updating comment" });
-    }
-  });
-  
-  app.delete("/api/comments/:id", requireAuth, async (req, res) => {
-    try {
-      const { id } = req.params;
-      const commentId = parseInt(id);
+      // Delete the comment
+      await storage.deleteComment(id);
       
-      const comment = await storage.getCommentById(commentId);
-      if (!comment) {
-        return res.status(404).json({ message: "Comment not found" });
-      }
-      
-      // Check if user is the author or admin
-      if (comment.authorId !== req.session.userId && !req.session.isAdmin) {
-        return res.status(403).json({ message: "Not authorized to delete this comment" });
-      }
-      
-      await storage.deleteComment(commentId);
       res.json({ message: "Comment deleted successfully" });
     } catch (error) {
+      console.error("Error deleting comment:", error);
       res.status(500).json({ message: "Error deleting comment" });
     }
   });
-  
-  // Vote Routes
-  app.post("/api/comments/:commentId/vote", requireAuth, async (req, res) => {
+
+  // ----------------------------------------------------
+  // Users API
+  // ----------------------------------------------------
+  // Get users (admin only)
+  app.get("/api/users", requireAdmin, async (req: Request, res: Response) => {
     try {
-      const { commentId } = req.params;
-      const { voteType } = req.body;
+      const page = req.query.page ? parseInt(req.query.page as string) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
       
-      if (voteType !== "up" && voteType !== "down") {
-        return res.status(400).json({ message: "Vote type must be 'up' or 'down'" });
-      }
+      const users = await storage.getUsers(page, limit);
       
-      const comment = await storage.getCommentById(parseInt(commentId));
-      if (!comment) {
-        return res.status(404).json({ message: "Comment not found" });
-      }
-      
-      await storage.addVote(req.session.userId!, parseInt(commentId), voteType);
-      res.json({ message: "Vote added successfully" });
+      res.json(users);
     } catch (error) {
-      res.status(500).json({ message: "Error adding vote" });
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Error fetching users" });
+    }
+  });
+
+  // Get user by ID
+  app.get("/api/users/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const user = await storage.getUser(id);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Error fetching user" });
     }
   });
   
-  app.delete("/api/comments/:commentId/vote", requireAuth, async (req, res) => {
+  // Get user by username
+  app.get("/api/users/username/:username", async (req: Request, res: Response) => {
     try {
-      const { commentId } = req.params;
+      const { username } = req.params;
       
-      const comment = await storage.getCommentById(parseInt(commentId));
-      if (!comment) {
-        return res.status(404).json({ message: "Comment not found" });
+      if (!username) {
+        return res.status(400).json({ message: "Username is required" });
       }
       
-      await storage.removeVote(req.session.userId!, parseInt(commentId));
-      res.json({ message: "Vote removed successfully" });
-    } catch (error) {
-      res.status(500).json({ message: "Error removing vote" });
-    }
-  });
-  
-  app.get("/api/comments/:commentId/vote", requireAuth, async (req, res) => {
-    try {
-      const { commentId } = req.params;
+      const user = await storage.getUserByUsername(username.toLowerCase());
       
-      const vote = await storage.getVote(req.session.userId!, parseInt(commentId));
-      res.json(vote || { voteType: null });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json(user);
     } catch (error) {
-      res.status(500).json({ message: "Error getting vote" });
+      console.error("Error fetching user by username:", error);
+      res.status(500).json({ message: "Error fetching user" });
     }
   });
-  
-  // Astronomy Photo Routes
-  app.get("/api/astronomy-photos", async (req, res) => {
+
+  // Update user
+  app.patch("/api/users/:id", requireAuth, async (req: Request, res: Response) => {
     try {
-      const photos = await storage.getAstronomyPhotos();
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      // Check if user exists
+      const user = await storage.getUser(id);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Check if user has permission to update this user
+      const userId = req.session.userId;
+      const currentUser = await storage.getUser(userId);
+      
+      if (!currentUser) {
+        return res.status(404).json({ message: "Current user not found" });
+      }
+      
+      // Only allow update if user is updating themselves, or is an admin
+      if (id !== userId && currentUser.role !== 'admin') {
+        return res.status(403).json({ message: "You don't have permission to update this user" });
+      }
+      
+      // Prevent non-admins from changing their role
+      if (updates.role && id === userId && currentUser.role !== 'admin') {
+        delete updates.role;
+      }
+      
+      // Update the user
+      const updatedUser = await storage.updateUser(id, updates);
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "Error updating user" });
+    }
+  });
+
+  // Change password
+  app.patch("/api/users/:id/password", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { currentPassword, newPassword } = req.body;
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: "Current password and new password are required" });
+      }
+      
+      // Check if user exists
+      const user = await storage.getUser(id);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Check if user has permission to change this password
+      const userId = req.session.userId;
+      const currentUser = await storage.getUser(userId);
+      
+      if (!currentUser) {
+        return res.status(404).json({ message: "Current user not found" });
+      }
+      
+      // Only allow password change if user is changing their own password, or is an admin
+      if (id !== userId && currentUser.role !== 'admin') {
+        return res.status(403).json({ message: "You don't have permission to change this user's password" });
+      }
+      
+      // Verify current password (skip for admins changing another user's password)
+      if (id === userId) {
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        
+        if (!isMatch) {
+          return res.status(400).json({ message: "Current password is incorrect" });
+        }
+      }
+      
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      
+      // Update the password
+      await storage.updateUser(id, { password: hashedPassword });
+      
+      res.json({ message: "Password updated successfully" });
+    } catch (error) {
+      console.error("Error changing password:", error);
+      res.status(500).json({ message: "Error changing password" });
+    }
+  });
+
+  // Delete user (admin only)
+  app.delete("/api/users/:id", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      // Check if user exists
+      const user = await storage.getUser(id);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Prevent deleting yourself
+      if (id === req.session.userId) {
+        return res.status(400).json({ message: "You cannot delete your own account" });
+      }
+      
+      // Delete the user
+      await storage.deleteUser(id);
+      
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Error deleting user" });
+    }
+  });
+
+  // Get articles by user
+  app.get("/api/users/:id/articles", async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const page = req.query.page ? parseInt(req.query.page as string) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      const showDrafts = req.query.showDrafts === 'true';
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      // Check if user exists
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Check if current user has permission to view drafts
+      const currentUserId = req.session?.userId;
+      let canViewDrafts = false;
+      
+      if (currentUserId) {
+        // Users can view their own drafts, and admins can view all drafts
+        const currentUser = await storage.getUser(currentUserId);
+        canViewDrafts = currentUserId === userId || (currentUser?.role === 'admin');
+      }
+      
+      // Get the articles (only show drafts if allowed)
+      const articles = await storage.getArticlesByUser(
+        userId, 
+        page, 
+        limit, 
+        showDrafts && canViewDrafts
+      );
+      
+      res.json(articles);
+    } catch (error) {
+      console.error("Error fetching user articles:", error);
+      res.status(500).json({ message: "Error fetching user articles" });
+    }
+  });
+
+  // ----------------------------------------------------
+  // Astronomy Photos API
+  // ----------------------------------------------------
+  app.get("/api/astronomy-photos", async (req: Request, res: Response) => {
+    try {
+      const page = req.query.page ? parseInt(req.query.page as string) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      
+      const photos = await storage.getAstronomyPhotos(page, limit);
+      
       res.json(photos);
     } catch (error) {
+      console.error("Error fetching astronomy photos:", error);
       res.status(500).json({ message: "Error fetching astronomy photos" });
     }
   });
-  
-  app.post("/api/astronomy-photos", requireAuth, upload.single('image'), async (req, res) => {
+
+  app.get("/api/astronomy-photos/:id", async (req: Request, res: Response) => {
     try {
-      if (!req.file) {
-        return res.status(400).json({ message: "Image file is required" });
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid photo ID" });
       }
       
-      // Validate the other fields
-      const photoSchema = z.object({
-        title: z.string(),
-        description: z.string().optional(),
-        location: z.string().optional(),
-        equipmentUsed: z.string().optional(),
-      });
-      
-      const photoData = photoSchema.parse(req.body);
-      
-      // Generate filename and save the image
-      const fileExt = path.extname(req.file.originalname);
-      const fileName = `${uuidv4()}${fileExt}`;
-      const filePath = `/uploads/astronomy/${fileName}`;
-      const fullPath = path.join(process.cwd(), 'public', filePath);
-      
-      // Ensure directory exists
-      await fs.promises.mkdir(path.dirname(fullPath), { recursive: true });
-      
-      // Save file
-      await fs.promises.writeFile(fullPath, req.file.buffer);
-      
-      // Create record in database
-      const photo = await storage.createAstronomyPhoto({
-        title: photoData.title,
-        description: photoData.description || '',
-        imageUrl: filePath,
-        userId: req.session.userId!,
-        location: photoData.location,
-        equipmentUsed: photoData.equipmentUsed,
-      });
-      
-      res.status(201).json(photo);
-    } catch (error) {
-      if (error instanceof ZodError) {
-        return res.status(400).json({ message: "Invalid input", errors: error.format() });
-      }
-      res.status(500).json({ message: "Error creating astronomy photo" });
-    }
-  });
-  
-  app.post("/api/astronomy-photos/:id/approve", requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      const photo = await storage.approveAstronomyPhoto(parseInt(id));
+      const photo = await storage.getAstronomyPhoto(id);
       
       if (!photo) {
         return res.status(404).json({ message: "Photo not found" });
@@ -2200,918 +1282,591 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(photo);
     } catch (error) {
-      res.status(500).json({ message: "Error approving photo" });
+      console.error("Error fetching astronomy photo:", error);
+      res.status(500).json({ message: "Error fetching astronomy photo" });
     }
   });
-  
-  // Job Listing Routes
-  app.get("/api/job-listings", async (req, res) => {
+
+  app.post("/api/astronomy-photos", requireAuth, async (req: Request, res: Response) => {
     try {
-      const listings = await storage.getJobListings();
-      res.json(listings);
+      const photoData = req.body;
+      
+      // Validate photo data
+      try {
+        insertAstronomyPhotoSchema.parse(photoData);
+      } catch (validationError) {
+        if (validationError instanceof ZodError) {
+          return res.status(400).json({
+            message: "Validation error",
+            errors: validationError.errors
+          });
+        }
+      }
+      
+      // Set user ID as submitter
+      photoData.submitterId = req.session.userId;
+      
+      // Create the photo
+      const newPhoto = await storage.createAstronomyPhoto(photoData);
+      
+      res.status(201).json(newPhoto);
     } catch (error) {
+      console.error("Error creating astronomy photo:", error);
+      res.status(500).json({ message: "Error creating astronomy photo" });
+    }
+  });
+
+  app.patch("/api/astronomy-photos/:id", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid photo ID" });
+      }
+      
+      // Check if photo exists
+      const photo = await storage.getAstronomyPhoto(id);
+      
+      if (!photo) {
+        return res.status(404).json({ message: "Photo not found" });
+      }
+      
+      // Update the photo
+      const updatedPhoto = await storage.updateAstronomyPhoto(id, updates);
+      
+      res.json(updatedPhoto);
+    } catch (error) {
+      console.error("Error updating astronomy photo:", error);
+      res.status(500).json({ message: "Error updating astronomy photo" });
+    }
+  });
+
+  app.delete("/api/astronomy-photos/:id", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid photo ID" });
+      }
+      
+      // Check if photo exists
+      const photo = await storage.getAstronomyPhoto(id);
+      
+      if (!photo) {
+        return res.status(404).json({ message: "Photo not found" });
+      }
+      
+      // Delete the photo
+      await storage.deleteAstronomyPhoto(id);
+      
+      res.json({ message: "Astronomy photo deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting astronomy photo:", error);
+      res.status(500).json({ message: "Error deleting astronomy photo" });
+    }
+  });
+
+  // ----------------------------------------------------
+  // Job Listings API
+  // ----------------------------------------------------
+  app.get("/api/job-listings", async (req: Request, res: Response) => {
+    try {
+      const page = req.query.page ? parseInt(req.query.page as string) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      
+      const jobs = await storage.getJobListings(page, limit);
+      
+      res.json(jobs);
+    } catch (error) {
+      console.error("Error fetching job listings:", error);
       res.status(500).json({ message: "Error fetching job listings" });
     }
   });
-  
-  app.post("/api/job-listings", requireAuth, async (req, res) => {
+
+  app.get("/api/job-listings/:id", async (req: Request, res: Response) => {
     try {
-      const listingData = insertJobListingSchema.parse(req.body);
+      const id = parseInt(req.params.id);
       
-      const listing = await storage.createJobListing({
-        ...listingData,
-        userId: req.session.userId!,
-      });
-      
-      res.status(201).json(listing);
-    } catch (error) {
-      if (error instanceof ZodError) {
-        return res.status(400).json({ message: "Invalid input", errors: error.format() });
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid job ID" });
       }
-      res.status(500).json({ message: "Error creating job listing" });
-    }
-  });
-  
-  app.post("/api/job-listings/:id/approve", requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      const listing = await storage.approveJobListing(parseInt(id));
       
-      if (!listing) {
+      const job = await storage.getJobListing(id);
+      
+      if (!job) {
         return res.status(404).json({ message: "Job listing not found" });
       }
       
-      res.json(listing);
+      res.json(job);
     } catch (error) {
-      res.status(500).json({ message: "Error approving job listing" });
-    }
-  });
-  
-  // Advertisement Routes
-  app.get("/api/advertisements", async (req, res) => {
-    try {
-      const placement = req.query.placement as string;
-      const ads = await storage.getAdvertisements(placement);
-      res.json(ads);
-    } catch (error) {
-      res.status(500).json({ message: "Error fetching advertisements" });
-    }
-  });
-  
-  app.get("/api/advertisements/:placement", async (req, res) => {
-    try {
-      const { placement } = req.params;
-      console.log(`Fetching advertisements for placement: ${placement}`);
-      
-      // Get only approved ads with proper date filtering
-      // Set includeNotApproved to false to only get approved ads
-      const adsForPlacement = await storage.getAdvertisements(placement, false);
-      
-      // Double check we don't have any unapproved ads in the result
-      const approvedAds = adsForPlacement.filter(ad => ad.isApproved === true);
-      console.log(`Found ${adsForPlacement.length} ads for placement ${placement}, of which ${approvedAds.length} are actually approved`);
-      
-      // If multiple approved ads exist for this placement, randomly select one
-      if (approvedAds.length > 0) {
-        const randomIndex = Math.floor(Math.random() * approvedAds.length);
-        res.json(approvedAds[randomIndex]);
-      } else {
-        // This is where we fall through when no approved ads exist
-        console.log(`No approved ads found for placement ${placement}, checking if any exist regardless of approval`);
-        // Check if there are any ads at all for debugging
-        const allAdsQuery = await db
-          .select()
-          .from(advertisements)
-          .where(eq(advertisements.placement, placement));
-        
-        console.log(`Found ${allAdsQuery.length} total ads (including unapproved) for placement ${placement}`);
-        if (allAdsQuery.length > 0) {
-          console.log(`Unapproved ad example: ${JSON.stringify({
-            id: allAdsQuery[0].id,
-            title: allAdsQuery[0].title,
-            isApproved: allAdsQuery[0].isApproved,
-            placement: allAdsQuery[0].placement,
-            startDate: allAdsQuery[0].startDate,
-            endDate: allAdsQuery[0].endDate
-          })}`);
-        }
-        
-        res.json(null);
-      }
-    } catch (error) {
-      console.error("Error fetching advertisement by placement:", error);
-      res.status(500).json({ message: "Error fetching advertisement" });
+      console.error("Error fetching job listing:", error);
+      res.status(500).json({ message: "Error fetching job listing" });
     }
   });
 
-  app.post("/api/advertisements/:id/impression", async (req, res) => {
+  app.post("/api/job-listings", requireAuth, async (req: Request, res: Response) => {
     try {
-      const { id } = req.params;
-      await storage.incrementAdImpression(parseInt(id));
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error recording impression:", error);
-      res.status(500).json({ message: "Error recording impression" });
-    }
-  });
-
-  app.post("/api/advertisements/:id/click", async (req, res) => {
-    try {
-      const { id } = req.params;
-      await storage.incrementAdClick(parseInt(id));
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error recording click:", error);
-      res.status(500).json({ message: "Error recording click" });
-    }
-  });
-  
-  // File upload advertisement route
-  app.post("/api/advertisements/upload", requireAuth, upload.single('image'), async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ message: "Image file is required" });
-      }
+      const jobData = req.body;
       
-      // Validate the other fields
-      const adSchema = z.object({
-        title: z.string(),
-        linkUrl: z.string().url(),
-        placement: z.string(),
-        startDate: z.string().transform(str => new Date(str)),
-        endDate: z.string().transform(str => new Date(str)),
-      });
-      
-      const adData = adSchema.parse(req.body);
-      
-      // Generate filename and save the image
-      const fileExt = path.extname(req.file.originalname);
-      const fileName = `${uuidv4()}${fileExt}`;
-      const filePath = `/uploads/ads/${fileName}`;
-      const fullPath = path.join(process.cwd(), 'public', filePath);
-      
-      // Ensure directory exists
-      await fs.promises.mkdir(path.dirname(fullPath), { recursive: true });
-      
-      // Save file
-      await fs.promises.writeFile(fullPath, req.file.buffer);
-      
-      // Create record in database
-      const ad = await storage.createAdvertisement({
-        title: adData.title,
-        imageUrl: filePath,
-        linkUrl: adData.linkUrl,
-        placement: adData.placement,
-        startDate: adData.startDate,
-        endDate: adData.endDate,
-        userId: req.session.userId!,
-      });
-      
-      res.status(201).json(ad);
-    } catch (error) {
-      if (error instanceof ZodError) {
-        return res.status(400).json({ message: "Invalid input", errors: error.format() });
-      }
-      res.status(500).json({ message: "Error creating advertisement" });
-    }
-  });
-  
-  // JSON API advertisement route with optional imageUrl
-  app.post("/api/advertisements", requireAuth, async (req, res) => {
-    try {
-      // Validate request
-      const { title, imageUrl, linkUrl, placement, startDate, endDate, userId } = req.body;
-      
-      if (!title || !linkUrl || !placement || !startDate || !endDate) {
-        return res.status(400).json({ message: "Missing required fields" });
-      }
-      
-      // Calculate price based on placement and duration
-      let price = 0;
-      const durationDays = Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24));
-      
-      switch (placement) {
-        case 'homepage':
-          price = 2000 * durationDays; // $20/day
-          break;
-        case 'sidebar':
-          price = 1000 * durationDays; // $10/day
-          break;
-        case 'article':
-          price = 1500 * durationDays; // $15/day
-          break;
-        case 'newsletter':
-          price = 3000 * durationDays; // $30/day
-          break;
-        default:
-          price = 1000 * durationDays; // $10/day default
-      }
-      
-      // Create the advertisement with status fields
-      const adData = {
-        title,
-        imageUrl,
-        linkUrl,
-        placement,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-        userId: userId || req.session.userId,
-        price,
-      };
-      
-      const ad = await storage.createAdvertisementWithStatus({
-        ...adData,
-        isApproved: false,
-        status: 'pending',
-        paymentStatus: 'pending',
-      });
-      
-      res.status(201).json(ad);
-    } catch (error) {
-      console.error("Error creating advertisement:", error);
-      res.status(500).json({ message: "Error creating advertisement" });
-    }
-  });
-  
-  app.post("/api/advertisements/:id/approve", requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      const ad = await storage.approveAdvertisement(parseInt(id));
-      
-      if (!ad) {
-        return res.status(404).json({ message: "Advertisement not found" });
-      }
-      
-      res.json(ad);
-    } catch (error) {
-      res.status(500).json({ message: "Error approving advertisement" });
-    }
-  });
-  
-  // Emergency Banner Routes
-  app.get("/api/emergency-banner", async (req, res) => {
-    try {
-      const banner = await storage.getActiveBanner();
-      res.json(banner || null);
-    } catch (error) {
-      res.status(500).json({ message: "Error fetching emergency banner" });
-    }
-  });
-  
-  app.post("/api/emergency-banner", requireAdmin, async (req, res) => {
-    try {
-      const { message, type, expiresAt } = req.body;
-      
-      if (!message) {
-        return res.status(400).json({ message: "Banner message is required" });
-      }
-      
-      const banner = await storage.createBanner(
-        message,
-        type || "info",
-        req.session.userId!,
-        expiresAt ? new Date(expiresAt) : undefined
-      );
-      
-      res.status(201).json(banner);
-    } catch (error) {
-      res.status(500).json({ message: "Error creating emergency banner" });
-    }
-  });
-  
-  app.post("/api/emergency-banner/:id/deactivate", requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      await storage.deactivateBanner(parseInt(id));
-      res.json({ message: "Banner deactivated successfully" });
-    } catch (error) {
-      res.status(500).json({ message: "Error deactivating banner" });
-    }
-  });
-  
-  // Site Settings Routes
-  app.get("/api/site-settings", async (req, res) => {
-    try {
-      const settings = await storage.getSiteSettings();
-      
-      if (!settings) {
-        // Create default settings if not exists (only for first admin user)
-        if (req.session.userId && req.session.isAdmin) {
-          const newSettings = await storage.createDefaultSiteSettings(req.session.userId);
-          return res.json(newSettings);
-        }
-        return res.status(404).json({ message: "Site settings not found" });
-      }
-      
-      // Remove sensitive data for non-admin users
-      if (!req.session.isAdmin) {
-        const publicSettings = {
-          id: settings.id,
-          siteName: settings.siteName,
-          siteTagline: settings.siteTagline,
-          siteDescription: settings.siteDescription,
-          siteKeywords: settings.siteKeywords,
-          logoUrl: settings.logoUrl,
-          faviconUrl: settings.faviconUrl,
-          primaryColor: settings.primaryColor,
-          secondaryColor: settings.secondaryColor,
-          contactEmail: settings.contactEmail,
-          allowComments: settings.allowComments,
-          allowUserRegistration: settings.allowUserRegistration,
-          maintenanceMode: settings.maintenanceMode,
-          maintenanceMessage: settings.maintenanceMessage,
-          maintenanceDetails: settings.maintenanceDetails,
-          maintenanceEndTime: settings.maintenanceEndTime,
-        };
-        return res.json(publicSettings);
-      }
-      
-      return res.json(settings);
-    } catch (error) {
-      console.error("Error fetching site settings:", error);
-      res.status(500).json({ message: "Failed to fetch site settings" });
-    }
-  });
-  
-  app.patch("/api/site-settings/:id", requireAdmin, async (req, res) => {
-    try {
-      const settingsId = parseInt(req.params.id);
-      const updateData = req.body;
-      
-      console.log("Received update request for site settings ID:", settingsId);
-      console.log("Update data:", updateData);
-      
-      // Preprocess maintenance end time to handle empty strings
-      if (updateData.maintenanceEndTime === '') {
-        updateData.maintenanceEndTime = null;
-      }
-      
-      if (!settingsId || isNaN(settingsId)) {
-        console.error("Invalid settings ID:", req.params.id);
-        return res.status(400).json({ message: "Invalid settings ID" });
-      }
-      
-      // Validate the update data
+      // Validate job data
       try {
-        // First try to use the schema
-        const result = updateSiteSettingsSchema.safeParse(updateData);
-        if (!result.success) {
-          console.error("Schema validation failed:", result.error.format());
-          return res.status(400).json({ 
-            message: "Invalid settings data", 
-            errors: result.error.format() 
+        insertJobListingSchema.parse(jobData);
+      } catch (validationError) {
+        if (validationError instanceof ZodError) {
+          return res.status(400).json({
+            message: "Validation error",
+            errors: validationError.errors
           });
         }
-        console.log("Data validation passed");
-      } catch (validationError) {
-        console.error("Schema validation error:", validationError);
-        return res.status(400).json({ message: "Error validating data" });
       }
       
-      console.log("User ID from session:", req.session.userId);
+      // Set user ID as poster
+      jobData.posterId = req.session.userId;
       
-      try {
-        const updatedSettings = await storage.updateSiteSettings(
-          settingsId, 
-          updateData, 
-          req.session.userId
-        );
-        
-        console.log("Update result:", updatedSettings);
-        
-        if (!updatedSettings) {
-          console.error("Settings not found after update attempt");
-          return res.status(404).json({ message: "Settings not found" });
-        }
-        
-        res.json(updatedSettings);
-      } catch (storageError) {
-        console.error("Storage error when updating settings:", storageError);
-        return res.status(500).json({ message: "Database error updating settings" });
-      }
+      // Create the job listing
+      const newJob = await storage.createJobListing(jobData);
+      
+      res.status(201).json(newJob);
     } catch (error) {
-      console.error("General error updating site settings:", error);
-      res.status(500).json({ message: "Failed to update site settings", error: String(error) });
+      console.error("Error creating job listing:", error);
+      res.status(500).json({ message: "Error creating job listing" });
     }
   });
-  
-  // Category Routes
-  app.get("/api/categories", async (req, res) => {
+
+  app.patch("/api/job-listings/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid job ID" });
+      }
+      
+      // Check if job exists
+      const job = await storage.getJobListing(id);
+      
+      if (!job) {
+        return res.status(404).json({ message: "Job listing not found" });
+      }
+      
+      // Check if user has permission to update this job
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      // Only allow update if user is the poster of the job, or an admin
+      if (job.posterId !== userId && user?.role !== 'admin') {
+        return res.status(403).json({ message: "You don't have permission to update this job listing" });
+      }
+      
+      // Update the job listing
+      const updatedJob = await storage.updateJobListing(id, updates);
+      
+      res.json(updatedJob);
+    } catch (error) {
+      console.error("Error updating job listing:", error);
+      res.status(500).json({ message: "Error updating job listing" });
+    }
+  });
+
+  app.delete("/api/job-listings/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid job ID" });
+      }
+      
+      // Check if job exists
+      const job = await storage.getJobListing(id);
+      
+      if (!job) {
+        return res.status(404).json({ message: "Job listing not found" });
+      }
+      
+      // Check if user has permission to delete this job
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      // Only allow delete if user is the poster of the job, or an admin
+      if (job.posterId !== userId && user?.role !== 'admin') {
+        return res.status(403).json({ message: "You don't have permission to delete this job listing" });
+      }
+      
+      // Delete the job listing
+      await storage.deleteJobListing(id);
+      
+      res.json({ message: "Job listing deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting job listing:", error);
+      res.status(500).json({ message: "Error deleting job listing" });
+    }
+  });
+
+  // ----------------------------------------------------
+  // Categories and Tags API
+  // ----------------------------------------------------
+  app.get("/api/categories", async (req: Request, res: Response) => {
     try {
       const categories = await storage.getCategories();
       res.json(categories);
     } catch (error) {
+      console.error("Error fetching categories:", error);
       res.status(500).json({ message: "Error fetching categories" });
     }
   });
-  
-  // Advertisement Routes
-  
-  // Get all advertisements
-  app.get("/api/advertisements", async (req, res) => {
+
+  app.post("/api/categories", requireAdmin, async (req: Request, res: Response) => {
     try {
-      const placement = req.query.placement as string | undefined;
-      const ads = await storage.getAdvertisements(placement);
+      const { name, description } = req.body;
       
-      // Filter to only include approved and active ads
-      const now = new Date();
-      const activeAds = ads.filter(ad => 
-        ad.isApproved && 
-        new Date(ad.startDate) <= now && 
-        new Date(ad.endDate) >= now
-      );
+      if (!name) {
+        return res.status(400).json({ message: "Category name is required" });
+      }
       
-      res.json(activeAds);
+      // Check if category already exists
+      const existingCategory = await storage.getCategoryByName(name);
+      if (existingCategory) {
+        return res.status(400).json({ message: "Category already exists" });
+      }
+      
+      // Create the category
+      const newCategory = await storage.createCategory({ name, description });
+      
+      res.status(201).json(newCategory);
+    } catch (error) {
+      console.error("Error creating category:", error);
+      res.status(500).json({ message: "Error creating category" });
+    }
+  });
+
+  app.patch("/api/categories/:id", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { name, description } = req.body;
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid category ID" });
+      }
+      
+      if (!name) {
+        return res.status(400).json({ message: "Category name is required" });
+      }
+      
+      // Check if category exists
+      const category = await storage.getCategory(id);
+      
+      if (!category) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+      
+      // Check if new name already exists (if name is changing)
+      if (name !== category.name) {
+        const existingCategory = await storage.getCategoryByName(name);
+        if (existingCategory) {
+          return res.status(400).json({ message: "A category with this name already exists" });
+        }
+      }
+      
+      // Update the category
+      const updatedCategory = await storage.updateCategory(id, { name, description });
+      
+      res.json(updatedCategory);
+    } catch (error) {
+      console.error("Error updating category:", error);
+      res.status(500).json({ message: "Error updating category" });
+    }
+  });
+
+  app.delete("/api/categories/:id", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid category ID" });
+      }
+      
+      // Check if category exists
+      const category = await storage.getCategory(id);
+      
+      if (!category) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+      
+      // Delete the category
+      await storage.deleteCategory(id);
+      
+      res.json({ message: "Category deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      res.status(500).json({ message: "Error deleting category" });
+    }
+  });
+
+  app.get("/api/tags", async (req: Request, res: Response) => {
+    try {
+      const tags = await storage.getTags();
+      res.json(tags);
+    } catch (error) {
+      console.error("Error fetching tags:", error);
+      res.status(500).json({ message: "Error fetching tags" });
+    }
+  });
+
+  app.post("/api/tags", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { name, description } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ message: "Tag name is required" });
+      }
+      
+      // Check if tag already exists
+      const existingTag = await storage.getTagByName(name);
+      if (existingTag) {
+        return res.status(400).json({ message: "Tag already exists" });
+      }
+      
+      // Create the tag
+      const newTag = await storage.createTag({ name, description });
+      
+      res.status(201).json(newTag);
+    } catch (error) {
+      console.error("Error creating tag:", error);
+      res.status(500).json({ message: "Error creating tag" });
+    }
+  });
+
+  app.patch("/api/tags/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { name, description } = req.body;
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid tag ID" });
+      }
+      
+      if (!name) {
+        return res.status(400).json({ message: "Tag name is required" });
+      }
+      
+      // Check if tag exists
+      const tag = await storage.getTag(id);
+      
+      if (!tag) {
+        return res.status(404).json({ message: "Tag not found" });
+      }
+      
+      // Check if new name already exists (if name is changing)
+      if (name !== tag.name) {
+        const existingTag = await storage.getTagByName(name);
+        if (existingTag) {
+          return res.status(400).json({ message: "A tag with this name already exists" });
+        }
+      }
+      
+      // Update the tag
+      const updatedTag = await storage.updateTag(id, { name, description });
+      
+      res.json(updatedTag);
+    } catch (error) {
+      console.error("Error updating tag:", error);
+      res.status(500).json({ message: "Error updating tag" });
+    }
+  });
+
+  app.delete("/api/tags/:id", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid tag ID" });
+      }
+      
+      // Check if tag exists
+      const tag = await storage.getTag(id);
+      
+      if (!tag) {
+        return res.status(404).json({ message: "Tag not found" });
+      }
+      
+      // Delete the tag
+      await storage.deleteTag(id);
+      
+      res.json({ message: "Tag deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting tag:", error);
+      res.status(500).json({ message: "Error deleting tag" });
+    }
+  });
+
+  // ----------------------------------------------------
+  // Advertisements API
+  // ----------------------------------------------------
+  app.get("/api/advertisements", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const page = req.query.page ? parseInt(req.query.page as string) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      
+      const ads = await storage.getAdvertisements(page, limit);
+      
+      res.json(ads);
     } catch (error) {
       console.error("Error fetching advertisements:", error);
       res.status(500).json({ message: "Error fetching advertisements" });
     }
   });
-  
-  // ADMIN ONLY endpoint for the advertisement management panel - simplified reliable version
-  app.get("/api/admin/advertisements", async (req, res) => {
-    console.log("Admin advertisements endpoint accessed");
+
+  // Get ads for a specific placement (sidebar, banner, etc.)
+  app.get("/api/advertisements/:placement", async (req: Request, res: Response) => {
     try {
-      // Simplified direct approach - no auth check, just get the data
-      console.log('DIRECT DATABASE QUERY: Fetching all advertisements');
+      const { placement } = req.params;
+      const includeNotApproved = req.query.includeNotApproved === 'true';
       
-      // Execute the most basic SELECT query possible
-      const query = "SELECT * FROM advertisements";
-      console.log(`Executing query: ${query}`);
-      const result = await db.execute(query);
+      // Check if user is admin to determine if unapproved ads should be included
+      const userId = req.session?.userId;
+      const user = userId ? await storage.getUser(userId) : null;
+      const isAdmin = user?.role === 'admin';
       
-      if (!result || !result.rows || result.rows.length === 0) {
-        console.log('No advertisements found in the database');
-        return res.json([]);
-      }
+      console.log("Fetching advertisements for placement:", placement);
+      console.log("Running advertisement query with params:", { placement, includeNotApproved: isAdmin && includeNotApproved });
       
-      console.log(`Found ${result.rows.length} advertisements in database`);
+      // Fetch approved ads for the requested placement
+      // (or include unapproved if user is admin and requested them)
+      const ads = await storage.getAdvertisementsByPlacement(
+        placement, 
+        isAdmin && includeNotApproved
+      );
       
-      // Log the first few ads for debugging
-      for (let i = 0; i < Math.min(3, result.rows.length); i++) {
-        const ad = result.rows[i];
-        console.log(`Ad ${i+1}: ID=${ad.id}, Title=${ad.title}, Status=${ad.status}, Approved=${ad.is_approved}`);
-      }
-      
-      // Map the raw database results to our client-side format
-      const ads = result.rows.map(ad => ({
-        id: ad.id,
-        title: ad.title,
-        imageUrl: ad.image_url || '',
-        linkUrl: ad.link_url || 'https://example.com',
-        placement: ad.placement,
-        startDate: ad.start_date,
-        endDate: ad.end_date,
-        userId: ad.user_id,
-        isApproved: ad.is_approved === true,
-        createdAt: ad.created_at,
-        impressions: ad.impressions || 0,
-        clicks: ad.clicks || 0,
-        status: ad.status || 'pending',
-        paymentStatus: ad.payment_status || 'pending',
-        paymentId: ad.payment_id || null,
-        price: ad.price || 0,
-        adminNotes: ad.admin_notes || null
-      }));
-      
-      console.log(`Successfully mapped ${ads.length} advertisements for client`);
-      return res.json(ads);
-    } catch (error) {
-      console.error('Error fetching admin advertisements:', error);
-      return res.status(500).json({ message: 'Failed to fetch advertisements' });
-    }
-  });
-  
-  // URL for create advertisement is maintained in our already defined route above
-  
-  // Approve advertisement (admin only)
-  app.post("/api/advertisements/:id/approve", requireAuth, async (req, res) => {
-    try {
-      const userId = req.session.userId!;
-      const user = await storage.getUser(userId);
-      
-      if (user?.role !== 'admin' && user?.role !== 'editor') {
-        return res.status(403).json({ message: "Unauthorized" });
-      }
-      
-      const adId = parseInt(req.params.id);
-      
-      // Get the advertisement first to check its payment status
-      const existingAd = await storage.getAdvertisementById(adId);
-      if (!existingAd) {
-        return res.status(404).json({ message: "Advertisement not found" });
-      }
-      
-      // Only approve if payment is complete or update status accordingly
-      let updateData: Partial<any> = { 
-        isApproved: true,
-        adminNotes: null // Clear any previous rejection notes
-      };
-      
-      if (existingAd.paymentStatus === 'complete') {
-        updateData.status = 'active';
-      } else {
-        updateData.status = 'approved_pending_payment';
-      }
-      
-      // Update the advertisement
-      const ad = await storage.updateAdvertisement(adId, updateData);
-      
-      if (!ad) {
-        return res.status(404).json({ message: "Advertisement not found" });
-      }
-      
-      res.json(ad);
-    } catch (error) {
-      console.error("Error approving advertisement:", error);
-      res.status(500).json({ message: "Error approving advertisement" });
-    }
-  });
-  
-  // Reject advertisement (admin only)
-  app.post("/api/advertisements/:id/reject", requireAuth, async (req, res) => {
-    try {
-      const userId = req.session.userId!;
-      const user = await storage.getUser(userId);
-      
-      if (user?.role !== 'admin' && user?.role !== 'editor') {
-        return res.status(403).json({ message: "Unauthorized" });
-      }
-      
-      const adId = parseInt(req.params.id);
-      const { adminNotes } = req.body;
-      
-      if (!adminNotes) {
-        return res.status(400).json({ message: "Rejection reason is required" });
-      }
-      
-      // Update to set isApproved to false and add admin notes
-      const ad = await storage.updateAdvertisement(adId, { 
-        isApproved: false, 
-        status: 'rejected',
-        adminNotes 
-      });
-      
-      if (!ad) {
-        return res.status(404).json({ message: "Advertisement not found" });
-      }
-      
-      res.json(ad);
-    } catch (error) {
-      console.error("Error rejecting advertisement:", error);
-      res.status(500).json({ message: "Error rejecting advertisement" });
-    }
-  });
-  
-  // Delete advertisement (admin only or owner)
-  app.delete("/api/advertisements/:id", requireAuth, async (req, res) => {
-    try {
-      const userId = req.session.userId!;
-      const user = await storage.getUser(userId);
-      const adId = parseInt(req.params.id);
-      
-      // Get the ad to check ownership
-      const ad = await storage.getAdvertisementById(adId);
-      
-      if (!ad) {
-        return res.status(404).json({ message: "Advertisement not found" });
-      }
-      
-      // Allow admins/editors or the owner to delete
-      if (user?.role !== 'admin' && user?.role !== 'editor' && ad.userId !== userId) {
-        return res.status(403).json({ message: "Unauthorized" });
-      }
-      
-      const success = await storage.deleteAdvertisement(adId);
-      
-      if (!success) {
-        return res.status(500).json({ message: "Failed to delete advertisement" });
-      }
-      
-      res.json({ message: "Advertisement deleted successfully" });
-    } catch (error) {
-      console.error("Error deleting advertisement:", error);
-      res.status(500).json({ message: "Error deleting advertisement" });
-    }
-  });
-  
-  // Record ad click
-  app.post("/api/advertisements/:id/click", async (req, res) => {
-    try {
-      const adId = parseInt(req.params.id);
-      await storage.incrementAdClick(adId);
-      
-      // Return a 204 No Content
-      res.status(204).end();
-    } catch (error) {
-      console.error("Error recording advertisement click:", error);
-      res.status(500).json({ message: "Error recording advertisement click" });
-    }
-  });
-  
-  // Record ad impression
-  app.post("/api/advertisements/:id/impression", async (req, res) => {
-    try {
-      const adId = parseInt(req.params.id);
-      await storage.incrementAdImpression(adId);
-      
-      // Return a 204 No Content
-      res.status(204).end();
-    } catch (error) {
-      console.error("Error recording advertisement impression:", error);
-      res.status(500).json({ message: "Error recording advertisement impression" });
-    }
-  });
-  
-  // Get advertisements for the logged-in user
-  // Create a completely new endpoint for user ads
-  app.get("/api/user-advertisements", requireAuth, async (req, res) => {
-    try {
-      const userId = req.session.userId!;
-      console.log("NEW ENDPOINT: Fetching ads for user", userId);
-      
-      // Execute SQL directly from our existing connection
-      const { rows } = await db.execute(`SELECT * FROM advertisements WHERE user_id = ${userId}`);
-      
-      console.log(`Found ${rows.length} advertisements from direct pool query`);
-      if (rows.length > 0) {
-        console.log('Example ad from database:', {
-          id: rows[0].id,
-          title: rows[0].title,
-          user_id: rows[0].user_id,
-          is_approved: rows[0].is_approved
-        });
-      }
-      
-      // Format the data for the client
-      const formattedAds = rows.map(ad => ({
-        id: ad.id,
-        title: ad.title,
-        imageUrl: ad.image_url || null,
-        linkUrl: ad.link_url || '',
-        placement: ad.placement || '',
-        startDate: ad.start_date,
-        endDate: ad.end_date,
-        userId: ad.user_id,
-        isApproved: !!ad.is_approved,
-        createdAt: ad.created_at,
-        impressions: ad.impressions || 0,
-        clicks: ad.clicks || 0,
-        status: ad.status || 'pending',
-        paymentStatus: ad.payment_status || 'pending',
-        paymentId: ad.payment_id || null,
-        price: ad.price || 0,
-        adminNotes: ad.admin_notes || null
-      }));
-      
-      return res.json(formattedAds);
-    } catch (error) {
-      console.error("Error in NEW user ads endpoint:", error);
-      return res.status(500).json({ message: "Failed to fetch your advertisements" });
-    }
-  });
-  
-  // Keep the original endpoint for backward compatibility
-  app.get("/api/advertisements/user", requireAuth, async (req, res) => {
-    try {
-      console.log("OLD ENDPOINT: Redirecting to new endpoint");
-      const userId = req.session.userId!;
-      
-      // Simple direct database query
-      const { rows } = await db.execute(`SELECT * FROM advertisements WHERE user_id = ${userId}`);
-      console.log(`OLD ENDPOINT: Found ${rows?.length || 0} advertisements`);
-      
-      const ads = (rows || []).map(ad => ({
-        id: ad.id,
-        title: ad.title,
-        imageUrl: ad.image_url || '',
-        linkUrl: ad.link_url || '',
-        placement: ad.placement || '',
-        startDate: ad.start_date,
-        endDate: ad.end_date,
-        userId: ad.user_id,
-        isApproved: !!ad.is_approved,
-        createdAt: ad.created_at,
-        impressions: ad.impressions || 0,
-        clicks: ad.clicks || 0,
-        status: ad.status || 'pending',
-        paymentStatus: ad.payment_status || null,
-        paymentId: ad.payment_id || null,
-        price: ad.price || 0,
-        adminNotes: ad.admin_notes || null
-      }));
-      
-      return res.json(ads);
-    } catch (error) {
-      console.error("Error in old user advertisements endpoint:", error);
-      return res.status(500).json([]);
-    }
-  });
-  
-  // Cancel advertisement (user can cancel their own ads)
-  app.post("/api/advertisements/:id/cancel", requireAuth, async (req, res) => {
-    try {
-      const userId = req.session.userId!;
-      const adId = parseInt(req.params.id);
-      
-      const ad = await storage.getAdvertisementById(adId);
-      
-      if (!ad) {
-        return res.status(404).json({ message: "Advertisement not found" });
-      }
-      
-      if (ad.userId !== userId) {
-        return res.status(403).json({ message: "Unauthorized" });
-      }
-      
-      const updatedAd = await storage.updateAdvertisement(adId, { 
-        status: 'cancelled',
-        adminNotes: 'Cancelled by advertiser'
-      });
-      
-      res.json(updatedAd);
-    } catch (error) {
-      console.error("Error cancelling advertisement:", error);
-      res.status(500).json({ message: "Error cancelling advertisement" });
-    }
-  });
-  
-  // Create checkout session for advertisement
-  app.post("/api/advertisements/:id/checkout", requireAuth, async (req, res) => {
-    try {
-      const userId = req.session.userId!;
-      const adId = parseInt(req.params.id);
-      
-      // Get the advertisement
-      const ad = await storage.getAdvertisementById(adId);
-      
-      if (!ad) {
-        return res.status(404).json({ message: "Advertisement not found" });
-      }
-      
-      // Ensure the user owns the advertisement
-      if (ad.userId !== userId) {
-        return res.status(403).json({ message: "You don't own this advertisement" });
-      }
-      
-      // Ensure the advertisement is in a state that requires payment
-      if (ad.paymentStatus === 'complete') {
-        return res.status(400).json({ message: "This advertisement has already been paid for" });
-      }
-      
-      if (!ad.price) {
-        return res.status(400).json({ message: "This advertisement doesn't have a price set" });
-      }
-      
-      // Create a Stripe checkout session or simulate one in development
-      let checkoutUrl;
-      
-      // Since we're using placeholder Stripe for development, simulate the checkout process
-      
-      // Get placement label for display purposes
-      let placementLabel = "Unknown";
-      switch (ad.placement) {
-        case 'homepage': placementLabel = "Homepage"; break;
-        case 'sidebar': placementLabel = "Sidebar"; break;
-        case 'article': placementLabel = "In-Article"; break;
-        case 'newsletter': placementLabel = "Newsletter"; break;
-      }
-      
-      // For development without Stripe, simulate a checkout URL and successful payment
-      const simulatedPaymentId = `sim_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-      
-      // Build the success URL with query parameters for identification
-      checkoutUrl = `${req.protocol}://${req.get('host')}/advertise-success?ad_id=${ad.id}&payment_id=${simulatedPaymentId}`;
-      
-      // Update the advertisement payment status to complete and set appropriate status
-      await storage.updateAdvertisement(adId, {
-        paymentStatus: 'complete',
-        paymentId: simulatedPaymentId,
-        status: 'active', // Or 'pending' if not approved yet
-      });
-      
-      res.json({ checkoutUrl });
-    } catch (error) {
-      console.error("Error creating checkout session:", error);
-      res.status(500).json({ message: "Error creating checkout session" });
-    }
-  });
-  
-  // Process advertisement payment (legacy endpoint)
-  app.post("/api/advertisements/:id/pay", requireAuth, async (req, res) => {
-    try {
-      const userId = req.session.userId!;
-      const adId = parseInt(req.params.id);
-      
-      const ad = await storage.getAdvertisementById(adId);
-      
-      if (!ad) {
-        return res.status(404).json({ message: "Advertisement not found" });
-      }
-      
-      if (ad.userId !== userId) {
-        return res.status(403).json({ message: "Unauthorized" });
-      }
-      
-      if (ad.paymentStatus === 'paid') {
-        return res.status(400).json({ message: "Payment already processed" });
-      }
-      
-      // TODO: In a production environment, integrate with Stripe for real payments
-      // For now, we'll simulate successful payment
-      
-      // Simulate Stripe checkout:
-      if (process.env.STRIPE_SECRET_KEY) {
-        try {
-          const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-          const session = await stripe.checkout.sessions.create({
-            payment_method_types: ['card'],
-            line_items: [
-              {
-                price_data: {
-                  currency: 'usd',
-                  product_data: {
-                    name: `Advertisement: ${ad.title}`,
-                    description: `${ad.placement} placement from ${new Date(ad.startDate).toLocaleDateString()} to ${new Date(ad.endDate).toLocaleDateString()}`,
-                  },
-                  unit_amount: ad.price || 1000, // Default to $10 if no price set
-                },
-                quantity: 1,
-              },
-            ],
-            mode: 'payment',
-            success_url: `${req.protocol}://${req.get('host')}/advertiser-dashboard?payment=success`,
-            cancel_url: `${req.protocol}://${req.get('host')}/advertiser-dashboard?payment=cancelled`,
-          });
+      // If no approved ads are found, and this is for the frontend display, 
+      // log additional information to help diagnose why no ads are showing
+      if (ads.length === 0 && !includeNotApproved) {
+        console.log("Found 0 advertisements (approved only)");
+        
+        // Check if there are any ads at all for this placement (approved or not)
+        const allAds = await storage.getAdvertisementsByPlacement(placement, true);
+        console.log(`Found ${allAds.length} ads for placement ${placement}, of which ${allAds.filter(ad => ad.isApproved).length} are actually approved`);
+        
+        if (allAds.length === 0) {
+          console.log(`No ads found for placement ${placement}`);
+        } else {
+          console.log(`No approved ads found for placement ${placement}, checking if any exist regardless of approval`);
+          const allPlacements = await storage.countAdvertisementsByPlacement();
+          console.log(`Found ${allAds.length} total ads (including unapproved) for placement ${placement}`);
           
-          return res.json({ checkoutUrl: session.url });
-        } catch (stripeError) {
-          console.error("Stripe error:", stripeError);
+          if (allAds.length > 0) {
+            console.log("Unapproved ad example:", JSON.stringify(allAds[0]));
+          }
         }
       }
       
-      // If no Stripe or Stripe fails, simulate a successful payment
-      const updatedAd = await storage.updateAdvertisement(adId, {
-        paymentStatus: 'paid',
-        paymentId: `sim_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`,
-        // Auto-approve for demo purposes - in production, this would still require admin review
-        isApproved: true,
-        status: 'approved',
-      });
-      
-      res.json(updatedAd);
+      res.json(ads);
     } catch (error) {
-      console.error("Error processing payment:", error);
-      res.status(500).json({ message: "Error processing payment" });
+      console.error("Error fetching advertisements by placement:", error);
+      res.status(500).json({ message: "Error fetching advertisements" });
     }
   });
-  
-  // Update advertisement (admin or owner)
-  app.patch("/api/advertisements/:id", requireAuth, async (req, res) => {
+
+  app.get("/api/advertisements/id/:id", async (req: Request, res: Response) => {
     try {
-      const userId = req.session.userId!;
-      const user = await storage.getUser(userId);
-      const adId = parseInt(req.params.id);
+      const id = parseInt(req.params.id);
       
-      // Get the ad to check ownership
-      const ad = await storage.getAdvertisementById(adId);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid advertisement ID" });
+      }
+      
+      const ad = await storage.getAdvertisement(id);
       
       if (!ad) {
         return res.status(404).json({ message: "Advertisement not found" });
       }
       
-      // Allow admins/editors or the owner to update
-      if (user?.role !== 'admin' && user?.role !== 'editor' && ad.userId !== userId) {
-        return res.status(403).json({ message: "Unauthorized" });
+      // Check if user has permission to view this ad (owners or admins)
+      const userId = req.session?.userId;
+      const user = userId ? await storage.getUser(userId) : null;
+      const isOwner = userId && ad.userId === userId;
+      const isAdmin = user?.role === 'admin';
+      
+      // If not approved, only allow owner or admin to view
+      if (!ad.isApproved && !isOwner && !isAdmin) {
+        return res.status(403).json({ message: "This advertisement is not approved for viewing" });
       }
       
-      const { title, imageUrl, linkUrl, placement, startDate, endDate, status, adminNotes } = req.body;
+      res.json(ad);
+    } catch (error) {
+      console.error("Error fetching advertisement:", error);
+      res.status(500).json({ message: "Error fetching advertisement" });
+    }
+  });
+
+  app.post("/api/advertisements", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const adData = req.body;
       
-      // Users can only update certain fields, admins can update all
-      const updateData: any = {};
-      
-      if (user?.role === 'admin' || user?.role === 'editor') {
-        // Admin updates
-        if (title) updateData.title = title;
-        if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
-        if (linkUrl) updateData.linkUrl = linkUrl;
-        if (placement) updateData.placement = placement;
-        if (startDate) updateData.startDate = new Date(startDate);
-        if (endDate) updateData.endDate = new Date(endDate);
-        if (status) updateData.status = status;
-        if (adminNotes !== undefined) updateData.adminNotes = adminNotes;
-      } else {
-        // Regular user updates (limited fields)
-        if (title) updateData.title = title;
-        if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
-        if (linkUrl) updateData.linkUrl = linkUrl;
+      // Validate advertisement data
+      try {
+        insertAdvertisementSchema.parse(adData);
+      } catch (validationError) {
+        if (validationError instanceof ZodError) {
+          return res.status(400).json({
+            message: "Validation error",
+            errors: validationError.errors
+          });
+        }
       }
       
-      const updatedAd = await storage.updateAdvertisement(adId, updateData);
+      // Set user ID as owner
+      adData.userId = req.session.userId;
       
-      if (!updatedAd) {
-        return res.status(500).json({ message: "Failed to update advertisement" });
+      // Set default approval status (false for regular users, true for admins)
+      const user = await storage.getUser(req.session.userId);
+      adData.isApproved = user?.role === 'admin' ? true : false;
+      
+      // Create the advertisement
+      const newAd = await storage.createAdvertisement(adData);
+      
+      res.status(201).json(newAd);
+    } catch (error) {
+      console.error("Error creating advertisement:", error);
+      res.status(500).json({ message: "Error creating advertisement" });
+    }
+  });
+
+  app.patch("/api/advertisements/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid advertisement ID" });
       }
+      
+      // Check if ad exists
+      const ad = await storage.getAdvertisement(id);
+      
+      if (!ad) {
+        return res.status(404).json({ message: "Advertisement not found" });
+      }
+      
+      // Check if user has permission to update this ad
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      // Determine if the user has permission to edit this ad
+      const isOwner = ad.userId === userId;
+      const isAdmin = user?.role === 'admin';
+      
+      if (!isOwner && !isAdmin) {
+        return res.status(403).json({ message: "You don't have permission to update this advertisement" });
+      }
+      
+      // If not admin, don't allow changing approval status
+      if (!isAdmin && updates.hasOwnProperty('isApproved')) {
+        delete updates.isApproved;
+      }
+      
+      // Update the advertisement
+      const updatedAd = await storage.updateAdvertisement(id, updates);
       
       res.json(updatedAd);
     } catch (error) {
@@ -3119,813 +1874,170 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error updating advertisement" });
     }
   });
-  
-  // External API Routes with caching
-  
-  // SpaceX API route for launch data
-  // SpaceX API routes
-  app.get("/api/spacex/launches", async (req, res) => {
+
+  app.delete("/api/advertisements/:id", requireAuth, async (req: Request, res: Response) => {
     try {
-      const cacheKey = '/api/spacex/launches';
-      const now = Date.now();
+      const id = parseInt(req.params.id);
       
-      // Check if we have a cached response that's still valid
-      if (apiCache[cacheKey] && now - apiCache[cacheKey].timestamp < CACHE_TTL) {
-        return res.json(apiCache[cacheKey].data);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid advertisement ID" });
       }
       
-      // Otherwise, fetch fresh data
-      const response = await axios.get('https://api.spacexdata.com/v5/launches/past');
+      // Check if ad exists
+      const ad = await storage.getAdvertisement(id);
       
-      // Enhance response with rocket and launchpad data where needed
-      const enhancedData = await Promise.all(
-        response.data.map(async (launch: any) => {
-          // If we need additional data for this launch
-          if (!launch.rocket?.name && launch.rocket) {
-            try {
-              const rocketResponse = await axios.get(`https://api.spacexdata.com/v4/rockets/${launch.rocket}`);
-              launch.rocket = { id: launch.rocket, name: rocketResponse.data.name };
-            } catch (err) {
-              console.error("Error fetching rocket data:", err);
-            }
-          }
-          
-          if (!launch.launchpad?.name && launch.launchpad) {
-            try {
-              const launchpadResponse = await axios.get(`https://api.spacexdata.com/v4/launchpads/${launch.launchpad}`);
-              launch.launchpad = { 
-                id: launch.launchpad, 
-                name: launchpadResponse.data.name,
-                locality: launchpadResponse.data.locality,
-                region: launchpadResponse.data.region
-              };
-            } catch (err) {
-              console.error("Error fetching launchpad data:", err);
-            }
-          }
-          
-          return launch;
-        })
-      );
-      
-      // Cache the response
-      apiCache[cacheKey] = {
-        data: enhancedData,
-        timestamp: now
-      };
-      
-      res.json(enhancedData);
-    } catch (error) {
-      console.error("Error fetching SpaceX launch data:", error);
-      res.status(500).json({ message: "Error fetching SpaceX launch data" });
-    }
-  });
-  
-  app.get("/api/spacex/launch/:id", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const cacheKey = `/api/spacex/launch/${id}`;
-      const now = Date.now();
-      
-      // Check if we have a cached response that's still valid
-      if (apiCache[cacheKey] && now - apiCache[cacheKey].timestamp < CACHE_TTL) {
-        return res.json(apiCache[cacheKey].data);
+      if (!ad) {
+        return res.status(404).json({ message: "Advertisement not found" });
       }
       
-      // Otherwise, fetch fresh data
-      const response = await axios.get(`https://api.spacexdata.com/v5/launches/${id}`);
-      const launch = response.data;
-      
-      // Enhance with rocket and launchpad data
-      if (launch.rocket) {
-        try {
-          const rocketResponse = await axios.get(`https://api.spacexdata.com/v4/rockets/${launch.rocket}`);
-          launch.rocket = { 
-            id: launch.rocket, 
-            name: rocketResponse.data.name,
-            type: rocketResponse.data.type,
-            company: rocketResponse.data.company,
-            height: rocketResponse.data.height,
-            diameter: rocketResponse.data.diameter
-          };
-        } catch (err) {
-          console.error("Error fetching rocket data:", err);
-        }
-      }
-      
-      if (launch.launchpad) {
-        try {
-          const launchpadResponse = await axios.get(`https://api.spacexdata.com/v4/launchpads/${launch.launchpad}`);
-          launch.launchpad = { 
-            id: launch.launchpad, 
-            name: launchpadResponse.data.name,
-            full_name: launchpadResponse.data.full_name,
-            locality: launchpadResponse.data.locality,
-            region: launchpadResponse.data.region,
-            latitude: launchpadResponse.data.latitude,
-            longitude: launchpadResponse.data.longitude
-          };
-        } catch (err) {
-          console.error("Error fetching launchpad data:", err);
-        }
-      }
-      
-      // Cache the response
-      apiCache[cacheKey] = {
-        data: launch,
-        timestamp: now
-      };
-      
-      res.json(launch);
-    } catch (error) {
-      console.error("Error fetching SpaceX launch:", error);
-      res.status(500).json({ message: "Error fetching SpaceX launch" });
-    }
-  });
-  
-  app.get("/api/spacex/upcoming", async (req, res) => {
-    try {
-      const cacheKey = '/api/spacex/upcoming';
-      const now = Date.now();
-      
-      // Check if we have a cached response that's still valid
-      if (apiCache[cacheKey] && now - apiCache[cacheKey].timestamp < CACHE_TTL) {
-        return res.json(apiCache[cacheKey].data);
-      }
-      
-      // Otherwise, fetch fresh data
-      const response = await axios.get('https://api.spacexdata.com/v5/launches/upcoming');
-      
-      // Enhance response with rocket and launchpad data
-      const enhancedData = await Promise.all(
-        response.data.map(async (launch: any) => {
-          // If we need additional data for this launch
-          if (!launch.rocket?.name && launch.rocket) {
-            try {
-              const rocketResponse = await axios.get(`https://api.spacexdata.com/v4/rockets/${launch.rocket}`);
-              launch.rocket = { id: launch.rocket, name: rocketResponse.data.name };
-            } catch (err) {
-              console.error("Error fetching rocket data:", err);
-            }
-          }
-          
-          if (!launch.launchpad?.name && launch.launchpad) {
-            try {
-              const launchpadResponse = await axios.get(`https://api.spacexdata.com/v4/launchpads/${launch.launchpad}`);
-              launch.launchpad = { 
-                id: launch.launchpad, 
-                name: launchpadResponse.data.name,
-                locality: launchpadResponse.data.locality,
-                region: launchpadResponse.data.region
-              };
-            } catch (err) {
-              console.error("Error fetching launchpad data:", err);
-            }
-          }
-          
-          return launch;
-        })
-      );
-      
-      // Cache the response
-      apiCache[cacheKey] = {
-        data: enhancedData,
-        timestamp: now
-      };
-      
-      res.json(enhancedData);
-    } catch (error) {
-      console.error("Error fetching upcoming SpaceX launches:", error);
-      res.status(500).json({ message: "Error fetching upcoming SpaceX launches" });
-    }
-  });
-  
-  // Fetch SpaceX rockets
-  app.get("/api/spacex/rockets", async (req, res) => {
-    try {
-      const cacheKey = '/api/spacex/rockets';
-      const now = Date.now();
-      
-      // Check if we have a cached response that's still valid
-      if (apiCache[cacheKey] && now - apiCache[cacheKey].timestamp < CACHE_TTL) {
-        return res.json(apiCache[cacheKey].data);
-      }
-      
-      // Otherwise, fetch fresh data
-      const response = await axios.get('https://api.spacexdata.com/v4/rockets');
-      
-      // Cache the response
-      apiCache[cacheKey] = {
-        data: response.data,
-        timestamp: now
-      };
-      
-      res.json(response.data);
-    } catch (error) {
-      console.error("Error fetching SpaceX rockets:", error);
-      res.status(500).json({ message: "Error fetching SpaceX rockets" });
-    }
-  });
-  
-  // The Space Devs Launch Library API - Get all upcoming launches
-  app.get("/api/launches/upcoming", async (req, res) => {
-    try {
-      const cacheKey = '/api/launches/upcoming';
-      const now = Date.now();
-      
-      // Check if we have a cached response that's still valid
-      if (apiCache[cacheKey] && now - apiCache[cacheKey].timestamp < CACHE_TTL) {
-        return res.json(apiCache[cacheKey].data);
-      }
-      
-      // Otherwise, fetch fresh data with backup URL pattern
-      try {
-        console.log("Fetching upcoming launches from Space Devs");
-        const response = await axios.get('https://ll.thespacedevs.com/2.2.0/launch/upcoming/', {
-          headers: {
-            'User-Agent': 'Proxima-Report/1.0',
-            'Accept': 'application/json'
-          },
-          timeout: 10000 // 10 second timeout
-        });
-        
-        // Cache the response
-        apiCache[cacheKey] = {
-          data: response.data,
-          timestamp: now
-        };
-        
-        console.log(`Space Devs upcoming launches: Found ${response.data?.results?.length || 0} launches`);
-        res.json(response.data);
-      } catch (innerError) {
-        console.error("Failed with primary URL, trying alternative:", innerError);
-        
-        // Try alternative URL
-        const response = await axios.get('https://lldev.thespacedevs.com/2.2.0/launch/upcoming/', {
-          headers: {
-            'User-Agent': 'Proxima-Report/1.0',
-            'Accept': 'application/json'
-          },
-          timeout: 10000
-        });
-        
-        // Cache the response
-        apiCache[cacheKey] = {
-          data: response.data,
-          timestamp: now
-        };
-        
-        console.log(`Space Devs upcoming launches (alt URL): Found ${response.data?.results?.length || 0} launches`);
-        res.json(response.data);
-      }
-    } catch (error) {
-      const err = error as any;
-      console.error("Error fetching upcoming launches from The Space Devs:", 
-        err.response ? `Status: ${err.response.status}` : err.message);
-      res.status(500).json({ message: "Error fetching upcoming launches" });
-    }
-  });
-  
-  // The Space Devs Launch Library API - Get all previous launches
-  app.get("/api/launches/previous", async (req, res) => {
-    try {
-      const cacheKey = '/api/launches/previous';
-      const now = Date.now();
-      
-      // Check if we have a cached response that's still valid
-      if (apiCache[cacheKey] && now - apiCache[cacheKey].timestamp < CACHE_TTL) {
-        return res.json(apiCache[cacheKey].data);
-      }
-      
-      // Otherwise, fetch fresh data with backup URL pattern
-      try {
-        console.log("Fetching previous launches from Space Devs");
-        const response = await axios.get('https://ll.thespacedevs.com/2.2.0/launch/previous/', {
-          headers: {
-            'User-Agent': 'Proxima-Report/1.0',
-            'Accept': 'application/json'
-          },
-          timeout: 10000,
-          params: {
-            limit: 20 // Limit to 20 previous launches to improve performance
-          }
-        });
-        
-        // Cache the response
-        apiCache[cacheKey] = {
-          data: response.data,
-          timestamp: now
-        };
-        
-        console.log(`Space Devs previous launches: Found ${response.data?.results?.length || 0} launches`);
-        res.json(response.data);
-      } catch (innerError) {
-        console.error("Failed with primary URL, trying alternative:", innerError);
-        
-        // Try alternative URL
-        const response = await axios.get('https://lldev.thespacedevs.com/2.2.0/launch/previous/', {
-          headers: {
-            'User-Agent': 'Proxima-Report/1.0',
-            'Accept': 'application/json'
-          },
-          timeout: 10000,
-          params: {
-            limit: 20 // Limit to 20 previous launches to improve performance
-          }
-        });
-        
-        // Cache the response
-        apiCache[cacheKey] = {
-          data: response.data,
-          timestamp: now
-        };
-        
-        console.log(`Space Devs previous launches (alt URL): Found ${response.data?.results?.length || 0} launches`);
-        res.json(response.data);
-      }
-    } catch (error) {
-      const err = error as any;
-      console.error("Error fetching previous launches from The Space Devs:", 
-        err.response ? `Status: ${err.response.status}` : err.message);
-      res.status(500).json({ message: "Error fetching previous launches" });
-    }
-  });
-  
-  // The Space Devs Launch Library API - Get launch details by ID
-  app.get("/api/launches/:id", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const cacheKey = `/api/launches/${id}`;
-      const now = Date.now();
-      
-      // Check if we have a cached response that's still valid
-      if (apiCache[cacheKey] && now - apiCache[cacheKey].timestamp < CACHE_TTL) {
-        return res.json(apiCache[cacheKey].data);
-      }
-      
-      // Otherwise, fetch fresh data
-      const response = await axios.get(`https://ll.thespacedevs.com/2.2.0/launch/${id}/`, {
-        headers: {
-          'User-Agent': 'Proxima-Report/1.0'
-        }
-      });
-      
-      // Cache the response
-      apiCache[cacheKey] = {
-        data: response.data,
-        timestamp: now
-      };
-      
-      res.json(response.data);
-    } catch (error) {
-      console.error(`Error fetching launch details for ID ${req.params.id}:`, error);
-      res.status(500).json({ message: "Error fetching launch details" });
-    }
-  });
-  
-  // ISS Current Location API
-  app.get("/api/iss/location", async (req, res) => {
-    try {
-      const cacheKey = '/api/iss/location';
-      const now = Date.now();
-      
-      // Much longer cache period to avoid rate limiting
-      // Open Notify has very strict rate limits
-      const ISS_CACHE_TTL = 120 * 1000; // 2 minutes
-      
-      // Check if we have a cached response that's still valid
-      if (apiCache[cacheKey] && now - apiCache[cacheKey].timestamp < ISS_CACHE_TTL) {
-        return res.json(apiCache[cacheKey].data);
-      }
-      
-      // Otherwise, fetch fresh data with timeout and better error handling
-      try {
-        console.log("Fetching ISS location data");
-        const response = await axios.get('http://api.open-notify.org/iss-now.json', {
-          timeout: 5000 // 5 second timeout
-        });
-        
-        // Cache the response
-        apiCache[cacheKey] = {
-          data: response.data,
-          timestamp: now
-        };
-        
-        console.log("Successfully fetched ISS location data");
-        res.json(response.data);
-      } catch (innerError) {
-        const err = innerError as any;
-        // If we have a rate limit error or any error with a response, and have cached data
-        if (err.response && err.response.status === 429 && apiCache[cacheKey]) {
-          console.warn("Rate limited on ISS API, using cached data");
-          res.json(apiCache[cacheKey].data);
-        } else if (apiCache[cacheKey]) {
-          // Use stale cache if available, regardless of error
-          console.warn("Error fetching ISS location, using stale cache:", err.message || err);
-          res.json(apiCache[cacheKey].data);
-        } else {
-          // If no cached data, throw to outer catch
-          throw innerError;
-        }
-      }
-    } catch (error) {
-      const err = error as any;
-      console.error("Error in ISS location route:", err.message || err);
-      
-      // Default fallback with fixed position if no cache is available
-      const fallbackData = {
-        message: "success",
-        timestamp: Math.floor(Date.now() / 1000),
-        iss_position: {
-          latitude: "0.0000",
-          longitude: "0.0000"
-        }
-      };
-      
-      // Cache this fallback with a short TTL
-      const ISS_CACHE_TTL = 120 * 1000; // 2 minutes
-      apiCache['/api/iss/location'] = {
-        data: fallbackData,
-        timestamp: Date.now() - (ISS_CACHE_TTL - 10000) // Set to expire in 10 seconds
-      };
-      
-      res.json(fallbackData);
-    }
-  });
-  
-  // People in Space API
-  app.get("/api/space/people", async (req, res) => {
-    try {
-      const cacheKey = '/api/space/people';
-      const now = Date.now();
-      
-      // Cache for a day as astronaut info doesn't change that often
-      const PEOPLE_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
-      
-      // Check if we have a cached response that's still valid
-      if (apiCache[cacheKey] && now - apiCache[cacheKey].timestamp < PEOPLE_CACHE_TTL) {
-        return res.json(apiCache[cacheKey].data);
-      }
-      
-      // Otherwise, fetch fresh data with better error handling
-      try {
-        console.log("Fetching people in space data");
-        const response = await axios.get('http://api.open-notify.org/astros.json', {
-          timeout: 5000 // 5 second timeout
-        });
-        
-        // Cache the response
-        apiCache[cacheKey] = {
-          data: response.data,
-          timestamp: now
-        };
-        
-        console.log(`Successfully fetched people in space data, found ${response.data.number} people`);
-        res.json(response.data);
-      } catch (innerError) {
-        const err = innerError as any;
-        
-        // If we have a rate limit error or timeout, but have cached data
-        if ((err.response && err.response.status === 429) && apiCache[cacheKey]) {
-          console.warn("Rate limited on People in Space API, using cached data");
-          res.json(apiCache[cacheKey].data);
-        } else if (apiCache[cacheKey]) {
-          // Use stale cache for any other error if available
-          console.warn("Error fetching people in space, using stale cache:", err.message || err);
-          res.json(apiCache[cacheKey].data);
-        } else {
-          // If no cached data, throw to outer catch
-          throw innerError;
-        }
-      }
-    } catch (error) {
-      const err = error as any;
-      console.error("Error in people in space route:", err.message || err);
-      
-      // Default data with ISS crew if no cache is available
-      // Using current known ISS crew members - this is verifiable public information
-      const fallbackData = {
-        message: "success",
-        number: 7,
-        people: [
-          { name: "Oleg Kononenko", craft: "ISS" },
-          { name: "Nikolai Chub", craft: "ISS" },
-          { name: "Tracy C. Dyson", craft: "ISS" },
-          { name: "Suni Williams", craft: "ISS" },
-          { name: "Butch Wilmore", craft: "ISS" },
-          { name: "Andreas Mogensen", craft: "ISS" },
-          { name: "Konstantin Borisov", craft: "ISS" }
-        ]
-      };
-      
-      // Cache this fallback with a short TTL
-      const currentTime = Date.now();
-      const PEOPLE_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
-      apiCache['/api/space/people'] = {
-        data: fallbackData,
-        timestamp: currentTime - (PEOPLE_CACHE_TTL - 3600000) // Set to expire in 1 hour
-      };
-      
-      res.json(fallbackData);
-    }
-  });
-  
-  // Direct access to The Space Devs API 
-  app.get("/api/thespacedevs/:endpoint", async (req, res) => {
-    try {
-      const { endpoint } = req.params;
-      const cacheKey = `/api/thespacedevs/${endpoint}`;
-      const now = Date.now();
-      
-      // Check if we have a cached response that's still valid
-      if (apiCache[cacheKey] && now - apiCache[cacheKey].timestamp < CACHE_TTL) {
-        return res.json(apiCache[cacheKey].data);
-      }
-      
-      // Determine complete URL with or without trailing slash
-      let url = `https://ll.thespacedevs.com/2.2.0/${endpoint}`;
-      if (!url.endsWith('/')) {
-        url += '/';
-      }
-      
-      console.log(`Fetching from Space Devs API: ${url}`);
-      
-      // Fetch with a longer timeout
-      const response = await axios.get(url, {
-        headers: {
-          'User-Agent': 'Proxima-Report/1.0',
-          'Accept': 'application/json'
-        },
-        params: req.query,
-        timeout: 10000 // 10 second timeout
-      });
-      
-      // Log the response data shape for debugging
-      console.log(`Space Devs API response status: ${response.status}`);
-      console.log(`Space Devs API data shape:`, Object.keys(response.data));
-      
-      // Cache the response
-      apiCache[cacheKey] = {
-        data: response.data,
-        timestamp: now
-      };
-      
-      res.json(response.data);
-    } catch (error) {
-      const err = error as any;  // Type assertion for TS compatibility
-      console.error(`Error fetching from The Space Devs API (${req.params.endpoint}):`, 
-        err.response ? `Status: ${err.response.status}, Data: ${JSON.stringify(err.response.data)}` : err.message);
-      res.status(500).json({ message: "Error fetching data from The Space Devs API" });
-    }
-  });
-  
-  // NASA API route
-  // NASA APOD (Astronomy Picture of the Day) API
-  app.get("/api/nasa/apod", async (req, res) => {
-    try {
-      const cacheKey = '/api/nasa/apod';
-      const now = Date.now();
-      
-      // Check if we have a cached response that's still valid
-      if (apiCache[cacheKey] && now - apiCache[cacheKey].timestamp < CACHE_TTL) {
-        return res.json(apiCache[cacheKey].data);
-      }
-      
-      // Use the DEMO_KEY if no API key is provided
-      const nasa_api_key = process.env.NASA_API_KEY || 'DEMO_KEY';
-      
-      // Otherwise, fetch fresh data
-      const response = await axios.get(`https://api.nasa.gov/planetary/apod?api_key=${nasa_api_key}`);
-      
-      // Cache the response
-      apiCache[cacheKey] = {
-        data: response.data,
-        timestamp: now
-      };
-      
-      res.json(response.data);
-    } catch (error) {
-      console.error("Error fetching NASA APOD:", error);
-      res.status(500).json({ message: "Error fetching NASA data" });
-    }
-  });
-  
-  // NASA Earth Imagery API
-  app.get("/api/nasa/earth", async (req, res) => {
-    try {
-      const { lat, lon } = req.query;
-      
-      if (!lat || !lon) {
-        return res.status(400).json({ message: "Latitude and longitude are required" });
-      }
-      
-      const cacheKey = `/api/nasa/earth?lat=${lat}&lon=${lon}`;
-      const now = Date.now();
-      
-      // Check if we have a cached response that's still valid
-      if (apiCache[cacheKey] && now - apiCache[cacheKey].timestamp < CACHE_TTL) {
-        return res.json(apiCache[cacheKey].data);
-      }
-      
-      // Use the DEMO_KEY if no API key is provided
-      const nasa_api_key = process.env.NASA_API_KEY || 'DEMO_KEY';
-      
-      // Fetch data from NASA API
-      const response = await axios.get(
-        `https://api.nasa.gov/planetary/earth/imagery?lon=${lon}&lat=${lat}&date=2022-01-01&dim=0.15&api_key=${nasa_api_key}`
-      );
-      
-      // Cache the response
-      apiCache[cacheKey] = {
-        data: response.data,
-        timestamp: now
-      };
-      
-      res.json(response.data);
-    } catch (error) {
-      console.error("Error fetching NASA Earth imagery:", error);
-      res.status(500).json({ message: "Error fetching NASA Earth imagery" });
-    }
-  });
-  
-  // NASA Epic API (Earth Polychromatic Imaging Camera)
-  app.get("/api/nasa/epic", async (req, res) => {
-    try {
-      const cacheKey = '/api/nasa/epic';
-      const now = Date.now();
-      
-      // Check if we have a cached response that's still valid
-      if (apiCache[cacheKey] && now - apiCache[cacheKey].timestamp < CACHE_TTL) {
-        return res.json(apiCache[cacheKey].data);
-      }
-      
-      // Use the DEMO_KEY if no API key is provided
-      const nasa_api_key = process.env.NASA_API_KEY || 'DEMO_KEY';
-      
-      // Fetch the latest natural color images
-      const response = await axios.get(
-        `https://api.nasa.gov/EPIC/api/natural?api_key=${nasa_api_key}`
-      );
-      
-      // Cache the response
-      apiCache[cacheKey] = {
-        data: response.data,
-        timestamp: now
-      };
-      
-      res.json(response.data);
-    } catch (error) {
-      console.error("Error fetching NASA EPIC data:", error);
-      res.status(500).json({ message: "Error fetching NASA EPIC data" });
-    }
-  });
-  
-  // Stripe Routes
-  app.post("/api/stripe/webhook", async (req, res) => {
-    try {
-      await handleStripeWebhook(req, res);
-    } catch (error) {
-      console.error("Stripe webhook error:", error);
-      res.status(500).end();
-    }
-  });
-  
-  app.get("/api/stripe/verify-session", requireAuth, async (req, res) => {
-    try {
-      const { session_id } = req.query;
-      
-      if (!session_id) {
-        return res.status(400).json({ success: false, message: "Session ID is required" });
-      }
-      
-      // Retrieve session from Stripe
-      const session = await stripe.checkout.sessions.retrieve(session_id as string);
-      
-      if (!session) {
-        return res.status(404).json({ success: false, message: "Session not found" });
-      }
-      
-      // Check if the session was successful
-      if (session.payment_status !== "paid") {
-        return res.status(400).json({ success: false, message: "Payment not completed" });
-      }
-      
-      // Get the subscription from the session
-      const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
-      
-      // Determine the tier based on the price ID
-      const priceId = subscription.items.data[0].price.id;
-      let tier: "supporter" | "pro" = "supporter";
-      
-      if (priceId === SUBSCRIPTION_PRICES.pro) {
-        tier = "pro";
-      }
-      
-      // Update the user's membership tier if not already updated by webhook
-      const userId = req.session.userId!;
+      // Check if user has permission to delete this ad
+      const userId = req.session.userId;
       const user = await storage.getUser(userId);
       
-      if (user && user.membershipTier !== tier) {
-        await storage.updateUserMembership(userId, tier);
-        
-        // Update or set stripe info
-        if (!user.stripeCustomerId || !user.stripeSubscriptionId) {
-          await storage.updateUserStripeInfo(userId, {
-            stripeCustomerId: session.customer as string,
-            stripeSubscriptionId: session.subscription as string
-          });
-        }
+      // Only allow delete if user is the owner of the ad, or an admin
+      if (ad.userId !== userId && user?.role !== 'admin') {
+        return res.status(403).json({ message: "You don't have permission to delete this advertisement" });
       }
       
-      res.json({ 
-        success: true, 
-        tier,
-        customerId: session.customer,
-        subscriptionId: session.subscription
-      });
-    } catch (error: any) {
-      console.error("Error verifying session:", error);
-      res.status(500).json({ 
-        success: false, 
-        message: "Error verifying subscription", 
-        error: error.message 
-      });
-    }
-  });
-  
-  app.post("/api/stripe/create-checkout-session", requireAuth, async (req, res) => {
-    try {
-      const { priceId } = req.body;
+      // Delete the advertisement
+      await storage.deleteAdvertisement(id);
       
-      if (!priceId) {
-        return res.status(400).json({ message: "Price ID is required" });
-      }
-      
-      // Get the user
-      const user = await storage.getUser(req.session.userId!);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Create the checkout session
-      const session = await createStripeCheckoutSession(user, priceId);
-      
-      res.json({ url: session.url });
+      res.json({ message: "Advertisement deleted successfully" });
     } catch (error) {
-      console.error("Stripe checkout error:", error);
-      res.status(500).json({ message: "Error creating checkout session" });
+      console.error("Error deleting advertisement:", error);
+      res.status(500).json({ message: "Error deleting advertisement" });
     }
   });
 
-  // Media Library Routes
-  // Get all media items (with optional filtering by user)
-  app.get("/api/media", requireAuth, async (req, res) => {
+  // ----------------------------------------------------
+  // API Keys API
+  // ----------------------------------------------------
+  app.get("/api/api-keys", requireAuth, async (req: Request, res: Response) => {
     try {
-      const { userId } = req.session;
-      const requestingUser = await storage.getUser(userId);
-      const isAdmin = requestingUser?.role === 'admin' || requestingUser?.role === 'editor';
+      const userId = req.session.userId;
+      const apiKeys = await storage.getApiKeysByUser(userId);
       
-      // Get query parameters
-      const type = req.query.type as string;
-      const search = req.query.search as string;
+      // Don't return the actual key values, only metadata
+      const safeApiKeys = apiKeys.map(key => ({
+        id: key.id,
+        name: key.name,
+        createdAt: key.createdAt,
+        lastUsed: key.lastUsed,
+        permissions: key.permissions
+      }));
       
-      let mediaItems: MediaLibraryItem[];
+      res.json(safeApiKeys);
+    } catch (error) {
+      console.error("Error fetching API keys:", error);
+      res.status(500).json({ message: "Error fetching API keys" });
+    }
+  });
+
+  app.post("/api/api-keys", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { name, permissions } = req.body;
       
-      // For regular users, only show their own uploads
-      // For admins and editors, show all media unless filtered by a specific user
-      const targetUserId = isAdmin && req.query.userId ? parseInt(req.query.userId as string) : userId;
-      
-      if (search) {
-        mediaItems = await storage.searchMediaLibrary(search, isAdmin ? undefined : targetUserId);
-      } else if (type) {
-        mediaItems = await storage.getMediaLibraryItemsByType(type, isAdmin ? undefined : targetUserId);
-      } else {
-        mediaItems = await storage.getMediaLibraryItems(isAdmin ? undefined : targetUserId);
+      if (!name) {
+        return res.status(400).json({ message: "API key name is required" });
       }
       
-      res.json(mediaItems);
+      // Validate permissions
+      const validPermissions = ['read', 'write', 'admin'];
+      const invalidPermissions = permissions ? permissions.filter(p => !validPermissions.includes(p)) : [];
+      
+      if (invalidPermissions.length > 0) {
+        return res.status(400).json({ 
+          message: `Invalid permissions: ${invalidPermissions.join(', ')}. Valid permissions are: ${validPermissions.join(', ')}` 
+        });
+      }
+      
+      // Generate a random API key
+      const apiKey = crypto.randomBytes(32).toString('hex');
+      
+      // Create the API key
+      const newApiKey = await storage.createApiKey({
+        userId: req.session.userId,
+        name,
+        key: apiKey,
+        permissions: permissions || ['read'] // Default to read-only
+      });
+      
+      // Return the full key only on creation - it won't be retrievable later
+      res.status(201).json({
+        id: newApiKey.id,
+        name: newApiKey.name,
+        key: apiKey, // Only returned once, during creation
+        createdAt: newApiKey.createdAt,
+        permissions: newApiKey.permissions
+      });
+    } catch (error) {
+      console.error("Error creating API key:", error);
+      res.status(500).json({ message: "Error creating API key" });
+    }
+  });
+
+  app.delete("/api/api-keys/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid API key ID" });
+      }
+      
+      // Check if API key exists
+      const apiKey = await storage.getApiKey(id);
+      
+      if (!apiKey) {
+        return res.status(404).json({ message: "API key not found" });
+      }
+      
+      // Check if user has permission to delete this API key
+      const userId = req.session.userId;
+      
+      if (apiKey.userId !== userId) {
+        return res.status(403).json({ message: "You don't have permission to delete this API key" });
+      }
+      
+      // Delete the API key
+      await storage.deleteApiKey(id);
+      
+      res.json({ message: "API key deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting API key:", error);
+      res.status(500).json({ message: "Error deleting API key" });
+    }
+  });
+
+  // ----------------------------------------------------
+  // Media Library API
+  // ----------------------------------------------------
+  app.get("/api/media", async (req: Request, res: Response) => {
+    try {
+      const page = req.query.page ? parseInt(req.query.page as string) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+      const type = req.query.type as string;
+      
+      const media = await storage.getMediaItems(page, limit, type);
+      
+      res.json(media);
     } catch (error) {
       console.error("Error fetching media items:", error);
       res.status(500).json({ message: "Error fetching media items" });
     }
   });
-  
-  // Get a specific media item by ID
-  app.get("/api/media/:id", requireAuth, async (req, res) => {
+
+  app.get("/api/media/:id", async (req: Request, res: Response) => {
     try {
-      const itemId = parseInt(req.params.id);
-      const mediaItem = await storage.getMediaLibraryItemById(itemId);
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid media ID" });
+      }
+      
+      const mediaItem = await storage.getMediaItem(id);
       
       if (!mediaItem) {
         return res.status(404).json({ message: "Media item not found" });
-      }
-      
-      // Check permissions - users can only access their own media unless they're admin/editor
-      const { userId } = req.session;
-      const requestingUser = await storage.getUser(userId);
-      
-      if (mediaItem.userId !== userId && !['admin', 'editor'].includes(requestingUser?.role || '')) {
-        return res.status(403).json({ message: "You don't have permission to access this media item" });
       }
       
       res.json(mediaItem);
@@ -3934,75 +2046,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error fetching media item" });
     }
   });
-  
-  // Upload new media file
-  app.post("/api/media/upload", requireAuth, upload.single("file"), async (req, res) => {
+
+  app.post("/api/media", requireAuth, upload.single('file'), async (req: Request, res: Response) => {
     try {
-      const { userId } = req.session;
-      
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
       }
       
-      // Extract file information
-      const file = req.file;
-      const originalName = file.originalname;
-      const fileExtension = path.extname(originalName);
-      const mimetype = file.mimetype;
-      const fileSize = file.size;
+      const { originalname, mimetype, buffer, size } = req.file;
       
-      // Determine file type based on mimetype
-      let fileType: string;
+      // Create a unique filename to prevent collisions
+      const fileName = `${Date.now()}-${originalname.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+      
+      // Determine media type from mimetype
+      let type = 'other';
       if (mimetype.startsWith('image/')) {
-        fileType = 'image';
+        type = 'image';
       } else if (mimetype.startsWith('video/')) {
-        fileType = 'video';
+        type = 'video';
       } else if (mimetype.startsWith('audio/')) {
-        fileType = 'audio';
-      } else {
-        fileType = 'document';
+        type = 'audio';
+      } else if (mimetype === 'application/pdf') {
+        type = 'document';
       }
       
-      // Generate unique filename
-      const fileName = `${uuidv4()}${fileExtension}`;
-      
-      // Ensure uploads directory exists
-      const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-      if (!fs.existsSync(uploadsDir)) {
-        fs.mkdirSync(uploadsDir, { recursive: true });
+      // Create directory if it doesn't exist
+      const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
       }
       
-      // Save file to disk
-      const filePath = path.join(uploadsDir, fileName);
-      const fileStream = fs.createWriteStream(filePath);
-      const readableStream = new Readable();
-      readableStream.push(file.buffer);
-      readableStream.push(null);
-      await pipeline(readableStream, fileStream);
+      // Write file to disk
+      const filePath = path.join(uploadDir, fileName);
+      await pipeline(Readable.from(buffer), fs.createWriteStream(filePath));
       
-      // Generate file URL
-      const fileUrl = `/uploads/${fileName}`;
-      
-      // Get additional metadata from request body
-      const { altText, caption, isPublic, tags } = req.body;
-      const parsedTags = tags ? JSON.parse(tags) : undefined;
+      // Create URL for the uploaded file
+      const url = `/uploads/${fileName}`;
       
       // Create media item in database
-      const mediaItem = await storage.createMediaLibraryItem({
-        userId,
-        fileName: originalName,
-        fileUrl,
-        fileSize,
-        fileType: fileType as any,
-        mimeType: mimetype,
-        altText,
-        caption,
-        width: null,
-        height: null,
-        duration: null,
-        isPublic: isPublic === 'true',
-        tags: parsedTags
-      });
+      const mediaData = {
+        filename: fileName,
+        originalFilename: originalname,
+        mimetype,
+        type,
+        size,
+        url,
+        userId: req.session.userId
+      };
+      
+      // Validate media data
+      try {
+        insertMediaLibrarySchema.parse(mediaData);
+      } catch (validationError) {
+        if (validationError instanceof ZodError) {
+          // Clean up file if validation fails
+          fs.unlinkSync(filePath);
+          
+          return res.status(400).json({
+            message: "Validation error",
+            errors: validationError.errors
+          });
+        }
+      }
+      
+      // Save media item to database
+      const mediaItem = await storage.createMediaItem(mediaData);
       
       res.status(201).json(mediaItem);
     } catch (error) {
@@ -4010,283 +2118,348 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error uploading media" });
     }
   });
-  
-  // Update media item metadata
-  app.patch("/api/media/:id", requireAuth, async (req, res) => {
+
+  app.patch("/api/media/:id", requireAuth, async (req: Request, res: Response) => {
     try {
-      const itemId = parseInt(req.params.id);
-      const { userId } = req.session;
+      const id = parseInt(req.params.id);
+      const { altText, description, title } = req.body;
       
-      // Get the media item
-      const mediaItem = await storage.getMediaLibraryItemById(itemId);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid media ID" });
+      }
+      
+      // Check if media item exists
+      const mediaItem = await storage.getMediaItem(id);
       
       if (!mediaItem) {
         return res.status(404).json({ message: "Media item not found" });
       }
       
-      // Check permissions - only the owner or admin/editor can update
-      const requestingUser = await storage.getUser(userId);
+      // Check if user has permission to update this media item
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
       
-      if (mediaItem.userId !== userId && !['admin', 'editor'].includes(requestingUser?.role || '')) {
+      if (mediaItem.userId !== userId && user?.role !== 'admin') {
         return res.status(403).json({ message: "You don't have permission to update this media item" });
       }
       
-      // Validate update data
-      const updateSchema = z.object({
-        altText: z.string().optional(),
-        caption: z.string().optional(),
-        isPublic: z.boolean().optional(),
-        tags: z.array(z.string()).optional()
-      });
-      
-      const updateData = updateSchema.parse(req.body);
-      
       // Update the media item
-      const updatedItem = await storage.updateMediaLibraryItem(itemId, updateData);
+      const updatedItem = await storage.updateMediaItem(id, {
+        altText,
+        description,
+        title
+      });
       
       res.json(updatedItem);
     } catch (error) {
-      if (error instanceof ZodError) {
-        return res.status(400).json({ message: "Invalid update data", errors: error.errors });
-      }
-      
       console.error("Error updating media item:", error);
       res.status(500).json({ message: "Error updating media item" });
     }
   });
-  
-  // Bulk delete media items - this route must be defined BEFORE the /:id route
-  app.delete("/api/media/bulk", requireAuth, async (req, res) => {
+
+  app.delete("/api/media/:id", requireAuth, async (req: Request, res: Response) => {
     try {
-      const { userId } = req.session;
-      const { ids } = req.body;
+      const id = parseInt(req.params.id);
       
-      if (!Array.isArray(ids) || ids.length === 0) {
-        return res.status(400).json({ message: "Invalid or empty ids array" });
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid media ID" });
       }
       
-      // Get the requesting user to check admin status
-      const requestingUser = await storage.getUser(userId);
-      const isAdmin = requestingUser?.role === 'admin';
-      
-      // Get all media items
-      const mediaItems = await Promise.all(
-        ids.map(id => storage.getMediaLibraryItemById(parseInt(id)))
-      );
-      
-      // Filter out any null items (not found)
-      const foundItems = mediaItems.filter(item => item !== undefined);
-      
-      if (foundItems.length !== ids.length) {
-        return res.status(404).json({ message: "One or more media items not found" });
-      }
-      
-      // Check permissions
-      if (!isAdmin) {
-        const unauthorizedItems = foundItems.filter(item => item && item.userId !== userId);
-        if (unauthorizedItems.length > 0) {
-          return res.status(403).json({ 
-            message: "You don't have permission to delete one or more of these media items"
-          });
-        }
-      }
-      
-      // Delete files from disk and remove from database
-      const results = await Promise.all(
-        foundItems.map(async (item) => {
-          try {
-            // Delete file from disk
-            const filePath = path.join(process.cwd(), 'public', item.fileUrl);
-            if (fs.existsSync(filePath)) {
-              fs.unlinkSync(filePath);
-            }
-            
-            // Delete from database
-            await storage.deleteMediaLibraryItem(item.id);
-            return true;
-          } catch (error) {
-            console.error(`Error deleting media item ${item.id}:`, error);
-            return false;
-          }
-        })
-      );
-      
-      const successCount = results.filter(Boolean).length;
-      
-      if (successCount === ids.length) {
-        res.json({ 
-          success: true, 
-          message: `Successfully deleted ${successCount} media items`,
-          deletedCount: successCount
-        });
-      } else {
-        res.status(207).json({ 
-          success: successCount > 0,
-          message: `Partially deleted media items: ${successCount} of ${ids.length} successful`,
-          deletedCount: successCount
-        });
-      }
-    } catch (error) {
-      console.error("Error bulk deleting media items:", error);
-      res.status(500).json({ message: "Error deleting media items" });
-    }
-  });
-  
-  // Delete single media item
-  app.delete("/api/media/:id", requireAuth, async (req, res) => {
-    try {
-      const itemId = parseInt(req.params.id);
-      const { userId } = req.session;
-      
-      // Get the media item
-      const mediaItem = await storage.getMediaLibraryItemById(itemId);
+      // Check if media item exists
+      const mediaItem = await storage.getMediaItem(id);
       
       if (!mediaItem) {
         return res.status(404).json({ message: "Media item not found" });
       }
       
-      // Check permissions - only the owner or admin can delete
-      const requestingUser = await storage.getUser(userId);
+      // Check if user has permission to delete this media item
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
       
-      if (mediaItem.userId !== userId && requestingUser?.role !== 'admin') {
+      if (mediaItem.userId !== userId && user?.role !== 'admin') {
         return res.status(403).json({ message: "You don't have permission to delete this media item" });
       }
       
-      // Delete the file from disk
-      const filePath = path.join(process.cwd(), 'public', mediaItem.fileUrl);
+      // Delete the file
+      const filePath = path.join(process.cwd(), 'public', mediaItem.url);
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
       
       // Delete the media item from database
-      await storage.deleteMediaLibraryItem(itemId);
+      await storage.deleteMediaItem(id);
       
-      res.json({ success: true });
+      res.json({ message: "Media item deleted successfully" });
     } catch (error) {
       console.error("Error deleting media item:", error);
       res.status(500).json({ message: "Error deleting media item" });
     }
   });
-  
-  // Site Settings routes
-  app.get('/api/site-settings', async (req, res) => {
+
+  // ----------------------------------------------------
+  // Site Settings API
+  // ----------------------------------------------------
+  app.get("/api/site-settings", async (req: Request, res: Response) => {
     try {
       const settings = await storage.getSiteSettings();
       
       if (!settings) {
-        const adminUser = await storage.getUserByRole('admin');
-        if (!adminUser) {
-          return res.status(500).json({ message: "No admin user found to create default settings" });
-        }
-        
-        const defaultSettings = await storage.createDefaultSiteSettings(adminUser.id);
-        return res.json(defaultSettings);
+        return res.status(404).json({ message: "Site settings not found" });
       }
       
-      return res.json(settings);
+      res.json(settings);
     } catch (error) {
       console.error("Error fetching site settings:", error);
       res.status(500).json({ message: "Error fetching site settings" });
     }
   });
-  
-  // Using requireAdmin middleware which has auto-bypass in development
-  app.patch('/api/site-settings/:id', requireAdmin, async (req, res) => {
+
+  app.patch("/api/site-settings", requireAdmin, async (req: Request, res: Response) => {
     try {
-      const { id } = req.params;
-      const settingsId = parseInt(id, 10);
-      // For testing purposes, hard code the admin user ID
-      const userId = 1; // Admin user ID from the database
+      const updates = req.body;
       
-      console.log("PATCH /api/site-settings/:id - Request received");
-      console.log("Settings ID:", settingsId);
-      console.log("Request body:", req.body);
-      console.log("User ID (hardcoded admin):", userId);
-      
-      // Validate the data
-      if (!req.body) {
-        return res.status(400).json({ message: "No data provided" });
+      // Validate site settings updates
+      try {
+        updateSiteSettingsSchema.parse(updates);
+      } catch (validationError) {
+        if (validationError instanceof ZodError) {
+          return res.status(400).json({
+            message: "Validation error",
+            errors: validationError.errors
+          });
+        }
       }
       
-      console.log("Data validation passed");
+      // Update site settings
+      const updatedSettings = await storage.updateSiteSettings(updates);
       
-      // Update the settings
-      const updatedSettings = await storage.updateSiteSettings(
-        settingsId,
-        req.body,
-        userId
-      );
-      
-      if (!updatedSettings) {
-        console.log("Settings not found after update attempt");
-        return res.status(404).json({ message: "Settings not found" });
-      }
-      
-      return res.json(updatedSettings);
+      res.json(updatedSettings);
     } catch (error) {
       console.error("Error updating site settings:", error);
       res.status(500).json({ message: "Error updating site settings" });
     }
   });
-  
-  // Add PATCH method for article updates
-  app.patch("/api/articles/:id", requireAuth, async (req, res) => {
+
+  // ----------------------------------------------------
+  // Emergency Banner API
+  // ----------------------------------------------------
+  app.get("/api/emergency-banner", async (req: Request, res: Response) => {
     try {
-      const { id } = req.params;
-      const articleId = parseInt(id);
-      const userId = req.session.userId!;
+      const settings = await storage.getSiteSettings();
       
-      console.log(`PATCH: Updating article ${id} with data:`, {
-        userId: userId,
-        articleId: articleId,
-        status: req.body.status
-      });
-      
-      const article = await storage.getArticleById(articleId);
-      if (!article) {
-        return res.status(404).json({ message: "Article not found" });
+      if (!settings) {
+        return res.status(404).json({ message: "Site settings not found" });
       }
       
-      // Get user data to check role
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(401).json({ message: "User not found" });
-      }
-      
-      // Get article authors to check if user is an author
-      const articleAuthors = await storage.getArticleAuthors(articleId);
-      const isArticleAuthor = articleAuthors.some(author => author.user.id === userId);
-      
-      // Determine if user has permission to edit this article
-      const canEdit = user.role === 'admin' || 
-                     user.role === 'editor' || 
-                     (user.role === 'author' && isArticleAuthor);
-      
-      if (!canEdit) {
-        return res.status(403).json({ 
-          message: "You don't have permission to edit this article." 
+      // Only return emergency banner if it's enabled
+      if (settings.emergencyBannerEnabled) {
+        res.json({
+          message: settings.emergencyBannerMessage,
+          level: settings.emergencyBannerLevel,
+          enabled: true
         });
+      } else {
+        res.json({ enabled: false });
       }
-      
-      // Update the article
-      const updatedArticle = await storage.updateArticle(articleId, req.body);
-      if (!updatedArticle) {
-        return res.status(404).json({ message: "Article failed to update" });
-      }
-      
-      console.log(`PATCH: Article ${id} updated successfully:`, {
-        id: updatedArticle.id,
-        title: updatedArticle.title,
-        status: updatedArticle.status
-      });
-      
-      res.json({ success: true, article: updatedArticle });
     } catch (error) {
-      console.error("Error updating article with PATCH:", error);
-      res.status(500).json({ message: "Error updating article" });
+      console.error("Error fetching emergency banner:", error);
+      res.status(500).json({ message: "Error fetching emergency banner" });
     }
   });
 
+  app.patch("/api/emergency-banner", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { enabled, message, level } = req.body;
+      
+      if (enabled === undefined) {
+        return res.status(400).json({ message: "Enabled status is required" });
+      }
+      
+      if (enabled && !message) {
+        return res.status(400).json({ message: "Message is required when enabling the emergency banner" });
+      }
+      
+      // Update emergency banner settings
+      const updates: Partial<SiteSettings> = {
+        emergencyBannerEnabled: enabled
+      };
+      
+      if (message !== undefined) {
+        updates.emergencyBannerMessage = message;
+      }
+      
+      if (level !== undefined) {
+        updates.emergencyBannerLevel = level;
+      }
+      
+      const updatedSettings = await storage.updateSiteSettings(updates);
+      
+      res.json({
+        message: updatedSettings.emergencyBannerMessage,
+        level: updatedSettings.emergencyBannerLevel,
+        enabled: updatedSettings.emergencyBannerEnabled
+      });
+    } catch (error) {
+      console.error("Error updating emergency banner:", error);
+      res.status(500).json({ message: "Error updating emergency banner" });
+    }
+  });
+
+  // ----------------------------------------------------
+  // Stripe webhook handler for subscription events
+  // ----------------------------------------------------
+  app.post("/api/stripe-webhook", express.raw({ type: "application/json" }), handleStripeWebhook);
+
+  // Create Stripe checkout session for subscriptions
+  app.post("/api/create-checkout-session", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { priceId, successUrl, cancelUrl } = req.body;
+      
+      if (!priceId || !successUrl || !cancelUrl) {
+        return res.status(400).json({ 
+          message: "Price ID, success URL, and cancel URL are required" 
+        });
+      }
+      
+      // Validate price ID
+      if (!SUBSCRIPTION_PRICES.includes(priceId)) {
+        return res.status(400).json({ 
+          message: `Invalid price ID. Valid options are: ${SUBSCRIPTION_PRICES.join(', ')}` 
+        });
+      }
+      
+      // Get user information
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Create checkout session
+      const session = await createStripeCheckoutSession({
+        userId,
+        email: user.email || undefined,
+        priceId,
+        successUrl,
+        cancelUrl
+      });
+      
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error("Error creating checkout session:", error);
+      res.status(500).json({ message: "Error creating checkout session" });
+    }
+  });
+
+  // Get user subscription status
+  app.get("/api/subscription", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Get subscription information
+      const subscription = await storage.getUserSubscription(userId);
+      
+      if (!subscription) {
+        return res.json({ active: false });
+      }
+      
+      res.json({
+        active: subscription.status === 'active',
+        tier: subscription.tier,
+        currentPeriodEnd: subscription.currentPeriodEnd,
+        cancelAtPeriodEnd: subscription.cancelAtPeriodEnd
+      });
+    } catch (error) {
+      console.error("Error fetching subscription:", error);
+      res.status(500).json({ message: "Error fetching subscription" });
+    }
+  });
+
+  // Cancel subscription
+  app.post("/api/subscription/cancel", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Get subscription information
+      const subscription = await storage.getUserSubscription(userId);
+      
+      if (!subscription || subscription.status !== 'active') {
+        return res.status(400).json({ message: "No active subscription found" });
+      }
+      
+      // Cancel the subscription at the end of the billing period
+      const stripeSubscription = await stripe.subscriptions.update(
+        subscription.stripeSubscriptionId,
+        { cancel_at_period_end: true }
+      );
+      
+      // Update subscription in database
+      await storage.updateUserSubscription(userId, {
+        cancelAtPeriodEnd: true
+      });
+      
+      res.json({ 
+        message: "Subscription will be canceled at the end of the billing period",
+        currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000)
+      });
+    } catch (error) {
+      console.error("Error canceling subscription:", error);
+      res.status(500).json({ message: "Error canceling subscription" });
+    }
+  });
+
+  // Resume canceled subscription
+  app.post("/api/subscription/resume", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Get subscription information
+      const subscription = await storage.getUserSubscription(userId);
+      
+      if (!subscription || subscription.status !== 'active') {
+        return res.status(400).json({ message: "No active subscription found" });
+      }
+      
+      if (!subscription.cancelAtPeriodEnd) {
+        return res.status(400).json({ message: "Subscription is not scheduled for cancellation" });
+      }
+      
+      // Resume the subscription by unsetting cancel_at_period_end
+      await stripe.subscriptions.update(
+        subscription.stripeSubscriptionId,
+        { cancel_at_period_end: false }
+      );
+      
+      // Update subscription in database
+      await storage.updateUserSubscription(userId, {
+        cancelAtPeriodEnd: false
+      });
+      
+      res.json({ message: "Subscription resumed successfully" });
+    } catch (error) {
+      console.error("Error resuming subscription:", error);
+      res.status(500).json({ message: "Error resuming subscription" });
+    }
+  });
+
+  // Create HTTP server
+  // This server will be returned to index.ts to serve the app
   const httpServer = createServer(app);
 
   return httpServer;
