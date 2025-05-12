@@ -43,12 +43,18 @@ function Header() {
         <div className="flex items-center justify-between py-3">
           <div className="flex items-center space-x-6">
             <Link href="/" className="flex items-center">
-              <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center">
-                <RocketIcon className="h-6 w-6 text-white transform -rotate-45" />
-              </div>
-              <span className="ml-2 text-xl font-space font-bold tracking-wider text-white">
-                PROXIMA<span className="text-purple-500">REPORT</span>
-              </span>
+              {/* Desktop logo (visible on md and larger screens) */}
+              <img 
+                src="/assets/images/proxima-logo-desktop.png" 
+                alt="Proxima Report" 
+                className="hidden md:block h-8" 
+              />
+              {/* Mobile logo (visible on smaller screens) */}
+              <img 
+                src="/assets/images/proxima-logo-mobile.png" 
+                alt="Proxima Report" 
+                className="block md:hidden h-10 w-10" 
+              />
             </Link>
             
             <nav className="hidden md:flex items-center space-x-6">
@@ -152,12 +158,16 @@ function Header() {
                 <SheetContent side="right" className="bg-[#14141E] border-l border-purple-900/30 max-w-[300px]">
                   <div className="py-6">
                     <div className="flex items-center mb-6">
-                      <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center">
-                        <RocketIcon className="h-6 w-6 text-white transform -rotate-45" />
-                      </div>
-                      <span className="ml-2 text-xl font-space font-bold tracking-wider text-white">
-                        PROXIMA<span className="text-purple-500">REPORT</span>
-                      </span>
+                      <img 
+                        src="/assets/images/proxima-logo-mobile.png" 
+                        alt="Proxima Report" 
+                        className="h-10 w-10" 
+                      />
+                      <img 
+                        src="/assets/images/proxima-logo-desktop.png" 
+                        alt="Proxima Report" 
+                        className="ml-2 h-6" 
+                      />
                     </div>
                     
                     <nav className="flex flex-col space-y-4">
