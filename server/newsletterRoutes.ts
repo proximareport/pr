@@ -1,79 +1,119 @@
 import { Express, Request, Response } from "express";
-import { subscribeToNewsletter, unsubscribeFromNewsletter, verifySubscription, sendNewsletterEmail } from "./emailService";
-import { searchArticles, searchUsers, getPopularSearches } from "./searchService";
-import { newsletterSubscriptions, articles } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { 
+  subscribeToNewsletter, 
+  verifySubscription, 
+  unsubscribeFromNewsletter,
+  sendNewsletterEmail
+} from "./emailService";
+import { 
+  searchArticles, 
+  searchUsers, 
+  getPopularSearches, 
+  saveSearch
+} from "./searchService";
+import { 
+  articles, 
+  newsletterSubscriptions, 
+  newsletterSentHistory, 
+  searchHistory
+} from "../shared/schema";
+import { eq, and, desc, sql, count } from "drizzle-orm";
+import z from "zod";
 
+// Newsletter request schemas
+const subscribeSchema = z.object({
+  email: z.string().email("Please provide a valid email address"),
+});
+
+const searchSchema = z.object({
+  query: z.string().min(1, "Search query is required"),
+  filters: z.object({}).optional(),
+});
+
+const sendNewsletterSchema = z.object({
+  articleId: z.number(),
+  subject: z.string().min(1, "Subject is required"),
+  fromEmail: z.string().email("Valid from email is required"),
+  fromName: z.string().min(1, "From name is required"),
+});
+
+// Register routes
 export function registerNewsletterAndSearchRoutes(app: Express) {
-  // Search endpoints
+  // Search routes
   app.get("/api/search", async (req: Request, res: Response) => {
     try {
-      const { q, type = 'articles', page = '1', limit = '10', orderBy = 'publishedAt', orderDirection = 'desc', category, tags, author, dateFrom, dateTo } = req.query;
+      const query = req.query.q as string;
+      const page = req.query.page ? parseInt(req.query.page as string) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      const orderBy = req.query.orderBy as string || "publishedAt";
+      const orderDirection = req.query.orderDirection as "asc" | "desc" || "desc";
+      const category = req.query.category as string;
+      const tags = req.query.tags ? (req.query.tags as string).split(",") : undefined;
+      const authorId = req.query.author ? parseInt(req.query.author as string) : undefined;
+      const dateFrom = req.query.from ? new Date(req.query.from as string) : undefined;
+      const dateTo = req.query.to ? new Date(req.query.to as string) : undefined;
       
-      if (!q) {
-        return res.status(400).json({ message: "Search query is required" });
-      }
-      
-      // Format filters
-      const filters: any = {};
-      if (category) filters.category = category as string;
-      if (author) filters.author = parseInt(author as string);
-      if (dateFrom) filters.dateFrom = new Date(dateFrom as string);
-      if (dateTo) filters.dateTo = new Date(dateTo as string);
-      if (tags) filters.tags = Array.isArray(tags) ? tags as string[] : [tags as string];
-      
-      // Format options
-      const options = {
-        page: parseInt(page as string),
-        limit: parseInt(limit as string),
-        orderBy: orderBy as string,
-        orderDirection: (orderDirection as string === 'asc' ? 'asc' : 'desc') as 'asc' | 'desc'
+      const options = { page, limit, orderBy, orderDirection };
+      const filters = { 
+        category,
+        tags,
+        author: authorId,
+        dateFrom,
+        dateTo
       };
       
-      // Get user ID if authenticated
-      const userId = req.session?.userId;
-      const isAdmin = req.session?.isAdmin;
+      const results = await searchArticles(query, options, filters);
       
-      let results;
-      if (type === 'users' && isAdmin) {
-        // Only admins can search users
-        results = await searchUsers(q as string, options, true);
-      } else if (type === 'users') {
-        // Regular users get limited user search
-        results = await searchUsers(q as string, options, false);
-      } else {
-        // Default to article search
-        results = await searchArticles(q as string, options, filters, userId);
+      // Save search to history if user is logged in
+      // @ts-ignore (Access req.session)
+      const userId = req.session?.userId;
+      if (query && query.trim().length > 0) {
+        saveSearch(query, userId || null, results.total, filters);
       }
       
       res.json(results);
     } catch (error) {
-      console.error('Search error:', error);
-      res.status(500).json({ message: "Error performing search", error: (error as Error).message });
+      console.error("Search error:", error);
+      res.status(500).json({ message: "Error processing search" });
     }
   });
   
   app.get("/api/search/popular", async (req: Request, res: Response) => {
     try {
-      const limit = parseInt(req.query.limit as string || '5');
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
       const popularSearches = await getPopularSearches(limit);
       res.json(popularSearches);
     } catch (error) {
-      res.status(500).json({ message: "Error fetching popular searches", error: (error as Error).message });
+      console.error("Popular searches error:", error);
+      res.status(500).json({ message: "Error fetching popular searches" });
     }
   });
   
-  // Newsletter subscriptions
+  app.post("/api/search/history", async (req: Request, res: Response) => {
+    try {
+      const { query, filters } = searchSchema.parse(req.body);
+      
+      // @ts-ignore (Access req.session)
+      const userId = req.session?.userId;
+      await saveSearch(query, userId || null, 0, filters || {});
+      
+      res.json({ success: true });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors[0].message });
+      }
+      console.error("Search history error:", error);
+      res.status(500).json({ message: "Error saving search history" });
+    }
+  });
+  
+  // Newsletter routes
   app.post("/api/newsletter/subscribe", async (req: Request, res: Response) => {
     try {
-      const { email } = req.body;
+      const { email } = subscribeSchema.parse(req.body);
       
-      if (!email) {
-        return res.status(400).json({ message: "Email is required" });
-      }
-      
-      // Pass user ID if authenticated
+      // @ts-ignore (Access req.session)
       const userId = req.session?.userId;
       
       const result = await subscribeToNewsletter(email, userId);
@@ -84,18 +124,17 @@ export function registerNewsletterAndSearchRoutes(app: Express) {
         res.status(400).json({ message: result.message });
       }
     } catch (error) {
-      res.status(500).json({ message: "Error subscribing to newsletter", error: (error as Error).message });
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors[0].message });
+      }
+      console.error("Newsletter subscribe error:", error);
+      res.status(500).json({ message: "An error occurred while subscribing" });
     }
   });
   
   app.get("/api/newsletter/verify/:token", async (req: Request, res: Response) => {
     try {
       const { token } = req.params;
-      
-      if (!token) {
-        return res.status(400).json({ message: "Verification token is required" });
-      }
-      
       const result = await verifySubscription(token);
       
       if (result.success) {
@@ -104,18 +143,14 @@ export function registerNewsletterAndSearchRoutes(app: Express) {
         res.status(400).json({ message: result.message });
       }
     } catch (error) {
-      res.status(500).json({ message: "Error verifying subscription", error: (error as Error).message });
+      console.error("Newsletter verification error:", error);
+      res.status(500).json({ message: "An error occurred while verifying your subscription" });
     }
   });
   
   app.get("/api/newsletter/unsubscribe/:token", async (req: Request, res: Response) => {
     try {
       const { token } = req.params;
-      
-      if (!token) {
-        return res.status(400).json({ message: "Unsubscribe token is required" });
-      }
-      
       const result = await unsubscribeFromNewsletter(token);
       
       if (result.success) {
@@ -124,90 +159,138 @@ export function registerNewsletterAndSearchRoutes(app: Express) {
         res.status(400).json({ message: result.message });
       }
     } catch (error) {
-      res.status(500).json({ message: "Error unsubscribing from newsletter", error: (error as Error).message });
+      console.error("Newsletter unsubscribe error:", error);
+      res.status(500).json({ message: "An error occurred while processing your unsubscribe request" });
     }
   });
   
-  // Get newsletter status for an article
   app.get("/api/newsletter/status/:articleId", async (req: Request, res: Response) => {
     try {
-      const { articleId } = req.params;
-      
-      if (!articleId) {
-        return res.status(400).json({ message: "Article ID is required" });
-      }
+      const articleId = parseInt(req.params.articleId);
       
       const [article] = await db
         .select({
+          id: articles.id,
+          title: articles.title,
           isNewsletter: articles.isNewsletter,
-          newsletterSentAt: articles.newsletterSentAt
+          newsletterSentAt: articles.newsletterSentAt,
         })
         .from(articles)
-        .where(eq(articles.id, parseInt(articleId)));
+        .where(eq(articles.id, articleId));
       
       if (!article) {
         return res.status(404).json({ message: "Article not found" });
       }
       
+      // Get subscriber count
+      const subscriberCountResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(newsletterSubscriptions)
+        .where(
+          and(
+            eq(newsletterSubscriptions.isVerified, true),
+            eq(newsletterSubscriptions.isActive, true)
+          )
+        );
+        
+      const subscriberCount = subscriberCountResult[0]?.count || 0;
+      
+      // Get sent history (if exists)
+      const [sentHistory] = await db
+        .select()
+        .from(newsletterSentHistory)
+        .where(eq(newsletterSentHistory.articleId, articleId))
+        .orderBy(desc(newsletterSentHistory.sentAt))
+        .limit(1);
+      
       res.json({
+        id: article.id,
+        title: article.title,
         isNewsletter: article.isNewsletter,
-        sent: article.newsletterSentAt !== null,
-        sentAt: article.newsletterSentAt
+        sent: !!article.newsletterSentAt,
+        sentAt: article.newsletterSentAt,
+        subscriberCount,
+        sentHistory: sentHistory || null,
       });
     } catch (error) {
-      res.status(500).json({ message: "Error getting newsletter status", error: (error as Error).message });
+      console.error("Newsletter status error:", error);
+      res.status(500).json({ message: "Error fetching newsletter status" });
     }
   });
   
-  // Get newsletter subscription count
   app.get("/api/newsletter/stats", async (req: Request, res: Response) => {
     try {
-      const [{ count }] = await db
-        .select({
-          count: db.fn.count<number>(newsletterSubscriptions.id)
-        })
+      // Get subscriber count
+      const subscriberCountResult = await db
+        .select({ count: sql<number>`count(*)` })
         .from(newsletterSubscriptions)
-        .where(and(
-          eq(newsletterSubscriptions.isActive, true),
-          eq(newsletterSubscriptions.isVerified, true)
-        ));
+        .where(
+          and(
+            eq(newsletterSubscriptions.isVerified, true),
+            eq(newsletterSubscriptions.isActive, true)
+          )
+        );
+        
+      const subscriberCount = subscriberCountResult[0]?.count || 0;
+      
+      // Get total sent newsletters
+      const sentCountResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(newsletterSentHistory);
+        
+      const sentCount = sentCountResult[0]?.count || 0;
+      
+      // Get recent sent history
+      const recentHistory = await db
+        .select({
+          id: newsletterSentHistory.id,
+          articleId: newsletterSentHistory.articleId,
+          sentAt: newsletterSentHistory.sentAt,
+          subject: newsletterSentHistory.subject,
+          recipientCount: newsletterSentHistory.recipientCount,
+          openCount: newsletterSentHistory.openCount,
+          clickCount: newsletterSentHistory.clickCount,
+        })
+        .from(newsletterSentHistory)
+        .orderBy(desc(newsletterSentHistory.sentAt))
+        .limit(5);
       
       res.json({
-        subscriberCount: Number(count)
+        subscriberCount,
+        sentCount,
+        recentHistory,
       });
     } catch (error) {
-      res.status(500).json({ message: "Error getting newsletter stats", error: (error as Error).message });
+      console.error("Newsletter stats error:", error);
+      res.status(500).json({ message: "Error fetching newsletter statistics" });
     }
   });
   
-  // Send newsletter (admin only)
   app.post("/api/newsletter/send", async (req: Request, res: Response) => {
     try {
-      // Check if user is admin
-      if (!req.session?.isAdmin) {
-        return res.status(403).json({ message: "Unauthorized: Admin access required" });
+      // First, check if the user is an admin
+      // @ts-ignore (Access req.session)
+      const isAdmin = req.session?.isAdmin;
+      
+      if (!isAdmin) {
+        return res.status(403).json({ message: "Only admins can send newsletters" });
       }
       
-      const { articleId, subject, fromEmail, fromName } = req.body;
+      const params = sendNewsletterSchema.parse(req.body);
       
-      if (!articleId || !subject || !fromEmail || !fromName) {
-        return res.status(400).json({ message: "All fields are required: articleId, subject, fromEmail, fromName" });
-      }
+      const result = await sendNewsletterEmail(params);
       
-      const success = await sendNewsletterEmail({
-        articleId,
-        subject,
-        fromEmail,
-        fromName
-      });
-      
-      if (success) {
-        res.json({ message: "Newsletter sent successfully" });
+      if (result) {
+        res.json({ success: true, message: "Newsletter sent successfully" });
       } else {
-        res.status(500).json({ message: "Failed to send newsletter" });
+        res.status(400).json({ success: false, message: "Failed to send newsletter" });
       }
     } catch (error) {
-      res.status(500).json({ message: "Error sending newsletter", error: (error as Error).message });
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors[0].message });
+      }
+      console.error("Send newsletter error:", error);
+      res.status(500).json({ message: "An error occurred while sending the newsletter" });
     }
   });
 }

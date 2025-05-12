@@ -1,13 +1,25 @@
-import mail from '@sendgrid/mail';
-import crypto from 'crypto';
-import { db } from './db';
-import { newsletterSubscriptions, newsletterSentHistory, articles } from '@shared/schema';
-import { eq, and } from 'drizzle-orm';
+import { db } from "./db";
+import { v4 as uuidv4 } from "uuid";
+import { MailService } from "@sendgrid/mail";
+import { 
+  articles, 
+  newsletterSubscriptions, 
+  newsletterSentHistory,
+  users
+} from "../shared/schema";
+import { eq, and, isNull, sql } from "drizzle-orm";
 
-// Initialize with a default empty key - we'll use environment variable in production
-const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || 'SG.example_key';
-mail.setApiKey(SENDGRID_API_KEY);
+// Initialize SendGrid client
+const mailService = new MailService();
 
+// Check if SendGrid API key is set
+if (process.env.SENDGRID_API_KEY) {
+  mailService.setApiKey(process.env.SENDGRID_API_KEY);
+} else {
+  console.warn("SENDGRID_API_KEY not set. Email functionality will not work.");
+}
+
+// Interfaces
 interface SendNewsletterParams {
   articleId: number;
   subject: string;
@@ -15,9 +27,17 @@ interface SendNewsletterParams {
   fromName: string;
 }
 
+/**
+ * Send newsletter email for a specific article to all subscribers
+ */
 export async function sendNewsletterEmail(params: SendNewsletterParams): Promise<boolean> {
   try {
-    // Get article details
+    if (!process.env.SENDGRID_API_KEY) {
+      console.error("Cannot send newsletter: SENDGRID_API_KEY not set");
+      return false;
+    }
+
+    // Get the article
     const [article] = await db
       .select()
       .from(articles)
@@ -28,222 +48,296 @@ export async function sendNewsletterEmail(params: SendNewsletterParams): Promise
       return false;
     }
 
-    // Ensure article is a newsletter and is published
-    if (!article.isNewsletter || !article.publishedAt) {
-      console.error(`Article is not a newsletter or is not published: ${article.id}`);
-      return false;
-    }
-
     // Get active subscribers
     const subscribers = await db
       .select()
       .from(newsletterSubscriptions)
-      .where(and(
-        eq(newsletterSubscriptions.isActive, true),
-        eq(newsletterSubscriptions.isVerified, true)
-      ));
+      .where(
+        and(
+          eq(newsletterSubscriptions.isVerified, true),
+          eq(newsletterSubscriptions.isActive, true)
+        )
+      );
 
     if (subscribers.length === 0) {
-      console.log('No active subscribers found');
+      console.log("No subscribers found for newsletter");
       return false;
     }
 
-    // Create content from article (simplified for example)
+    // Prepare article content
+    const articleUrl = `${process.env.BASE_URL || 'https://proximareport.com'}/articles/${article.slug}`;
+    
+    // Generate HTML content
     const htmlContent = `
-      <h1>${article.title}</h1>
-      <p>${article.summary}</p>
-      <p>Read the full article: <a href="https://${process.env.REPLIT_DOMAINS}/articles/${article.slug}">Click here</a></p>
-      <hr>
-      <p>You are receiving this email because you subscribed to Proxima Report newsletters. 
-      <a href="https://${process.env.REPLIT_DOMAINS}/unsubscribe?token=\${unsubscribeToken}">Unsubscribe</a></p>
-    `;
-
-    const textContent = `
-      ${article.title}
-      
-      ${article.summary}
-      
-      Read the full article: https://${process.env.REPLIT_DOMAINS}/articles/${article.slug}
-      
-      You are receiving this email because you subscribed to Proxima Report newsletters.
-      To unsubscribe: https://${process.env.REPLIT_DOMAINS}/unsubscribe?token=\${unsubscribeToken}
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <h1 style="color: #4f46e5;">Proxima Report</h1>
+        </div>
+        
+        ${article.featuredImage ? `
+          <div style="margin-bottom: 20px;">
+            <img src="${article.featuredImage}" alt="${article.title}" style="max-width: 100%; height: auto; border-radius: 8px;" />
+          </div>
+        ` : ''}
+        
+        <h2 style="color: #1f2937; margin-bottom: 10px;">${article.title}</h2>
+        
+        <div style="color: #4b5563; margin-bottom: 20px;">
+          <p>${article.summary}</p>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${articleUrl}" style="background-color: #4f46e5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Read Full Article</a>
+        </div>
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 12px;">
+          <p>You're receiving this email because you subscribed to Proxima Report newsletters.</p>
+          <p>To unsubscribe, <a href="${process.env.BASE_URL || 'https://proximareport.com'}/newsletter/unsubscribe/{token}" style="color: #4f46e5;">click here</a>.</p>
+        </div>
+      </div>
     `;
 
     // Send emails to each subscriber
     const emailPromises = subscribers.map(subscriber => {
-      const personalizedHtml = htmlContent.replace('\${unsubscribeToken}', subscriber.unsubscribeToken);
-      const personalizedText = textContent.replace('\${unsubscribeToken}', subscriber.unsubscribeToken);
-
-      const msg = {
+      // Replace the token placeholder with the actual unsubscribe token
+      const personalizedHtml = htmlContent.replace('{token}', subscriber.unsubscribeToken);
+      
+      return mailService.send({
         to: subscriber.email,
         from: {
           email: params.fromEmail,
-          name: params.fromName,
+          name: params.fromName
         },
         subject: params.subject,
-        text: personalizedText,
         html: personalizedHtml,
-      };
-
-      return mail.send(msg);
+        trackingSettings: {
+          clickTracking: { enable: true },
+          openTracking: { enable: true }
+        }
+      });
     });
 
-    // Wait for all emails to be sent
     await Promise.all(emailPromises);
 
-    // Record newsletter sent
+    // Record the newsletter sending in history
     await db.insert(newsletterSentHistory).values({
-      articleId: article.id,
-      subject: params.subject,
+      articleId: params.articleId,
       recipientCount: subscribers.length,
+      subject: params.subject,
     });
 
-    // Update article to mark as sent
+    // Update the article to mark it as sent
     await db
       .update(articles)
-      .set({ newsletterSentAt: new Date() })
-      .where(eq(articles.id, article.id));
+      .set({
+        newsletterSentAt: new Date(),
+      })
+      .where(eq(articles.id, params.articleId));
 
     return true;
   } catch (error) {
-    console.error('Error sending newsletter emails:', error);
+    console.error("Error sending newsletter:", error);
     return false;
   }
 }
 
+/**
+ * Generate a random token for subscription verification/unsubscribe
+ */
 export function generateToken(): string {
-  return crypto.randomBytes(32).toString('hex');
+  return uuidv4();
 }
 
+/**
+ * Subscribe to newsletter
+ */
 export async function subscribeToNewsletter(email: string, userId?: number): Promise<{success: boolean, message: string}> {
   try {
+    // Check if already subscribed
     const existingSubscription = await db
       .select()
       .from(newsletterSubscriptions)
       .where(eq(newsletterSubscriptions.email, email));
 
     if (existingSubscription.length > 0) {
-      if (existingSubscription[0].isActive) {
-        return { 
-          success: false, 
-          message: 'This email is already subscribed to our newsletter.' 
-        };
-      } else {
-        // Reactivate existing subscription
+      // If already subscribed but not verified, resend verification
+      if (!existingSubscription[0].isVerified) {
+        const verificationToken = generateToken();
+        const unsubscribeToken = existingSubscription[0].unsubscribeToken;
+        
         await db
           .update(newsletterSubscriptions)
-          .set({ 
-            isActive: true,
-            verificationToken: generateToken(),
-            unsubscribeToken: generateToken()
+          .set({
+            verificationToken,
+            userId: userId || existingSubscription[0].userId,
           })
           .where(eq(newsletterSubscriptions.id, existingSubscription[0].id));
-
-        return { 
-          success: true, 
-          message: 'Your subscription has been reactivated. Please check your email to verify.' 
+        
+        // Send verification email (implementation similar to sendNewsletterEmail)
+        await sendVerificationEmail(email, verificationToken);
+        
+        return {
+          success: true,
+          message: "Verification email has been resent. Please check your inbox."
         };
       }
+      
+      // If already verified, just return success
+      return {
+        success: true,
+        message: "You are already subscribed to our newsletter."
+      };
     }
-
+    
     // Create new subscription
     const verificationToken = generateToken();
     const unsubscribeToken = generateToken();
-
+    
     await db.insert(newsletterSubscriptions).values({
       email,
-      userId: userId || null,
+      userId: userId || undefined,
       verificationToken,
       unsubscribeToken,
-      isVerified: false, // Requires email verification
-      isActive: true,
     });
-
-    // In a real implementation, we would send verification email here
-    // For now, we'll just mark it as verified for testing
-    if (process.env.NODE_ENV !== 'production') {
-      await db
-        .update(newsletterSubscriptions)
-        .set({ isVerified: true })
-        .where(eq(newsletterSubscriptions.email, email));
-    }
-
-    return { 
-      success: true, 
-      message: 'Thanks for subscribing! Please check your email to confirm your subscription.' 
+    
+    // Send verification email
+    await sendVerificationEmail(email, verificationToken);
+    
+    return {
+      success: true,
+      message: "Thank you for subscribing! Please check your email to verify your subscription."
     };
   } catch (error) {
-    console.error('Error subscribing to newsletter:', error);
-    return { 
-      success: false, 
-      message: 'An error occurred while processing your subscription. Please try again later.' 
+    console.error("Error subscribing to newsletter:", error);
+    return {
+      success: false,
+      message: "An error occurred while subscribing. Please try again."
     };
   }
 }
 
-export async function unsubscribeFromNewsletter(token: string): Promise<{success: boolean, message: string}> {
-  try {
-    const [subscription] = await db
-      .select()
-      .from(newsletterSubscriptions)
-      .where(eq(newsletterSubscriptions.unsubscribeToken, token));
-
-    if (!subscription) {
-      return { 
-        success: false, 
-        message: 'Invalid unsubscribe link. Please check your email and try again.' 
-      };
-    }
-
-    await db
-      .update(newsletterSubscriptions)
-      .set({ isActive: false })
-      .where(eq(newsletterSubscriptions.id, subscription.id));
-
-    return { 
-      success: true, 
-      message: 'You have been successfully unsubscribed from our newsletter.' 
-    };
-  } catch (error) {
-    console.error('Error unsubscribing from newsletter:', error);
-    return { 
-      success: false, 
-      message: 'An error occurred while processing your request. Please try again later.' 
-    };
-  }
-}
-
+/**
+ * Verify newsletter subscription with token
+ */
 export async function verifySubscription(token: string): Promise<{success: boolean, message: string}> {
   try {
     const [subscription] = await db
       .select()
       .from(newsletterSubscriptions)
       .where(eq(newsletterSubscriptions.verificationToken, token));
-
+    
     if (!subscription) {
-      return { 
-        success: false, 
-        message: 'Invalid verification link. Please check your email and try again.' 
+      return {
+        success: false,
+        message: "Invalid verification token."
       };
     }
-
+    
     await db
       .update(newsletterSubscriptions)
-      .set({ 
+      .set({
         isVerified: true,
-        verificationToken: null 
+        verificationToken: null,
       })
       .where(eq(newsletterSubscriptions.id, subscription.id));
-
-    return { 
-      success: true, 
-      message: 'Your subscription has been successfully verified. Thank you!' 
+    
+    return {
+      success: true,
+      message: "Your subscription has been verified successfully."
     };
   } catch (error) {
-    console.error('Error verifying subscription:', error);
-    return { 
-      success: false, 
-      message: 'An error occurred while processing your request. Please try again later.' 
+    console.error("Error verifying subscription:", error);
+    return {
+      success: false,
+      message: "An error occurred while verifying your subscription."
     };
+  }
+}
+
+/**
+ * Unsubscribe from newsletter
+ */
+export async function unsubscribeFromNewsletter(token: string): Promise<{success: boolean, message: string}> {
+  try {
+    const [subscription] = await db
+      .select()
+      .from(newsletterSubscriptions)
+      .where(eq(newsletterSubscriptions.unsubscribeToken, token));
+    
+    if (!subscription) {
+      return {
+        success: false,
+        message: "Invalid unsubscribe token."
+      };
+    }
+    
+    await db
+      .update(newsletterSubscriptions)
+      .set({
+        isActive: false,
+      })
+      .where(eq(newsletterSubscriptions.id, subscription.id));
+    
+    return {
+      success: true,
+      message: "You have been unsubscribed from our newsletter."
+    };
+  } catch (error) {
+    console.error("Error unsubscribing from newsletter:", error);
+    return {
+      success: false,
+      message: "An error occurred while processing your unsubscribe request."
+    };
+  }
+}
+
+/**
+ * Send verification email for newsletter subscription
+ */
+async function sendVerificationEmail(email: string, token: string): Promise<boolean> {
+  try {
+    if (!process.env.SENDGRID_API_KEY) {
+      console.error("Cannot send verification email: SENDGRID_API_KEY not set");
+      return false;
+    }
+    
+    const verificationUrl = `${process.env.BASE_URL || 'https://proximareport.com'}/newsletter/verify/${token}`;
+    
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <h1 style="color: #4f46e5;">Proxima Report</h1>
+        </div>
+        
+        <h2 style="color: #1f2937; margin-bottom: 10px;">Verify Your Newsletter Subscription</h2>
+        
+        <div style="color: #4b5563; margin-bottom: 20px;">
+          <p>Thank you for subscribing to the Proxima Report newsletter. Please click the button below to verify your email address.</p>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${verificationUrl}" style="background-color: #4f46e5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Verify Subscription</a>
+        </div>
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 12px;">
+          <p>If you did not request this subscription, you can ignore this email.</p>
+        </div>
+      </div>
+    `;
+    
+    await mailService.send({
+      to: email,
+      from: {
+        email: "newsletter@proximareport.com",
+        name: "Proxima Report"
+      },
+      subject: "Verify Your Proxima Report Newsletter Subscription",
+      html: htmlContent,
+    });
+    
+    return true;
+  } catch (error) {
+    console.error("Error sending verification email:", error);
+    return false;
   }
 }

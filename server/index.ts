@@ -1,5 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
+import { registerNewsletterAndSearchRoutes } from "./newsletterRoutes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
@@ -37,7 +38,11 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Register main routes
   const server = await registerRoutes(app);
+  
+  // Register newsletter and search routes
+  registerNewsletterAndSearchRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
