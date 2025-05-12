@@ -86,23 +86,30 @@ function AdminArticleEditor() {
   const updateArticleMutation = useMutation({
     mutationFn: (articleData: any) => 
       apiRequest('PATCH', `/api/articles/${params.id}`, articleData).then(res => res.json()),
-    onSuccess: (data) => {
+    onSuccess: (response) => {
       // First invalidate queries
       queryClient.invalidateQueries({ queryKey: ['/api/articles'] });
       if (params.id) {
         queryClient.invalidateQueries({ queryKey: ['/api/articles', params.id] });
       }
       
+      // Log response for debugging
+      console.log("Article update response:", response);
+      
+      // Extract article ID from response if available
+      const articleId = response?.article?.id || params.id;
+      
       // Show success message
       toast({
         title: "Article updated successfully",
-        description: "Your changes have been saved.",
+        description: `Article ${isDraft ? 'saved as draft' : 'published'} successfully.`,
       });
       
-      // Navigate back to admin dashboard
+      // Navigate back to admin dashboard with fixed path
       navigate('/admin');
     },
     onError: (error: any) => {
+      console.error("Article update error:", error);
       toast({
         title: "Failed to update article",
         description: error.message || "There was an error updating your article.",

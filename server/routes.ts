@@ -3856,6 +3856,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error updating site settings" });
     }
   });
+  
+  // Add PATCH method for article updates
+  app.patch("/api/articles/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const articleId = parseInt(id);
+      const userId = req.session.userId!;
+      
+      console.log(`PATCH: Updating article ${id} with data:`, {
+        userId: userId,
+        articleId: articleId,
+        status: req.body.status
+      });
+      
+      const article = await storage.getArticleById(articleId);
+      if (!article) {
+        return res.status(404).json({ message: "Article not found" });
+      }
+      
+      // Get user data to check role
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      // Get article authors to check if user is an author
+      const articleAuthors = await storage.getArticleAuthors(articleId);
+      const isArticleAuthor = articleAuthors.some(author => author.user.id === userId);
+      
+      // Determine if user has permission to edit this article
+      const canEdit = user.role === 'admin' || 
+                     user.role === 'editor' || 
+                     (user.role === 'author' && isArticleAuthor);
+      
+      if (!canEdit) {
+        return res.status(403).json({ 
+          message: "You don't have permission to edit this article." 
+        });
+      }
+      
+      // Update the article
+      const updatedArticle = await storage.updateArticle(articleId, req.body);
+      if (!updatedArticle) {
+        return res.status(404).json({ message: "Article failed to update" });
+      }
+      
+      console.log(`PATCH: Article ${id} updated successfully:`, {
+        id: updatedArticle.id,
+        title: updatedArticle.title,
+        status: updatedArticle.status
+      });
+      
+      res.json({ success: true, article: updatedArticle });
+    } catch (error) {
+      console.error("Error updating article with PATCH:", error);
+      res.status(500).json({ message: "Error updating article" });
+    }
+  });
 
   const httpServer = createServer(app);
 
