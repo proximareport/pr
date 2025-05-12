@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -48,25 +48,48 @@ function AdvertisementTab() {
   const queryClient = useQueryClient();
   
   // Add debug logs to help troubleshoot the advertisement issue
-  const { data: advertisements = [], isLoading, error } = useQuery<Advertisement[]>({
+  const { data: advertisements = [], isLoading, error } = useQuery({
     queryKey: ['/api/advertisements/all'],
     retry: false,
-    onSuccess: (data) => {
-      console.log('Advertisement data loaded successfully:', {
-        count: data.length,
-        pendingCount: data.filter(ad => !ad.isApproved).length,
-        approvedCount: data.filter(ad => ad.isApproved).length
-      });
+    select: (data: any): Advertisement[] => {
+      // Ensure data is always returned as an array
+      if (!data) return [];
       
-      if (data.length > 0) {
-        console.log('Sample ad data:', {
-          id: data[0].id,
-          title: data[0].title,
-          isApproved: data[0].isApproved,
-          placement: data[0].placement
+      // If it's already an array, return it
+      if (Array.isArray(data)) {
+        console.log('Advertisement data is an array with length:', data.length);
+        return data;
+      }
+      
+      // If it's an object, try to convert it to an array
+      if (typeof data === 'object') {
+        console.log('Advertisement data is an object, converting to array');
+        return Object.values(data);
+      }
+      
+      console.warn('Unexpected data format from API:', typeof data);
+      return [];
+    },
+    onSuccess: (data) => {
+      if (Array.isArray(data)) {
+        console.log('Advertisement data processed successfully:', {
+          count: data.length,
+          pendingCount: data.filter(ad => !ad.isApproved).length,
+          approvedCount: data.filter(ad => ad.isApproved).length
         });
+        
+        if (data.length > 0) {
+          console.log('Sample ad data:', {
+            id: data[0].id,
+            title: data[0].title,
+            isApproved: data[0].isApproved,
+            placement: data[0].placement
+          });
+        } else {
+          console.log('No advertisements found in response');
+        }
       } else {
-        console.log('No advertisements found in response');
+        console.error('Data is not an array after processing:', data);
       }
     },
     onError: (err) => {
@@ -139,10 +162,27 @@ function AdvertisementTab() {
     },
   });
   
-  const getPendingAds = () => (advertisements || []).filter((ad: Advertisement) => !ad.isApproved);
+  // Make sure advertisements is an array before using filter
+  const getPendingAds = () => {
+    console.log('Getting pending ads. advertisements type:', typeof advertisements, Array.isArray(advertisements) ? 'is array' : 'not array', advertisements);
+    
+    if (!Array.isArray(advertisements)) {
+      console.warn('advertisements is not an array:', advertisements);
+      return [];
+    }
+    
+    return advertisements.filter((ad: Advertisement) => !ad.isApproved);
+  };
+  
   const getActiveAds = () => {
     const now = new Date();
-    return (advertisements || []).filter((ad: Advertisement) => 
+    
+    if (!Array.isArray(advertisements)) {
+      console.warn('advertisements is not an array:', advertisements);
+      return [];
+    }
+    
+    return advertisements.filter((ad: Advertisement) => 
       ad.isApproved && 
       new Date(ad.startDate) <= now && 
       new Date(ad.endDate) >= now
@@ -150,7 +190,13 @@ function AdvertisementTab() {
   };
   const getInactiveAds = () => {
     const now = new Date();
-    return (advertisements || []).filter((ad: Advertisement) => 
+    
+    if (!Array.isArray(advertisements)) {
+      console.warn('advertisements is not an array in getInactiveAds:', advertisements);
+      return [];
+    }
+    
+    return advertisements.filter((ad: Advertisement) => 
       ad.isApproved && 
       (new Date(ad.startDate) > now || new Date(ad.endDate) < now)
     );
