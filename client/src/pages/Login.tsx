@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { RocketIcon, Loader2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiRequest } from "@/lib/queryClient";
 
 function Login() {
@@ -15,16 +16,24 @@ function Login() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loginMethod, setLoginMethod] = useState<"email" | "username">("email");
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
     
-    if (!email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = "Email is invalid";
+    if (loginMethod === "email") {
+      if (!email.trim()) {
+        newErrors.email = "Email is required";
+      } else if (!/\S+@\S+\.\S+/.test(email)) {
+        newErrors.email = "Email is invalid";
+      }
+    } else {
+      if (!username.trim()) {
+        newErrors.username = "Username is required";
+      }
     }
     
     if (!password) {
@@ -43,7 +52,12 @@ function Login() {
     setIsLoading(true);
     
     try {
-      await login({ email, password });
+      // Create credentials based on login method
+      const credentials = loginMethod === "email" 
+        ? { email, password } 
+        : { username, password };
+      
+      await login(credentials);
       
       // If there's a redirect URL in the query string, go there. Otherwise go to homepage.
       const params = new URLSearchParams(window.location.search);
@@ -52,7 +66,7 @@ function Login() {
     } catch (error) {
       toast({
         title: "Login failed",
-        description: "Invalid email or password. Please try again.",
+        description: "Invalid credentials. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -74,63 +88,93 @@ function Login() {
             Enter your credentials to access your account
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="your-email@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={`bg-[#1E1E2D] border-white/10 ${errors.email ? "border-red-500" : ""}`}
-              />
-              {errors.email && (
-                <p className="text-red-500 text-xs mt-1">{errors.email}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link href="/forgot-password" className="text-xs text-purple-400 hover:text-purple-300">
-                  Forgot password?
-                </Link>
+        
+        <Tabs defaultValue="email" onValueChange={(v) => setLoginMethod(v as "email" | "username")}>
+          <div className="px-6 mb-4">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="email">Email</TabsTrigger>
+              <TabsTrigger value="username">Username</TabsTrigger>
+            </TabsList>
+          </div>
+          
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-4">
+              <TabsContent value="email" className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="your-email@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className={`bg-[#1E1E2D] border-white/10 ${errors.email ? "border-red-500" : ""}`}
+                  />
+                  {errors.email && (
+                    <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                  )}
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="username" className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    type="text"
+                    placeholder="your_username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className={`bg-[#1E1E2D] border-white/10 ${errors.username ? "border-red-500" : ""}`}
+                  />
+                  {errors.username && (
+                    <p className="text-red-500 text-xs mt-1">{errors.username}</p>
+                  )}
+                </div>
+              </TabsContent>
+              
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+                  <Link href="/forgot-password" className="text-xs text-purple-400 hover:text-purple-300">
+                    Forgot password?
+                  </Link>
+                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={`bg-[#1E1E2D] border-white/10 ${errors.password ? "border-red-500" : ""}`}
+                />
+                {errors.password && (
+                  <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+                )}
               </div>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={`bg-[#1E1E2D] border-white/10 ${errors.password ? "border-red-500" : ""}`}
-              />
-              {errors.password && (
-                <p className="text-red-500 text-xs mt-1">{errors.password}</p>
-              )}
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col">
-            <Button 
-              type="submit" 
-              className="w-full bg-purple-800 hover:bg-purple-700"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait
-                </>
-              ) : (
-                "Sign In"
-              )}
-            </Button>
-            <p className="mt-4 text-center text-sm text-white/60">
-              Don't have an account?{" "}
-              <Link href="/register" className="text-purple-400 hover:text-purple-300">
-                Sign up
-              </Link>
-            </p>
-          </CardFooter>
-        </form>
+            </CardContent>
+            <CardFooter className="flex flex-col">
+              <Button 
+                type="submit" 
+                className="w-full bg-purple-800 hover:bg-purple-700"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait
+                  </>
+                ) : (
+                  "Sign In"
+                )}
+              </Button>
+              <p className="mt-4 text-center text-sm text-white/60">
+                Don't have an account?{" "}
+                <Link href="/register" className="text-purple-400 hover:text-purple-300">
+                  Sign up
+                </Link>
+              </p>
+            </CardFooter>
+          </form>
+        </Tabs>
       </Card>
     </div>
   );

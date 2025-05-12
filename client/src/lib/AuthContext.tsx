@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Login mutation
   const loginMutation = useMutation({
-    mutationFn: (credentials: { email: string; password: string }) =>
+    mutationFn: (credentials: { email?: string; username?: string; password: string }) =>
       apiRequest('POST', '/api/login', credentials).then(res => res.json()),
     onSuccess: () => {
       refetch();
@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     onError: (error: any) => {
       toast({
         title: "Login failed",
-        description: error.message || "Invalid email or password",
+        description: error.message || "Invalid credentials",
         variant: "destructive",
       });
     },
@@ -156,12 +156,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(userData);
       return;
     }
-    // Otherwise, call login mutation with email and password
-    if (typeof userData === 'object' && userData.email && userData.password) {
-      await loginMutation.mutateAsync({ 
-        email: userData.email, 
-        password: userData.password 
-      });
+    
+    // Create credentials object
+    const credentials: { email?: string; username?: string; password: string } = {
+      password: userData.password
+    };
+    
+    // Add email or username based on what was provided
+    if (userData.email) {
+      credentials.email = userData.email;
+    }
+    
+    if (userData.username) {
+      credentials.username = userData.username;
+    }
+    
+    // Call login mutation with credentials
+    if (typeof userData === 'object' && (userData.email || userData.username) && userData.password) {
+      await loginMutation.mutateAsync(credentials);
     }
   };
 
