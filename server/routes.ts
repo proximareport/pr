@@ -2452,29 +2452,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get advertisements for the logged-in user
-  app.get("/api/advertisements/user", requireAuth, async (req, res) => {
+  app.get("/api/advertisements/user", async (req, res) => {
     try {
-      const userId = req.session.userId!;
+      console.log("Debug: Advertisement user endpoint accessed");
       
-      console.log(`DIRECT DATABASE QUERY: Fetching advertisements for user ${userId}`);
-      // Use direct SQL query to avoid any filtering issues
-      const query = `
-        SELECT * FROM advertisements 
-        WHERE user_id = $1
-        ORDER BY created_at DESC
-      `;
+      // Get the user ID from the session if available
+      const userId = req.session?.userId;
+      console.log(`Looking for ads for user ID: ${userId || 'not logged in'}`);
       
-      const result = await db.execute(query, [userId]);
-      
-      if (!result || !result.rows) {
-        console.log("No advertisements found for this user");
+      if (!userId) {
+        console.log('No user ID in session, returning empty array');
         return res.json([]);
       }
       
-      console.log(`Found ${result.rows.length} advertisements for user ${userId}`);
+      // Direct database query for maximum reliability
+      console.log(`Executing raw SQL query to get user advertisements for user ID ${userId}`);
+      const query = "SELECT * FROM advertisements WHERE user_id = " + userId;
+      console.log(`Executing query: ${query}`);
+      const result = await db.execute(query);
+      const { rows } = result;
       
-      // Transform the database rows to client format
-      const ads = result.rows.map(ad => ({
+      if (!rows || rows.length === 0) {
+        console.log(`No advertisements found for user ${userId}`);
+        return res.json([]);
+      }
+      
+      console.log(`Found ${rows.length} advertisements for user ${userId}`);
+      
+      // Transform database rows to client-friendly format
+      const ads = rows.map(ad => ({
         id: ad.id,
         title: ad.title,
         imageUrl: ad.image_url || '',
@@ -2494,17 +2500,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         adminNotes: ad.admin_notes || null
       }));
       
-      // Log information about pending ads for debugging
-      const pendingAds = ads.filter(ad => 
-        ad.status === 'pending' || ad.status === 'approved_pending_payment' || !ad.isApproved
-      );
-      
-      console.log(`Found ${pendingAds.length} pending ads for user ${userId}`);
+      // Debug: Log the first advertisement details
+      if (ads.length > 0) {
+        console.log('First ad details:', {
+          id: ads[0].id,
+          title: ads[0].title,
+          isApproved: ads[0].isApproved,
+          status: ads[0].status
+        });
+      }
       
       return res.json(ads);
     } catch (error) {
       console.error("Error fetching user advertisements:", error);
-      res.status(500).json({ message: "Error fetching user advertisements" });
+      return res.status(500).json({ message: "Error fetching advertisements" });
     }
   });
   

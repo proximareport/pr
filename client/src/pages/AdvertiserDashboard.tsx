@@ -308,7 +308,7 @@ function AdvertiserDashboard() {
           <AlertTriangle className="h-10 w-10 mx-auto text-red-500 mb-4" />
           <h3 className="text-xl font-semibold mb-2">Error Loading Advertisements</h3>
           <p className="mb-4 text-gray-600">There was a problem loading your advertisements. Please try again.</p>
-          <Button variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/advertisements/my'] })}>
+          <Button variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/advertisements/user'] })}>
             Try Again
           </Button>
         </div>
