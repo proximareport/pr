@@ -1,0 +1,419 @@
+Failed to load resource: the server responded with a status of 401 (Unauthorized)
+queryClient.ts:40 API Response status: 401 Response
+queryClient.ts:47  API Error Response: Object
+apiRequest @ queryClient.ts:47
+queryClient.ts:56  API Request Failed: Error: 401: Not authenticated
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+apiRequest @ queryClient.ts:56
+App.tsx:137 Maintenance check: Object
+App.tsx:152 MainApp render check: Object
+queryClient.ts:40 API Response status: 200 Response
+App.tsx:137 Maintenance check: Object
+App.tsx:152 MainApp render check: Object
+queryClient.ts:30 API Request: POST /api/login Object
+App.tsx:137 Maintenance check: Object
+App.tsx:152 MainApp render check: Object
+queryClient.ts:40 API Response status: 200 Response
+queryClient.ts:30 API Request: GET /api/me undefined
+App.tsx:137 Maintenance check: Object
+App.tsx:152 MainApp render check: Object
+App.tsx:137 Maintenance check: Object
+App.tsx:152 MainApp render check: Object
+queryClient.ts:40 API Response status: 200 Response
+App.tsx:137 Maintenance check: Object
+App.tsx:152 MainApp render check: Object
+App.tsx:137 Maintenance check: Object
+App.tsx:152 MainApp render check: Object
+App.tsx:137 Maintenance check: Object
+App.tsx:152 MainApp render check: Object
+App.tsx:137 Maintenance check: Object
+App.tsx:152 MainApp render check: Object
+/api/articles/all:1 
+            
+            
+            Failed to load resource: the server responded with a status of 400 (Bad Request)
+/api/articles/drafts:1 
+            
+            
+            Failed to load resource: the server responded with a status of 400 (Bad Request)
+App.tsx:137 Maintenance check: Object
+App.tsx:152 MainApp render check: Object
+react-dom.development.js:86  Warning: findDOMNode is deprecated and will be removed in the next major release. Instead, add a ref directly to the element you want to reference. Learn more about using refs safely here: https://reactjs.org/link/strict-mode-find-node
+    at ReactQuill2 (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-quill.js?v=2ec414f4:11416:30)
+    at div
+    at div
+    at div
+    at _c (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/components/ui/card.tsx:20:11)
+    at RichTextEditor (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/components/article/RichTextEditor.tsx:26:3)
+    at div
+    at div
+    at _c9 (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/components/ui/card.tsx:114:12)
+    at div
+    at _c (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/components/ui/card.tsx:20:11)
+    at EditorMainCard (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/components/admin/EditorLayout.tsx:110:3)
+    at form
+    at div
+    at div
+    at div
+    at EditorLayout (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/components/admin/EditorLayout.tsx:22:32)
+    at AdminArticleEditor (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/pages/Admin/NewArticleEditor.tsx:43:18)
+    at Route (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=2ec414f4:323:16)
+    at Switch (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=2ec414f4:379:17)
+    at Router
+    at main
+    at div
+    at MainApp (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/App.tsx?v=d9Jj5EgTC3TLF0ITk14zs:352:43)
+    at Provider (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=2ec414f4:38:15)
+    at TooltipProvider (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=2ec414f4:62:5)
+    at AuthProvider (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/lib/AuthContext.tsx:23:32)
+    at QueryClientProvider (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=2ec414f4:2805:3)
+    at App
+    at V (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/next-themes.js?v=2ec414f4:44:25)
+    at J (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/next-themes.js?v=2ec414f4:42:18)
+    at ThemeProvider (https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/src/components/ThemeProvider.tsx:19:33)
+printWarning @ react-dom.development.js:86
+quill.js:4237  [Deprecation] Listener added for a 'DOMNodeInserted' mutation event. Support for this event type has been removed, and this event will no longer be fired. See https://chromestatus.com/feature/5083947249172480 for more information.
+Scroll2 @ quill.js:4237
+NewArticleEditor.tsx:685 Title is empty, not scheduling autosave
+queryClient.ts:30 API Request: GET /api/categories undefined
+queryClient.ts:30 API Request: GET /api/tags undefined
+queryClient.ts:30 API Request: GET /api/users undefined
+NewArticleEditor.tsx:685 Title is empty, not scheduling autosave
+/api/users:1 
+            
+            
+            Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+queryClient.ts:40 API Response status: 500 Response
+queryClient.ts:47  API Error Response: Object
+apiRequest @ queryClient.ts:47
+queryClient.ts:56  API Request Failed: Error: 500: Error fetching users
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+apiRequest @ queryClient.ts:56
+/api/tags:1 
+            
+            
+            Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+queryClient.ts:40 API Response status: 500 Response
+queryClient.ts:47  API Error Response: Object
+apiRequest @ queryClient.ts:47
+queryClient.ts:56  API Request Failed: Error: 500: Error fetching tags
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+apiRequest @ queryClient.ts:56
+queryClient.ts:40 API Response status: 200 Response
+2NewArticleEditor.tsx:685 Title is empty, not scheduling autosave
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:693 Autosave timeout triggered, executing save...
+NewArticleEditor.tsx:468 Preparing article data with status: draft isDraft: true statusOverride: false
+NewArticleEditor.tsx:635 First save of article content...
+NewArticleEditor.tsx:666 Starting autosave: 6:51:10 PM
+queryClient.ts:30 API Request: POST /api/articles Object
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+queryClient.ts:40 API Response status: 201 Response
+NewArticleEditor.tsx:468 Preparing article data with status: draft isDraft: true statusOverride: false
+NewArticleEditor.tsx:305 Content saved, updated lastSavedContentRef
+App.tsx:137 Maintenance check: Object
+App.tsx:152 MainApp render check: Object
+queryClient.ts:30 API Request: GET /api/articles/29 undefined
+/api/articles/29:1 
+            
+            
+            Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+queryClient.ts:40 API Response status: 500 Response
+queryClient.ts:47  API Error Response: Object
+apiRequest @ queryClient.ts:47
+queryClient.ts:56  API Request Failed: Error: 500: Error fetching article
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+apiRequest @ queryClient.ts:56
+quill.js:4237  [Deprecation] Listener added for a 'DOMNodeInserted' mutation event. Support for this event type has been removed, and this event will no longer be fired. See https://chromestatus.com/feature/5083947249172480 for more information.
+Scroll2 @ quill.js:4237
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:693 Autosave timeout triggered, executing save...
+NewArticleEditor.tsx:598 No content modified since last save, skipping autosave
+NewArticleEditor.tsx:468 Preparing article data with status: draft isDraft: true statusOverride: null
+queryClient.ts:30 API Request: PATCH /api/articles/29 Object
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+/api/articles/29:1 
+            
+            
+            Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+queryClient.ts:40 API Response status: 500 Response
+queryClient.ts:47  API Error Response: Object
+apiRequest @ queryClient.ts:47
+queryClient.ts:56  API Request Failed: Error: 500: Error updating article
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (NewArticleEditor.tsx:154:22)
+apiRequest @ queryClient.ts:56
+NewArticleEditor.tsx:176  Article save request error: Error: 500: Error updating article
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (NewArticleEditor.tsx:154:22)
+mutationFn @ NewArticleEditor.tsx:176
+NewArticleEditor.tsx:232  Article save error: Error: Failed to save article: 500: Error updating article
+    at Object.mutationFn (NewArticleEditor.tsx:183:15)
+onError @ NewArticleEditor.tsx:232
+App.tsx:137 Maintenance check: Object
+App.tsx:152 MainApp render check: Object
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+Grammarly.js:2  grm ERROR [iterable] ░░ Not supported: in app messages from Iterable
+write @ Grammarly.js:2
+NewArticleEditor.tsx:693 Autosave timeout triggered, executing save...
+NewArticleEditor.tsx:598 No content modified since last save, skipping autosave
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+App.tsx:137 Maintenance check: Object
+App.tsx:152 MainApp render check: Object
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+Grammarly.js:2  grm ERROR [iterable] ░░ Not supported: in app messages from Iterable
+write @ Grammarly.js:2
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:693 Autosave timeout triggered, executing save...
+NewArticleEditor.tsx:468 Preparing article data with status: draft isDraft: true statusOverride: false
+NewArticleEditor.tsx:568 Content changes detected (1):
+NewArticleEditor.tsx:569 - content: [content modified]
+NewArticleEditor.tsx:649 Changes detected, proceeding with autosave...
+NewArticleEditor.tsx:666 Starting autosave: 6:51:25 PM
+queryClient.ts:30 API Request: PATCH /api/articles/29 Object
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+/api/articles/29:1 
+            
+            
+            Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+queryClient.ts:40 API Response status: 500 Response
+queryClient.ts:47  API Error Response: Object
+apiRequest @ queryClient.ts:47
+queryClient.ts:56  API Request Failed: Error: 500: Error updating article
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (NewArticleEditor.tsx:257:22)
+apiRequest @ queryClient.ts:56
+NewArticleEditor.tsx:279  Autosave request error: Error: 500: Error updating article
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (NewArticleEditor.tsx:257:22)
+mutationFn @ NewArticleEditor.tsx:279
+NewArticleEditor.tsx:314  Autosave error: Error: Failed to save draft: 500: Error updating article
+    at Object.mutationFn (NewArticleEditor.tsx:286:15)
+onError @ NewArticleEditor.tsx:314
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:693 Autosave timeout triggered, executing save...
+NewArticleEditor.tsx:598 No content modified since last save, skipping autosave
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:693 Autosave timeout triggered, executing save...
+NewArticleEditor.tsx:468 Preparing article data with status: draft isDraft: true statusOverride: false
+NewArticleEditor.tsx:568 Content changes detected (2):
+NewArticleEditor.tsx:569 - summary:  → test
+NewArticleEditor.tsx:569 - content: [content modified]
+NewArticleEditor.tsx:649 Changes detected, proceeding with autosave...
+NewArticleEditor.tsx:666 Starting autosave: 6:51:31 PM
+queryClient.ts:30 API Request: PATCH /api/articles/29 Object
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+/api/articles/29:1 
+            
+            
+            Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+queryClient.ts:40 API Response status: 500 Response
+queryClient.ts:47  API Error Response: Object
+apiRequest @ queryClient.ts:47
+queryClient.ts:56  API Request Failed: Error: 500: Error updating article
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (NewArticleEditor.tsx:257:22)
+apiRequest @ queryClient.ts:56
+NewArticleEditor.tsx:279  Autosave request error: Error: 500: Error updating article
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (NewArticleEditor.tsx:257:22)
+mutationFn @ NewArticleEditor.tsx:279
+NewArticleEditor.tsx:314  Autosave error: Error: Failed to save draft: 500: Error updating article
+    at Object.mutationFn (NewArticleEditor.tsx:286:15)
+onError @ NewArticleEditor.tsx:314
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:693 Autosave timeout triggered, executing save...
+NewArticleEditor.tsx:598 No content modified since last save, skipping autosave
+NewArticleEditor.tsx:793 Publish toggle called with shouldPublish: true
+NewArticleEditor.tsx:797 Setting article status to: published
+NewArticleEditor.tsx:468 Preparing article data with status: draft isDraft: true statusOverride: null
+queryClient.ts:30 API Request: PATCH /api/articles/29 Object
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+/api/articles/29:1 
+            
+            
+            Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+queryClient.ts:40 API Response status: 500 Response
+queryClient.ts:47  API Error Response: Object
+apiRequest @ queryClient.ts:47
+queryClient.ts:56  API Request Failed: Error: 500: Error updating article
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (NewArticleEditor.tsx:154:22)
+apiRequest @ queryClient.ts:56
+NewArticleEditor.tsx:176  Article save request error: Error: 500: Error updating article
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (NewArticleEditor.tsx:154:22)
+mutationFn @ NewArticleEditor.tsx:176
+NewArticleEditor.tsx:232  Article save error: Error: Failed to save article: 500: Error updating article
+    at Object.mutationFn (NewArticleEditor.tsx:183:15)
+onError @ NewArticleEditor.tsx:232
+NewArticleEditor.tsx:815  Failed to save article before status change: Error: Failed to save article: 500: Error updating article
+    at Object.mutationFn (NewArticleEditor.tsx:183:15)
+onError @ NewArticleEditor.tsx:815
+App.tsx:137 Maintenance check: Object
+App.tsx:152 MainApp render check: Object
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:468 Preparing article data with status: draft isDraft: true statusOverride: null
+queryClient.ts:30 API Request: PATCH /api/articles/29 Object
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+/api/articles/29:1 
+            
+            
+            Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+queryClient.ts:40 API Response status: 500 Response
+queryClient.ts:47  API Error Response: Object
+apiRequest @ queryClient.ts:47
+queryClient.ts:56  API Request Failed: Error: 500: Error updating article
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (NewArticleEditor.tsx:154:22)
+apiRequest @ queryClient.ts:56
+NewArticleEditor.tsx:176  Article save request error: Error: 500: Error updating article
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (NewArticleEditor.tsx:154:22)
+mutationFn @ NewArticleEditor.tsx:176
+NewArticleEditor.tsx:232  Article save error: Error: Failed to save article: 500: Error updating article
+    at Object.mutationFn (NewArticleEditor.tsx:183:15)
+onError @ NewArticleEditor.tsx:232
+App.tsx:137 Maintenance check: Object
+App.tsx:152 MainApp render check: Object
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:693 Autosave timeout triggered, executing save...
+NewArticleEditor.tsx:598 No content modified since last save, skipping autosave
+App.tsx:137 Maintenance check: Object
+App.tsx:152 MainApp render check: Object
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+
+                
+          
+          
+          
+         Microsoft Edge is moving towards a new experience that allows users to choose to browse without third-party cookies.
+NewArticleEditor.tsx:693 Autosave timeout triggered, executing save...
+NewArticleEditor.tsx:598 No content modified since last save, skipping autosave
+App.tsx:137 Maintenance check: {isMaintenanceMode: false, isAdmin: true, maintenanceEnabled: false}
+App.tsx:152 MainApp render check: {path: '/admin/articles/edit/29', isMaintenanceMode: false, isAdmin: true, isAdminPage: true, isAuthPage: false, …}
+NewArticleEditor.tsx:680 Cleared existing autosave timeout
+NewArticleEditor.tsx:689 Scheduling autosave in 2000ms
+NewArticleEditor.tsx:693 Autosave timeout triggered, executing save...
+NewArticleEditor.tsx:598 No content modified since last save, skipping autosave
