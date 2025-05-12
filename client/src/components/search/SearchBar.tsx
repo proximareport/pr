@@ -43,8 +43,18 @@ interface Article {
   viewCount: number;
 }
 
+// Types for user search results
+interface User {
+  id: number;
+  username: string;
+  bio?: string;
+  profilePicture?: string;
+  role: string;
+}
+
 interface SearchResponse {
   data: Article[];
+  users?: User[];
   total: number;
   page: number;
   totalPages: number;
@@ -82,11 +92,12 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
   // Check if we have results to display
   const hasSuggestions = !!suggestionsData?.data && suggestionsData.data.length > 0;
   const hasResults = !!searchData?.data && searchData.data.length > 0;
+  const hasUserResults = !!searchData?.users && searchData.users.length > 0;
   const isLoading = loadingSuggestions || loadingResults;
 
   // Navigate to article page when clicking a result
   const navigateToArticle = (slug: string) => {
-    setLocation(`/articles/${slug}`);
+    setLocation(`/article/${slug}`);
     setOpen(false);
   };
   

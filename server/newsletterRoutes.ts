@@ -69,6 +69,15 @@ export function registerNewsletterAndSearchRoutes(app: Express) {
       const results = await searchArticles(query, options, filters);
       console.log("Search results count:", results.total);
       
+      // Also search for users if query exists
+      let userResults = [];
+      if (query.trim().length > 0) {
+        const userOptions = { page: 1, limit: 5, orderBy: 'username', orderDirection: 'asc' as 'asc' | 'desc' };
+        const userSearchResults = await searchUsers(query, userOptions);
+        userResults = userSearchResults.data;
+        console.log("User search results count:", userSearchResults.total);
+      }
+      
       // Save search to history if user is logged in
       // @ts-ignore (Access req.session)
       const userId = req.session?.userId;
@@ -76,7 +85,13 @@ export function registerNewsletterAndSearchRoutes(app: Express) {
         saveSearch(query, userId || null, results.total, filters);
       }
       
-      res.json(results);
+      // Return combined results
+      const combinedResults = {
+        ...results,
+        users: userResults
+      };
+      
+      res.json(combinedResults);
     } catch (error) {
       console.error("Search error:", error);
       res.status(500).json({ message: "Error processing search", error: String(error) });
