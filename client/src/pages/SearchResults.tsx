@@ -23,7 +23,7 @@ interface SearchArticle {
   tags: string[];
   publishedAt: string;
   featuredImage?: string;
-  authorId: number;
+  primaryAuthorId: number;
   viewCount: number;
 }
 

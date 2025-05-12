@@ -43,7 +43,9 @@ export function registerNewsletterAndSearchRoutes(app: Express) {
   // Search routes
   app.get("/api/search", async (req: Request, res: Response) => {
     try {
-      const query = req.query.q as string;
+      console.log("Search API called with query params:", req.query);
+      
+      const query = req.query.q as string || "";
       const page = req.query.page ? parseInt(req.query.page as string) : 1;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
       const orderBy = req.query.orderBy as string || "publishedAt";
@@ -63,7 +65,9 @@ export function registerNewsletterAndSearchRoutes(app: Express) {
         dateTo
       };
       
+      console.log("Calling searchArticles with:", { query, options, filters });
       const results = await searchArticles(query, options, filters);
+      console.log("Search results count:", results.total);
       
       // Save search to history if user is logged in
       // @ts-ignore (Access req.session)
@@ -75,7 +79,7 @@ export function registerNewsletterAndSearchRoutes(app: Express) {
       res.json(results);
     } catch (error) {
       console.error("Search error:", error);
-      res.status(500).json({ message: "Error processing search" });
+      res.status(500).json({ message: "Error processing search", error: String(error) });
     }
   });
   

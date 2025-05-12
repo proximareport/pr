@@ -62,13 +62,13 @@ export async function searchArticles(
     ];
     
     // Add query search condition if provided
-    if (query) {
+    if (query && query.trim()) {
       conditions.push(
         or(
-          like(articles.title, `%${query}%`),
-          like(articles.summary, `%${query}%`),
-          like(articles.category, `%${query}%`),
-          sql`${articles.tags}::text LIKE ${'%' + query + '%'}`
+          like(articles.title, `%${query.trim()}%`),
+          like(articles.summary, `%${query.trim()}%`),
+          like(articles.category, `%${query.trim()}%`),
+          sql`${articles.tags}::text LIKE ${'%' + query.trim() + '%'}`
         )
       );
     }
@@ -86,8 +86,8 @@ export async function searchArticles(
     
     // Add author filter
     if (filters.author) {
-      // Check author_id column
-      conditions.push(eq(articles.authorId, filters.author));
+      // Check primary_author_id column (which is primaryAuthorId in our schema)
+      conditions.push(eq(articles.primaryAuthorId, filters.author));
       // Note: In a more comprehensive implementation, we would also check the articleAuthors table
       // to find articles where the user is a non-primary author
     }
@@ -128,7 +128,7 @@ export async function searchArticles(
         tags: articles.tags,
         publishedAt: articles.publishedAt,
         featuredImage: articles.featuredImage,
-        authorId: articles.authorId,
+        primaryAuthorId: articles.primaryAuthorId,
         viewCount: articles.viewCount,
       })
       .from(articles)

@@ -47,6 +47,7 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
     queryKey: ["/api/search", { q: debouncedQuery, limit: 5 }],
     enabled: debouncedQuery.length > 2,
     staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 1, // Only retry once to avoid excessive requests
   });
 
   // Handle navigation to search results page
