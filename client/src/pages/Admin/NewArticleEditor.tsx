@@ -812,13 +812,13 @@ function AdminArticleEditor() {
         description={
           <div className="flex flex-col space-y-1">
             <span>Configure how your article will be published</span>
-            {isAutosaving && (
+            {isAutosavePending && (
               <span className="text-xs text-yellow-400 flex items-center">
                 <span className="inline-block h-2 w-2 bg-yellow-400 rounded-full mr-1 animate-pulse"></span>
                 Autosaving...
               </span>
             )}
-            {lastSaved && !isAutosaving && (
+            {lastSaved && !isAutosavePending && (
               <span className="text-xs text-green-400 flex items-center">
                 <span className="inline-block h-2 w-2 bg-green-400 rounded-full mr-1"></span>
                 Last saved {formatLastSavedTime(lastSaved)}
