@@ -355,6 +355,42 @@ function AdminArticleEditor() {
     };
   }, [title, slug, summary, content, category, tags, featuredImage, readTime, isBreaking, isFeatured, isCollaborative, coauthors, user?.id]);
 
+  // Function to compare deeply two ArticleFormData objects
+  const hasContentChanged = useCallback((current: ArticleFormData, previous: ArticleFormData | null): boolean => {
+    if (!previous) return true;
+    
+    // Compare primitive fields
+    if (current.title !== previous.title) return true;
+    if (current.slug !== previous.slug) return true;
+    if (current.summary !== previous.summary) return true;
+    if (current.content !== previous.content) return true;
+    if (current.category !== previous.category) return true;
+    if (current.readTime !== previous.readTime) return true;
+    if (current.status !== previous.status) return true;
+    if (current.isBreaking !== previous.isBreaking) return true;
+    if (current.isFeatured !== previous.isFeatured) return true;
+    if (current.isCollaborative !== previous.isCollaborative) return true;
+    if (current.featuredImage !== previous.featuredImage) return true;
+    
+    // Compare tags array (order-sensitive)
+    if (current.tags.length !== previous.tags.length) return true;
+    for (let i = 0; i < current.tags.length; i++) {
+      if (current.tags[i] !== previous.tags[i]) return true;
+    }
+    
+    // Compare authors array (order-sensitive)
+    if (current.authors.length !== previous.authors.length) return true;
+    for (let i = 0; i < current.authors.length; i++) {
+      if (current.authors[i].id !== previous.authors[i].id || 
+          current.authors[i].role !== previous.authors[i].role) {
+        return true;
+      }
+    }
+    
+    // If we get here, nothing has changed
+    return false;
+  }, [/* No dependencies needed as this is a pure comparison function */]);
+
   // Function definitions for autosave
   const doAutosave = useCallback(() => {
     // Don't autosave if title is empty
@@ -363,42 +399,42 @@ function AdminArticleEditor() {
       return;
     }
     
-    const articleData = prepareArticleData(false); // Always save as draft
+    const currentArticleData = prepareArticleData(false); // Always save as draft
     
-    // Convert current content to string for comparison
-    const currentContentString = JSON.stringify(articleData);
-    
+    // If no previous save reference exists, do the first save
     if (!lastSavedContentRef.current) {
       console.log('No previous saved content reference, saving...');
     } else {
-      // Check if content has changed since last save
-      if (currentContentString === lastSavedContentRef.current) {
+      // Parse previous data for typed comparison
+      const previousArticleData: ArticleFormData = JSON.parse(lastSavedContentRef.current);
+      
+      // Use our deep comparison function to check for changes
+      if (!hasContentChanged(currentArticleData, previousArticleData)) {
         console.log('Content unchanged since last save, skipping autosave');
         return; // Skip save if content hasn't changed
       }
       
-      // Find what changed for debugging purposes
-      const prevData = JSON.parse(lastSavedContentRef.current);
-      const fieldsChanged = Object.keys(articleData).filter(key => {
+      // For debugging, find what specific fields changed
+      const fieldsChanged = Object.keys(currentArticleData).filter(key => {
+        const currentValue = currentArticleData[key as keyof ArticleFormData];
+        const previousValue = previousArticleData[key as keyof ArticleFormData];
+        
         // Special handling for arrays or objects that need deep comparison
-        if (Array.isArray(articleData[key as keyof typeof articleData]) || 
-            typeof articleData[key as keyof typeof articleData] === 'object') {
-          return JSON.stringify(articleData[key as keyof typeof articleData]) !== 
-                 JSON.stringify(prevData[key as keyof typeof prevData]);
+        if (Array.isArray(currentValue) || typeof currentValue === 'object') {
+          return JSON.stringify(currentValue) !== JSON.stringify(previousValue);
         }
-        return articleData[key as keyof typeof articleData] !== 
-               prevData[key as keyof typeof prevData];
+        return currentValue !== previousValue;
       });
       
       console.log('Content changed in fields:', fieldsChanged, 'Autosaving...');
     }
     
-    // Update the last saved content reference
-    lastSavedContentRef.current = currentContentString;
+    // Update the last saved content reference using new variable name
+    lastSavedContentRef.current = JSON.stringify(currentArticleData);
     
     // Perform the autosave
-    autosaveArticleMutation(articleData);
-  }, [title, prepareArticleData, autosaveArticleMutation, lastSavedContentRef]);
+    autosaveArticleMutation(currentArticleData);
+  }, [title, prepareArticleData, autosaveArticleMutation, lastSavedContentRef, hasContentChanged]);
   
   const scheduleAutosave = useCallback(() => {
     // Clear any existing timeout
