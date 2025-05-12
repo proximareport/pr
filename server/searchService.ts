@@ -1,5 +1,6 @@
 import { db } from "./db";
-import { articles, searchHistory, users, categories } from "../shared/schema";
+import { pool } from "./db";
+import { articles, users, categories } from "../shared/schema";
 import { eq, like, and, or, gte, lte, desc, asc, sql, inArray } from "drizzle-orm";
 import { SQL } from "drizzle-orm/sql";
 
@@ -26,16 +27,15 @@ export interface SearchResult<T> {
 }
 
 /**
- * Save a search query to the database
+ * Save a search query to the database - disabled for now since table doesn't exist
  */
 export async function saveSearch(query: string, userId: number | null, resultCount: number, filters: any = {}) {
   try {
-    await db.insert(searchHistory).values({
+    // Skip saving search history since the table doesn't exist yet
+    console.log("Search history recording skipped (table doesn't exist):", {
       query,
       userId: userId || undefined,
-      resultCount,
-      filters,
-      isAnonymous: !userId,
+      resultCount
     });
     return true;
   } catch (error) {
@@ -48,99 +48,102 @@ export async function saveSearch(query: string, userId: number | null, resultCou
  * Search articles with pagination and filtering
  */
 export async function searchArticles(
-  query: string,
+  searchQuery: string,
   options: SearchOptions = { page: 1, limit: 10, orderBy: 'publishedAt', orderDirection: 'desc' },
   filters: SearchFilters = {},
 ): Promise<SearchResult<any>> {
   try {
     const offset = (options.page - 1) * options.limit;
     
-    // Create base query conditions
-    const conditions: SQL[] = [
-      // Only include published articles
-      sql`${articles.publishedAt} IS NOT NULL`,
-    ];
+    // Use direct SQL queries instead of the ORM since we have a schema mismatch
+    // Build WHERE clause for the query
+    let whereClause = "published_at IS NOT NULL";
+    const queryParams = [] as any[];
+    let paramIndex = 1;
     
-    // Add query search condition if provided
-    if (query && query.trim()) {
-      conditions.push(
-        or(
-          like(articles.title, `%${query.trim()}%`),
-          like(articles.summary, `%${query.trim()}%`),
-          like(articles.category, `%${query.trim()}%`),
-          sql`${articles.tags}::text LIKE ${'%' + query.trim() + '%'}`
-        )
-      );
+    // Add search condition if query is provided
+    if (searchQuery && searchQuery.trim()) {
+      const searchTerm = `%${searchQuery.trim()}%`;
+      whereClause += ` AND (title ILIKE $${paramIndex} OR summary ILIKE $${paramIndex} OR category ILIKE $${paramIndex} OR tags::text ILIKE $${paramIndex})`;
+      queryParams.push(searchTerm);
+      paramIndex++;
     }
     
     // Add category filter
     if (filters.category) {
-      conditions.push(eq(articles.category, filters.category));
+      whereClause += ` AND category = $${paramIndex}`;
+      queryParams.push(filters.category);
+      paramIndex++;
     }
     
-    // Add tag filter
+    // Add tags filter
     if (filters.tags && filters.tags.length > 0) {
-      // This uses array overlap operator && for PostgreSQL
-      conditions.push(sql`${articles.tags} && ${filters.tags}`);
+      whereClause += ` AND tags && $${paramIndex}::text[]`;
+      queryParams.push(filters.tags);
+      paramIndex++;
     }
     
     // Add author filter
     if (filters.author) {
-      // Check primary_author_id column (which is primaryAuthorId in our schema)
-      conditions.push(eq(articles.primaryAuthorId, filters.author));
-      // Note: In a more comprehensive implementation, we would also check the articleAuthors table
-      // to find articles where the user is a non-primary author
+      whereClause += ` AND author_id = $${paramIndex}`;
+      queryParams.push(filters.author);
+      paramIndex++;
     }
     
     // Add date range filters
     if (filters.dateFrom) {
-      conditions.push(gte(articles.publishedAt, filters.dateFrom));
+      whereClause += ` AND published_at >= $${paramIndex}`;
+      queryParams.push(filters.dateFrom);
+      paramIndex++;
     }
     
     if (filters.dateTo) {
-      conditions.push(lte(articles.publishedAt, filters.dateTo));
+      whereClause += ` AND published_at <= $${paramIndex}`;
+      queryParams.push(filters.dateTo);
+      paramIndex++;
     }
     
-    // Create ordering SQL
-    let orderSql;
-    if (options.orderDirection === 'asc') {
-      orderSql = asc(articles[options.orderBy as keyof typeof articles]);
-    } else {
-      orderSql = desc(articles[options.orderBy as keyof typeof articles]);
-    }
+    // Count total results first
+    const countQuery = `SELECT COUNT(*) FROM articles WHERE ${whereClause}`;
+    const countResult = await pool.query(countQuery, queryParams);
+    const total = parseInt(countResult.rows[0].count, 10) || 0;
     
-    // Count total results
-    const countResult = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(articles)
-      .where(and(...conditions));
+    // Determine order by clause
+    const orderColumn = options.orderBy || 'published_at';
+    const orderDirection = options.orderDirection || 'desc';
+    const orderByClause = `${orderColumn} ${orderDirection}`;
     
-    const total = countResult[0]?.count || 0;
+    // Fetch the articles with pagination
+    const sqlQuery = `
+      SELECT 
+        id, 
+        title, 
+        slug, 
+        summary, 
+        content, 
+        author_id as "authorId", 
+        published_at as "publishedAt", 
+        created_at as "createdAt", 
+        updated_at as "updatedAt", 
+        featured_image as "featuredImage", 
+        is_breaking as "isBreaking", 
+        read_time as "readTime",
+        view_count as "viewCount",
+        tags,
+        category,
+        status
+      FROM articles 
+      WHERE ${whereClause}
+      ORDER BY ${orderByClause}
+      LIMIT ${options.limit}
+      OFFSET ${offset}
+    `;
     
-    // Fetch paginated results
-    const results = await db
-      .select({
-        id: articles.id,
-        title: articles.title,
-        slug: articles.slug,
-        summary: articles.summary,
-        category: articles.category,
-        tags: articles.tags,
-        publishedAt: articles.publishedAt,
-        featuredImage: articles.featuredImage,
-        primaryAuthorId: articles.primaryAuthorId,
-        viewCount: articles.viewCount,
-      })
-      .from(articles)
-      .where(and(...conditions))
-      .orderBy(orderSql)
-      .limit(options.limit)
-      .offset(offset);
+    console.log("Executing SQL:", sqlQuery.replace(/\s+/g, ' '));
+    const result = await pool.query(sqlQuery, queryParams);
+    const results = result.rows;
     
-    // Save the search query if it's a text search
-    if (query) {
-      await saveSearch(query, null, total, filters);
-    }
+    // Skip saving search history as the table doesn't exist yet
     
     return {
       data: results,
