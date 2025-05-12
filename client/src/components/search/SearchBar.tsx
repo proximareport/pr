@@ -297,13 +297,13 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
                   </CommandGroup>
                 )}
                 
-                {/* View more results link */}
+                {/* More results message */}
                 {(hasResults || hasUserResults) && searchData.total > searchData.data.length && (
                   <CommandItem
                     onSelect={handleFullSearch}
-                    className="justify-center text-primary border-t"
+                    className="justify-center text-muted-foreground border-t"
                   >
-                    View all {searchData.total} results for "{debouncedQuery}"
+                    Found {searchData.total} results for "{debouncedQuery}"
                   </CommandItem>
                 )}
               </>
@@ -464,13 +464,13 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
                     </CommandGroup>
                   )}
                   
-                  {/* View more results link */}
+                  {/* More results message */}
                   {(hasResults || hasUserResults) && searchData.total > searchData.data.length && (
                     <CommandItem
                       onSelect={handleFullSearch}
-                      className="justify-center text-primary border-t"
+                      className="justify-center text-muted-foreground border-t"
                     >
-                      View all {searchData.total} results for "{debouncedQuery}"
+                      Found {searchData.total} results for "{debouncedQuery}"
                     </CommandItem>
                   )}
                 </>
