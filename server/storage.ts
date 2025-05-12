@@ -328,13 +328,39 @@ export class DatabaseStorage implements IStorage {
 
   async getArticleBySlug(slug: string): Promise<Article | undefined> {
     try {
-      const result = await db.execute(sql`
-        SELECT * FROM articles 
-        WHERE slug = ${slug}
+      // Use a more explicit query with proper column mappings like we do in getArticleById
+      const query = `
+        SELECT 
+          id, 
+          title, 
+          slug, 
+          summary, 
+          content, 
+          primary_author_id as "primaryAuthorId", 
+          published_at as "publishedAt", 
+          created_at as "createdAt", 
+          updated_at as "updatedAt", 
+          featured_image as "featuredImage", 
+          is_breaking as "isBreaking", 
+          read_time as "readTime",
+          view_count as "viewCount",
+          tags,
+          category,
+          status
+        FROM articles 
+        WHERE slug = $1
         LIMIT 1
-      `);
+      `;
       
-      return result.rows[0] as Article | undefined;
+      const result = await pool.query(query, [slug]);
+      
+      if (result.rows.length > 0) {
+        console.log("Article found with slug:", slug);
+        return result.rows[0] as Article;
+      }
+      
+      console.log("No article found with slug:", slug);
+      return undefined;
     } catch (error) {
       console.error("Error in getArticleBySlug:", error);
       return undefined;
