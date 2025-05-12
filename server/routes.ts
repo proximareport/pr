@@ -2267,73 +2267,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       try {
-        // DIRECT SQL QUERY - most reliable method to get all ads
-        const { rows } = await db.execute("SELECT * FROM advertisements");
-        console.log(`SQL direct query found ${rows.length} advertisements`);
+        // Execute raw SQL query for maximum reliability
+        const query = `
+          SELECT a.*, u.username, u.email 
+          FROM advertisements a 
+          LEFT JOIN users u ON a.user_id = u.id
+        `;
+        
+        const { rows } = await db.execute(query);
+        console.log(`SQL query found ${rows.length} advertisements in total`);
         
         if (rows.length > 0) {
-          // Include user information with each ad
-          const enhancedAds = await Promise.all(rows.map(async (ad) => {
-            const adUser = await storage.getUser(ad.user_id);
-            return {
-              id: ad.id,
-              title: ad.title,
-              imageUrl: ad.image_url,
-              linkUrl: ad.link_url,
-              placement: ad.placement,
-              startDate: ad.start_date,
-              endDate: ad.end_date,
-              userId: ad.user_id,
-              isApproved: ad.is_approved,
-              createdAt: ad.created_at,
-              impressions: ad.impressions || 0,
-              clicks: ad.clicks || 0,
-              status: ad.status,
-              paymentStatus: ad.payment_status,
-              paymentId: ad.payment_id,
-              price: ad.price,
-              adminNotes: ad.admin_notes,
-              user: adUser ? {
-                username: adUser.username,
-                email: adUser.email
-              } : undefined
-            };
+          console.log(`First ad from DB: ${JSON.stringify(rows[0])}`);
+          
+          // Transform database rows to client-friendly format
+          const enhancedAds = rows.map(ad => ({
+            id: ad.id,
+            title: ad.title,
+            imageUrl: ad.image_url,
+            linkUrl: ad.link_url,
+            placement: ad.placement,
+            startDate: ad.start_date,
+            endDate: ad.end_date,
+            userId: ad.user_id,
+            isApproved: ad.is_approved,
+            createdAt: ad.created_at,
+            impressions: ad.impressions || 0,
+            clicks: ad.clicks || 0,
+            status: ad.status,
+            paymentStatus: ad.payment_status,
+            paymentId: ad.payment_id,
+            price: ad.price,
+            adminNotes: ad.admin_notes,
+            user: {
+              username: ad.username,
+              email: ad.email
+            }
           }));
           
-          console.log(`Enhanced ${enhancedAds.length} ads with user information`);
+          console.log(`Returning ${enhancedAds.length} ads to client`);
           return res.json(enhancedAds);
         } else {
-          console.log('No advertisements found in the database at all');
+          console.log('No advertisements found in the database');
           return res.json([]);
         }
-      } catch (sqlError) {
-        console.error("SQL query error:", sqlError);
-        
-        // Fallback to Drizzle ORM method
-        console.log("Falling back to Drizzle method");
-        const allAdsInDb = await db.select().from(advertisements);
-        
-        if (allAdsInDb && allAdsInDb.length > 0) {
-          // Include user information with each ad
-          const enhancedAds = await Promise.all(allAdsInDb.map(async (ad) => {
-            const adUser = await storage.getUser(ad.userId);
-            return {
-              ...ad,
-              user: adUser ? {
-                username: adUser.username,
-                email: adUser.email
-              } : undefined
-            };
-          }));
-          
-          return res.json(enhancedAds);
-        } else {
-          console.log('No advertisements found using Drizzle either');
-          return res.json([]);
-        }
+      } catch (error) {
+        console.error("Error in SQL query:", error);
+        return res.status(500).json({ message: "Error fetching advertisements" });
       }
     } catch (error) {
-      console.error("Error fetching all advertisements:", error);
+      console.error("Error in advertisement endpoint:", error);
       res.status(500).json({ message: "Error fetching all advertisements" });
     }
   });

@@ -47,13 +47,17 @@ function AdvertisementTab() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // Add debug logs to help troubleshoot the advertisement issue
+  // Use the direct SQL endpoint for reliable ad retrieval
   const { data: advertisements = [], isLoading, error } = useQuery({
     queryKey: ['/api/advertisements/all'],
-    retry: false,
+    retry: 3,
+    refetchOnWindowFocus: false,
     select: (data: any): Advertisement[] => {
       // Ensure data is always returned as an array
-      if (!data) return [];
+      if (!data) {
+        console.log('No data returned from API');
+        return [];
+      }
       
       // If it's already an array, return it
       if (Array.isArray(data)) {
@@ -71,26 +75,17 @@ function AdvertisementTab() {
       return [];
     },
     onSuccess: (data) => {
-      if (Array.isArray(data)) {
-        console.log('Advertisement data processed successfully:', {
-          count: data.length,
-          pendingCount: data.filter(ad => !ad.isApproved).length,
-          approvedCount: data.filter(ad => ad.isApproved).length
-        });
-        
-        if (data.length > 0) {
-          console.log('Sample ad data:', {
-            id: data[0].id,
-            title: data[0].title,
-            isApproved: data[0].isApproved,
-            placement: data[0].placement
-          });
-        } else {
-          console.log('No advertisements found in response');
-        }
-      } else {
-        console.error('Data is not an array after processing:', data);
-      }
+      console.log('Advertisement data retrieved:', data.length, 'advertisements');
+      
+      // Show the distribution of statuses
+      const statusCounts: Record<string, number> = {};
+      data.forEach(ad => {
+        statusCounts[ad.status] = (statusCounts[ad.status] || 0) + 1;
+      });
+      
+      console.log('Advertisement status distribution:', statusCounts);
+      console.log('Pending count:', data.filter(ad => ad.status === 'pending').length);
+      console.log('Approved count:', data.filter(ad => ad.isApproved).length);
     },
     onError: (err) => {
       console.error('Error loading advertisements:', err);
