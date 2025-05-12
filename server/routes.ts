@@ -5,7 +5,8 @@ import { pool } from "./db";
 import { ZodError } from "zod";
 import { updateArticleStatus } from "./articleStatusRoute";
 import { searchArticles, searchUsers, getPopularSearches, saveSearch } from "./searchService";
-// Note: We will directly register search routes here instead of using the separate function
+import { subscribeToNewsletter, unsubscribeFromNewsletter, verifySubscription, sendNewsletterEmail } from "./emailService";
+// Note: We will directly register search routes and newsletter routes here
 import {
   insertUserSchema,
   insertArticleSchema,
@@ -335,6 +336,169 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Search history error:", error);
       res.status(500).json({ message: "Error saving search history" });
+    }
+  });
+  
+  // ---------------------------------------------------------------------------
+  // Newsletter Routes
+  // ---------------------------------------------------------------------------
+  
+  // Subscribe to newsletter endpoint
+  app.post("/api/newsletter/subscribe", async (req: Request, res: Response) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email || typeof email !== 'string') {
+        return res.status(400).json({ message: "Email is required" });
+      }
+      
+      // Get userId from session if available
+      const userId = req.session?.userId;
+      const result = await subscribeToNewsletter(email, userId || undefined);
+      
+      res.status(result.success ? 200 : 400).json(result);
+    } catch (error) {
+      console.error("Newsletter subscription error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Error processing subscription request" 
+      });
+    }
+  });
+  
+  // Verify subscription with token
+  app.get("/api/newsletter/verify/:token", async (req: Request, res: Response) => {
+    try {
+      const token = req.params.token;
+      const result = await verifySubscription(token);
+      
+      // Redirect to success or error page
+      if (result.success) {
+        res.redirect('/?subscription=verified');
+      } else {
+        res.redirect('/?subscription=error');
+      }
+    } catch (error) {
+      console.error("Subscription verification error:", error);
+      res.redirect('/?subscription=error');
+    }
+  });
+  
+  // Unsubscribe from newsletter
+  app.get("/api/newsletter/unsubscribe/:token", async (req: Request, res: Response) => {
+    try {
+      const token = req.params.token;
+      const result = await unsubscribeFromNewsletter(token);
+      
+      // Redirect to success or error page
+      if (result.success) {
+        res.redirect('/?unsubscribed=true');
+      } else {
+        res.redirect('/?unsubscribed=error');
+      }
+    } catch (error) {
+      console.error("Unsubscribe error:", error);
+      res.redirect('/?unsubscribed=error');
+    }
+  });
+  
+  // Get newsletter status for article
+  app.get("/api/newsletter/status/:articleId", async (req: Request, res: Response) => {
+    try {
+      const articleId = parseInt(req.params.articleId);
+      
+      if (isNaN(articleId)) {
+        return res.status(400).json({ message: "Invalid article ID" });
+      }
+      
+      const article = await storage.getArticle(articleId);
+      
+      if (!article) {
+        return res.status(404).json({ message: "Article not found" });
+      }
+      
+      res.json({
+        isNewsletter: article.isNewsletter || false,
+        sentAt: article.newsletterSentAt || null
+      });
+    } catch (error) {
+      console.error("Newsletter status error:", error);
+      res.status(500).json({ message: "Error fetching newsletter status" });
+    }
+  });
+  
+  // Get newsletter stats
+  app.get("/api/newsletter/stats", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      // Get basic stats about newsletter
+      const stats = await storage.getNewsletterStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Newsletter stats error:", error);
+      res.status(500).json({ message: "Error fetching newsletter statistics" });
+    }
+  });
+  
+  // Send newsletter for article
+  app.post("/api/newsletter/send", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { articleId, subject, fromEmail, fromName } = req.body;
+      
+      if (!articleId || !subject || !fromEmail || !fromName) {
+        return res.status(400).json({ 
+          message: "Missing required fields: articleId, subject, fromEmail, fromName" 
+        });
+      }
+      
+      // Check if article exists and is newsletter-type
+      const article = await storage.getArticle(parseInt(articleId));
+      
+      if (!article) {
+        return res.status(404).json({ message: "Article not found" });
+      }
+      
+      if (!article.isNewsletter) {
+        return res.status(400).json({ 
+          message: "This article is not marked as a newsletter" 
+        });
+      }
+      
+      if (article.newsletterSentAt) {
+        return res.status(400).json({ 
+          message: "This newsletter has already been sent" 
+        });
+      }
+      
+      // Send the newsletter
+      const success = await sendNewsletterEmail({
+        articleId: parseInt(articleId),
+        subject,
+        fromEmail,
+        fromName
+      });
+      
+      if (success) {
+        // Update the article to mark it as sent
+        await storage.updateArticle(parseInt(articleId), { 
+          newsletterSentAt: new Date() 
+        });
+        
+        res.json({ 
+          success: true, 
+          message: "Newsletter sent successfully" 
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          message: "Failed to send newsletter" 
+        });
+      }
+    } catch (error) {
+      console.error("Send newsletter error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Error sending newsletter" 
+      });
     }
   });
   

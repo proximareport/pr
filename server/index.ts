@@ -1,6 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { registerNewsletterAndSearchRoutes } from "./newsletterRoutes";
+// We now register newsletter routes directly in routes.ts
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
@@ -41,9 +41,8 @@ app.use((req, res, next) => {
   // First register all API routes
   const server = await registerRoutes(app);
   
-  // Register newsletter and search routes
-  // These must be registered BEFORE Vite middleware
-  registerNewsletterAndSearchRoutes(app);
+  // Newsletter and search routes are now directly registered in routes.ts
+  // before the Vite middleware
 
   // Global error handler for API routes
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
