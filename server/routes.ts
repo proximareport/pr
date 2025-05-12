@@ -2267,45 +2267,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       try {
-        // First try a direct SQL query to diagnose issues
-        const sqlQuery = "SELECT * FROM advertisements;";
-        const { rows } = await db.execute(sqlQuery);
+        // DIRECT SQL QUERY - most reliable method to get all ads
+        const { rows } = await db.execute("SELECT * FROM advertisements");
         console.log(`SQL direct query found ${rows.length} advertisements`);
+        
         if (rows.length > 0) {
-          console.log(`First ad from SQL: ${JSON.stringify(rows[0])}`);
+          // Include user information with each ad
+          const enhancedAds = await Promise.all(rows.map(async (ad) => {
+            const adUser = await storage.getUser(ad.user_id);
+            return {
+              id: ad.id,
+              title: ad.title,
+              imageUrl: ad.image_url,
+              linkUrl: ad.link_url,
+              placement: ad.placement,
+              startDate: ad.start_date,
+              endDate: ad.end_date,
+              userId: ad.user_id,
+              isApproved: ad.is_approved,
+              createdAt: ad.created_at,
+              impressions: ad.impressions || 0,
+              clicks: ad.clicks || 0,
+              status: ad.status,
+              paymentStatus: ad.payment_status,
+              paymentId: ad.payment_id,
+              price: ad.price,
+              adminNotes: ad.admin_notes,
+              user: adUser ? {
+                username: adUser.username,
+                email: adUser.email
+              } : undefined
+            };
+          }));
+          
+          console.log(`Enhanced ${enhancedAds.length} ads with user information`);
+          return res.json(enhancedAds);
+        } else {
+          console.log('No advertisements found in the database at all');
+          return res.json([]);
         }
       } catch (sqlError) {
-        console.error("SQL diagnostic query error:", sqlError);
-      }
-      
-      // DIRECTLY fetch all ads from the database to ensure we get everything
-      // This bypasses any filtering in the storage method
-      try {
+        console.error("SQL query error:", sqlError);
+        
+        // Fallback to Drizzle ORM method
+        console.log("Falling back to Drizzle method");
         const allAdsInDb = await db.select().from(advertisements);
-        console.log(`Direct DB query shows ${allAdsInDb.length} total ads in the database`);
         
-        if (allAdsInDb.length > 0) {
-          console.log(`First ad: ID=${allAdsInDb[0].id}, Title="${allAdsInDb[0].title}", IsApproved=${allAdsInDb[0].isApproved}`);
+        if (allAdsInDb && allAdsInDb.length > 0) {
+          // Include user information with each ad
+          const enhancedAds = await Promise.all(allAdsInDb.map(async (ad) => {
+            const adUser = await storage.getUser(ad.userId);
+            return {
+              ...ad,
+              user: adUser ? {
+                username: adUser.username,
+                email: adUser.email
+              } : undefined
+            };
+          }));
+          
+          return res.json(enhancedAds);
         } else {
-          console.log('No advertisements found in the database at all using Drizzle');
+          console.log('No advertisements found using Drizzle either');
+          return res.json([]);
         }
-        
-        // Include user information with each ad
-        const enhancedAds = await Promise.all(allAdsInDb.map(async (ad) => {
-          const adUser = await storage.getUser(ad.userId);
-          return {
-            ...ad,
-            user: adUser ? {
-              username: adUser.username,
-              email: adUser.email
-            } : undefined
-          };
-        }));
-        
-        res.json(enhancedAds);
-      } catch (drizzleError) {
-        console.error("Drizzle query error:", drizzleError);
-        res.status(500).json({ message: "Error fetching advertisements with Drizzle" });
       }
     } catch (error) {
       console.error("Error fetching all advertisements:", error);
