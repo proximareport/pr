@@ -4,6 +4,8 @@ import { storage } from "./storage";
 import { pool } from "./db";
 import { ZodError } from "zod";
 import { updateArticleStatus } from "./articleStatusRoute";
+import { searchArticles, searchUsers, getPopularSearches } from "./searchService";
+import { subscribeToNewsletter, unsubscribeFromNewsletter, verifySubscription, sendNewsletterEmail } from "./emailService";
 import {
   insertUserSchema,
   insertArticleSchema,
