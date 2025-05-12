@@ -169,18 +169,37 @@ function AdvertiserDashboard() {
     checkoutMutation.mutate(adId);
   };
   
-  // Get ads by status
+  // Get ads by status - with debug logging
   const getPendingAds = () => {
     if (!advertisements) return [];
-    return (advertisements as Advertisement[]).filter(ad => 
-      ad.status === 'pending' || ad.status === 'approved_pending_payment'
-    );
+    
+    // This implementation checks both status field and isApproved field
+    // since there could be inconsistencies between them
+    const pendingAds = (advertisements as Advertisement[]).filter(ad => {
+      const isPending = ad.status === 'pending';
+      const isApprovedPendingPayment = ad.status === 'approved_pending_payment';
+      const isAwaitingPayment = ad.isApproved === false && ad.status !== 'rejected';
+      
+      console.log(`Ad ${ad.id} (${ad.title}) status check: `, {
+        status: ad.status,
+        isApproved: ad.isApproved,
+        isPending,
+        isApprovedPendingPayment,
+        isAwaitingPayment,
+        included: isPending || isApprovedPendingPayment || isAwaitingPayment
+      });
+      
+      return isPending || isApprovedPendingPayment || isAwaitingPayment;
+    });
+    
+    console.log(`Found ${pendingAds.length} pending ads in client filtering function`);
+    return pendingAds;
   };
   
   const getActiveAds = () => {
     if (!advertisements) return [];
     return (advertisements as Advertisement[]).filter(ad => 
-      ad.status === 'active'
+      ad.status === 'active' && ad.isApproved === true
     );
   };
   
@@ -204,24 +223,35 @@ function AdvertiserDashboard() {
     return `$${(priceInCents / 100).toFixed(2)}`;
   };
   
-  // Get status badge color based on status
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200"><Clock className="h-3 w-3 mr-1" /> Pending Review</Badge>;
-      case 'approved_pending_payment':
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200"><CreditCard className="h-3 w-3 mr-1" /> Payment Required</Badge>;
-      case 'active':
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200"><CheckCircle className="h-3 w-3 mr-1" /> Active</Badge>;
-      case 'rejected':
-        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200"><XCircle className="h-3 w-3 mr-1" /> Rejected</Badge>;
-      case 'completed':
-        return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">Completed</Badge>;
-      case 'expired':
-        return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">Expired</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
+  // Get status badge color based on status and isApproved field
+  const getStatusBadge = (status: string, isApproved: boolean) => {
+    // Check both status field and isApproved to determine the actual status
+    if (status === 'pending' || (!isApproved && status !== 'rejected')) {
+      return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200"><Clock className="h-3 w-3 mr-1" /> Pending Review</Badge>;
     }
+    
+    if (status === 'approved_pending_payment') {
+      return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200"><CreditCard className="h-3 w-3 mr-1" /> Payment Required</Badge>;
+    }
+    
+    if (status === 'active' && isApproved) {
+      return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200"><CheckCircle className="h-3 w-3 mr-1" /> Active</Badge>;
+    }
+    
+    if (status === 'rejected') {
+      return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200"><XCircle className="h-3 w-3 mr-1" /> Rejected</Badge>;
+    }
+    
+    if (status === 'completed') {
+      return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">Completed</Badge>;
+    }
+    
+    if (status === 'expired') {
+      return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">Expired</Badge>;
+    }
+    
+    // Default with status for debug purposes
+    return <Badge variant="outline">{status} (Approved: {isApproved ? 'Yes' : 'No'})</Badge>;
   };
   
   // Get placement name for display
@@ -564,7 +594,7 @@ function AdTable({
 }: { 
   advertisements: Advertisement[], 
   formatPrice: (price: number | null) => string,
-  getStatusBadge: (status: string) => React.ReactNode,
+  getStatusBadge: (status: string, isApproved: boolean) => React.ReactNode,
   getPlacementName: (placement: string) => string,
   onPreview: (ad: Advertisement) => void,
   onCheckout: (adId: number) => void
