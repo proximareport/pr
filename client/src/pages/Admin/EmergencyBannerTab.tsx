@@ -200,7 +200,12 @@ function EmergencyBannerTab() {
                             Expires: {format(new Date(activeBanner.expiresAt), 'MMM d, yyyy')}
                           </Badge>
                         )}
-                        <Badge variant={activeBanner.type as "default" | "secondary" | "destructive" | "outline"}>
+                        <Badge variant={
+                          activeBanner.type === "info" ? "default" : 
+                          activeBanner.type === "warning" ? "secondary" : 
+                          activeBanner.type === "critical" ? "destructive" : 
+                          "outline"
+                        }>
                           {activeBanner.type.charAt(0).toUpperCase() + activeBanner.type.slice(1)}
                         </Badge>
                       </div>
@@ -274,12 +279,16 @@ function EmergencyBannerTab() {
                       <Calendar
                         mode="single"
                         selected={expiresAt}
-                        onSelect={(date) => {
-                          setExpiresAt(date);
+                        onSelect={(date: Date | undefined) => {
+                          setExpiresAt(date || null);
                           setDatePickerOpen(false);
                         }}
                         initialFocus
-                        disabled={(date) => date < new Date()}
+                        disabled={(date) => {
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          return date < today;
+                        }}
                       />
                     </PopoverContent>
                   </Popover>
@@ -313,7 +322,12 @@ function EmergencyBannerTab() {
                               Expires: {format(expiresAt, 'MMM d, yyyy')}
                             </Badge>
                           )}
-                          <Badge variant={bannerType as "default" | "secondary" | "destructive" | "outline"}>
+                          <Badge variant={
+                            bannerType === "info" ? "default" : 
+                            bannerType === "warning" ? "secondary" : 
+                            bannerType === "critical" ? "destructive" : 
+                            "outline"
+                          }>
                             {bannerType.charAt(0).toUpperCase() + bannerType.slice(1)}
                           </Badge>
                         </div>
