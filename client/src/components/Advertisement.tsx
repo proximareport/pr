@@ -161,8 +161,27 @@ const Advertisement: React.FC<AdvertisementProps> = ({ placement, className = ''
   const isTestAd = selectedAd.isTest === true || 
                   (selectedAd.adminNotes && selectedAd.adminNotes.toLowerCase().includes('test'));
   
+  // Determine sizing classes based on placement
+  const getSizingClasses = () => {
+    if (placement.includes('article_') || placement === 'article') {
+      if (placement === 'article_sidebar') {
+        // Make article sidebar ads smaller
+        return 'max-w-[220px] mx-auto';
+      }
+      if (placement === 'article_middle') {
+        // Make article middle ads medium sized
+        return 'max-w-[300px] mx-auto';
+      }
+    }
+    // Default sizing (for sidebar, banner, etc.)
+    return '';
+  };
+  
+  // Get size classes based on placement
+  const sizeClasses = getSizingClasses();
+  
   return (
-    <div className={`advertisement ${className} border ${isTestAd ? 'border-amber-400' : 'border-gray-200'} rounded-md overflow-hidden relative`}>
+    <div className={`advertisement ${className} border ${isTestAd ? 'border-amber-400' : 'border-gray-200'} rounded-md overflow-hidden relative ${sizeClasses}`}>
       {isTestAd && (
         <div className="absolute top-0 right-0 bg-amber-400 text-xs px-2 py-1 z-10 text-black font-semibold">
           Test Ad
