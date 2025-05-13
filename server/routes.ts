@@ -523,10 +523,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Development route to reset a user's password (only for development)
+  app.post("/api/dev/reset-password", async (req: Request, res: Response) => {
+    try {
+      const { userId, newPassword } = req.body;
+      
+      if (!userId || !newPassword) {
+        return res.status(400).json({ message: "User ID and new password are required" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Hash the new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      
+      // Update the user's password
+      const updatedUser = await storage.updateUser(userId, { 
+        password: hashedPassword,
+        updatedAt: new Date()
+      });
+      
+      return res.json({ message: "Password reset successfully", user: updatedUser });
+    } catch (error) {
+      console.error("Password reset error:", error);
+      return res.status(500).json({ message: "Error resetting password" });
+    }
+  });
+
   // User login endpoint
   app.post("/api/login", async (req: Request, res: Response) => {
     try {
       const { username, email, password } = req.body;
+      
+      console.log("Login attempt with:", { 
+        email: email ? email : "not provided", 
+        username: username ? username : "not provided"
+      });
       
       // Check if we have either username or email, and password
       if ((!username && !email) || !password) {
@@ -538,21 +573,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Try to find user by email first if provided
       if (email) {
         const normalizedEmail = email.toLowerCase();
+        console.log("Looking up user by email:", normalizedEmail);
         user = await storage.getUserByEmail(normalizedEmail);
+        console.log("Email lookup result:", user ? "User found" : "No user found");
       }
       
       // If no user found by email or email wasn't provided, try username
       if (!user && username) {
         const normalizedUsername = username.toLowerCase();
+        console.log("Looking up user by username:", normalizedUsername);
         user = await storage.getUserByUsername(normalizedUsername);
+        console.log("Username lookup result:", user ? "User found" : "No user found");
       }
       
       if (!user) {
         return res.status(400).json({ message: "Invalid credentials" });
       }
       
+      console.log("User found:", { id: user.id, username: user.username, email: user.email });
+      
       // Special case for development with a known password format
       if (user.password === "hashed_" + password) {
+        console.log("Using development password shortcut");
         req.session.userId = user.id;
         req.session.isAdmin = user.role === 'admin';
         return res.json(user);
@@ -563,7 +605,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let isMatch = false;
       try {
-        isMatch = await bcrypt.compare(normalizedPassword, user.password);
+        console.log("Attempting password match");
+        isMatch = await bcrypt.compare(password, user.password);
         console.log("Password match result:", isMatch);
       } catch (compareError) {
         console.error("bcrypt.compare error:", compareError);
@@ -571,9 +614,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (!isMatch) {
-        // If the login fails, try with the raw password as fallback (for fixing cross-device issues)
+        // If the login fails, try with normalized password as fallback
         try {
-          isMatch = await bcrypt.compare(password, user.password);
+          console.log("Attempting fallback password match with normalized password");
+          isMatch = await bcrypt.compare(normalizedPassword, user.password);
           console.log("Fallback password match result:", isMatch);
         } catch (fallbackError) {
           console.error("Fallback bcrypt.compare error:", fallbackError);
