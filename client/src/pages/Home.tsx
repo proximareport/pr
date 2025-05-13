@@ -107,20 +107,17 @@ function Home() {
                   }) 
                 : null}
                 
-                {/* Add a divider between categories and tags */}
-                {tags && tags.length > 0 && categories && categories.length > 0 && (
-                  <div className="h-4 w-px bg-white/20 mx-2"></div>
-                )}
-                
-                {/* Display tags in the same TabsList */}
-                {tags && tags.length > 0 && tags.map((tag) => (
-                  <TabsTrigger
-                    key={`tag-${tag.id}`}
-                    value={`tag-${tag.id}`}
-                  >
-                    #{tag.name}
-                  </TabsTrigger>
-                ))}
+                {/* Display categories as topics for filtering */}
+                {categories && categories.length > 0 && categories
+                  .filter(cat => !siteSettings?.homeCategories?.includes(cat.slug))
+                  .map((category) => (
+                    <TabsTrigger
+                      key={`category-${category.id}`}
+                      value={`category-${category.slug}`}
+                    >
+                      {category.name}
+                    </TabsTrigger>
+                  ))}
               </TabsList>
             </Tabs>
             
@@ -133,26 +130,30 @@ function Home() {
                   className="bg-[#1E1E2D] text-white border border-white/10 rounded-md p-1"
                 >
                   <option value="all">All</option>
-                  {/* Categories */}
+                  {/* Primary categories */}
                   {siteSettings && siteSettings.homeCategories ? 
-                    siteSettings.homeCategories.map((catSlug: string) => {
-                      const category = categories?.find(c => c.slug === catSlug);
-                      return category ? (
-                        <option key={category.id} value={`category-${category.slug}`}>
-                          {category.name}
-                        </option>
-                      ) : null;
-                    })
+                    <optgroup label="Primary Categories">
+                      {siteSettings.homeCategories.map((catSlug: string) => {
+                        const category = categories?.find(c => c.slug === catSlug);
+                        return category ? (
+                          <option key={category.id} value={`category-${category.slug}`}>
+                            {category.name}
+                          </option>
+                        ) : null;
+                      })}
+                    </optgroup>
                   : null}
                   
-                  {/* Add tags to the same dropdown */}
-                  {tags && tags.length > 0 && (
-                    <optgroup label="Tags">
-                      {tags.map((tag) => (
-                        <option key={`tag-${tag.id}`} value={`tag-${tag.id}`}>
-                          #{tag.name}
-                        </option>
-                      ))}
+                  {/* Additional categories/topics */}
+                  {categories && categories.length > 0 && (
+                    <optgroup label="Topics">
+                      {categories
+                        .filter(cat => !siteSettings?.homeCategories?.includes(cat.slug))
+                        .map((category) => (
+                          <option key={`category-${category.id}`} value={`category-${category.slug}`}>
+                            {category.name}
+                          </option>
+                        ))}
                     </optgroup>
                   )}
                 </select>
