@@ -1844,41 +1844,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Admin endpoint for creating test advertisements
-  app.post("/api/admin/test-advertisement", requireAdmin, async (req: Request, res: Response) => {
-    try {
-      // Get the advertisement data
-      const adData = req.body;
-      
-      // Set user ID as the admin who's creating it
-      adData.userId = req.session.userId;
-      
-      // Set it as a test advertisement and make it pre-approved
-      adData.isTest = true;
-      adData.isApproved = true;
-      adData.status = 'approved';
-      adData.paymentStatus = 'paid';
-      
-      // Convert string dates to Date objects
-      if (adData.startDate && typeof adData.startDate === 'string') {
-        adData.startDate = new Date(adData.startDate);
-      }
-      
-      if (adData.endDate && typeof adData.endDate === 'string') {
-        adData.endDate = new Date(adData.endDate);
-      }
-      
-      // Create the test advertisement
-      const newAd = await storage.createAdvertisement(adData);
-      
-      console.log('Created test advertisement:', newAd);
-      
-      res.status(201).json(newAd);
-    } catch (error) {
-      console.error("Error creating test advertisement:", error);
-      res.status(500).json({ message: "Error creating test advertisement", error: String(error) });
-    }
-  });
+  // This endpoint has been removed to eliminate duplication.
+  // The implementation at line ~1968 is now the canonical endpoint for creating test advertisements.
 
   // Get ads for a specific placement (sidebar, banner, etc.)
   app.get("/api/advertisements/:placement", async (req: Request, res: Response) => {
@@ -1985,13 +1952,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       adData.userId = req.session.userId;
       
       // Set test ad properties
-      adData.isTest = true;
+      adData.isTest = true;  // Explicitly mark as test advertisement
       adData.isApproved = true;
       adData.paymentStatus = 'paid';
       adData.status = 'approved';
       
+      // Add this note to make it clear this is a test ad
+      adData.adminNotes = adData.adminNotes || 'Test advertisement created by admin for internal testing';
+      
+      // Convert string dates to Date objects
+      if (adData.startDate && typeof adData.startDate === 'string') {
+        adData.startDate = new Date(adData.startDate);
+      }
+      
+      if (adData.endDate && typeof adData.endDate === 'string') {
+        adData.endDate = new Date(adData.endDate);
+      }
+      
       // Create the advertisement
       const newAd = await storage.createAdvertisement(adData);
+      
+      // Enhanced logging for debugging
+      console.log('Created test advertisement:', {
+        id: newAd.id,
+        title: newAd.title,
+        isApproved: newAd.isApproved,
+        status: newAd.status,
+        isTest: newAd.isTest,
+        adminNotes: newAd.adminNotes
+      });
       
       res.status(201).json(newAd);
     } catch (error) {

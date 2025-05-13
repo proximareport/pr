@@ -1076,9 +1076,11 @@ export class DatabaseStorage implements IStorage {
       conditions.push(sql`${advertisements.startDate} <= NOW()`);
       conditions.push(sql`${advertisements.endDate} >= NOW()`);
       
-      // Show test advertisements for development but will be excluded in production
-      // This is a temporary fix to ensure test ads are visible
-      // conditions.push(sql`${advertisements.isTest} IS NULL OR ${advertisements.isTest} = false`);
+      // In non-admin views, exclude test advertisements except in development environment
+      if (process.env.NODE_ENV === 'production') {
+        // In production, never show test ads to regular users
+        conditions.push(sql`(${advertisements.isTest} IS NULL OR ${advertisements.isTest} = false)`);
+      }
     } else {
       // For admin view, include all advertisements including test advertisements
       console.log('Including all advertisements (including test/unapproved) for admin view');
