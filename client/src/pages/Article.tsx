@@ -29,9 +29,9 @@ function Article({ params }: ArticleProps) {
   
   // Fetch article data (with preview parameter if applicable)
   const { data: article, isLoading, error } = useQuery({
-    queryKey: [`/api/articles/${slug}`, isPreview],
+    queryKey: [`/api/articles/slug/${slug}`, isPreview],
     queryFn: async () => {
-      const url = `/api/articles/${slug}${isPreview ? '?preview=true' : ''}`;
+      const url = `/api/articles/slug/${slug}${isPreview ? '?preview=true' : ''}`;
       const response = await fetch(url);
       if (!response.ok) {
         if (response.status === 404) {
