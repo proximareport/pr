@@ -98,7 +98,10 @@ function Home() {
             
             <Tabs 
               value={selectedCategory} 
-              onValueChange={handleCategoryChange}
+              onValueChange={(value) => {
+                handleCategoryChange(value);
+                setSelectedTag(null); // Reset tag when changing category
+              }}
               className="hidden md:block"
             >
               <TabsList className="bg-[#1E1E2D]">
@@ -113,49 +116,90 @@ function Home() {
                     ) : null;
                   }) 
                 : null}
+                
+                {/* Add a divider between categories and tags */}
+                {tags && tags.length > 0 && (
+                  <div className="h-4 w-px bg-white/20 mx-2"></div>
+                )}
+                
+                {/* Display tags in the TabsList */}
+                {tags && tags.length > 0 && tags.map((tag) => (
+                  <TabsTrigger
+                    key={`tag-${tag.id}`}
+                    value={`tag-${tag.id}`}
+                    onClick={(e) => {
+                      e.preventDefault(); // Prevent default behavior
+                      handleTagSelect(tag.id);
+                    }}
+                    className={selectedTag === tag.id ? "bg-purple-600 hover:bg-purple-700" : ""}
+                  >
+                    #{tag.name}
+                  </TabsTrigger>
+                ))}
               </TabsList>
             </Tabs>
             
             <div className="block md:hidden">
-              <select 
-                value={selectedCategory} 
-                onChange={(e) => handleCategoryChange(e.target.value)}
-                className="bg-[#1E1E2D] text-white border border-white/10 rounded-md p-1"
-              >
-                <option value="all">All</option>
-                {siteSettings && siteSettings.homeCategories ? 
-                  siteSettings.homeCategories.map((catSlug: string) => {
-                    const category = categories?.find(c => c.slug === catSlug);
-                    return category ? (
-                      <option key={category.id} value={category.slug}>
-                        {category.name}
-                      </option>
-                    ) : null;
-                  })
-                : null}
-              </select>
-            </div>
-          </div>
-          
-          {/* Tag Filters */}
-          {tags && tags.length > 0 && (
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold mb-3">Filter by Tags</h3>
               <div className="flex flex-wrap gap-2">
-                {tags.map((tag) => (
+                <select 
+                  value={selectedCategory} 
+                  onChange={(e) => {
+                    handleCategoryChange(e.target.value);
+                    setSelectedTag(null); // Reset tag when changing category
+                  }}
+                  className="bg-[#1E1E2D] text-white border border-white/10 rounded-md p-1"
+                >
+                  <option value="all">All</option>
+                  {siteSettings && siteSettings.homeCategories ? 
+                    siteSettings.homeCategories.map((catSlug: string) => {
+                      const category = categories?.find(c => c.slug === catSlug);
+                      return category ? (
+                        <option key={category.id} value={category.slug}>
+                          {category.name}
+                        </option>
+                      ) : null;
+                    })
+                  : null}
+                </select>
+                
+                {/* Mobile tag filter buttons */}
+                {tags && tags.length > 0 && tags.slice(0, 2).map((tag) => (
                   <Button
-                    key={tag.id}
+                    key={`mobile-tag-${tag.id}`}
                     variant={selectedTag === tag.id ? "default" : "outline"}
                     size="sm"
                     onClick={() => handleTagSelect(tag.id)}
-                    className={selectedTag === tag.id ? "bg-purple-600 hover:bg-purple-700" : ""}
+                    className={`text-xs ${selectedTag === tag.id ? "bg-purple-600 hover:bg-purple-700" : ""}`}
                   >
-                    {tag.name}
+                    #{tag.name}
                   </Button>
                 ))}
+                
+                {/* More tags dropdown if there are more than 2 tags */}
+                {tags && tags.length > 2 && (
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      const tagId = parseInt(e.target.value);
+                      if (!isNaN(tagId)) {
+                        handleTagSelect(tagId);
+                      }
+                    }}
+                    className="bg-[#1E1E2D] text-white border border-white/10 rounded-md p-1 text-xs"
+                  >
+                    <option value="">More tags...</option>
+                    {tags.slice(2).map((tag) => (
+                      <option key={`more-tag-${tag.id}`} value={tag.id}>
+                        #{tag.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             </div>
-          )}
+          </div>
+          
+          {/* We'll use the category TabList only for filtering since that's the original design */}
           
           {isLoading ? (
             <div className="text-center py-12">
