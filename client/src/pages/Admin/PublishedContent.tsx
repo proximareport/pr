@@ -180,8 +180,13 @@ export function PublishedContent({ showAll = false, statusFilter }: PublishedCon
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Published Content</CardTitle>
-          <CardDescription>Loading published articles...</CardDescription>
+          <CardTitle>
+            {statusFilter ? 
+              `${statusFilter.replace('_', ' ').replace(/^\w/, c => c.toUpperCase())} Articles` : 
+              (showAll ? 'All Articles' : 'Published Content')
+            }
+          </CardTitle>
+          <CardDescription>Loading articles...</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-40 flex items-center justify-center">
@@ -196,8 +201,13 @@ export function PublishedContent({ showAll = false, statusFilter }: PublishedCon
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Published Content</CardTitle>
-          <CardDescription>Error loading published articles</CardDescription>
+          <CardTitle>
+            {statusFilter ? 
+              `${statusFilter.replace('_', ' ').replace(/^\w/, c => c.toUpperCase())} Articles` : 
+              (showAll ? 'All Articles' : 'Published Content')
+            }
+          </CardTitle>
+          <CardDescription>Error loading articles</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-red-500">
@@ -211,13 +221,26 @@ export function PublishedContent({ showAll = false, statusFilter }: PublishedCon
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Published Content</CardTitle>
-        <CardDescription>Manage all published articles</CardDescription>
+        <CardTitle>
+          {statusFilter ? 
+            `${statusFilter.replace('_', ' ').replace(/^\w/, c => c.toUpperCase())} Articles` : 
+            (showAll ? 'All Articles' : 'Published Content')
+          }
+        </CardTitle>
+        <CardDescription>
+          {statusFilter ? 
+            `Manage articles with ${statusFilter.replace('_', ' ')} status` : 
+            (showAll ? 'Manage all your articles' : 'Manage your published articles')
+          }
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        {publishedArticles.length === 0 ? (
+        {filteredArticles.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            No published articles found.
+            {statusFilter ? 
+              `No articles with ${statusFilter.replace('_', ' ')} status found.` : 
+              (showAll ? 'No articles found.' : 'No published articles found.')
+            }
           </div>
         ) : (
           <Table>
@@ -231,11 +254,11 @@ export function PublishedContent({ showAll = false, statusFilter }: PublishedCon
               </TableRow>
             </TableHeader>
             <TableBody>
-              {publishedArticles.map((article) => (
+              {filteredArticles.map((article: Article) => (
                 <TableRow key={article.id}>
                   <TableCell className="font-medium">{article.title || 'Untitled Article'}</TableCell>
                   <TableCell>
-                    {article.authors?.map((author) => author.username).join(', ') || 'Unknown'}
+                    {article.authors?.map((author: { user: { id: number; username: string } }) => author.user.username).join(', ') || 'Unknown'}
                   </TableCell>
                   <TableCell>
                     {article.publishedAt 
