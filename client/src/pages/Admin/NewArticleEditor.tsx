@@ -141,7 +141,7 @@ function AdminArticleEditor() {
       summary,
       content,
       category,
-      tags,
+      tagIds, // Use tagIds instead of tags
       featuredImage,
       readTime,
       isDraft,
@@ -156,7 +156,7 @@ function AdminArticleEditor() {
     localStorage.setItem(getEditorStateKey(), JSON.stringify(editorState));
     console.log('Saved editor state to localStorage');
   }, [
-    title, slug, summary, content, category, tags, featuredImage, 
+    title, slug, summary, content, category, tagIds, featuredImage, 
     readTime, isDraft, isBreaking, isFeatured, isCollaborative, 
     coauthors, getEditorStateKey, articleId
   ]);
@@ -177,7 +177,27 @@ function AdminArticleEditor() {
       setSummary(state.summary || '');
       setContent(state.content || '');
       setCategory(state.category || 'space-exploration');
-      setTags(state.tags || []);
+      
+      // Handle both old and new tag formats
+      if (state.tagIds && Array.isArray(state.tagIds)) {
+        // New format - tag IDs
+        setTagIds(state.tagIds);
+      } else if (state.tags && Array.isArray(state.tags)) {
+        // Old format - try to convert if they're objects with IDs
+        const extractedTagIds = state.tags
+          .filter(tag => tag && typeof tag === 'object' && 'id' in tag)
+          .map(tag => tag.id);
+          
+        if (extractedTagIds.length > 0) {
+          setTagIds(extractedTagIds);
+        } else {
+          // If they were just strings, we can't convert, so use empty array
+          setTagIds([]);
+        }
+      } else {
+        setTagIds([]);
+      }
+      
       setFeaturedImage(state.featuredImage || '');
       setReadTime(state.readTime || 5);
       setIsDraft(state.isDraft !== undefined ? state.isDraft : true);
@@ -452,7 +472,22 @@ function AdminArticleEditor() {
       setSummary(initialArticle.summary || '');
       setContent(typeof initialArticle.content === 'string' ? initialArticle.content : JSON.stringify(initialArticle.content));
       setCategory(initialArticle.category || 'space-exploration');
-      setTags(initialArticle.tags || []);
+      
+      // Convert tag IDs if they exist, otherwise use empty array
+      if (initialArticle.tagIds && Array.isArray(initialArticle.tagIds)) {
+        // If we already have tagIds, use them
+        setTagIds(initialArticle.tagIds);
+      } else if (initialArticle.tags && Array.isArray(initialArticle.tags)) {
+        // If we have tag objects with IDs, extract the IDs
+        const extractedTagIds = initialArticle.tags
+          .filter(tag => tag && typeof tag === 'object' && 'id' in tag)
+          .map(tag => tag.id);
+          
+        if (extractedTagIds.length > 0) {
+          setTagIds(extractedTagIds);
+        }
+      }
+      
       setFeaturedImage(initialArticle.featuredImage || '');
       setReadTime(initialArticle.readTime || 5);
       setIsDraft(initialArticle.status === 'draft');
@@ -1395,67 +1430,13 @@ function AdminArticleEditor() {
         title="Article Tags"
         description="Add tags to make your article more discoverable"
       >
-        <div className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            {tags.map((tag, i) => (
-              <Badge key={i} variant="secondary" className="flex items-center space-x-1">
-                <span>{tag}</span>
-                <button 
-                  type="button" 
-                  onClick={() => removeTag(tag)}
-                  className="ml-1 hover:text-white/90"
-                >
-                  <XIcon className="h-3 w-3" />
-                </button>
-              </Badge>
-            ))}
-            {tags.length === 0 && (
-              <p className="text-xs text-white/60">No tags added yet.</p>
-            )}
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Input
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={handleTagInputKeyDown}
-              placeholder="Add a tag..."
-              className="flex-grow"
-            />
-            <Button 
-              type="button" 
-              variant="outline" 
-              size="sm"
-              onClick={() => addTag(tagInput)}
-              disabled={!tagInput.trim()}
-            >
-              <PlusIcon className="h-4 w-4" />
-            </Button>
-          </div>
-          
-          {availableTags.length > 0 && (
-            <div>
-              <h4 className="text-sm font-medium mb-2">Popular tags</h4>
-              <div className="flex flex-wrap gap-2">
-                {availableTags
-                  .filter((tag: string) => !tags.includes(tag))
-                  .slice(0, 6)
-                  .map((tag: string, i: number) => (
-                    <Badge 
-                      key={i} 
-                      variant="outline" 
-                      className="cursor-pointer hover:bg-white/10"
-                      onClick={() => {
-                        addTag(tag);
-                      }}
-                    >
-                      {tag}
-                    </Badge>
-                  ))}
-              </div>
-            </div>
-          )}
-        </div>
+        <TagSelector 
+          selectedTags={tagIds} 
+          onChange={(selectedTags) => {
+            setTagIds(selectedTags);
+            scheduleAutosave();
+          }}
+        />
       </EditorSideCard>
       
       {/* Featured Image */}
