@@ -139,10 +139,11 @@ function AdvertisementTab() {
         description: 'Advertisement approved successfully',
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('Error approving advertisement:', error);
       toast({
         title: 'Error',
-        description: 'Failed to approve advertisement',
+        description: error?.message || 'Failed to approve advertisement',
         variant: 'destructive',
       });
     },
@@ -164,10 +165,11 @@ function AdvertisementTab() {
       setAdToReject(null);
       setRejectReason('');
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('Error rejecting advertisement:', error);
       toast({
         title: 'Error',
-        description: 'Failed to reject advertisement',
+        description: error?.message || 'Failed to reject advertisement',
         variant: 'destructive',
       });
     },
@@ -184,10 +186,11 @@ function AdvertisementTab() {
         description: 'Advertisement deleted successfully',
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('Error deleting advertisement:', error);
       toast({
         title: 'Error',
-        description: 'Failed to delete advertisement',
+        description: error?.message || 'Failed to delete advertisement',
         variant: 'destructive',
       });
     },
@@ -219,11 +222,11 @@ function AdvertisementTab() {
         description: 'Test advertisement created successfully',
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error creating test advertisement:', error);
       toast({
         title: 'Error',
-        description: 'Failed to create test advertisement',
+        description: error?.message || 'Failed to create test advertisement. Please check all fields.',
         variant: 'destructive',
       });
     },
