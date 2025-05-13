@@ -97,6 +97,7 @@ function Router() {
       <Route path="/admin/api-keys" component={() => <RedirectToDashboardTab tab="settings" subtab="api" />} />
       <Route path="/admin/emergency-banner" component={() => <RedirectToDashboardTab tab="settings" subtab="emergency" />} />
       <Route path="/admin/media-library" component={() => <RedirectToDashboardTab tab="media" />} />
+      <Route path="/admin/taxonomy" component={() => <RedirectToDashboardTab tab="taxonomy" />} />
       <Route path="/admin/advertisements" component={() => <RedirectToDashboardTab tab="advertisements" />} />
       <Route path="/admin/settings" component={() => <RedirectToDashboardTab tab="settings" />} />
       
