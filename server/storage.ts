@@ -102,6 +102,15 @@ export interface IStorage {
   searchMediaLibrary(query: string, userId?: number): Promise<MediaLibraryItem[]>;
   getMediaLibraryItemsByType(fileType: string, userId?: number): Promise<MediaLibraryItem[]>;
   
+  // Aliases for compatibility with existing code
+  getMediaItem(id: number): Promise<MediaLibraryItem | undefined>;
+  createMediaItem(item: InsertMediaLibraryItem): Promise<MediaLibraryItem>;
+  updateMediaItem(id: number, data: Partial<MediaLibraryItem>): Promise<MediaLibraryItem | undefined>;
+  deleteMediaItem(id: number): Promise<boolean>;
+  
+  // Category compatibility
+  getCategory(id: number): Promise<{ id: number; name: string; slug: string } | undefined>;
+  
   // Astronomy Photo operations
   getAstronomyPhotos(approved?: boolean): Promise<AstronomyPhoto[]>;
   createAstronomyPhoto(photo: InsertAstronomyPhoto): Promise<AstronomyPhoto>;
@@ -1244,6 +1253,20 @@ export class DatabaseStorage implements IStorage {
     return category;
   }
   
+  // Alias for compatibility with existing code
+  async getCategory(id: number): Promise<{ id: number; name: string; slug: string } | undefined> {
+    const [category] = await db
+      .select({
+        id: categories.id,
+        name: categories.name,
+        slug: categories.slug,
+      })
+      .from(categories)
+      .where(eq(categories.id, id));
+    
+    return category;
+  }
+  
   async createCategory(data: { name: string; description?: string; }): Promise<{ id: number; name: string; slug: string }> {
     // Create a slug from the name
     const slug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -1295,6 +1318,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Media Library operations
+  // Aliases for compatibility with existing code
+  getMediaItem(id: number): Promise<MediaLibraryItem | undefined> {
+    return this.getMediaLibraryItemById(id);
+  }
+  
+  createMediaItem(item: InsertMediaLibraryItem): Promise<MediaLibraryItem> {
+    return this.createMediaLibraryItem(item);
+  }
+  
+  updateMediaItem(id: number, data: Partial<MediaLibraryItem>): Promise<MediaLibraryItem | undefined> {
+    return this.updateMediaLibraryItem(id, data);
+  }
+  
+  deleteMediaItem(id: number): Promise<boolean> {
+    return this.deleteMediaLibraryItem(id);
+  }
+  
   async getMediaLibraryItems(userId?: number): Promise<MediaLibraryItem[]> {
     let query = db.select().from(mediaLibrary).orderBy(desc(mediaLibrary.createdAt));
     
