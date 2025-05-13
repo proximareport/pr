@@ -22,7 +22,7 @@ import TagView from "@/pages/TagView";
 import NewsletterVerify from "@/pages/NewsletterVerify";
 import NewsletterUnsubscribe from "@/pages/NewsletterUnsubscribe";
 import MaintenanceMode from "@/components/MaintenanceMode";
-import AdminDashboard from "@/pages/Admin/Dashboard";
+import AdminDashboard from "@/pages/Admin/NewDashboard";
 import AdminArticleEditor from "@/pages/Admin/NewArticleEditor";
 import { useAuth, AuthProvider } from "@/lib/AuthContext";
 

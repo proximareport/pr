@@ -55,18 +55,39 @@ interface Article {
   }>;
 }
 
-export function PublishedContent() {
+interface PublishedContentProps {
+  showAll?: boolean;
+  statusFilter?: string;
+}
+
+export function PublishedContent({ showAll = false, statusFilter }: PublishedContentProps = {}) {
   const { user } = useAuth();
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedArticleId, setSelectedArticleId] = useState<number | null>(null);
 
-  // Fetch published articles
-  const { data: publishedArticles = [], isLoading, error } = useQuery<Article[]>({
+  // Fetch articles based on props
+  const { data: articles = [], isLoading, error } = useQuery<Article[]>({
     queryKey: ['/api/articles'],
     enabled: !!user && (user.role === 'admin' || user.role === 'editor' || user.role === 'author'),
   });
+  
+  // Filter articles based on statusFilter prop if provided
+  const filteredArticles = React.useMemo(() => {
+    if (!articles || !Array.isArray(articles)) return [];
+    
+    if (statusFilter) {
+      return articles.filter(article => article.status === statusFilter);
+    }
+    
+    if (!showAll) {
+      // Default behavior - only show published articles
+      return articles.filter(article => article.status === 'published');
+    }
+    
+    return articles;
+  }, [articles, statusFilter, showAll]);
 
   const handleEdit = (id: number) => {
     navigate(`/admin/articles/${id}/edit`);
