@@ -1770,10 +1770,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const page = 1; // Always start at page 1
       const limit = 100; // Get a large number of ads
       
-      const ads = await storage.getAdvertisements(page, limit, true); // Get with user details
+      // For admin panel, we want to include all advertisements, including unapproved and test ads
+      const ads = await storage.getAdvertisements(page, limit, true, undefined, true); // Get with user details and include all ads
       
       // Add console logging for debugging
-      console.log(`Admin advertisements API: Found ${ads.length} advertisements`);
+      console.log(`Admin advertisements API: Found ${ads.length} advertisements (including test advertisements)`);
       
       res.json(ads);
     } catch (error) {
