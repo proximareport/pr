@@ -13,10 +13,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { formatDistance } from 'date-fns';
-import { AlertTriangle, CheckCircle, Eye, Trash2, XCircle } from 'lucide-react';
+import { formatDistance, addDays } from 'date-fns';
+import { AlertTriangle, CheckCircle, Eye, Trash2, XCircle, PlusCircle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Advertisement {
   id: number;

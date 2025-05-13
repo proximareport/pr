@@ -1867,6 +1867,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Special endpoint for admins to create test advertisements
+  app.post("/api/admin/test-advertisement", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const adData = req.body;
+      
+      // Validate advertisement data
+      try {
+        insertAdvertisementSchema.parse(adData);
+      } catch (validationError) {
+        if (validationError instanceof ZodError) {
+          return res.status(400).json({
+            message: "Validation error",
+            errors: validationError.errors
+          });
+        }
+      }
+      
+      // Set user ID as owner
+      adData.userId = req.session.userId;
+      
+      // Set test ad properties
+      adData.isTest = true;
+      adData.isApproved = true;
+      adData.paymentStatus = 'paid';
+      adData.status = 'approved';
+      
+      // Create the advertisement
+      const newAd = await storage.createAdvertisement(adData);
+      
+      res.status(201).json(newAd);
+    } catch (error) {
+      console.error("Error creating test advertisement:", error);
+      res.status(500).json({ message: "Error creating test advertisement" });
+    }
+  });
+
   app.post("/api/advertisements", requireAuth, async (req: Request, res: Response) => {
     try {
       const adData = req.body;
@@ -1886,9 +1922,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Set user ID as owner
       adData.userId = req.session.userId;
       
-      // Set default approval status (false for regular users, true for admins)
+      // Get the user to check role and handle test ads
       const user = await storage.getUser(req.session.userId);
+      
+      // Check if this is a test advertisement (only admins can create test ads)
+      const isTestAd = req.body.isTest === true && user?.role === 'admin';
+      
+      // Set approval and test status
       adData.isApproved = user?.role === 'admin' ? true : false;
+      adData.isTest = isTestAd;
+      
+      // For test ads created by admins, automatically set payment as complete
+      if (isTestAd) {
+        adData.paymentStatus = 'paid';
+        adData.status = 'approved';
+      }
       
       // Create the advertisement
       const newAd = await storage.createAdvertisement(adData);

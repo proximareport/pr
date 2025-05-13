@@ -143,6 +143,7 @@ export const advertisements = pgTable("advertisements", {
   endDate: timestamp("end_date").notNull(),
   userId: integer("user_id").notNull().references(() => users.id),
   isApproved: boolean("is_approved").default(false),
+  isTest: boolean("is_test").default(false), // Flag for test advertisements created by admins
   status: text("status").default("pending").notNull(), // pending, approved, rejected, paused, completed
   paymentStatus: text("payment_status").default("pending").notNull(), // pending, paid, failed
   paymentId: text("payment_id"), // Stripe payment ID
