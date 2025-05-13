@@ -31,6 +31,12 @@ function Article({ params }: ArticleProps) {
   const { data: article, isLoading, error } = useQuery({
     queryKey: [`/api/articles/slug/${slug}`, isPreview],
     queryFn: async () => {
+      // Special handling for "all" slug (although it should be captured by the route)
+      if (slug === 'all') {
+        setLocation("/");
+        return null;
+      }
+
       const url = `/api/articles/slug/${slug}${isPreview ? '?preview=true' : ''}`;
       const response = await fetch(url);
       if (!response.ok) {
@@ -44,7 +50,9 @@ function Article({ params }: ArticleProps) {
         throw new Error('Failed to fetch article');
       }
       return response.json();
-    }
+    },
+    // Don't run the query if the slug is "all"
+    enabled: slug !== 'all'
   });
   
   // Fetch comments for this article
