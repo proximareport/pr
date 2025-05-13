@@ -1800,7 +1800,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         SELECT DISTINCT t.id, t.name, t.slug, t.description 
         FROM tags t
         JOIN (
-          SELECT DISTINCT unnest(tags) as tag_id
+          SELECT DISTINCT unnest(tags)::integer as tag_id
           FROM articles
           WHERE published_at IS NOT NULL
         ) a ON t.id = a.tag_id
