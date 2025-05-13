@@ -504,7 +504,13 @@ function AdminArticleEditor() {
           summary: initialArticle.summary || '',
           content: typeof initialArticle.content === 'string' ? initialArticle.content : JSON.stringify(initialArticle.content),
           category: initialArticle.category || 'space-exploration',
-          tags: initialArticle.tags || [],
+          
+          // Handle tagIds
+          tagIds: initialArticle.tagIds || 
+                 (initialArticle.tags && Array.isArray(initialArticle.tags) && initialArticle.tags.length > 0 &&
+                  typeof initialArticle.tags[0] === 'object' && 'id' in initialArticle.tags[0]) ?
+                 initialArticle.tags.map((tag: any) => tag.id) : [],
+                 
           featuredImage: initialArticle.featuredImage || '',
           readTime: initialArticle.readTime || 5,
           status: initialArticle.status || 'draft',
@@ -866,7 +872,7 @@ function AdminArticleEditor() {
         window.clearTimeout(autosaveTimeoutRef.current);
       }
     };
-  }, [title, summary, content, category, tags, featuredImage, readTime, isBreaking, isFeatured, isCollaborative, coauthors, scheduleAutosave, markContentAsModified]);
+  }, [title, summary, content, category, tagIds, featuredImage, readTime, isBreaking, isFeatured, isCollaborative, coauthors, scheduleAutosave, markContentAsModified]);
   
   // Effect to handle page unload
   useEffect(() => {
@@ -984,25 +990,8 @@ function AdminArticleEditor() {
     });
   };
 
-  const addTag = (tag: string) => {
-    if (tag && !tags.includes(tag)) {
-      setTags([...tags, tag]);
-      scheduleAutosave();
-    }
-    setTagInput('');
-  };
-
-  const removeTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
-    scheduleAutosave();
-  };
-
-  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      addTag(tagInput);
-    }
-  };
+  // Tag management is now handled by the TagSelector component 
+  // which directly updates tagIds state via onChange
   
   // Function to discard the current draft and start fresh
   const handleDiscard = () => {
@@ -1016,7 +1005,7 @@ function AdminArticleEditor() {
       setSummary('');
       setContent('');
       setCategory('space-exploration');
-      setTags([]);
+      setTagIds([]);  // Reset tag IDs to empty array
       setFeaturedImage('');
       setReadTime(5);
       setIsDraft(true);
