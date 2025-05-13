@@ -1,0 +1,137 @@
+Ad 0: {id: 11, title: 'Test ad', isApproved: true, status: 'approved', isTest: true}
+AdvertisementTab.tsx:246 Ad 1: {id: 10, title: 'Test Ad for Demo', isApproved: true, status: 'approved', isTest: true}
+AdvertisementTab.tsx:263 Found 0 pending ads
+AdvertisementTab.tsx:283 Found 0 active ads
+AdvertisementTab.tsx:302 Found 0 inactive ads
+AdvertisementTab.tsx:321 Found 2 test ads
+queryClient.ts:33 
+            
+            
+            POST https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/admin/test-advertisement 400 (Bad Request)
+apiRequest @ queryClient.ts:33
+mutationFn @ AdvertisementTab.tsx:204
+fn @ mutation.ts:170
+run @ retryer.ts:153
+start @ retryer.ts:218
+execute @ mutation.ts:208
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+handleCreateTestAd @ AdvertisementTab.tsx:376
+callCallback2 @ react-dom.development.js:4164
+invokeGuardedCallbackDev @ react-dom.development.js:4213
+invokeGuardedCallback @ react-dom.development.js:4277
+invokeGuardedCallbackAndCatchFirstError @ react-dom.development.js:4291
+executeDispatch @ react-dom.development.js:9041
+processDispatchQueueItemsInOrder @ react-dom.development.js:9073
+processDispatchQueue @ react-dom.development.js:9086
+dispatchEventsForPlugins @ react-dom.development.js:9097
+(anonymous) @ react-dom.development.js:9288
+batchedUpdates$1 @ react-dom.development.js:26179
+batchedUpdates @ react-dom.development.js:3991
+dispatchEventForPluginEventSystem @ react-dom.development.js:9287
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ react-dom.development.js:6465
+dispatchEvent @ react-dom.development.js:6457
+dispatchDiscreteEvent @ react-dom.development.js:6430
+queryClient.ts:40 API Response status: 400 Response {type: 'basic', url: 'https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22…i.janeway.replit.dev/api/admin/test-advertisement', redirected: false, status: 400, ok: false, …}
+queryClient.ts:47  API Error Response: {message: 'Validation error', errors: Array(3)}
+apiRequest @ queryClient.ts:47
+await in apiRequest
+mutationFn @ AdvertisementTab.tsx:204
+fn @ mutation.ts:170
+run @ retryer.ts:153
+start @ retryer.ts:218
+execute @ mutation.ts:208
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+handleCreateTestAd @ AdvertisementTab.tsx:376
+callCallback2 @ react-dom.development.js:4164
+invokeGuardedCallbackDev @ react-dom.development.js:4213
+invokeGuardedCallback @ react-dom.development.js:4277
+invokeGuardedCallbackAndCatchFirstError @ react-dom.development.js:4291
+executeDispatch @ react-dom.development.js:9041
+processDispatchQueueItemsInOrder @ react-dom.development.js:9073
+processDispatchQueue @ react-dom.development.js:9086
+dispatchEventsForPlugins @ react-dom.development.js:9097
+(anonymous) @ react-dom.development.js:9288
+batchedUpdates$1 @ react-dom.development.js:26179
+batchedUpdates @ react-dom.development.js:3991
+dispatchEventForPluginEventSystem @ react-dom.development.js:9287
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ react-dom.development.js:6465
+dispatchEvent @ react-dom.development.js:6457
+dispatchDiscreteEvent @ react-dom.development.js:6430
+queryClient.ts:56  API Request Failed: Error: 400: Validation error
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (AdvertisementTab.tsx:204:14)
+apiRequest @ queryClient.ts:56
+await in apiRequest
+mutationFn @ AdvertisementTab.tsx:204
+fn @ mutation.ts:170
+run @ retryer.ts:153
+start @ retryer.ts:218
+execute @ mutation.ts:208
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+handleCreateTestAd @ AdvertisementTab.tsx:376
+callCallback2 @ react-dom.development.js:4164
+invokeGuardedCallbackDev @ react-dom.development.js:4213
+invokeGuardedCallback @ react-dom.development.js:4277
+invokeGuardedCallbackAndCatchFirstError @ react-dom.development.js:4291
+executeDispatch @ react-dom.development.js:9041
+processDispatchQueueItemsInOrder @ react-dom.development.js:9073
+processDispatchQueue @ react-dom.development.js:9086
+dispatchEventsForPlugins @ react-dom.development.js:9097
+(anonymous) @ react-dom.development.js:9288
+batchedUpdates$1 @ react-dom.development.js:26179
+batchedUpdates @ react-dom.development.js:3991
+dispatchEventForPluginEventSystem @ react-dom.development.js:9287
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ react-dom.development.js:6465
+dispatchEvent @ react-dom.development.js:6457
+dispatchDiscreteEvent @ react-dom.development.js:6430
+AdvertisementTab.tsx:223  Error creating test advertisement: Error: 400: Validation error
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (AdvertisementTab.tsx:204:14)
+onError @ AdvertisementTab.tsx:223
+execute @ mutation.ts:243
+await in execute
+mutate @ mutationObserver.ts:125
+(anonymous) @ useMutation.ts:52
+handleCreateTestAd @ AdvertisementTab.tsx:376
+callCallback2 @ react-dom.development.js:4164
+invokeGuardedCallbackDev @ react-dom.development.js:4213
+invokeGuardedCallback @ react-dom.development.js:4277
+invokeGuardedCallbackAndCatchFirstError @ react-dom.development.js:4291
+executeDispatch @ react-dom.development.js:9041
+processDispatchQueueItemsInOrder @ react-dom.development.js:9073
+processDispatchQueue @ react-dom.development.js:9086
+dispatchEventsForPlugins @ react-dom.development.js:9097
+(anonymous) @ react-dom.development.js:9288
+batchedUpdates$1 @ react-dom.development.js:26179
+batchedUpdates @ react-dom.development.js:3991
+dispatchEventForPluginEventSystem @ react-dom.development.js:9287
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ react-dom.development.js:6465
+dispatchEvent @ react-dom.development.js:6457
+dispatchDiscreteEvent @ react-dom.development.js:6430
+App.tsx:153 Maintenance check: {isMaintenanceMode: false, isAdmin: true, maintenanceEnabled: false}
+App.tsx:168 MainApp render check: {path: '/admin', isMaintenanceMode: false, isAdmin: true, isAdminPage: true, isAuthPage: false, …}
+AdvertisementTab.tsx:86 Advertisement data is an array with 2 items
+AdvertisementTab.tsx:234 Getting pending ads. Ads array length: 2
+AdvertisementTab.tsx:243 Checking ad types:
+AdvertisementTab.tsx:246 Ad 0: {id: 11, title: 'Test ad', isApproved: true, status: 'approved', isTest: true}
+AdvertisementTab.tsx:246 Ad 1: {id: 10, title: 'Test Ad for Demo', isApproved: true, status: 'approved', isTest: true}
+AdvertisementTab.tsx:263 Found 0 pending ads
+AdvertisementTab.tsx:283 Found 0 active ads
+AdvertisementTab.tsx:302 Found 0 inactive ads
+AdvertisementTab.tsx:321 Found 2 test ads
+AdvertisementTab.tsx:234 Getting pending ads. Ads array length: 2
+AdvertisementTab.tsx:243 Checking ad types:
+AdvertisementTab.tsx:246 Ad 0: {id: 11, title: 'Test ad', isApproved: true, status: 'approved', isTest: true}
+AdvertisementTab.tsx:246 Ad 1: {id: 10, title: 'Test Ad for Demo', isApproved: true, status: 'approved', isTest: true}
+AdvertisementTab.tsx:263 Found 0 pending ads
+AdvertisementTab.tsx:283 Found 0 active ads
+AdvertisementTab.tsx:302 Found 0 inactive ads
+AdvertisementTab.tsx:321 Found 2 test ads

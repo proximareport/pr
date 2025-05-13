@@ -539,7 +539,8 @@ function AdvertisementTab() {
                         name="title" 
                         placeholder="Test Advertisement Title" 
                         value={testAdForm.title} 
-                        onChange={handleTestAdInputChange} 
+                        onChange={handleTestAdInputChange}
+                        required
                       />
                     </div>
                     
