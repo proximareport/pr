@@ -69,20 +69,18 @@ const TaxonomySelector = ({
   const [isCreating, setIsCreating] = useState(false);
 
   // Fetch all available taxonomy items
-  const { data: taxonomyItems, isLoading } = useQuery({
+  const { data: taxonomyItems = [], isLoading } = useQuery<TaxonomyItem[]>({
     queryKey: ['/api/taxonomy', { type }],
     staleTime: 60000,
   });
 
   // Filter function to find displayed items
   const getSelectedItems = (): TaxonomyItem[] => {
-    if (!taxonomyItems) return [];
     return taxonomyItems.filter((item: TaxonomyItem) => selectedTaxonomyIds.includes(item.id));
   };
 
   // Get items that are not selected
   const getAvailableItems = (): TaxonomyItem[] => {
-    if (!taxonomyItems) return [];
     return taxonomyItems
       .filter((item: TaxonomyItem) => !selectedTaxonomyIds.includes(item.id))
       // If type is specified, filter by type

@@ -89,7 +89,7 @@ const TaxonomyManagement = () => {
   });
 
   // Load taxonomy items
-  const { data: taxonomyItems = [], isLoading } = useQuery({
+  const { data: taxonomyItems = [], isLoading } = useQuery<TaxonomyItem[]>({
     queryKey: ['/api/taxonomy'],
     staleTime: 10000,
   });
@@ -128,10 +128,10 @@ const TaxonomyManagement = () => {
   }, [editingItem, form]);
 
   // Filter taxonomy items based on selected tab
-  const filteredItems = taxonomyItems.filter((item: TaxonomyItem) => {
+  const filteredItems = taxonomyItems?.filter((item: TaxonomyItem) => {
     if (selectedTab === 'all') return true;
     return item.type === selectedTab;
-  });
+  }) || [];
 
   // Create mutation
   const createMutation = useMutation({
