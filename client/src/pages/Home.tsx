@@ -50,9 +50,9 @@ function Home() {
     queryKey: ["/api/categories"],
   });
   
-  // Get all tags for filtering
+  // Get only tags that are used in published articles for filtering
   const { data: tags } = useQuery<any[]>({
-    queryKey: ["/api/tags"],
+    queryKey: ["/api/tags/published"],
   });
   
   // Get articles with pagination and filtering

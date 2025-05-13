@@ -1791,6 +1791,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error fetching tags" });
     }
   });
+  
+  // Get only tags that are used in published articles
+  app.get("/api/tags/published", async (req: Request, res: Response) => {
+    try {
+      // Using raw SQL to efficiently get only tags that are used in published articles
+      const query = `
+        SELECT DISTINCT t.id, t.name, t.slug, t.description 
+        FROM tags t
+        JOIN (
+          SELECT DISTINCT unnest(tags) as tag_id
+          FROM articles
+          WHERE published_at IS NOT NULL
+        ) a ON t.id = a.tag_id
+        ORDER BY t.name
+      `;
+      
+      const result = await pool.query(query);
+      console.log(`Found ${result.rows.length} published tags`);
+      res.json(result.rows);
+    } catch (error) {
+      console.error("Error fetching published tags:", error);
+      res.status(500).json({ message: "Error fetching published tags" });
+    }
+  });
 
   app.post("/api/tags", requireAuth, async (req: Request, res: Response) => {
     try {
