@@ -81,13 +81,13 @@ function Home() {
 
   return (
     <div className="bg-[#0D0D17] min-h-screen">
-
       {/* Article Feed */}
       <section className="py-8">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-8">
             <h1 className="font-space text-2xl md:text-3xl font-bold">Proxima Report</h1>
             
+            {/* Desktop filter tabs */}
             <Tabs 
               value={selectedFilter}
               onValueChange={handleFilterChange}
@@ -124,6 +124,7 @@ function Home() {
               </TabsList>
             </Tabs>
             
+            {/* Mobile filter dropdown */}
             <div className="block md:hidden">
               <div className="flex flex-wrap gap-2">
                 <select 
@@ -158,8 +159,6 @@ function Home() {
               </div>
             </div>
           </div>
-          
-          {/* We'll use the category TabList only for filtering since that's the original design */}
           
           {isLoading ? (
             <div className="text-center py-12">

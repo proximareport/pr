@@ -717,8 +717,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const page = req.query.page ? parseInt(req.query.page as string) : 1;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
       const showDrafts = req.query.showDrafts === 'true';
-      const category = req.query.category as string;
-      const tagId = req.query.tagId ? parseInt(req.query.tagId as string) : undefined;
+      const filter = req.query.filter as string; // New unified filter parameter
       
       let userId: number | undefined;
       let isAdmin = false;
@@ -734,54 +733,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // This is the main logic - users can only see their drafts or published content
       // Admin users can see all content if showDrafts is true
-      // Add support for filtering by category and/or tag
+      // Add support for unified filtering by category and/or tag
       let articles: any[];
       
-      if (tagId) {
-        try {
-          console.log(`Server - Filtering articles by tag ID: ${tagId}`);
-          
-          // Log all articles tags for debugging
-          const allArticles = await storage.getArticles(100, 0);
-          console.log("Current article tags in database:");
-          allArticles.forEach(article => {
-            console.log(`Article ID ${article.id}, Title: "${article.title}", Tags: ${JSON.stringify(article.tags || [])}`);
-          });
-          
-          // Execute a raw SQL query since we're having TypeScript interface issues
-          const query = `
-            SELECT * FROM articles 
-            WHERE published_at IS NOT NULL 
-            AND ($1::integer = ANY(tags) OR tags @> ARRAY[$1]::integer[])
-            ORDER BY published_at DESC
-            LIMIT $2 OFFSET $3
-          `;
-          
-          console.log(`Executing SQL: ${query} with params [${tagId}, ${limit}, ${(page - 1) * limit}]`);
-          
-          const result = await pool.query(query, [tagId, limit, (page - 1) * limit]);
-          
-          console.log(`Server - Found ${result.rows.length} articles with tag ID ${tagId}`);
-          if (result.rows.length > 0) {
-            console.log(`Sample article: ${JSON.stringify(result.rows[0].title)}`);
-            console.log(`Sample article tags: ${JSON.stringify(result.rows[0].tags)}`);
-          } else {
-            console.log("No articles found with this tag. Falling back to all articles.");
+      if (filter && filter !== 'all') {
+        // Check if it's a tag or category filter by prefix
+        if (filter.startsWith('tag-')) {
+          // Handling tag filter (tag-123)
+          try {
+            const tagId = parseInt(filter.replace('tag-', ''));
+            console.log(`Server - Filtering articles by tag ID: ${tagId}`);
+            
+            // Execute a raw SQL query for tag filtering
+            const query = `
+              SELECT * FROM articles 
+              WHERE published_at IS NOT NULL 
+              AND ($1::integer = ANY(tags) OR tags @> ARRAY[$1]::integer[])
+              ORDER BY published_at DESC
+              LIMIT $2 OFFSET $3
+            `;
+            
+            console.log(`Executing SQL: ${query} with params [${tagId}, ${limit}, ${(page - 1) * limit}]`);
+            
+            const result = await pool.query(query, [tagId, limit, (page - 1) * limit]);
+            
+            console.log(`Server - Found ${result.rows.length} articles with tag ID ${tagId}`);
+            if (result.rows.length === 0) {
+              console.log("No articles found with this tag. Falling back to all articles.");
+              articles = await storage.getArticles(limit, (page - 1) * limit);
+            } else {
+              articles = result.rows;
+            }
+          } catch (error) {
+            console.error("Error filtering by tag:", error);
+            console.error(error);
             articles = await storage.getArticles(limit, (page - 1) * limit);
-            return res.json(articles);
           }
-          
-          articles = result.rows;
-        } catch (error) {
-          console.error("Error filtering by tag:", error);
-          console.error(error);
+        } else if (filter.startsWith('category-')) {
+          // Handling category filter (category-space)
+          try {
+            const categorySlug = filter.replace('category-', '');
+            console.log(`Server - Filtering articles by category: ${categorySlug}`);
+            articles = await storage.getArticlesByCategory(categorySlug, limit, (page - 1) * limit);
+          } catch (error) {
+            console.error("Error filtering by category:", error);
+            articles = await storage.getArticles(limit, (page - 1) * limit);
+          }
+        } else {
+          // Unknown filter type, return all articles
+          console.log(`Server - Unknown filter type: ${filter}, showing all articles`);
           articles = await storage.getArticles(limit, (page - 1) * limit);
         }
-      } else if (category && category !== 'all') {
-        // If filtering by category, call the category filter method
-        articles = await storage.getArticlesByCategory(category);
       } else {
-        // Otherwise get all articles with pagination
+        // Get all articles with pagination
         articles = await storage.getArticles(limit, (page - 1) * limit);
       }
       
