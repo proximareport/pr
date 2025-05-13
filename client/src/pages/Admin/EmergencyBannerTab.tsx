@@ -201,12 +201,12 @@ function EmergencyBannerTab() {
                           </Badge>
                         )}
                         <Badge variant={
-                          activeBanner.type === "info" ? "default" : 
-                          activeBanner.type === "warning" ? "secondary" : 
-                          activeBanner.type === "critical" ? "destructive" : 
+                          activeBanner?.type === "info" ? "default" : 
+                          activeBanner?.type === "warning" ? "secondary" : 
+                          activeBanner?.type === "critical" ? "destructive" : 
                           "outline"
                         }>
-                          {activeBanner.type.charAt(0).toUpperCase() + activeBanner.type.slice(1)}
+                          {activeBanner?.type ? (activeBanner.type.charAt(0).toUpperCase() + activeBanner.type.slice(1)) : "Info"}
                         </Badge>
                       </div>
                     </div>
