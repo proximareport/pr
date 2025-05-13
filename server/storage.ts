@@ -797,16 +797,19 @@ export class DatabaseStorage implements IStorage {
   async getArticlesByCategory(category: string, limit: number = 10, offset: number = 0): Promise<Article[]> {
     try {
       console.log(`Filtering articles with category: ${category}`);
-      return await db
-        .select()
-        .from(articles)
-        .where(and(
-          eq(articles.category, category),
-          not(isNull(articles.publishedAt))
-        ))
-        .orderBy(desc(articles.publishedAt))
-        .limit(limit)
-        .offset(offset);
+      
+      // Use raw SQL query to bypass the ORM issue with primary_author_id
+      const query = `
+        SELECT * FROM articles 
+        WHERE category = $1 
+        AND published_at IS NOT NULL 
+        ORDER BY published_at DESC
+        LIMIT $2 OFFSET $3
+      `;
+      
+      const result = await db.execute(query, [category, limit, offset]);
+      console.log(`Found ${result.rows.length} articles with category ${category}`);
+      return result.rows as Article[];
     } catch (error) {
       console.error("Error in getArticlesByCategory:", error);
       // Fallback to get all articles
