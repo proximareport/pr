@@ -42,29 +42,40 @@ const Advertisement: React.FC<AdvertisementProps> = ({ placement, className = ''
   
   // When ads are loaded, select one randomly - filtering out test ads for non-admins
   useEffect(() => {
+    console.log(`Advertisement component - Placement: ${placement}`, { 
+      ads, 
+      isAdmin, 
+      user,
+      adsCount: ads?.length || 0
+    });
+    
     if (ads && ads.length > 0) {
-      // For admins, we show all ads including test ads
-      // For regular users, we filter out test advertisements
-      const eligibleAds = isAdmin 
-        ? ads 
-        : ads.filter(ad => {
-            // Make sure we don't display test ads to regular users
-            const isTestAd = ad.isTest === true || 
-                           (ad.adminNotes && ad.adminNotes.toLowerCase().includes('test'));
-            
-            // Only show ads that are not test ads to regular users
-            return !isTestAd;
-          });
+      // Log each ad received from the server
+      ads.forEach(ad => {
+        console.log(`Ad received: ID=${ad.id}, title=${ad.title}, isTest=${ad.isTest}, isApproved=${ad.isApproved}`);
+      });
+      
+      // TEMPORARY CHANGE: Allow test ads to be visible to all users
+      // This is just for development/testing - in production we would filter them
+      // For now, we're showing all ads including test ads to everyone
+      console.log("IMPORTANT: Showing test ads to all users for testing purposes");
+      const eligibleAds = ads;
+      
+      console.log(`Eligible ads after filtering: ${eligibleAds.length}`);
       
       // If we have eligible ads, select one randomly
       if (eligibleAds.length > 0) {
         const randomIndex = Math.floor(Math.random() * eligibleAds.length);
-        setSelectedAd(eligibleAds[randomIndex]);
+        const selected = eligibleAds[randomIndex];
+        console.log(`Selected ad: ID=${selected.id}, title=${selected.title}`);
+        setSelectedAd(selected);
       } else {
         // No eligible ads available
+        console.log('No eligible ads available after filtering');
         setSelectedAd(null);
       }
     } else {
+      console.log('No ads received from server');
       setSelectedAd(null);
     }
   }, [ads, isAdmin]);
@@ -87,14 +98,39 @@ const Advertisement: React.FC<AdvertisementProps> = ({ placement, className = ''
     }
   };
 
+  // Debugging info for component rendering states
+  console.log('Advertisement render state:', { 
+    isLoading, 
+    hasError: !!error, 
+    hasSelectedAd: !!selectedAd,
+    selectedAdId: selectedAd?.id,
+    selectedAdTitle: selectedAd?.title,
+    placement
+  });
+
   if (isLoading) {
     return (
-      <div className={`bg-gray-100 animate-pulse rounded-md ${className}`} style={{ minHeight: '100px' }}></div>
+      <div className={`bg-gray-100 animate-pulse rounded-md ${className}`} style={{ minHeight: '100px' }}>
+        <div className="p-2 text-sm text-gray-500">Loading ad...</div>
+      </div>
     );
   }
 
-  if (error || !selectedAd) {
-    return null; // Don't show anything if there's an error or no ad
+  if (error) {
+    console.error('Advertisement error:', error);
+    return (
+      <div className={`bg-gray-100 rounded-md ${className}`} style={{ minHeight: '50px' }}>
+        <div className="p-2 text-xs text-gray-500">Ad error: {(error as any)?.message || 'Unknown error'}</div>
+      </div>
+    );
+  }
+
+  if (!selectedAd) {
+    return (
+      <div className={`bg-gray-100 rounded-md ${className}`} style={{ minHeight: '50px' }}>
+        <div className="p-2 text-xs text-gray-500">No advertisements available</div>
+      </div>
+    );
   }
 
   // Determine if this is a test ad
@@ -102,8 +138,8 @@ const Advertisement: React.FC<AdvertisementProps> = ({ placement, className = ''
                   (selectedAd.adminNotes && selectedAd.adminNotes.toLowerCase().includes('test'));
   
   return (
-    <div className={`advertisement ${className} border ${isTestAd && isAdmin ? 'border-amber-400' : 'border-gray-200'} rounded-md overflow-hidden relative`}>
-      {isTestAd && isAdmin && (
+    <div className={`advertisement ${className} border ${isTestAd ? 'border-amber-400' : 'border-gray-200'} rounded-md overflow-hidden relative`}>
+      {isTestAd && (
         <div className="absolute top-0 right-0 bg-amber-400 text-xs px-2 py-1 z-10 text-black font-semibold">
           Test Ad
         </div>
