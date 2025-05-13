@@ -2290,6 +2290,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Message is required when enabling the emergency banner" });
       }
       
+      // Get current site settings first
+      const settings = await storage.getSiteSettings();
+      
+      if (!settings) {
+        return res.status(404).json({ message: "Site settings not found" });
+      }
+      
       // Update emergency banner settings
       const updates: Partial<SiteSettings> = {
         emergencyBannerEnabled: enabled
@@ -2303,7 +2310,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updates.emergencyBannerLevel = level;
       }
       
-      const updatedSettings = await storage.updateSiteSettings(updates);
+      const updatedSettings = await storage.updateSiteSettings(
+        settings.id, 
+        updates,
+        req.session.userId
+      );
+      
+      if (!updatedSettings) {
+        return res.status(500).json({ message: "Failed to update settings" });
+      }
       
       res.json({
         message: updatedSettings.emergencyBannerMessage,
@@ -2319,12 +2334,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add a dedicated endpoint for deactivating the emergency banner
   app.post("/api/emergency-banner/deactivate", requireAdmin, async (req: Request, res: Response) => {
     try {
-      // Update emergency banner to disabled
-      const updates: Partial<SiteSettings> = {
-        emergencyBannerEnabled: false
-      };
+      // Get current site settings first
+      const settings = await storage.getSiteSettings();
       
-      const updatedSettings = await storage.updateSiteSettings(updates);
+      if (!settings) {
+        return res.status(404).json({ message: "Site settings not found" });
+      }
+      
+      // Disable the emergency banner
+      const updatedSettings = await storage.updateSiteSettings(
+        settings.id, 
+        { emergencyBannerEnabled: false },
+        req.session.userId
+      );
+      
+      if (!updatedSettings) {
+        return res.status(500).json({ message: "Failed to update settings" });
+      }
       
       res.json({
         success: true,
