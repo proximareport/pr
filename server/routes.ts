@@ -2256,7 +2256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Delete the file
-      const filePath = path.join(process.cwd(), 'public', mediaItem.url);
+      const filePath = path.join(process.cwd(), 'public', mediaItem.fileUrl.replace(/^\//, ''));
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }

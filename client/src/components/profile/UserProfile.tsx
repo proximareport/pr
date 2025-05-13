@@ -63,7 +63,7 @@ const UserProfile = ({ username, isEditable = false }: ProfileProps) => {
         if (username) {
           setIsLoading(true);
           console.log("Fetching profile for:", username);
-          const response = await fetch(`/api/users/profile/${username}`);
+          const response = await fetch(`/api/users/username/${username}`);
           
           if (!response.ok) {
             if (response.status === 404) {
