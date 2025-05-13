@@ -1031,9 +1031,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const page = req.query.page ? parseInt(req.query.page as string) : 1;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
       
-      const users = await storage.getUsers(page, limit);
+      const allUsers = await storage.getAllUsers();
       
-      res.json(users);
+      // Manual pagination
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const paginatedUsers = allUsers.slice(startIndex, endIndex);
+      
+      res.json({
+        users: paginatedUsers,
+        total: allUsers.length,
+        page,
+        totalPages: Math.ceil(allUsers.length / limit)
+      });
     } catch (error) {
       console.error("Error fetching users:", error);
       res.status(500).json({ message: "Error fetching users" });
