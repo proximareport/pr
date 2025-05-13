@@ -1036,10 +1036,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Advertisement operations
-  async getAdvertisements(placement?: string, includeNotApproved: boolean = false): Promise<Advertisement[]> {
+  async getAdvertisements(
+    page: number = 1, 
+    limit: number = 10, 
+    includeUserData: boolean = false, 
+    placement?: string, 
+    includeNotApproved: boolean = false
+  ): Promise<Advertisement[]> {
     let conditions = [];
     
-    console.log(`Running advertisement query with params:`, { placement, includeNotApproved });
+    console.log(`Running advertisement query with params:`, { 
+      page, 
+      limit, 
+      includeUserData, 
+      placement, 
+      includeNotApproved 
+    });
     
     // Only apply approval and date filters if we're not including unapproved ads
     if (!includeNotApproved) {

@@ -1762,6 +1762,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error fetching advertisements" });
     }
   });
+  
+  // Special endpoint for admin advertisement management
+  app.get("/api/admin/advertisements", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      // Get all advertisements with their user details for the admin panel
+      const page = 1; // Always start at page 1
+      const limit = 100; // Get a large number of ads
+      
+      const ads = await storage.getAdvertisements(page, limit, true); // Get with user details
+      
+      // Add console logging for debugging
+      console.log(`Admin advertisements API: Found ${ads.length} advertisements`);
+      
+      res.json(ads);
+    } catch (error) {
+      console.error("Error fetching admin advertisements:", error);
+      res.status(500).json({ message: "Error fetching advertisements for admin panel" });
+    }
+  });
 
   // Get ads for a specific placement (sidebar, banner, etc.)
   app.get("/api/advertisements/:placement", async (req: Request, res: Response) => {
