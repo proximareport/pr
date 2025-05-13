@@ -187,7 +187,12 @@ function AdvertisementTab() {
   // Test Ad creation mutation
   const createTestAdMutation = useMutation({
     mutationFn: async (adData: any) => {
-      return await apiRequest('POST', '/api/admin/test-advertisement', adData);
+      // Add admin notes to indicate this is a test advertisement
+      const adDataWithNotes = {
+        ...adData,
+        adminNotes: 'Test advertisement created for internal testing'
+      };
+      return await apiRequest('POST', '/api/admin/test-advertisement', adDataWithNotes);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/advertisements'] });
@@ -226,7 +231,8 @@ function AdvertisementTab() {
     
     return advertisements.filter((ad: Advertisement) => 
       // Check for pending status or use isApproved flag as fallback
-      ad.status === 'pending' || (!ad.isApproved && ad.status !== 'rejected')
+      // Exclude test ads from pending tab
+      !ad.isTest && (ad.status === 'pending' || (!ad.isApproved && ad.status !== 'rejected'))
     );
   };
   
@@ -239,11 +245,14 @@ function AdvertisementTab() {
     }
     
     return advertisements.filter((ad: Advertisement) => 
+      // Don't show test ads in regular active tab
+      !ad.isTest && 
       ad.isApproved && 
       new Date(ad.startDate) <= now && 
       new Date(ad.endDate) >= now
     );
   };
+
   const getInactiveAds = () => {
     const now = new Date();
     
@@ -253,9 +262,21 @@ function AdvertisementTab() {
     }
     
     return advertisements.filter((ad: Advertisement) => 
+      // Don't show test ads in regular inactive tab
+      !ad.isTest && 
       ad.isApproved && 
       (new Date(ad.startDate) > now || new Date(ad.endDate) < now)
     );
+  };
+  
+  // New filter for test advertisements
+  const getTestAds = () => {
+    if (!Array.isArray(advertisements)) {
+      console.warn('advertisements is not an array in getTestAds:', advertisements);
+      return [];
+    }
+    
+    return advertisements.filter((ad: Advertisement) => ad.isTest === true);
   };
   
   const handleApprove = (adId: number) => {
@@ -359,11 +380,17 @@ function AdvertisementTab() {
                 </div>
               </TableCell>
               <TableCell>
-                {ad.isApproved ? (
-                  <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">Approved</Badge>
-                ) : (
-                  <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">Pending</Badge>
-                )}
+                <div className="flex flex-col gap-1">
+                  {ad.isApproved ? (
+                    <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">Approved</Badge>
+                  ) : (
+                    <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">Pending</Badge>
+                  )}
+                  
+                  {ad.isTest && (
+                    <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">Test Advertisement</Badge>
+                  )}
+                </div>
               </TableCell>
               <TableCell>
                 <div className="text-xs">
@@ -521,7 +548,7 @@ function AdvertisementTab() {
               </Dialog>
             </div>
             
-            <TabsList className="grid grid-cols-3 max-w-md mx-auto">
+            <TabsList className="grid grid-cols-4 max-w-lg mx-auto">
               <TabsTrigger value="pending" className="flex gap-2 items-center">
                 <AlertTriangle className="h-4 w-4" /> 
                 Pending ({getPendingAds().length})
@@ -533,6 +560,10 @@ function AdvertisementTab() {
               <TabsTrigger value="inactive" className="flex gap-2 items-center">
                 <XCircle className="h-4 w-4" /> 
                 Inactive ({getInactiveAds().length})
+              </TabsTrigger>
+              <TabsTrigger value="test" className="flex gap-2 items-center">
+                <PlusCircle className="h-4 w-4" /> 
+                Test ({getTestAds().length})
               </TabsTrigger>
             </TabsList>
           </div>
@@ -547,6 +578,9 @@ function AdvertisementTab() {
               </TabsContent>
               <TabsContent value="inactive">
                 {renderAdTable(getInactiveAds())}
+              </TabsContent>
+              <TabsContent value="test">
+                {renderAdTable(getTestAds())}
               </TabsContent>
             </CardContent>
           </Card>
