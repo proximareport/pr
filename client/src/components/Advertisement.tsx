@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
+import { useAuth } from '@/lib/AuthContext';
 
 interface AdData {
   id: number;
@@ -32,21 +33,28 @@ const Advertisement: React.FC<AdvertisementProps> = ({ placement, className = ''
     staleTime: 60 * 1000, // 1 minute
   });
   
+  // Get auth context to check if user is admin
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  
   // State to track the selected ad
   const [selectedAd, setSelectedAd] = useState<AdData | null>(null);
   
-  // When ads are loaded, select one randomly - filtering out test ads
+  // When ads are loaded, select one randomly - filtering out test ads for non-admins
   useEffect(() => {
     if (ads && ads.length > 0) {
-      // Filter out test advertisements for regular users
-      const eligibleAds = ads.filter(ad => {
-        // Make sure we don't display test ads to regular users
-        const isTestAd = ad.isTest === true || 
-                         (ad.adminNotes && ad.adminNotes.toLowerCase().includes('test'));
-        
-        // Only show ads that are not test ads
-        return !isTestAd;
-      });
+      // For admins, we show all ads including test ads
+      // For regular users, we filter out test advertisements
+      const eligibleAds = isAdmin 
+        ? ads 
+        : ads.filter(ad => {
+            // Make sure we don't display test ads to regular users
+            const isTestAd = ad.isTest === true || 
+                           (ad.adminNotes && ad.adminNotes.toLowerCase().includes('test'));
+            
+            // Only show ads that are not test ads to regular users
+            return !isTestAd;
+          });
       
       // If we have eligible ads, select one randomly
       if (eligibleAds.length > 0) {
@@ -59,7 +67,7 @@ const Advertisement: React.FC<AdvertisementProps> = ({ placement, className = ''
     } else {
       setSelectedAd(null);
     }
-  }, [ads]);
+  }, [ads, isAdmin]);
 
   // Record impression when the ad is viewed
   useEffect(() => {
@@ -89,8 +97,17 @@ const Advertisement: React.FC<AdvertisementProps> = ({ placement, className = ''
     return null; // Don't show anything if there's an error or no ad
   }
 
+  // Determine if this is a test ad
+  const isTestAd = selectedAd.isTest === true || 
+                  (selectedAd.adminNotes && selectedAd.adminNotes.toLowerCase().includes('test'));
+  
   return (
-    <div className={`advertisement ${className} border border-gray-200 rounded-md overflow-hidden`}>
+    <div className={`advertisement ${className} border ${isTestAd && isAdmin ? 'border-amber-400' : 'border-gray-200'} rounded-md overflow-hidden relative`}>
+      {isTestAd && isAdmin && (
+        <div className="absolute top-0 right-0 bg-amber-400 text-xs px-2 py-1 z-10 text-black font-semibold">
+          Test Ad
+        </div>
+      )}
       <a 
         href={selectedAd.linkUrl} 
         target="_blank" 
