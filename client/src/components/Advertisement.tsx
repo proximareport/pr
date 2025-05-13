@@ -106,7 +106,7 @@ const Advertisement: React.FC<AdvertisementProps> = ({ placement, className = ''
               className="w-full h-auto object-cover transition-transform hover:scale-105"
             />
             <span className="absolute top-0 right-0 bg-gray-200 text-xs px-2 py-1 rounded-bl-md text-gray-600">
-              Ad
+              {selectedAd.isTest ? 'Test Ad' : 'Ad'}
             </span>
           </div>
         ) : (
@@ -114,7 +114,7 @@ const Advertisement: React.FC<AdvertisementProps> = ({ placement, className = ''
             <h4 className="font-medium text-gray-800">{selectedAd.title}</h4>
             <p className="text-sm text-gray-600 mt-2">{selectedAd.description}</p>
             <span className="absolute top-0 right-0 bg-gray-200 text-xs px-2 py-1 rounded-bl-md text-gray-600">
-              Ad
+              {selectedAd.isTest ? 'Test Ad' : 'Ad'}
             </span>
           </div>
         )}
