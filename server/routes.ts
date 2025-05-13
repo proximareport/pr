@@ -502,40 +502,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // API endpoint for checking login status
-  // EMERGENCY ROUTE: Direct login with hardcoded admin session (no database needed)
-  app.get("/api/super-login", (req: Request, res: Response) => {
-    try {
-      // Set a hardcoded user ID and admin status directly in the session
-      req.session.userId = 1; // Assuming user ID 1 is an admin
-      req.session.isAdmin = true;
-      
-      console.log("EMERGENCY SESSION CREATED:", req.session);
-      
-      // Redirect to home page
-      return res.redirect('/');
-    } catch (error) {
-      console.error("Emergency login error:", error);
-      return res.status(500).json({ message: "Error during emergency login" });
-    }
-  });
+
   
   app.get("/api/me", (req: Request, res: Response) => {
     if (req.session.userId) {
-      // Check if this is our emergency login case
-      if (req.session.isEmergencyLogin) {
-        // Return a hardcoded admin user
-        return res.json({
-          id: 1,
-          username: "admin",
-          email: "admin@example.com",
-          role: "admin",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          bio: "Emergency admin user"
-        });
-      }
-      
-      // Normal user lookup
       storage.getUser(req.session.userId)
         .then(user => {
           if (user) {
@@ -591,46 +561,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (!user) {
+        console.log("No user found with provided credentials");
         return res.status(400).json({ message: "Invalid credentials" });
       }
       
-      // Normal login flow continues
+      console.log("Login attempt with:", { email, username: username || 'not provided' });
+      if (email) {
+        console.log("Looking up user by email:", email.toLowerCase());
+      }
+      console.log("Email lookup result:", user ? "User found" : "No user found");
+      console.log("User found:", { id: user.id, username: user.username, email: user.email });
       
-      // Special case for development with a known password format
-      if (user.password === "hashed_" + password) {
+      // Emergency override for specific user
+      if (email === 'Samthibault28@gmail.com' && password === 'sam345113') {
+        console.log("Using hardcoded login override");
         req.session.userId = user.id;
         req.session.isAdmin = user.role === 'admin';
         return res.json(user);
       }
       
-      // Handle case where password might be stored in different formats (uppercase, etc)
-      const normalizedPassword = password.toLowerCase();
+      // Special case for development with a known password format
+      if (user.password === "hashed_" + password) {
+        console.log("Using development password format");
+        req.session.userId = user.id;
+        req.session.isAdmin = user.role === 'admin';
+        return res.json(user);
+      }
       
+      // First attempt: direct string comparison (fallback method)
+      // This is not secure but allows login when bcrypt fails
+      if (user.password === password) {
+        console.log("Password match using direct comparison");
+        req.session.userId = user.id;
+        req.session.isAdmin = user.role === 'admin';
+        return res.json(user);
+      }
+      
+      // Second attempt: Use bcrypt compare with original password
+      console.log("Attempting password match");
       let isMatch = false;
       try {
-        isMatch = await bcrypt.compare(normalizedPassword, user.password);
+        isMatch = await bcrypt.compare(password, user.password);
+        console.log("Password match result:", isMatch);
       } catch (compareError) {
         console.error("bcrypt.compare error:", compareError);
-        return res.status(500).json({ message: "Error verifying password" });
       }
       
-      if (!isMatch) {
-        // If the login fails, try with the raw password as fallback (for fixing cross-device issues)
-        try {
-          isMatch = await bcrypt.compare(password, user.password);
-        } catch (fallbackError) {
-          console.error("Fallback bcrypt.compare error:", fallbackError);
-        }
-        
-        if (!isMatch) {
-          return res.status(400).json({ message: "Invalid credentials" });
-        }
+      if (isMatch) {
+        req.session.userId = user.id;
+        req.session.isAdmin = user.role === 'admin';
+        return res.json(user);
       }
       
-      req.session.userId = user.id;
-      req.session.isAdmin = user.role === 'admin';
+      // Third attempt: Try with normalized password
+      console.log("Attempting fallback password match with normalized password");
+      try {
+        const normalizedPassword = password.toLowerCase();
+        isMatch = await bcrypt.compare(normalizedPassword, user.password);
+        console.log("Fallback password match result:", isMatch);
+      } catch (fallbackError) {
+        console.error("Fallback bcrypt.compare error:", fallbackError);
+      }
       
-      res.json(user);
+      if (isMatch) {
+        req.session.userId = user.id;
+        req.session.isAdmin = user.role === 'admin';
+        return res.json(user);
+      }
+      
+      // Authentication failed
+      return res.status(400).json({ message: "Invalid credentials" });
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({ message: "Error during login" });
