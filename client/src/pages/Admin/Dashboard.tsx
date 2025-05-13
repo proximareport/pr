@@ -74,9 +74,20 @@ function AdminDashboard() {
   const tabFromUrl = urlParams.get('tab');
   const subTabFromUrl = urlParams.get('subtab');
   
+  // Get saved tabs from localStorage or use URL parameters
+  const getSavedTab = () => {
+    const savedTab = localStorage.getItem('adminActiveTab');
+    return tabFromUrl || savedTab || "overview";
+  };
+  
+  const getSavedSubTab = () => {
+    const savedSubTab = localStorage.getItem('adminActiveSubTab');
+    return subTabFromUrl || savedSubTab || "";
+  };
+  
   // Active tab states
-  const [activeTab, setActiveTab] = useState<string>(tabFromUrl || "overview");
-  const [activeSubTab, setActiveSubTab] = useState<string>(subTabFromUrl || "");
+  const [activeTab, setActiveTab] = useState<string>(getSavedTab());
+  const [activeSubTab, setActiveSubTab] = useState<string>(getSavedSubTab());
   
   // Effect to handle URL parameter changes
   useEffect(() => {
@@ -87,19 +98,50 @@ function AdminDashboard() {
     
     if (tabFromUrl) {
       setActiveTab(tabFromUrl);
+      localStorage.setItem('adminActiveTab', tabFromUrl);
     }
     
     if (subTabFromUrl) {
       setActiveSubTab(subTabFromUrl);
-    } else {
+      localStorage.setItem('adminActiveSubTab', subTabFromUrl);
+    } else if (tabFromUrl) {
       // Reset subtab when main tab changes and no subtab is specified
       setActiveSubTab("");
+      localStorage.removeItem('adminActiveSubTab');
     }
   }, [location]); // dependency on location to detect URL changes
+  
+  // Handle browser back/forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabFromUrl = urlParams.get('tab');
+      const subTabFromUrl = urlParams.get('subtab');
+      
+      if (tabFromUrl) {
+        setActiveTab(tabFromUrl);
+        localStorage.setItem('adminActiveTab', tabFromUrl);
+      }
+      
+      if (subTabFromUrl) {
+        setActiveSubTab(subTabFromUrl);
+        localStorage.setItem('adminActiveSubTab', subTabFromUrl);
+      } else {
+        setActiveSubTab("");
+        localStorage.removeItem('adminActiveSubTab');
+      }
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
   
   // Function to set active tab and update URL
   const handleTabChange = (value: string) => {
     setActiveTab(value);
+    // Save to localStorage for persistence
+    localStorage.setItem('adminActiveTab', value);
+    
     // Update URL when tab changes without forcing a page reload
     const newUrl = new URL(window.location.href);
     newUrl.searchParams.set('tab', value);
@@ -108,6 +150,7 @@ function AdminDashboard() {
     if (!['content', 'settings'].includes(value)) {
       newUrl.searchParams.delete('subtab');
       setActiveSubTab("");
+      localStorage.removeItem('adminActiveSubTab');
     } else {
       // Set a default subtab for tabs that have subtabs
       const defaultSubTabs = {
@@ -118,19 +161,23 @@ function AdminDashboard() {
       if (defaultSubTab && !newUrl.searchParams.has('subtab')) {
         newUrl.searchParams.set('subtab', defaultSubTab);
         setActiveSubTab(defaultSubTab);
+        localStorage.setItem('adminActiveSubTab', defaultSubTab);
       }
     }
     
-    window.history.pushState({}, '', newUrl.toString());
+    window.history.pushState({tab: value}, '', newUrl.toString());
   };
   
   // Function to set active subtab and update URL
   const handleSubTabChange = (value: string) => {
     setActiveSubTab(value);
+    // Save to localStorage for persistence
+    localStorage.setItem('adminActiveSubTab', value);
+    
     // Update URL when subtab changes without forcing a page reload
     const newUrl = new URL(window.location.href);
     newUrl.searchParams.set('subtab', value);
-    window.history.pushState({}, '', newUrl.toString());
+    window.history.pushState({tab: activeTab, subtab: value}, '', newUrl.toString());
   };
 
   // ContentStatus state

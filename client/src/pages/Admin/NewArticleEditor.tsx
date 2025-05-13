@@ -120,6 +120,82 @@ function AdminArticleEditor() {
     scheduleAutosave();
   };
 
+  // Get editor state key
+  const getEditorStateKey = useCallback(() => {
+    return id ? `article-editor-state-${id}` : 'article-editor-state-new';
+  }, [id]);
+  
+  // Save editor state to localStorage
+  const saveEditorState = useCallback(() => {
+    if (!title.trim()) return; // Don't save if title is empty
+    
+    const editorState = {
+      title,
+      slug,
+      summary,
+      content,
+      category,
+      tags,
+      featuredImage,
+      readTime,
+      isDraft,
+      isBreaking,
+      isFeatured,
+      isCollaborative,
+      coauthors,
+      lastSaved: new Date().toISOString(),
+      articleId
+    };
+    
+    localStorage.setItem(getEditorStateKey(), JSON.stringify(editorState));
+    console.log('Saved editor state to localStorage');
+  }, [
+    title, slug, summary, content, category, tags, featuredImage, 
+    readTime, isDraft, isBreaking, isFeatured, isCollaborative, 
+    coauthors, getEditorStateKey, articleId
+  ]);
+  
+  // Load editor state from localStorage
+  const loadEditorState = useCallback(() => {
+    try {
+      const savedState = localStorage.getItem(getEditorStateKey());
+      if (!savedState) return false;
+      
+      const state = JSON.parse(savedState);
+      
+      // Check if we have article data (minimum required fields)
+      if (!state.title || !state.content) return false;
+      
+      setTitle(state.title || '');
+      setSlug(state.slug || '');
+      setSummary(state.summary || '');
+      setContent(state.content || '');
+      setCategory(state.category || 'space-exploration');
+      setTags(state.tags || []);
+      setFeaturedImage(state.featuredImage || '');
+      setReadTime(state.readTime || 5);
+      setIsDraft(state.isDraft !== undefined ? state.isDraft : true);
+      setIsBreaking(state.isBreaking || false);
+      setIsFeatured(state.isFeatured || false);
+      setIsCollaborative(state.isCollaborative || false);
+      
+      if (state.coauthors && Array.isArray(state.coauthors)) {
+        setCoauthors(state.coauthors);
+      }
+      
+      if (state.articleId && !articleId) {
+        setArticleId(state.articleId);
+      }
+      
+      console.log('Loaded editor state from localStorage');
+      setLastSaved(state.lastSaved ? new Date(state.lastSaved) : new Date());
+      return true;
+    } catch (error) {
+      console.error('Error loading editor state from localStorage:', error);
+      return false;
+    }
+  }, [getEditorStateKey, articleId]);
+
   // Fetch article data if editing
   const { data: initialArticle, isLoading: isLoadingArticle } = useQuery({
     queryKey: ['/api/articles', id],
@@ -330,9 +406,13 @@ function AdminArticleEditor() {
     },
   });
 
-  // Initialize form with article data when editing
+  // Initialize form with article data when editing or from localStorage
   useEffect(() => {
-    if (initialArticle) {
+    // First check if we have saved state in localStorage
+    const hasSavedState = loadEditorState();
+    
+    // If no saved state and we have initialArticle from API, use that
+    if (!hasSavedState && initialArticle) {
       setTitle(initialArticle.title || '');
       setSlug(initialArticle.slug || '');
       setSummary(initialArticle.summary || '');
