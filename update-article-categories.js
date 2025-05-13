@@ -1,5 +1,6 @@
 // This script updates article categories to match our category system
-const { Pool } = require('pg');
+import pkg from 'pg';
+const { Pool } = pkg;
 
 async function updateArticleCategories() {
   const pool = new Pool({
