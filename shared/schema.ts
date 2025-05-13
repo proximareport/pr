@@ -454,17 +454,29 @@ export const insertJobListingSchema = createInsertSchema(jobListings).omit({
   isApproved: true,
 });
 
-export const insertAdvertisementSchema = createInsertSchema(advertisements).omit({
-  id: true,
-  createdAt: true,
-  impressions: true,
-  clicks: true,
-  isApproved: true,
-  status: true,
-  paymentStatus: true,
-  paymentId: true,
-  adminNotes: true,
-});
+export const insertAdvertisementSchema = createInsertSchema(advertisements)
+  .extend({
+    // Allow startDate and endDate to be either Date objects or ISO strings
+    startDate: z.union([
+      z.date(),
+      z.string().transform((str) => new Date(str))
+    ]),
+    endDate: z.union([
+      z.date(),
+      z.string().transform((str) => new Date(str))
+    ])
+  })
+  .omit({
+    id: true,
+    createdAt: true,
+    impressions: true,
+    clicks: true,
+    isApproved: true,
+    status: true,
+    paymentStatus: true,
+    paymentId: true,
+    adminNotes: true,
+  });
 
 export const insertApiKeySchema = createInsertSchema(apiKeys).omit({
   id: true,

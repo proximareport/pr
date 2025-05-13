@@ -202,9 +202,8 @@ function AdvertisementTab() {
       // Prepare the data for the API request with proper formatting
       const formattedData = {
         ...adData,
-        // Ensure dates are properly formatted
-        startDate: adData.startDate instanceof Date ? adData.startDate.toISOString() : adData.startDate,
-        endDate: adData.endDate instanceof Date ? adData.endDate.toISOString() : adData.endDate,
+        // We already have ISO string dates from the form, so we don't need to convert them
+        // Just pass them through directly
         // Add admin notes to indicate this is a test advertisement
         adminNotes: 'Test advertisement created for internal testing'
       };
@@ -396,8 +395,9 @@ function AdvertisementTab() {
     // Create the complete ad data, ensuring all required fields are present
     const completeAdData = {
       ...testAdForm,
-      startDate: new Date(testAdForm.startDate),
-      endDate: new Date(testAdForm.endDate),
+      // Send the ISO string instead of Date object to ensure compatibility
+      startDate: testAdForm.startDate, 
+      endDate: testAdForm.endDate,
       // Explicitly add userId - this will be overwritten by the server but is required for schema validation
       userId: 1 // Temporary value, will be replaced by server with actual session userId
     };

@@ -1,0 +1,203 @@
+Getting pending ads. Ads array length: 1
+AdvertisementTab.tsx:252 Checking ad types:
+AdvertisementTab.tsx:255 Ad 0: Object
+AdvertisementTab.tsx:272 Found 0 pending ads
+AdvertisementTab.tsx:292 Found 0 active ads
+AdvertisementTab.tsx:311 Found 0 inactive ads
+AdvertisementTab.tsx:330 Found 1 test ads
+AdvertisementTab.tsx:243 Getting pending ads. Ads array length: 1
+AdvertisementTab.tsx:252 Checking ad types:
+AdvertisementTab.tsx:255 Ad 0: Object
+AdvertisementTab.tsx:272 Found 0 pending ads
+AdvertisementTab.tsx:292 Found 0 active ads
+AdvertisementTab.tsx:311 Found 0 inactive ads
+AdvertisementTab.tsx:330 Found 1 test ads
+AdvertisementTab.tsx:86 Advertisement data is an array with 1 items
+AdvertisementTab.tsx:243 Getting pending ads. Ads array length: 1
+AdvertisementTab.tsx:252 Checking ad types:
+AdvertisementTab.tsx:255 Ad 0: Object
+AdvertisementTab.tsx:272 Found 0 pending ads
+AdvertisementTab.tsx:292 Found 0 active ads
+AdvertisementTab.tsx:311 Found 0 inactive ads
+AdvertisementTab.tsx:330 Found 1 test ads
+AdvertisementTab.tsx:243 Getting pending ads. Ads array length: 1
+AdvertisementTab.tsx:252 Checking ad types:
+AdvertisementTab.tsx:255 Ad 0: Object
+AdvertisementTab.tsx:272 Found 0 pending ads
+AdvertisementTab.tsx:292 Found 0 active ads
+AdvertisementTab.tsx:311 Found 0 inactive ads
+AdvertisementTab.tsx:330 Found 1 test ads
+AdvertisementTab.tsx:405 Submitting test ad data: Object
+AdvertisementTab.tsx:212 Sending formatted data to API: Object
+queryClient.ts:30 API Request: POST /api/admin/test-advertisement Object
+AdvertisementTab.tsx:86 Advertisement data is an array with 1 items
+AdvertisementTab.tsx:243 Getting pending ads. Ads array length: 1
+AdvertisementTab.tsx:252 Checking ad types:
+AdvertisementTab.tsx:255 Ad 0: Object
+AdvertisementTab.tsx:272 Found 0 pending ads
+AdvertisementTab.tsx:292 Found 0 active ads
+AdvertisementTab.tsx:311 Found 0 inactive ads
+AdvertisementTab.tsx:330 Found 1 test ads
+AdvertisementTab.tsx:243 Getting pending ads. Ads array length: 1
+AdvertisementTab.tsx:252 Checking ad types:
+AdvertisementTab.tsx:255 Ad 0: Object
+AdvertisementTab.tsx:272 Found 0 pending ads
+AdvertisementTab.tsx:292 Found 0 active ads
+AdvertisementTab.tsx:311 Found 0 inactive ads
+AdvertisementTab.tsx:330 Found 1 test ads
+api/admin/test-advertisement:1 
+            
+            
+            Failed to load resource: the server responded with a status of 400 (Bad Request)
+queryClient.ts:40 API Response status: 400 Response
+queryClient.ts:47  API Error Response: Object
+apiRequest @ queryClient.ts:47
+queryClient.ts:56  API Request Failed: Error: 400: Validation error
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (AdvertisementTab.tsx:213:14)
+apiRequest @ queryClient.ts:56
+AdvertisementTab.tsx:232  Error creating test advertisement: Error: 400: Validation error
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (AdvertisementTab.tsx:213:14)
+onError @ AdvertisementTab.tsx:232
+App.tsx:153 Maintenance check: Object
+App.tsx:168 MainApp render check: Object
+AdvertisementTab.tsx:86 Advertisement data is an array with 1 items
+AdvertisementTab.tsx:243 Getting pending ads. Ads array length: 1
+AdvertisementTab.tsx:252 Checking ad types:
+AdvertisementTab.tsx:255 Ad 0: Object
+AdvertisementTab.tsx:272 Found 0 pending ads
+AdvertisementTab.tsx:292 Found 0 active ads
+AdvertisementTab.tsx:311 Found 0 inactive ads
+AdvertisementTab.tsx:330 Found 1 test ads
+AdvertisementTab.tsx:243 Getting pending ads. Ads array length: 1
+AdvertisementTab.tsx:252 Checking ad types:
+AdvertisementTab.tsx:255 Ad 0: Object
+AdvertisementTab.tsx:272 Found 0 pending ads
+AdvertisementTab.tsx:292 Found 0 active ads
+AdvertisementTab.tsx:311 Found 0 inactive ads
+AdvertisementTab.tsx:330 Found 1 test ads
+AdvertisementTab.tsx:86 Advertisement data is an array with 1 items
+AdvertisementTab.tsx:243 Getting pending ads. Ads array length: 1
+AdvertisementTab.tsx:252 Checking ad types:
+AdvertisementTab.tsx:255 Ad 0: Object
+AdvertisementTab.tsx:272 Found 0 pending ads
+AdvertisementTab.tsx:292 Found 0 active ads
+AdvertisementTab.tsx:311 Found 0 inactive ads
+AdvertisementTab.tsx:330 Found 1 test ads
+AdvertisementTab.tsx:243 Getting pending ads. Ads array length: 1
+AdvertisementTab.tsx:252 Checking ad types:
+AdvertisementTab.tsx:255 Ad 0: Object
+AdvertisementTab.tsx:272 Found 0 pending ads
+AdvertisementTab.tsx:292 Found 0 active ads
+AdvertisementTab.tsx:311 Found 0 inactive ads
+AdvertisementTab.tsx:330 Found 1 test ads
+App.tsx:153 Maintenance check: Object
+App.tsx:168 MainApp render check: Object
+AdvertisementTab.tsx:86 Advertisement data is an array with 1 items
+AdvertisementTab.tsx:243 Getting pending ads. Ads array length: 1
+AdvertisementTab.tsx:252 Checking ad types:
+AdvertisementTab.tsx:255 Ad 0: Object
+AdvertisementTab.tsx:272 Found 0 pending ads
+AdvertisementTab.tsx:292 Found 0 active ads
+AdvertisementTab.tsx:311 Found 0 inactive ads
+AdvertisementTab.tsx:330 Found 1 test ads
+AdvertisementTab.tsx:243 Getting pending ads. Ads array length: 1
+AdvertisementTab.tsx:252 Checking ad types:
+AdvertisementTab.tsx:255 Ad 0: Object
+AdvertisementTab.tsx:272 Found 0 pending ads
+AdvertisementTab.tsx:292 Found 0 active ads
+AdvertisementTab.tsx:311 Found 0 inactive ads
+AdvertisementTab.tsx:330 Found 1 test ads
+AdvertisementTab.tsx:86 Advertisement data is an array with 1 items
+AdvertisementTab.tsx:243 Getting pending ads. Ads array length: 1
+AdvertisementTab.tsx:252 Checking ad types:
+AdvertisementTab.tsx:255 Ad 0: Object
+AdvertisementTab.tsx:272 Found 0 pending ads
+AdvertisementTab.tsx:292 Found 0 active ads
+AdvertisementTab.tsx:311 Found 0 inactive ads
+AdvertisementTab.tsx:330 Found 1 test ads
+AdvertisementTab.tsx:243 Getting pending ads. Ads array length: 1
+AdvertisementTab.tsx:252 Checking ad types:
+AdvertisementTab.tsx:255 Ad 0: Object
+AdvertisementTab.tsx:272 Found 0 pending ads
+AdvertisementTab.tsx:292 Found 0 active ads
+AdvertisementTab.tsx:311 Found 0 inactive ads
+AdvertisementTab.tsx:330 Found 1 test ads
+AdvertisementTab.tsx:405 Submitting test ad data: Object
+AdvertisementTab.tsx:212 Sending formatted data to API: Object
+queryClient.ts:30 API Request: POST /api/admin/test-advertisement Object
+AdvertisementTab.tsx:86 Advertisement data is an array with 1 items
+AdvertisementTab.tsx:243 Getting pending ads. Ads array length: 1
+AdvertisementTab.tsx:252 Checking ad types:
+AdvertisementTab.tsx:255 Ad 0: Object
+AdvertisementTab.tsx:272 Found 0 pending ads
+AdvertisementTab.tsx:292 Found 0 active ads
+AdvertisementTab.tsx:311 Found 0 inactive ads
+AdvertisementTab.tsx:330 Found 1 test ads
+AdvertisementTab.tsx:243 Getting pending ads. Ads array length: 1
+AdvertisementTab.tsx:252 Checking ad types:
+AdvertisementTab.tsx:255 Ad 0: Object
+AdvertisementTab.tsx:272 Found 0 pending ads
+AdvertisementTab.tsx:292 Found 0 active ads
+AdvertisementTab.tsx:311 Found 0 inactive ads
+AdvertisementTab.tsx:330 Found 1 test ads
+api/admin/test-advertisement:1 
+            
+            
+            Failed to load resource: the server responded with a status of 400 (Bad Request)
+queryClient.ts:40 API Response status: 400 Response
+queryClient.ts:47  API Error Response: Object
+apiRequest @ queryClient.ts:47
+queryClient.ts:56  API Request Failed: Error: 400: Validation error
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (AdvertisementTab.tsx:213:14)
+apiRequest @ queryClient.ts:56
+AdvertisementTab.tsx:232  Error creating test advertisement: Error: 400: Validation error
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+    at async Object.mutationFn (AdvertisementTab.tsx:213:14)
+onError @ AdvertisementTab.tsx:232
+App.tsx:153 Maintenance check: Object
+App.tsx:168 MainApp render check: Object
+AdvertisementTab.tsx:86 Advertisement data is an array with 1 items
+AdvertisementTab.tsx:243 Getting pending ads. Ads array length: 1
+AdvertisementTab.tsx:252 Checking ad types:
+AdvertisementTab.tsx:255 Ad 0: Object
+AdvertisementTab.tsx:272 Found 0 pending ads
+AdvertisementTab.tsx:292 Found 0 active ads
+AdvertisementTab.tsx:311 Found 0 inactive ads
+AdvertisementTab.tsx:330 Found 1 test ads
+AdvertisementTab.tsx:243 Getting pending ads. Ads array length: 1
+AdvertisementTab.tsx:252 Checking ad types:
+AdvertisementTab.tsx:255 Ad 0: Object
+AdvertisementTab.tsx:272 Found 0 pending ads
+AdvertisementTab.tsx:292 Found 0 active ads
+AdvertisementTab.tsx:311 Found 0 inactive ads
+AdvertisementTab.tsx:330 Found 1 test ads
+
+                
+          
+          
+          
+         Microsoft Edge is moving towards a new experience that allows users to choose to browse without third-party cookies.
+App.tsx:153 Maintenance check: {isMaintenanceMode: false, isAdmin: true, maintenanceEnabled: false}
+App.tsx:168 MainApp render check: {path: '/admin', isMaintenanceMode: false, isAdmin: true, isAdminPage: true, isAuthPage: false, …}
+AdvertisementTab.tsx:86 Advertisement data is an array with 1 items
+AdvertisementTab.tsx:243 Getting pending ads. Ads array length: 1
+AdvertisementTab.tsx:252 Checking ad types:
+AdvertisementTab.tsx:255 Ad 0: {id: 10, title: 'Test Ad for Demo', isApproved: true, status: 'approved', isTest: true}
+AdvertisementTab.tsx:272 Found 0 pending ads
+AdvertisementTab.tsx:292 Found 0 active ads
+AdvertisementTab.tsx:311 Found 0 inactive ads
+AdvertisementTab.tsx:330 Found 1 test ads
+AdvertisementTab.tsx:243 Getting pending ads. Ads array length: 1
+AdvertisementTab.tsx:252 Checking ad types:
+AdvertisementTab.tsx:255 Ad 0: {id: 10, title: 'Test Ad for Demo', isApproved: true, status: 'approved', isTest: true}
+AdvertisementTab.tsx:272 Found 0 pending ads
+AdvertisementTab.tsx:292 Found 0 active ads
+AdvertisementTab.tsx:311 Found 0 inactive ads
+AdvertisementTab.tsx:330 Found 1 test ads

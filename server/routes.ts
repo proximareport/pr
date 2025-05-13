@@ -1939,9 +1939,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Debug: Log the data being submitted
       console.log('Test advertisement submission data:', adData);
       
-      // Validate advertisement data
+      // Make sure we handle date fields correctly
       try {
-        insertAdvertisementSchema.parse(adData);
+        // This should now handle both Date objects and string dates because of our schema extension
+        const validatedData = insertAdvertisementSchema.parse(adData);
+        
+        // After validation, ensure we have proper Date objects
+        // The parse step should have already transformed string dates to Date objects
+        
+        console.log('Validated advertisement data:', validatedData);
+        
+        // Continue with the validated data
+        adData.startDate = validatedData.startDate;
+        adData.endDate = validatedData.endDate;
       } catch (validationError) {
         if (validationError instanceof ZodError) {
           console.error('Test advertisement validation error details:', validationError.errors);
@@ -1999,9 +2009,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validate advertisement data
       try {
-        insertAdvertisementSchema.parse(adData);
+        const validatedData = insertAdvertisementSchema.parse(adData);
+        
+        // Ensure we have proper Date objects after validation
+        adData.startDate = validatedData.startDate;
+        adData.endDate = validatedData.endDate;
       } catch (validationError) {
         if (validationError instanceof ZodError) {
+          console.error('Advertisement validation error details:', validationError.errors);
           return res.status(400).json({
             message: "Validation error",
             errors: validationError.errors
