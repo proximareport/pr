@@ -897,6 +897,12 @@ function AdminArticleEditor() {
       if (data?.article?.status) {
         setIsDraft(data.article.status === 'draft');
         console.log("Updated isDraft state to:", data.article.status === 'draft');
+        
+        // If article was published, clear localStorage state since we no longer need it
+        if (data.article.status === 'published') {
+          clearEditorState();
+          console.log('Cleared editor state after publishing');
+        }
       }
     },
     onError: (error) => {
