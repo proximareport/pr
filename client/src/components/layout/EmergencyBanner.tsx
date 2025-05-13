@@ -4,13 +4,9 @@ import { apiRequest } from '@/lib/queryClient';
 import { AlertTriangleIcon, InfoIcon, AlertOctagonIcon } from 'lucide-react';
 
 interface EmergencyBanner {
-  id: number;
-  message: string;
-  type: string;
-  isActive: boolean;
-  createdAt: string;
-  expiresAt: string | null;
-  createdBy: number;
+  message?: string;
+  level?: string;
+  enabled: boolean;
 }
 
 function EmergencyBanner() {
@@ -29,14 +25,14 @@ function EmergencyBanner() {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  // If no banner or loading, don't render anything
-  if (isLoading || !banner) {
+  // If no banner, loading, or banner is disabled, don't render anything
+  if (isLoading || !banner || banner.enabled === false) {
     return null;
   }
 
-  // Get Banner Icon based on type
+  // Get Banner Icon based on level
   const getBannerIcon = () => {
-    switch (banner.type) {
+    switch (banner.level) {
       case 'warning':
         return <AlertTriangleIcon className="h-5 w-5 text-amber-500" />;
       case 'critical':
@@ -47,9 +43,9 @@ function EmergencyBanner() {
     }
   };
 
-  // Get banner background color based on type
+  // Get banner background color based on level
   const getBannerBackground = () => {
-    switch (banner.type) {
+    switch (banner.level) {
       case 'warning':
         return 'bg-amber-500/10 border-amber-500/50';
       case 'critical':

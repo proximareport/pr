@@ -112,6 +112,11 @@ function EmergencyBannerTab() {
       
       // Refresh data
       queryClient.invalidateQueries({ queryKey: ['/api/emergency-banner'] });
+      
+      // Force refetch to ensure we get fresh data
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: ['/api/emergency-banner'] });
+      }, 300);
     },
     onError: (error) => {
       console.error("Error deactivating banner:", error);
