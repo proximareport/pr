@@ -2037,12 +2037,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const page = req.query.page ? parseInt(req.query.page as string) : 1;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
       const type = req.query.type as string;
+      const search = req.query.search as string;
       
       let media;
       if (type) {
         media = await storage.getMediaLibraryItemsByType(type, req.session?.userId);
       } else {
         media = await storage.getMediaLibraryItems(req.session?.userId);
+      }
+      
+      // Apply search filter if provided
+      if (search && search.trim()) {
+        const searchLower = search.toLowerCase();
+        media = media.filter(item => 
+          item.fileName.toLowerCase().includes(searchLower) ||
+          (item.altText && item.altText.toLowerCase().includes(searchLower)) ||
+          (item.caption && item.caption.toLowerCase().includes(searchLower)) ||
+          (item.tags && item.tags.some(tag => tag.toLowerCase().includes(searchLower)))
+        );
       }
       
       // Manual pagination
