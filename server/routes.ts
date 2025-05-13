@@ -1872,6 +1872,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         true // temporarily include all ads for development
       );
       
+      // If no ads are found for specific article placements, try fetching generic "article" ads
+      if (ads.length === 0 && (
+          placement.startsWith('article_') || 
+          placement === 'article_middle' || 
+          placement === 'article_sidebar' || 
+          placement === 'article_footer'
+      )) {
+        console.log(`No specific ads found for ${placement}, checking for generic 'article' placement ads`);
+        
+        // Try to get ads with the generic "article" placement
+        ads = await storage.getAdvertisements(1, 50, false, 'article', true);
+        
+        if (ads.length > 0) {
+          console.log(`Found ${ads.length} generic 'article' ads that can be used in ${placement}`);
+          ads.forEach(ad => {
+            console.log(`Using generic article ad ID ${ad.id}: "${ad.title}" for ${placement}`);
+          });
+        }
+      }
+      
       // If no ads are found, log additional information to help diagnose why
       if (ads.length === 0) {
         console.log("Found 0 advertisements (including test ads)");

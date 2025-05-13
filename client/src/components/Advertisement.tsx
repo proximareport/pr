@@ -39,8 +39,10 @@ const Advertisement: React.FC<AdvertisementProps> = ({ placement, className = ''
   
   // State to track the selected ad
   const [selectedAd, setSelectedAd] = useState<AdData | null>(null);
+  const [eligibleAds, setEligibleAds] = useState<AdData[]>([]);
+  const [currentAdIndex, setCurrentAdIndex] = useState(0);
   
-  // When ads are loaded, select one randomly - filtering out test ads for non-admins
+  // When ads are loaded, prepare the eligible ads list
   useEffect(() => {
     console.log(`Advertisement component - Placement: ${placement}`, { 
       ads, 
@@ -59,26 +61,48 @@ const Advertisement: React.FC<AdvertisementProps> = ({ placement, className = ''
       // This is just for development/testing - in production we would filter them
       // For now, we're showing all ads including test ads to everyone
       console.log("IMPORTANT: Showing test ads to all users for testing purposes");
-      const eligibleAds = ads;
       
-      console.log(`Eligible ads after filtering: ${eligibleAds.length}`);
+      // Save the full list of eligible ads
+      setEligibleAds(ads);
+      console.log(`Eligible ads after filtering: ${ads.length}`);
       
-      // If we have eligible ads, select one randomly
-      if (eligibleAds.length > 0) {
-        const randomIndex = Math.floor(Math.random() * eligibleAds.length);
-        const selected = eligibleAds[randomIndex];
+      // If we have eligible ads, select the first one initially
+      if (ads.length > 0) {
+        const selected = ads[0];
         console.log(`Selected ad: ID=${selected.id}, title=${selected.title}`);
         setSelectedAd(selected);
+        setCurrentAdIndex(0);
       } else {
         // No eligible ads available
         console.log('No eligible ads available after filtering');
         setSelectedAd(null);
+        setCurrentAdIndex(0);
       }
     } else {
       console.log('No ads received from server');
       setSelectedAd(null);
+      setEligibleAds([]);
+      setCurrentAdIndex(0);
     }
   }, [ads, isAdmin]);
+  
+  // Cycle through ads every 20 seconds if there are multiple ads
+  useEffect(() => {
+    if (eligibleAds.length <= 1) return;
+    
+    // Set up the interval to rotate ads
+    const rotationInterval = setInterval(() => {
+      setCurrentAdIndex(prevIndex => {
+        const nextIndex = (prevIndex + 1) % eligibleAds.length;
+        const nextAd = eligibleAds[nextIndex];
+        console.log(`Rotating to next ad: ID=${nextAd.id}, title=${nextAd.title}, index=${nextIndex}`);
+        setSelectedAd(nextAd);
+        return nextIndex;
+      });
+    }, 20000); // 20 seconds rotation
+    
+    return () => clearInterval(rotationInterval);
+  }, [eligibleAds]);
 
   // Record impression when the ad is viewed
   useEffect(() => {
