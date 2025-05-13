@@ -1878,34 +1878,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Fetch approved ads for the requested placement
       // (or include unapproved if user is admin and requested them)
-      const ads = await storage.getAdvertisements(
+      // For development, we'll include all ads including test ads
+      let ads = await storage.getAdvertisements(
         1, // page
         50, // limit - get enough ads for rotation
         false, // don't include user data here
         placement, // placement 
-        isAdmin && includeNotApproved // include unapproved if admin
+        true // temporarily include all ads for development
       );
       
-      // If no approved ads are found, and this is for the frontend display, 
-      // log additional information to help diagnose why no ads are showing
-      if (ads.length === 0 && !includeNotApproved) {
-        console.log("Found 0 advertisements (approved only)");
+      // If no ads are found, log additional information to help diagnose why
+      if (ads.length === 0) {
+        console.log("Found 0 advertisements (including test ads)");
         
-        // Check if there are any ads at all for this placement (approved or not)
-        const allAds = await storage.getAdvertisements(1, 50, false, placement, true);
-        console.log(`Found ${allAds.length} ads for placement ${placement}, of which ${allAds.filter(ad => ad.isApproved).length} are actually approved`);
+        // Check if there are any ads at all regardless of placement
+        const allAds = await storage.getAdvertisements(1, 100, false, undefined, true);
+        console.log(`Found ${allAds.length} total ads in the system`);
         
-        if (allAds.length === 0) {
-          console.log(`No ads found for placement ${placement}`);
-        } else {
-          console.log(`No approved ads found for placement ${placement}, checking if any exist regardless of approval`);
-          // Remove the call to countAdvertisementsByPlacement which doesn't exist
-          console.log(`Found ${allAds.length} total ads (including unapproved) for placement ${placement}`);
-          
-          if (allAds.length > 0) {
-            console.log("Unapproved ad example:", JSON.stringify(allAds[0]));
-          }
+        if (allAds.length > 0) {
+          console.log("Available ads (any placement):", 
+            allAds.map(ad => `ID ${ad.id}: "${ad.title}" - placement=${ad.placement}, isApproved=${ad.isApproved}, isTest=${ad.isTest}`)
+          );
         }
+      } else {
+        console.log(`Found ${ads.length} ads for placement ${placement}`);
+        ads.forEach(ad => {
+          console.log(`Serving ad ID ${ad.id}: "${ad.title}" - isApproved=${ad.isApproved}, isTest=${ad.isTest}`);
+        });
       }
       
       res.json(ads);

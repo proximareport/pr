@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 
@@ -25,23 +25,37 @@ interface AdvertisementProps {
 }
 
 const Advertisement: React.FC<AdvertisementProps> = ({ placement, className = '' }) => {
-  const { data: ad, isLoading, error } = useQuery<AdData | null>({
+  const { data: ads, isLoading, error } = useQuery<AdData[]>({
     queryKey: [`/api/advertisements/${placement}`],
     staleTime: 60 * 1000, // 1 minute
   });
+  
+  // State to track the selected ad
+  const [selectedAd, setSelectedAd] = useState<AdData | null>(null);
+  
+  // When ads are loaded, select one randomly
+  useEffect(() => {
+    if (ads && ads.length > 0) {
+      // Randomly select an ad from the available ones
+      const randomIndex = Math.floor(Math.random() * ads.length);
+      setSelectedAd(ads[randomIndex]);
+    } else {
+      setSelectedAd(null);
+    }
+  }, [ads]);
 
   // Record impression when the ad is viewed
   useEffect(() => {
-    if (ad?.id) {
-      apiRequest('POST', `/api/advertisements/${ad.id}/impression`, {})
+    if (selectedAd?.id) {
+      apiRequest('POST', `/api/advertisements/${selectedAd.id}/impression`, {})
         .catch(err => console.error('Failed to record impression:', err));
     }
-  }, [ad?.id]);
+  }, [selectedAd?.id]);
 
   const handleClick = async () => {
-    if (ad?.id) {
+    if (selectedAd?.id) {
       try {
-        await apiRequest('POST', `/api/advertisements/${ad.id}/click`, {});
+        await apiRequest('POST', `/api/advertisements/${selectedAd.id}/click`, {});
       } catch (err) {
         console.error('Failed to record click:', err);
       }
@@ -54,24 +68,24 @@ const Advertisement: React.FC<AdvertisementProps> = ({ placement, className = ''
     );
   }
 
-  if (error || !ad) {
+  if (error || !selectedAd) {
     return null; // Don't show anything if there's an error or no ad
   }
 
   return (
     <div className={`advertisement ${className} border border-gray-200 rounded-md overflow-hidden`}>
       <a 
-        href={ad.linkUrl} 
+        href={selectedAd.linkUrl} 
         target="_blank" 
         rel="noopener noreferrer sponsored" 
         onClick={handleClick}
         className="block relative"
       >
-        {ad.imageUrl ? (
+        {selectedAd.imageUrl ? (
           <div className="relative overflow-hidden">
             <img 
-              src={ad.imageUrl} 
-              alt={ad.title} 
+              src={selectedAd.imageUrl} 
+              alt={selectedAd.title} 
               className="w-full h-auto object-cover transition-transform hover:scale-105"
             />
             <span className="absolute top-0 right-0 bg-gray-200 text-xs px-2 py-1 rounded-bl-md text-gray-600">
@@ -80,8 +94,8 @@ const Advertisement: React.FC<AdvertisementProps> = ({ placement, className = ''
           </div>
         ) : (
           <div className="p-4 text-center bg-gray-50">
-            <h4 className="font-medium text-gray-800">{ad.title}</h4>
-            <p className="text-sm text-gray-600 mt-2">{ad.description}</p>
+            <h4 className="font-medium text-gray-800">{selectedAd.title}</h4>
+            <p className="text-sm text-gray-600 mt-2">{selectedAd.description}</p>
             <span className="absolute top-0 right-0 bg-gray-200 text-xs px-2 py-1 rounded-bl-md text-gray-600">
               Ad
             </span>
