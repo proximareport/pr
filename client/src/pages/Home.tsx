@@ -37,8 +37,7 @@ interface SiteSettings {
 
 function Home() {
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [selectedTag, setSelectedTag] = useState<number | null>(null);
+  const [selectedFilter, setSelectedFilter] = useState("all");
   
   // Get site settings to fetch homepage categories
   const { data: siteSettings } = useQuery<SiteSettings>({
@@ -60,8 +59,7 @@ function Home() {
     queryKey: ["/api/articles", { 
       limit: 12, 
       offset: (currentPage - 1) * 12, 
-      category: selectedCategory,
-      tagId: selectedTag 
+      filter: selectedFilter
     }],
   });
 
@@ -69,17 +67,11 @@ function Home() {
   useEffect(() => {
     setCurrentPage(1);
     refetch();
-  }, [selectedCategory, selectedTag, refetch]);
+  }, [selectedFilter, refetch]);
 
-  // Handle category change
-  const handleCategoryChange = (category: string) => {
-    setSelectedCategory(category);
-    setSelectedTag(null); // Reset tag filter when changing category
-  };
-  
-  // Handle tag selection
-  const handleTagSelect = (tagId: number) => {
-    setSelectedTag(tagId === selectedTag ? null : tagId);
+  // Handle filter change (both categories and tags)
+  const handleFilterChange = (filter: string) => {
+    setSelectedFilter(filter);
   };
 
   // Load more articles
@@ -97,20 +89,18 @@ function Home() {
             <h1 className="font-space text-2xl md:text-3xl font-bold">Proxima Report</h1>
             
             <Tabs 
-              value={selectedCategory} 
-              onValueChange={(value) => {
-                handleCategoryChange(value);
-                setSelectedTag(null); // Reset tag when changing category
-              }}
+              value={selectedFilter}
+              onValueChange={handleFilterChange}
               className="hidden md:block"
             >
               <TabsList className="bg-[#1E1E2D]">
                 <TabsTrigger value="all">All</TabsTrigger>
+                {/* Display categories */}
                 {siteSettings && siteSettings.homeCategories ? 
                   siteSettings.homeCategories.map((catSlug: string) => {
                     const category = categories?.find(c => c.slug === catSlug);
                     return category ? (
-                      <TabsTrigger key={category.id} value={category.slug}>
+                      <TabsTrigger key={category.id} value={`category-${category.slug}`}>
                         {category.name}
                       </TabsTrigger>
                     ) : null;
@@ -118,20 +108,15 @@ function Home() {
                 : null}
                 
                 {/* Add a divider between categories and tags */}
-                {tags && tags.length > 0 && (
+                {tags && tags.length > 0 && categories && categories.length > 0 && (
                   <div className="h-4 w-px bg-white/20 mx-2"></div>
                 )}
                 
-                {/* Display tags in the TabsList */}
+                {/* Display tags in the same TabsList */}
                 {tags && tags.length > 0 && tags.map((tag) => (
                   <TabsTrigger
                     key={`tag-${tag.id}`}
                     value={`tag-${tag.id}`}
-                    onClick={(e) => {
-                      e.preventDefault(); // Prevent default behavior
-                      handleTagSelect(tag.id);
-                    }}
-                    className={selectedTag === tag.id ? "bg-purple-600 hover:bg-purple-700" : ""}
                   >
                     #{tag.name}
                   </TabsTrigger>
@@ -142,59 +127,34 @@ function Home() {
             <div className="block md:hidden">
               <div className="flex flex-wrap gap-2">
                 <select 
-                  value={selectedCategory} 
-                  onChange={(e) => {
-                    handleCategoryChange(e.target.value);
-                    setSelectedTag(null); // Reset tag when changing category
-                  }}
+                  value={selectedFilter}
+                  onChange={(e) => handleFilterChange(e.target.value)}
                   className="bg-[#1E1E2D] text-white border border-white/10 rounded-md p-1"
                 >
                   <option value="all">All</option>
+                  {/* Categories */}
                   {siteSettings && siteSettings.homeCategories ? 
                     siteSettings.homeCategories.map((catSlug: string) => {
                       const category = categories?.find(c => c.slug === catSlug);
                       return category ? (
-                        <option key={category.id} value={category.slug}>
+                        <option key={category.id} value={`category-${category.slug}`}>
                           {category.name}
                         </option>
                       ) : null;
                     })
                   : null}
+                  
+                  {/* Add tags to the same dropdown */}
+                  {tags && tags.length > 0 && (
+                    <optgroup label="Tags">
+                      {tags.map((tag) => (
+                        <option key={`tag-${tag.id}`} value={`tag-${tag.id}`}>
+                          #{tag.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
-                
-                {/* Mobile tag filter buttons */}
-                {tags && tags.length > 0 && tags.slice(0, 2).map((tag) => (
-                  <Button
-                    key={`mobile-tag-${tag.id}`}
-                    variant={selectedTag === tag.id ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleTagSelect(tag.id)}
-                    className={`text-xs ${selectedTag === tag.id ? "bg-purple-600 hover:bg-purple-700" : ""}`}
-                  >
-                    #{tag.name}
-                  </Button>
-                ))}
-                
-                {/* More tags dropdown if there are more than 2 tags */}
-                {tags && tags.length > 2 && (
-                  <select
-                    value=""
-                    onChange={(e) => {
-                      const tagId = parseInt(e.target.value);
-                      if (!isNaN(tagId)) {
-                        handleTagSelect(tagId);
-                      }
-                    }}
-                    className="bg-[#1E1E2D] text-white border border-white/10 rounded-md p-1 text-xs"
-                  >
-                    <option value="">More tags...</option>
-                    {tags.slice(2).map((tag) => (
-                      <option key={`more-tag-${tag.id}`} value={tag.id}>
-                        #{tag.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
               </div>
             </div>
           </div>
