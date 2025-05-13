@@ -1,0 +1,133 @@
+Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+Subscribe.tsx:32  No Stripe public key found. Using dummy implementation for development.
+(anonymous) @ Subscribe.tsx:32
+App.tsx:153 Maintenance check: {isMaintenanceMode: false, isAdmin: false, maintenanceEnabled: undefined}
+App.tsx:168 MainApp render check: {path: '/profile/sam', isMaintenanceMode: false, isAdmin: false, isAdminPage: false, isAuthPage: false, …}
+queryClient.ts:30 API Request: GET /api/emergency-banner undefined
+UserProfile.tsx:65 Fetching profile for: sam
+queryClient.ts:30 API Request: GET /api/me undefined
+queryClient.ts:33 
+            
+            
+            GET https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/me 401 (Unauthorized)
+apiRequest @ queryClient.ts:33
+queryFn @ AuthContext.tsx:48
+fetchFn @ query.ts:429
+run @ retryer.ts:153
+start @ retryer.ts:218
+fetch @ query.ts:540
+executeFetch_fn @ queryObserver.ts:346
+onSubscribe @ queryObserver.ts:108
+subscribe @ subscribable.ts:11
+(anonymous) @ useBaseQuery.ts:92
+subscribeToStore @ react-dom.development.js:16139
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+queryClient.ts:40 API Response status: 401 Response {type: 'basic', url: 'https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22xm5ooqafp2i.janeway.replit.dev/api/me', redirected: false, status: 401, ok: false, …}
+UserProfile.tsx:124  Profile fetch error: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+fetchUser @ UserProfile.tsx:124
+await in fetchUser
+(anonymous) @ UserProfile.tsx:135
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+App.tsx:153 Maintenance check: {isMaintenanceMode: false, isAdmin: false, maintenanceEnabled: undefined}
+App.tsx:168 MainApp render check: {path: '/profile/sam', isMaintenanceMode: false, isAdmin: false, isAdminPage: false, isAuthPage: false, …}
+queryClient.ts:47  API Error Response: {message: 'Not authenticated'}
+apiRequest @ queryClient.ts:47
+await in apiRequest
+queryFn @ AuthContext.tsx:48
+fetchFn @ query.ts:429
+run @ retryer.ts:153
+start @ retryer.ts:218
+fetch @ query.ts:540
+executeFetch_fn @ queryObserver.ts:346
+onSubscribe @ queryObserver.ts:108
+subscribe @ subscribable.ts:11
+(anonymous) @ useBaseQuery.ts:92
+subscribeToStore @ react-dom.development.js:16139
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+queryClient.ts:56  API Request Failed: Error: 401: Not authenticated
+    at throwIfResNotOk (queryClient.ts:21:11)
+    at async apiRequest (queryClient.ts:53:5)
+apiRequest @ queryClient.ts:56
+await in apiRequest
+queryFn @ AuthContext.tsx:48
+fetchFn @ query.ts:429
+run @ retryer.ts:153
+start @ retryer.ts:218
+fetch @ query.ts:540
+executeFetch_fn @ queryObserver.ts:346
+onSubscribe @ queryObserver.ts:108
+subscribe @ subscribable.ts:11
+(anonymous) @ useBaseQuery.ts:92
+subscribeToStore @ react-dom.development.js:16139
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+performSyncWorkOnRoot @ react-dom.development.js:26115
+flushSyncCallbacks @ react-dom.development.js:12042
+commitRootImpl @ react-dom.development.js:26998
+commitRoot @ react-dom.development.js:26721
+finishConcurrentRender @ react-dom.development.js:26020
+performConcurrentWorkOnRoot @ react-dom.development.js:25848
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+queryClient.ts:40 API Response status: 200 Response {type: 'basic', url: 'https://96ed4ca8-a9ba-4236-98bd-56a0016dd8a1-00-22…5ooqafp2i.janeway.replit.dev/api/emergency-banner', redirected: false, status: 200, ok: true, …}
+App.tsx:153 Maintenance check: {isMaintenanceMode: false, isAdmin: false, maintenanceEnabled: undefined}
+App.tsx:168 MainApp render check: {path: '/profile/sam', isMaintenanceMode: false, isAdmin: false, isAdminPage: false, isAuthPage: false, …}
+App.tsx:153 Maintenance check: {isMaintenanceMode: false, isAdmin: false, maintenanceEnabled: false}
+App.tsx:168 MainApp render check: {path: '/profile/sam', isMaintenanceMode: false, isAdmin: false, isAdminPage: false, isAuthPage: false, …}
+
+                
+          
+          
+          
+         Microsoft Edge is moving towards a new experience that allows users to choose to browse without third-party cookies.

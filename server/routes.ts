@@ -1093,6 +1093,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error fetching user" });
     }
   });
+  
+  // Get user profile by username
+  app.get("/api/users/profile/:username", async (req: Request, res: Response) => {
+    try {
+      const { username } = req.params;
+      
+      if (!username) {
+        return res.status(400).json({ message: "Username is required" });
+      }
+      
+      const user = await storage.getUserByUsername(username.toLowerCase());
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Return safe user profile data (omit sensitive data)
+      const userProfile = {
+        id: user.id,
+        username: user.username,
+        bio: user.bio,
+        profilePicture: user.profilePicture,
+        themePreference: user.themePreference,
+        profileCustomization: user.profileCustomization,
+        membershipTier: user.membershipTier,
+        createdAt: user.createdAt,
+        isAdmin: user.role === 'admin',
+        isEditor: user.role === 'editor',
+        isAuthor: user.role === 'author'
+      };
+      
+      res.json(userProfile);
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      res.status(500).json({ message: "Error fetching user profile" });
+    }
+  });
 
   // Update user
   app.patch("/api/users/:id", requireAuth, async (req: Request, res: Response) => {
@@ -2121,13 +2158,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create media item in database
       const mediaData = {
-        filename: fileName,
-        originalFilename: originalname,
-        mimetype,
-        type,
-        size,
-        url,
-        userId: req.session.userId
+        userId: req.session.userId || 0,
+        fileName: fileName,
+        fileUrl: url,
+        fileSize: size,
+        fileType: type as "image" | "video" | "document" | "audio",
+        mimeType: mimetype,
+        description: originalname,
+        altText: originalname,
+        isPublic: true
       };
       
       // Validate media data
