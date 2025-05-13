@@ -194,7 +194,26 @@ function AdminArticleEditor() {
       }
       
       console.log('Loaded editor state from localStorage');
+      
+      // Update last saved time
       setLastSaved(state.lastSaved ? new Date(state.lastSaved) : new Date());
+      
+      // Show toast notification about restored content
+      if (state.lastSaved) {
+        try {
+          const savedDate = new Date(state.lastSaved);
+          const timeAgo = formatDistanceToNow(savedDate, { addSuffix: true });
+          
+          toast({
+            title: "Restored saved content",
+            description: `Loaded content saved ${timeAgo}`,
+            variant: "default"
+          });
+        } catch (e) {
+          console.error('Error parsing saved date:', e);
+        }
+      }
+      
       return true;
     } catch (error) {
       console.error('Error loading editor state from localStorage:', error);
