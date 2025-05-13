@@ -33,6 +33,31 @@ interface EmergencyBanner {
   createdBy: number;
 }
 
+// Helper functions
+const getBannerIcon = (level?: string) => {
+  switch (level) {
+    case 'warning':
+      return <AlertTriangleIcon className="h-5 w-5 text-amber-500" />;
+    case 'critical':
+      return <AlertOctagonIcon className="h-5 w-5 text-red-500" />;
+    case 'info':
+    default:
+      return <InfoIcon className="h-5 w-5 text-blue-500" />;
+  }
+};
+
+const getBannerBackground = (level?: string) => {
+  switch (level) {
+    case 'warning':
+      return 'bg-amber-500/10 border-amber-500/50';
+    case 'critical':
+      return 'bg-red-500/10 border-red-500/50';
+    case 'info':
+    default:
+      return 'bg-blue-500/10 border-blue-500/50';
+  }
+};
+
 function EmergencyBannerTab() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -47,7 +72,7 @@ function EmergencyBannerTab() {
   const [showPreview, setShowPreview] = useState(false);
   
   // Query for active banners
-  const { data: activeBanner, isLoading: isLoadingBanner } = useQuery({
+  const { data: bannerData, isLoading: isLoadingBanner } = useQuery({
     queryKey: ['/api/emergency-banner'],
     queryFn: async () => {
       try {
@@ -60,10 +85,17 @@ function EmergencyBannerTab() {
     }
   });
   
+  // Only consider a banner active if it exists and is enabled
+  const activeBanner = bannerData && bannerData.enabled === true ? bannerData : null;
+  
   // Create banner mutation
   const createBannerMutation = useMutation({
-    mutationFn: async (data: { message: string; type: string; expiresAt?: string }) => {
-      const response = await apiRequest('POST', '/api/emergency-banner', data);
+    mutationFn: async (data: { message: string; level: string; expiresAt?: string }) => {
+      const response = await apiRequest('PATCH', '/api/emergency-banner', {
+        enabled: true,
+        message: data.message,
+        level: data.level
+      });
       return response.json();
     },
     onSuccess: () => {
@@ -196,30 +228,22 @@ function EmergencyBannerTab() {
                 <div className="animate-spin h-6 w-6 border-2 border-current border-t-transparent rounded-full"></div>
               </div>
             ) : activeBanner ? (
-              <div className={`p-4 rounded-md border ${getBannerBackground(activeBanner.type)}`}>
+              <div className={`p-4 rounded-md border ${getBannerBackground(activeBanner.level)}`}>
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-3">
                     <div className="pt-0.5">
-                      {getBannerIcon(activeBanner.type)}
+                      {getBannerIcon(activeBanner.level)}
                     </div>
                     <div>
                       <p className="font-medium">{activeBanner.message}</p>
                       <div className="mt-2 text-sm text-gray-400 flex flex-wrap gap-2">
-                        <Badge variant="outline">
-                          Created: {activeBanner.createdAt ? format(new Date(activeBanner.createdAt), 'MMM d, yyyy') : 'Unknown'}
-                        </Badge>
-                        {activeBanner.expiresAt && (
-                          <Badge variant="outline">
-                            Expires: {activeBanner.expiresAt ? format(new Date(activeBanner.expiresAt), 'MMM d, yyyy') : 'Unknown'}
-                          </Badge>
-                        )}
                         <Badge variant={
-                          activeBanner?.type === "info" ? "default" : 
-                          activeBanner?.type === "warning" ? "secondary" : 
-                          activeBanner?.type === "critical" ? "destructive" : 
+                          activeBanner?.level === "info" ? "default" : 
+                          activeBanner?.level === "warning" ? "secondary" : 
+                          activeBanner?.level === "critical" ? "destructive" : 
                           "outline"
                         }>
-                          {activeBanner?.type ? (activeBanner.type.charAt(0).toUpperCase() + activeBanner.type.slice(1)) : "Info"}
+                          {activeBanner?.level ? (activeBanner.level.charAt(0).toUpperCase() + activeBanner.level.slice(1)) : "Info"}
                         </Badge>
                       </div>
                     </div>
