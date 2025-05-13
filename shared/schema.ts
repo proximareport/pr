@@ -208,6 +208,10 @@ export const siteSettings = pgTable("site_settings", {
   maintenanceMessage: text("maintenance_message").default("We're currently performing scheduled maintenance on our systems to enhance your experience."),
   maintenanceDetails: text("maintenance_details").default("Our team is working to complete the scheduled maintenance as quickly as possible. The site will be back online shortly with all services fully operational."),
   maintenanceEndTime: timestamp("maintenance_end_time"),
+  // Emergency banner fields
+  emergencyBannerEnabled: boolean("emergency_banner_enabled").default(false).notNull(),
+  emergencyBannerMessage: text("emergency_banner_message").default(""),
+  emergencyBannerLevel: text("emergency_banner_level").default("info"),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   updatedBy: integer("updated_by").references(() => users.id),
 });
