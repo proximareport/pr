@@ -717,6 +717,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const page = req.query.page ? parseInt(req.query.page as string) : 1;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
       const showDrafts = req.query.showDrafts === 'true';
+      const category = req.query.category as string;
+      const tagId = req.query.tagId ? parseInt(req.query.tagId as string) : undefined;
       
       let userId: number | undefined;
       let isAdmin = false;
@@ -732,8 +734,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // This is the main logic - users can only see their drafts or published content
       // Admin users can see all content if showDrafts is true
-      // Note: getArticles only supports pagination parameters
-      const articles = await storage.getArticles(limit, (page - 1) * limit);
+      // Add support for filtering by category and/or tag
+      let articles: any[];
+      
+      if (tagId) {
+        // If filtering by tag, call the appropriate method
+        articles = await storage.getArticlesByTag(tagId, limit, (page - 1) * limit);
+      } else if (category && category !== 'all') {
+        // If filtering by category, call the category filter method
+        articles = await storage.getArticlesByCategory(category);
+      } else {
+        // Otherwise get all articles with pagination
+        articles = await storage.getArticles(limit, (page - 1) * limit);
+      }
       
       res.json(articles);
     } catch (error) {

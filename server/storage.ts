@@ -70,6 +70,7 @@ export interface IStorage {
   deleteArticle(id: number): Promise<boolean>;
   getArticlesByAuthor(authorId: number): Promise<Article[]>;
   getArticlesByCategory(category: string): Promise<Article[]>;
+  getArticlesByTag(tagId: number, limit?: number, offset?: number): Promise<Article[]>;
   getFeaturedArticles(limit?: number): Promise<Article[]>;
   searchArticles(query: string): Promise<Article[]>;
   getArticlesByStatus(status: string): Promise<Article[]>;
@@ -802,6 +803,32 @@ export class DatabaseStorage implements IStorage {
         not(isNull(articles.publishedAt))
       ))
       .orderBy(desc(articles.publishedAt));
+  }
+
+  async getArticlesByTag(tagId: number, limit = 10, offset = 0): Promise<Article[]> {
+    try {
+      console.log(`Filtering articles by tag ID: ${tagId}`);
+      
+      // Get all published articles and then filter by tag ID
+      // We need to use raw SQL here because the tags column is an array type
+      // and we need to check if the tag ID is in the array
+      const query = `
+        SELECT * FROM articles
+        WHERE published_at IS NOT NULL
+        AND $1::integer = ANY(tags)
+        ORDER BY published_at DESC
+        LIMIT $2 OFFSET $3
+      `;
+      
+      const result = await pool.query(query, [tagId, limit, offset]);
+      
+      console.log(`Found ${result.rows.length} articles with tag ID ${tagId}`);
+      
+      return result.rows as Article[];
+    } catch (error) {
+      console.error("Error in getArticlesByTag:", error);
+      return [];
+    }
   }
 
   async getFeaturedArticles(limit = 5): Promise<Article[]> {

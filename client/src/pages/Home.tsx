@@ -23,12 +23,25 @@ interface Article {
   };
 }
 
+interface SiteSettings {
+  id: number;
+  siteName: string;
+  description?: string;
+  logo?: string;
+  favicon?: string;
+  homeCategories?: string[];
+  maintenanceMode?: boolean;
+  updatedBy?: number;
+  updatedAt?: string;
+}
+
 function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedTag, setSelectedTag] = useState<number | null>(null);
   
   // Get site settings to fetch homepage categories
-  const { data: siteSettings } = useQuery({
+  const { data: siteSettings } = useQuery<SiteSettings>({
     queryKey: ["/api/site-settings"],
   });
   
@@ -37,20 +50,36 @@ function Home() {
     queryKey: ["/api/categories"],
   });
   
-  // Get articles with pagination
+  // Get all tags for filtering
+  const { data: tags } = useQuery<any[]>({
+    queryKey: ["/api/tags"],
+  });
+  
+  // Get articles with pagination and filtering
   const { data: articles, isLoading, refetch } = useQuery<Article[]>({
-    queryKey: ["/api/articles", { limit: 12, offset: (currentPage - 1) * 12, category: selectedCategory }],
+    queryKey: ["/api/articles", { 
+      limit: 12, 
+      offset: (currentPage - 1) * 12, 
+      category: selectedCategory,
+      tagId: selectedTag 
+    }],
   });
 
-  // Refetch when category changes
+  // Refetch when filters change
   useEffect(() => {
     setCurrentPage(1);
     refetch();
-  }, [selectedCategory, refetch]);
+  }, [selectedCategory, selectedTag, refetch]);
 
   // Handle category change
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
+    setSelectedTag(null); // Reset tag filter when changing category
+  };
+  
+  // Handle tag selection
+  const handleTagSelect = (tagId: number) => {
+    setSelectedTag(tagId === selectedTag ? null : tagId);
   };
 
   // Load more articles
@@ -74,14 +103,16 @@ function Home() {
             >
               <TabsList className="bg-[#1E1E2D]">
                 <TabsTrigger value="all">All</TabsTrigger>
-                {siteSettings?.homeCategories?.map((catSlug: string) => {
-                  const category = categories?.find(c => c.slug === catSlug);
-                  return category ? (
-                    <TabsTrigger key={category.id} value={category.slug}>
-                      {category.name}
-                    </TabsTrigger>
-                  ) : null;
-                })}
+                {siteSettings && siteSettings.homeCategories ? 
+                  siteSettings.homeCategories.map((catSlug: string) => {
+                    const category = categories?.find(c => c.slug === catSlug);
+                    return category ? (
+                      <TabsTrigger key={category.id} value={category.slug}>
+                        {category.name}
+                      </TabsTrigger>
+                    ) : null;
+                  }) 
+                : null}
               </TabsList>
             </Tabs>
             
@@ -92,17 +123,39 @@ function Home() {
                 className="bg-[#1E1E2D] text-white border border-white/10 rounded-md p-1"
               >
                 <option value="all">All</option>
-                {siteSettings?.homeCategories?.map((catSlug: string) => {
-                  const category = categories?.find(c => c.slug === catSlug);
-                  return category ? (
-                    <option key={category.id} value={category.slug}>
-                      {category.name}
-                    </option>
-                  ) : null;
-                })}
+                {siteSettings && siteSettings.homeCategories ? 
+                  siteSettings.homeCategories.map((catSlug: string) => {
+                    const category = categories?.find(c => c.slug === catSlug);
+                    return category ? (
+                      <option key={category.id} value={category.slug}>
+                        {category.name}
+                      </option>
+                    ) : null;
+                  })
+                : null}
               </select>
             </div>
           </div>
+          
+          {/* Tag Filters */}
+          {tags && tags.length > 0 && (
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold mb-3">Filter by Tags</h3>
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag) => (
+                  <Button
+                    key={tag.id}
+                    variant={selectedTag === tag.id ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handleTagSelect(tag.id)}
+                    className={selectedTag === tag.id ? "bg-purple-600 hover:bg-purple-700" : ""}
+                  >
+                    {tag.name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
           
           {isLoading ? (
             <div className="text-center py-12">
