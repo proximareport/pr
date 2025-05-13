@@ -1283,12 +1283,11 @@ function AdminArticleEditor() {
               setCategory(value);
               scheduleAutosave();
             }}
-            options={[
-              { label: 'Space Exploration', value: 'space-exploration' },
-              { label: 'Astronomy', value: 'astronomy' },
-              { label: 'Space Technology', value: 'space-technology' },
-              { label: 'Astrophysics', value: 'astrophysics' },
-              { label: 'Space Agencies', value: 'space-agencies' },
+            options={categories?.map(cat => ({ 
+              label: cat.name, 
+              value: cat.slug 
+            })) || [
+              { label: 'Loading categories...', value: '' }
             ]}
             hint="Primary topic for this article"
           />
