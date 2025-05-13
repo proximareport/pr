@@ -1843,7 +1843,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid advertisement ID" });
       }
       
-      const ad = await storage.getAdvertisement(id);
+      const ad = await storage.getAdvertisementById(id);
       
       if (!ad) {
         return res.status(404).json({ message: "Advertisement not found" });
@@ -1910,7 +1910,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if ad exists
-      const ad = await storage.getAdvertisement(id);
+      const ad = await storage.getAdvertisementById(id);
       
       if (!ad) {
         return res.status(404).json({ message: "Advertisement not found" });
@@ -1952,7 +1952,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if ad exists
-      const ad = await storage.getAdvertisement(id);
+      const ad = await storage.getAdvertisementById(id);
       
       if (!ad) {
         return res.status(404).json({ message: "Advertisement not found" });
