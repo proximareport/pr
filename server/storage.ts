@@ -794,7 +794,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getArticlesByCategory(category: string): Promise<Article[]> {
+  async getArticlesByCategory(category: string, limit: number = 10, offset: number = 0): Promise<Article[]> {
     return await db
       .select()
       .from(articles)
@@ -802,7 +802,9 @@ export class DatabaseStorage implements IStorage {
         eq(articles.category, category),
         not(isNull(articles.publishedAt))
       ))
-      .orderBy(desc(articles.publishedAt));
+      .orderBy(desc(articles.publishedAt))
+      .limit(limit)
+      .offset(offset);
   }
 
   async getArticlesByTag(tagId: number, limit = 10, offset = 0): Promise<Article[]> {
