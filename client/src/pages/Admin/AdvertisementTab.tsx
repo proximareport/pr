@@ -373,6 +373,17 @@ function AdvertisementTab() {
   };
   
   const handleCreateTestAd = () => {
+    // Basic validation
+    if (!testAdForm.title || !testAdForm.linkUrl || !testAdForm.imageUrl || 
+        !testAdForm.placement || !testAdForm.startDate || !testAdForm.endDate) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     createTestAdMutation.mutate(testAdForm);
   };
   
@@ -563,7 +574,8 @@ function AdvertisementTab() {
                         name="imageUrl" 
                         placeholder="https://example.com/image.png" 
                         value={testAdForm.imageUrl} 
-                        onChange={handleTestAdInputChange} 
+                        onChange={handleTestAdInputChange}
+                        required
                       />
                     </div>
                     
@@ -606,7 +618,8 @@ function AdvertisementTab() {
                           name="endDate" 
                           type="date" 
                           value={testAdForm.endDate} 
-                          onChange={handleTestAdInputChange} 
+                          onChange={handleTestAdInputChange}
+                          required
                         />
                       </div>
                     </div>
