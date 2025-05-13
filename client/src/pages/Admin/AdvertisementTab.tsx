@@ -406,8 +406,20 @@ function AdvertisementTab() {
         </TableHeader>
         <TableBody>
           {ads.map((ad) => (
-            <TableRow key={ad.id}>
-              <TableCell className="font-medium">{ad.title}</TableCell>
+            <TableRow 
+              key={ad.id} 
+              className={ad.isTest ? 'bg-purple-50 dark:bg-purple-900/10' : ''}
+            >
+              <TableCell className="font-medium">
+                <div className="flex items-center gap-2">
+                  {ad.title}
+                  {ad.isTest && (
+                    <span className="inline-flex items-center rounded-full bg-purple-100 px-2 py-1 text-xs font-medium text-purple-800">
+                      TEST
+                    </span>
+                  )}
+                </div>
+              </TableCell>
               <TableCell>{getPlacementLabel(ad.placement)}</TableCell>
               <TableCell>
                 {ad.user?.username || 'Unknown'} 
@@ -424,11 +436,16 @@ function AdvertisementTab() {
               </TableCell>
               <TableCell>
                 <div className="flex flex-col gap-1">
-                  <div className="flex items-center">
+                  <div className="flex items-center gap-1 flex-wrap">
                     {ad.isApproved ? (
                       <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">Approved</Badge>
                     ) : (
                       <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">Pending</Badge>
+                    )}
+                    
+                    {/* Add badge for test advertisements */}
+                    {ad.isTest && (
+                      <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200">Test</Badge>
                     )}
                     
                     {ad.adminNotes && (
