@@ -125,6 +125,12 @@ function AdminArticleEditor() {
     return id ? `article-editor-state-${id}` : 'article-editor-state-new';
   }, [id]);
   
+  // Clear editor state from localStorage
+  const clearEditorState = useCallback(() => {
+    localStorage.removeItem(getEditorStateKey());
+    console.log('Cleared editor state from localStorage');
+  }, [getEditorStateKey]);
+  
   // Save editor state to localStorage
   const saveEditorState = useCallback(() => {
     if (!title.trim()) return; // Don't save if title is empty
@@ -303,6 +309,12 @@ function AdminArticleEditor() {
         setArticleId(data.id);
         window.history.replaceState(null, '', `/admin/articles/${data.id}/edit`);
       }
+      
+      // If the article was published (not just saved as draft), clear the saved editor state
+      // This ensures we don't restore from localStorage after a successful publish
+      if (data.status === 'published') {
+        clearEditorState();
+      }
     },
     onError: (error: any) => {
       console.error('Article save error:', error);
@@ -379,6 +391,9 @@ function AdminArticleEditor() {
       const savedArticleData = prepareArticleData(false);
       lastSavedContentRef.current = JSON.stringify(savedArticleData);
       console.log('Content saved, updated lastSavedContentRef');
+      
+      // Save to localStorage for persistence between refreshes
+      saveEditorState();
       
       // Reset the modified flag since content was just saved successfully
       contentModifiedSinceLastSave.current = false;
@@ -803,6 +818,8 @@ function AdminArticleEditor() {
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (title) {
+        // Save to localStorage before unloading
+        saveEditorState();
         doAutosave();
       }
     };
@@ -810,8 +827,13 @@ function AdminArticleEditor() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      
+      // Also save state on component unmount
+      if (title) {
+        saveEditorState();
+      }
     };
-  }, [title, doAutosave]);
+  }, [title, doAutosave, saveEditorState]);
   
   // Function to save the article without changing publish status
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
