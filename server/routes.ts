@@ -750,13 +750,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             LIMIT $2 OFFSET $3
           `;
           
+          console.log(`Executing SQL: ${query} with params [${tagId}, ${limit}, ${(page - 1) * limit}]`);
+          
           const result = await pool.query(query, [tagId, limit, (page - 1) * limit]);
           
           console.log(`Server - Found ${result.rows.length} articles with tag ID ${tagId}`);
+          if (result.rows.length > 0) {
+            console.log(`Sample article: ${JSON.stringify(result.rows[0].title)}`);
+            console.log(`Sample article tags: ${JSON.stringify(result.rows[0].tags)}`);
+          }
           
           articles = result.rows;
         } catch (error) {
           console.error("Error filtering by tag:", error);
+          console.error(error);
           articles = await storage.getArticles(limit, (page - 1) * limit);
         }
       } else if (category && category !== 'all') {
