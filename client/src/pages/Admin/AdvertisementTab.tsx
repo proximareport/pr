@@ -199,12 +199,18 @@ function AdvertisementTab() {
   // Test Ad creation mutation
   const createTestAdMutation = useMutation({
     mutationFn: async (adData: any) => {
-      // Add admin notes to indicate this is a test advertisement
-      const adDataWithNotes = {
+      // Prepare the data for the API request with proper formatting
+      const formattedData = {
         ...adData,
+        // Ensure dates are properly formatted
+        startDate: adData.startDate instanceof Date ? adData.startDate.toISOString() : adData.startDate,
+        endDate: adData.endDate instanceof Date ? adData.endDate.toISOString() : adData.endDate,
+        // Add admin notes to indicate this is a test advertisement
         adminNotes: 'Test advertisement created for internal testing'
       };
-      return await apiRequest('POST', '/api/admin/test-advertisement', adDataWithNotes);
+      
+      console.log('Sending formatted data to API:', formattedData);
+      return await apiRequest('POST', '/api/admin/test-advertisement', formattedData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/advertisements'] });
@@ -387,7 +393,17 @@ function AdvertisementTab() {
       return;
     }
     
-    createTestAdMutation.mutate(testAdForm);
+    // Create the complete ad data, ensuring all required fields are present
+    const completeAdData = {
+      ...testAdForm,
+      startDate: new Date(testAdForm.startDate),
+      endDate: new Date(testAdForm.endDate),
+      // Explicitly add userId - this will be overwritten by the server but is required for schema validation
+      userId: 1 // Temporary value, will be replaced by server with actual session userId
+    };
+    
+    console.log('Submitting test ad data:', completeAdData);
+    createTestAdMutation.mutate(completeAdData);
   };
   
   const getPlacementLabel = (placement: string) => {

@@ -1936,11 +1936,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const adData = req.body;
       
+      // Debug: Log the data being submitted
+      console.log('Test advertisement submission data:', adData);
+      
       // Validate advertisement data
       try {
         insertAdvertisementSchema.parse(adData);
       } catch (validationError) {
         if (validationError instanceof ZodError) {
+          console.error('Test advertisement validation error details:', validationError.errors);
           return res.status(400).json({
             message: "Validation error",
             errors: validationError.errors
