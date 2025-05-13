@@ -1138,16 +1138,24 @@ export class DatabaseStorage implements IStorage {
         .orderBy(desc(advertisements.createdAt));
     }
     
+    // Post-process results to ensure all flags are properly set
+    results = results.map(ad => ({
+      ...ad,
+      // Ensure the isTest flag is properly set - check both flag and adminNotes
+      isTest: ad.isTest === true || (ad.adminNotes && ad.adminNotes.toLowerCase().includes('test')),
+    }));
+    
     console.log(`Found ${results.length} advertisements` + (includeNotApproved ? ' (including unapproved)' : ' (approved only)'));
     
     // Log a more detailed breakdown
     if (results.length > 0) {
-      console.log(`Ad distribution: approved=${results.filter(ad => ad.isApproved).length}, unapproved=${results.filter(ad => !ad.isApproved).length}`);
+      const testAdsCount = results.filter(ad => ad.isTest).length;
+      console.log(`Ad distribution: approved=${results.filter(ad => ad.isApproved).length}, unapproved=${results.filter(ad => !ad.isApproved).length}, test=${testAdsCount}`);
       
       if (results.length <= 5) {
         // Log each ad for debugging when there aren't too many
         results.forEach(ad => {
-          console.log(`Ad ID ${ad.id}: "${ad.title}" - isApproved=${ad.isApproved}, placement=${ad.placement}`);
+          console.log(`Ad ID ${ad.id}: "${ad.title}" - isApproved=${ad.isApproved}, placement=${ad.placement}, isTest=${ad.isTest}`);
         });
       }
     }

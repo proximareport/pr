@@ -108,8 +108,10 @@ function AdvertisementTab() {
       // Log specific details about advertisements
       const pendingCount = advertisements.filter(ad => !ad.isApproved || ad.status === 'pending').length;
       const approvedCount = advertisements.filter(ad => ad.isApproved).length;
+      const testAdsCount = advertisements.filter(ad => ad.isTest === true || 
+                                                  (ad.adminNotes && ad.adminNotes.toLowerCase().includes('test'))).length;
       
-      console.log(`Advertisement counts - Total: ${advertisements.length}, Pending: ${pendingCount}, Approved: ${approvedCount}`);
+      console.log(`Advertisement counts - Total: ${advertisements.length}, Pending: ${pendingCount}, Approved: ${approvedCount}, Test: ${testAdsCount}`);
       
       // Log the first advertisement as an example
       if (advertisements[0]) {
@@ -117,7 +119,8 @@ function AdvertisementTab() {
           id: advertisements[0].id,
           title: advertisements[0].title,
           status: advertisements[0].status,
-          isApproved: advertisements[0].isApproved
+          isApproved: advertisements[0].isApproved,
+          isTest: advertisements[0].isTest
         });
       }
     } else {

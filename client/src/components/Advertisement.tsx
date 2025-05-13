@@ -17,6 +17,8 @@ interface AdData {
   userId: number;
   createdAt: string;
   updatedAt: string;
+  isTest?: boolean;
+  adminNotes?: string;
 }
 
 interface AdvertisementProps {
@@ -33,12 +35,27 @@ const Advertisement: React.FC<AdvertisementProps> = ({ placement, className = ''
   // State to track the selected ad
   const [selectedAd, setSelectedAd] = useState<AdData | null>(null);
   
-  // When ads are loaded, select one randomly
+  // When ads are loaded, select one randomly - filtering out test ads
   useEffect(() => {
     if (ads && ads.length > 0) {
-      // Randomly select an ad from the available ones
-      const randomIndex = Math.floor(Math.random() * ads.length);
-      setSelectedAd(ads[randomIndex]);
+      // Filter out test advertisements for regular users
+      const eligibleAds = ads.filter(ad => {
+        // Make sure we don't display test ads to regular users
+        const isTestAd = ad.isTest === true || 
+                         (ad.adminNotes && ad.adminNotes.toLowerCase().includes('test'));
+        
+        // Only show ads that are not test ads
+        return !isTestAd;
+      });
+      
+      // If we have eligible ads, select one randomly
+      if (eligibleAds.length > 0) {
+        const randomIndex = Math.floor(Math.random() * eligibleAds.length);
+        setSelectedAd(eligibleAds[randomIndex]);
+      } else {
+        // No eligible ads available
+        setSelectedAd(null);
+      }
     } else {
       setSelectedAd(null);
     }
