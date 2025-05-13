@@ -8,6 +8,7 @@ import {
   emergencyBanners, 
   votes,
   categories,
+  tags,
   apiKeys,
   articleAuthors,
   mediaLibrary,
@@ -1402,6 +1403,115 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(categories)
       .where(eq(categories.id, id));
+    
+    return result.rowCount > 0;
+  }
+
+  // Tag operations
+  async getTags(): Promise<{ id: number; name: string; slug: string; description?: string }[]> {
+    const tagsList = await db
+      .select({
+        id: tags.id,
+        name: tags.name,
+        slug: tags.slug,
+        description: tags.description,
+      })
+      .from(tags)
+      .orderBy(asc(tags.name));
+    
+    return tagsList;
+  }
+
+  async getTag(id: number): Promise<{ id: number; name: string; slug: string; description?: string } | undefined> {
+    const [tag] = await db
+      .select({
+        id: tags.id,
+        name: tags.name,
+        slug: tags.slug,
+        description: tags.description,
+      })
+      .from(tags)
+      .where(eq(tags.id, id));
+    
+    return tag;
+  }
+
+  async getTagByName(name: string): Promise<{ id: number; name: string; slug: string; description?: string } | undefined> {
+    const [tag] = await db
+      .select({
+        id: tags.id,
+        name: tags.name,
+        slug: tags.slug,
+        description: tags.description,
+      })
+      .from(tags)
+      .where(eq(tags.name, name));
+    
+    return tag;
+  }
+
+  async getTagBySlug(slug: string): Promise<{ id: number; name: string; slug: string; description?: string } | undefined> {
+    const [tag] = await db
+      .select({
+        id: tags.id,
+        name: tags.name,
+        slug: tags.slug,
+        description: tags.description,
+      })
+      .from(tags)
+      .where(eq(tags.slug, slug));
+    
+    return tag;
+  }
+
+  async createTag(data: { name: string; slug: string; description?: string }): Promise<{ id: number; name: string; slug: string; description?: string }> {
+    // Generate slug if not provided
+    const slug = data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    
+    const [newTag] = await db
+      .insert(tags)
+      .values({
+        name: data.name,
+        slug: slug,
+        description: data.description,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning({
+        id: tags.id,
+        name: tags.name,
+        slug: tags.slug,
+        description: tags.description,
+      });
+    
+    return newTag;
+  }
+
+  async updateTag(id: number, data: Partial<{ name: string; slug: string; description?: string }>): Promise<{ id: number; name: string; slug: string; description?: string } | undefined> {
+    // Update the updatedAt timestamp
+    const updateData = {
+      ...data,
+      updatedAt: new Date(),
+    };
+    
+    const [updatedTag] = await db
+      .update(tags)
+      .set(updateData)
+      .where(eq(tags.id, id))
+      .returning({
+        id: tags.id,
+        name: tags.name,
+        slug: tags.slug,
+        description: tags.description,
+      });
+    
+    return updatedTag;
+  }
+
+  async deleteTag(id: number): Promise<boolean> {
+    const result = await db
+      .delete(tags)
+      .where(eq(tags.id, id));
     
     return result.rowCount > 0;
   }
