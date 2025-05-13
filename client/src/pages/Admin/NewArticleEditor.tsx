@@ -968,6 +968,45 @@ function AdminArticleEditor() {
       addTag(tagInput);
     }
   };
+  
+  // Function to discard the current draft and start fresh
+  const handleDiscard = () => {
+    if (window.confirm('Are you sure you want to discard this draft? All unsaved changes will be lost.')) {
+      // Clear localStorage for this article before navigating
+      clearEditorState();
+      
+      // Reset all form fields to default values
+      setTitle('');
+      setSlug('');
+      setSummary('');
+      setContent('');
+      setCategory('space-exploration');
+      setTags([]);
+      setFeaturedImage('');
+      setReadTime(5);
+      setIsDraft(true);
+      setIsBreaking(false);
+      setIsFeatured(false);
+      setIsCollaborative(false);
+      setCoauthors([]);
+      
+      // If we're editing an existing article, navigate back to articles list
+      // If we're creating a new article, just reset the form
+      if (isEditing && articleId) {
+        navigate('/admin/articles');
+      } else {
+        // For new articles, just clear the URL parameters
+        window.history.replaceState(null, '', '/admin/articles/new');
+        setArticleId(null);
+      }
+      
+      // Show confirmation toast
+      toast({
+        title: "Draft discarded",
+        description: "You've discarded your changes",
+      });
+    }
+  };
 
   // Handle image upload
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1119,16 +1158,28 @@ function AdminArticleEditor() {
         }
         footer={
           <div className="flex flex-col gap-3 w-full">
-            {/* Save button */}
-            <Button 
-              type="submit" 
-              onClick={() => document.querySelector('form')?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }))}
-              className="w-full"
-              disabled={isSubmitting}
-            >
-              <SaveIcon className="h-4 w-4 mr-2" />
-              {isSubmitting ? 'Saving...' : 'Save Changes'}
-            </Button>
+            {/* Save/Discard buttons */}
+            <div className="flex gap-2">
+              <Button 
+                type="button"
+                variant="outline"
+                onClick={handleDiscard}
+                className="flex-1"
+                disabled={isSubmitting}
+              >
+                <XIcon className="h-4 w-4 mr-2" />
+                Discard
+              </Button>
+              <Button 
+                type="submit" 
+                onClick={() => document.querySelector('form')?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }))}
+                className="flex-1"
+                disabled={isSubmitting}
+              >
+                <SaveIcon className="h-4 w-4 mr-2" />
+                {isSubmitting ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
             
             {/* Publish/Unpublish button */}
             {isDraft ? (
