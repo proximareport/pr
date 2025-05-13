@@ -212,6 +212,7 @@ export const siteSettings = pgTable("site_settings", {
   emergencyBannerEnabled: boolean("emergency_banner_enabled").default(false).notNull(),
   emergencyBannerMessage: text("emergency_banner_message").default(""),
   emergencyBannerLevel: text("emergency_banner_level").default("info"),
+  homeCategories: text("home_categories").array().default(["space", "science", "technology", "astronomy"]).notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   updatedBy: integer("updated_by").references(() => users.id),
 });
