@@ -735,7 +735,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const user = userId ? await storage.getUser(userId) : null;
         
         // Only authors or admins can view drafts
-        if (!userId || (!user?.isAuthor(article) && user?.role !== 'admin')) {
+        if (!userId || (user?.role !== 'admin')) {
           return res.status(403).json({ message: "You don't have permission to view this draft article" });
         }
       }
@@ -768,7 +768,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const user = userId ? await storage.getUser(userId) : null;
         
         // Only authors or admins can view drafts
-        if (!userId || (!user?.isAuthor(article) && user?.role !== 'admin')) {
+        if (!userId || (user?.role !== 'admin')) {
           return res.status(403).json({ message: "You don't have permission to view this draft article" });
         }
       }
@@ -851,7 +851,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Only allow update if user is an author of the article, or an admin
-      const isAuthor = article.authorsIds ? article.authorsIds.includes(userId) : (article.primaryAuthorId === userId);
+      const isAuthor = (article.authorId === userId || article.primaryAuthorId === userId);
       
       if (!isAuthor && user.role !== 'admin' && user.role !== 'editor') {
         return res.status(403).json({ message: "You don't have permission to update this article" });

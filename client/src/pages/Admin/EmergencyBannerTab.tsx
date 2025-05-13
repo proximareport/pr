@@ -193,11 +193,11 @@ function EmergencyBannerTab() {
                       <p className="font-medium">{activeBanner.message}</p>
                       <div className="mt-2 text-sm text-gray-400 flex flex-wrap gap-2">
                         <Badge variant="outline">
-                          Created: {format(new Date(activeBanner.createdAt), 'MMM d, yyyy')}
+                          Created: {activeBanner.createdAt ? format(new Date(activeBanner.createdAt), 'MMM d, yyyy') : 'Unknown'}
                         </Badge>
                         {activeBanner.expiresAt && (
                           <Badge variant="outline">
-                            Expires: {format(new Date(activeBanner.expiresAt), 'MMM d, yyyy')}
+                            Expires: {activeBanner.expiresAt ? format(new Date(activeBanner.expiresAt), 'MMM d, yyyy') : 'Unknown'}
                           </Badge>
                         )}
                         <Badge variant={
