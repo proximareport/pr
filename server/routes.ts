@@ -742,6 +742,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const categorySlug = filter.replace('category-', '');
           console.log(`Server - Filtering articles by category: ${categorySlug}`);
           articles = await storage.getArticlesByCategory(categorySlug, limit, (page - 1) * limit);
+          console.log(`Successfully filtered articles for category '${categorySlug}': Found ${articles.length} articles`);
         } catch (error) {
           console.error("Error filtering by category:", error);
           articles = await storage.getArticles(limit, (page - 1) * limit);

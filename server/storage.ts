@@ -795,16 +795,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getArticlesByCategory(category: string, limit: number = 10, offset: number = 0): Promise<Article[]> {
-    return await db
-      .select()
-      .from(articles)
-      .where(and(
-        eq(articles.category, category),
-        not(isNull(articles.publishedAt))
-      ))
-      .orderBy(desc(articles.publishedAt))
-      .limit(limit)
-      .offset(offset);
+    try {
+      console.log(`Filtering articles with category: ${category}`);
+      return await db
+        .select()
+        .from(articles)
+        .where(and(
+          eq(articles.category, category),
+          not(isNull(articles.publishedAt))
+        ))
+        .orderBy(desc(articles.publishedAt))
+        .limit(limit)
+        .offset(offset);
+    } catch (error) {
+      console.error("Error in getArticlesByCategory:", error);
+      // Fallback to get all articles
+      return await this.getArticles(limit, offset);
+    }
   }
 
   async getArticlesByTag(tagId: number, limit = 10, offset = 0): Promise<Article[]> {
