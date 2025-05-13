@@ -1781,6 +1781,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error fetching advertisements for admin panel" });
     }
   });
+  
+  // Admin endpoint for creating test advertisements
+  app.post("/api/admin/test-advertisement", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      // Get the advertisement data
+      const adData = req.body;
+      
+      // Set user ID as the admin who's creating it
+      adData.userId = req.session.userId;
+      
+      // Set it as a test advertisement and make it pre-approved
+      adData.isTest = true;
+      adData.isApproved = true;
+      adData.status = 'approved';
+      adData.paymentStatus = 'paid';
+      
+      // Convert string dates to Date objects
+      if (adData.startDate && typeof adData.startDate === 'string') {
+        adData.startDate = new Date(adData.startDate);
+      }
+      
+      if (adData.endDate && typeof adData.endDate === 'string') {
+        adData.endDate = new Date(adData.endDate);
+      }
+      
+      // Create the test advertisement
+      const newAd = await storage.createAdvertisement(adData);
+      
+      console.log('Created test advertisement:', newAd);
+      
+      res.status(201).json(newAd);
+    } catch (error) {
+      console.error("Error creating test advertisement:", error);
+      res.status(500).json({ message: "Error creating test advertisement", error: String(error) });
+    }
+  });
 
   // Get ads for a specific placement (sidebar, banner, etc.)
   app.get("/api/advertisements/:placement", async (req: Request, res: Response) => {
