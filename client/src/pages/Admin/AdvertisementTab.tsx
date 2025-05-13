@@ -17,10 +17,16 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { formatDistance, addDays } from 'date-fns';
-import { AlertTriangle, CheckCircle, Eye, Trash2, XCircle, PlusCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Eye, Trash2, XCircle, PlusCircle, Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Advertisement {
   id: number;
@@ -381,11 +387,24 @@ function AdvertisementTab() {
               </TableCell>
               <TableCell>
                 <div className="flex flex-col gap-1">
-                  {ad.isApproved ? (
-                    <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">Approved</Badge>
-                  ) : (
-                    <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">Pending</Badge>
-                  )}
+                  <div className="flex items-center">
+                    {ad.isApproved ? (
+                      <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">Approved</Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">Pending</Badge>
+                    )}
+                    
+                    {ad.adminNotes && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="ml-2 h-4 w-4 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">{ad.adminNotes}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                  </div>
                   
                   {ad.isTest && (
                     <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">Test Advertisement</Badge>
