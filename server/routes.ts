@@ -2278,9 +2278,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Update site settings
-      const updatedSettings = await storage.updateSiteSettings(updates);
+      // Get current settings to get the ID
+      const currentSettings = await storage.getSiteSettings();
       
+      if (!currentSettings) {
+        return res.status(404).json({ message: "Site settings not found" });
+      }
+      
+      // Update site settings with the correct ID and admin user ID
+      const updatedSettings = await storage.updateSiteSettings(
+        currentSettings.id, 
+        updates, 
+        req.session.userId
+      );
+      
+      if (!updatedSettings) {
+        return res.status(500).json({ message: "Failed to update site settings" });
+      }
+      
+      console.log("Site settings updated successfully:", updatedSettings);
       res.json(updatedSettings);
     } catch (error) {
       console.error("Error updating site settings:", error);
