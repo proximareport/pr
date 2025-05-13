@@ -741,11 +741,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           console.log(`Server - Filtering articles by tag ID: ${tagId}`);
           
+          // Log all articles tags for debugging
+          const allArticles = await storage.getArticles(100, 0);
+          console.log("Current article tags in database:");
+          allArticles.forEach(article => {
+            console.log(`Article ID ${article.id}, Title: "${article.title}", Tags: ${JSON.stringify(article.tags || [])}`);
+          });
+          
           // Execute a raw SQL query since we're having TypeScript interface issues
           const query = `
             SELECT * FROM articles 
             WHERE published_at IS NOT NULL 
-            AND $1::integer = ANY(tags)
+            AND ($1::integer = ANY(tags) OR tags @> ARRAY[$1]::integer[])
             ORDER BY published_at DESC
             LIMIT $2 OFFSET $3
           `;
@@ -758,6 +765,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (result.rows.length > 0) {
             console.log(`Sample article: ${JSON.stringify(result.rows[0].title)}`);
             console.log(`Sample article tags: ${JSON.stringify(result.rows[0].tags)}`);
+          } else {
+            console.log("No articles found with this tag. Falling back to all articles.");
+            articles = await storage.getArticles(limit, (page - 1) * limit);
+            return res.json(articles);
           }
           
           articles = result.rows;
