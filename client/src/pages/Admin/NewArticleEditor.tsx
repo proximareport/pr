@@ -587,7 +587,7 @@ function AdminArticleEditor() {
       summary,
       content,
       category,
-      tags,
+      tags: tagIds, // Use tagIds instead of tags
       featuredImage,
       readTime: Number(readTime),
       status: effectiveStatus,
@@ -597,7 +597,7 @@ function AdminArticleEditor() {
       authors,
       primaryAuthorId: user?.id // Add primary author ID for database requirements
     };
-  }, [title, slug, summary, content, category, tags, featuredImage, readTime, isBreaking, isFeatured, isCollaborative, coauthors, user?.id, isDraft]);
+  }, [title, slug, summary, content, category, tagIds, featuredImage, readTime, isBreaking, isFeatured, isCollaborative, coauthors, user?.id, isDraft]);
 
   // Function to compare deeply two ArticleFormData objects with detailed change tracking
   const hasContentChanged = useCallback((current: ArticleFormData, previous: ArticleFormData | null): boolean => {
