@@ -43,8 +43,12 @@ export const articles = pgTable("articles", {
   isBreaking: boolean("is_breaking").default(false),
   readTime: integer("read_time").default(0),
   viewCount: integer("view_count").default(0),
+  // Legacy fields - kept for backward compatibility during migration
   tags: text("tags").array(),
   category: text("category").notNull(),
+  // New unified taxonomy system
+  taxonomyIds: integer("taxonomy_ids").array(),
+  primaryTaxonomyId: integer("primary_taxonomy_id").references(() => taxonomy.id),
   status: text("status").default("draft").notNull(), // "draft", "published", "needs_edits", "good_to_publish", "do_not_publish"
   lastEditedBy: integer("last_edited_by").references(() => users.id),
   lastEditedAt: timestamp("last_edited_at"),
@@ -67,7 +71,40 @@ export const articleAuthors = pgTable("article_authors", {
   };
 });
 
-// Categories
+// Article Taxonomy (many-to-many for articles and taxonomy items)
+export const articleTaxonomy = pgTable("article_taxonomy", {
+  id: serial("id").primaryKey(),
+  articleId: integer("article_id").notNull().references(() => articles.id, { onDelete: 'cascade' }),
+  taxonomyId: integer("taxonomy_id").notNull().references(() => taxonomy.id, { onDelete: 'cascade' }),
+  isPrimary: boolean("is_primary").default(false).notNull(), // if true, this is the primary category
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => {
+  return {
+    articleTaxonomyIdx: uniqueIndex("article_taxonomy_idx").on(table.articleId, table.taxonomyId),
+  };
+});
+
+// Taxonomy (Unified tags and categories system)
+export const taxonomyTypeEnum = pgEnum("taxonomy_type", ["tag", "category"]);
+
+export const taxonomy = pgTable("taxonomy", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  description: text("description"),
+  type: taxonomyTypeEnum("type").notNull().default("tag"),
+  isHomepageFilter: boolean("is_homepage_filter").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => {
+  return {
+    nameTypeIdx: uniqueIndex("name_type_idx").on(table.name, table.type),
+    slugTypeIdx: uniqueIndex("slug_type_idx").on(table.slug, table.type),
+  };
+});
+
+// Legacy tables kept temporarily for migration purposes
+// Will be dropped after data migration
 export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),
@@ -77,7 +114,6 @@ export const categories = pgTable("categories", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Tags
 export const tags = pgTable("tags", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),
@@ -303,7 +339,12 @@ export const articlesRelations = relations(articles, ({ one, many }) => ({
     references: [users.id],
     relationName: "lastEditor",
   }),
+  primaryTaxonomy: one(taxonomy, {
+    fields: [articles.primaryTaxonomyId],
+    references: [taxonomy.id],
+  }),
   authors: many(articleAuthors),
+  taxonomyItems: many(articleTaxonomy),
   comments: many(comments),
   newsletterHistory: many(newsletterSentHistory),
 }));
@@ -362,6 +403,21 @@ export const jobListingsRelations = relations(jobListings, ({ one }) => ({
     fields: [jobListings.userId],
     references: [users.id],
   }),
+}));
+
+export const articleTaxonomyRelations = relations(articleTaxonomy, ({ one }) => ({
+  article: one(articles, {
+    fields: [articleTaxonomy.articleId],
+    references: [articles.id],
+  }),
+  taxonomyItem: one(taxonomy, {
+    fields: [articleTaxonomy.taxonomyId],
+    references: [taxonomy.id],
+  }),
+}));
+
+export const taxonomyRelations = relations(taxonomy, ({ many }) => ({
+  articles: many(articleTaxonomy),
 }));
 
 export const advertisementsRelations = relations(advertisements, ({ one }) => ({
@@ -531,6 +587,17 @@ export const insertSearchHistorySchema = createInsertSchema(searchHistory).omit(
   searchedAt: true,
 });
 
+export const insertTaxonomySchema = createInsertSchema(taxonomy).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertArticleTaxonomySchema = createInsertSchema(articleTaxonomy).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type Article = typeof articles.$inferSelect;
@@ -548,6 +615,8 @@ export type SiteSettings = typeof siteSettings.$inferSelect;
 export type NewsletterSubscription = typeof newsletterSubscriptions.$inferSelect;
 export type SearchHistory = typeof searchHistory.$inferSelect;
 export type NewsletterSentHistory = typeof newsletterSentHistory.$inferSelect;
+export type TaxonomyItem = typeof taxonomy.$inferSelect;
+export type ArticleTaxonomy = typeof articleTaxonomy.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertArticle = z.infer<typeof insertArticleSchema>;
@@ -559,3 +628,5 @@ export type InsertAdvertisement = z.infer<typeof insertAdvertisementSchema>;
 export type InsertApiKey = z.infer<typeof insertApiKeySchema>;
 export type InsertMediaLibraryItem = z.infer<typeof insertMediaLibrarySchema>;
 export type UpdateSiteSettings = z.infer<typeof updateSiteSettingsSchema>;
+export type InsertTaxonomy = z.infer<typeof insertTaxonomySchema>;
+export type InsertArticleTaxonomy = z.infer<typeof insertArticleTaxonomySchema>;
