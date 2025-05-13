@@ -551,7 +551,8 @@ function AdvertisementTab() {
                         name="linkUrl" 
                         placeholder="https://example.com" 
                         value={testAdForm.linkUrl} 
-                        onChange={handleTestAdInputChange} 
+                        onChange={handleTestAdInputChange}
+                        required
                       />
                     </div>
                     
@@ -571,6 +572,7 @@ function AdvertisementTab() {
                       <Select 
                         value={testAdForm.placement} 
                         onValueChange={(value) => handleTestAdSelectChange('placement', value)}
+                        required
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select a placement" />
@@ -592,7 +594,8 @@ function AdvertisementTab() {
                           name="startDate" 
                           type="date" 
                           value={testAdForm.startDate} 
-                          onChange={handleTestAdInputChange} 
+                          onChange={handleTestAdInputChange}
+                          required
                         />
                       </div>
                       
