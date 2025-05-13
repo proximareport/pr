@@ -32,6 +32,7 @@ interface Advertisement {
   endDate: string;
   userId: number;
   isApproved: boolean;
+  isTest?: boolean; // Added this field for test advertisements
   createdAt: string;
   impressions: number;
   clicks: number;
@@ -48,6 +49,15 @@ interface Advertisement {
 
 function AdvertisementTab() {
   const [previewAd, setPreviewAd] = useState<Advertisement | null>(null);
+  const [testAdDialogOpen, setTestAdDialogOpen] = useState(false);
+  const [testAdForm, setTestAdForm] = useState({
+    title: '',
+    linkUrl: 'https://proximareport.com',
+    placement: 'sidebar',
+    imageUrl: 'https://placehold.co/300x250/png',
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: addDays(new Date(), 30).toISOString().split('T')[0]
+  });
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -174,6 +184,37 @@ function AdvertisementTab() {
     },
   });
   
+  // Test Ad creation mutation
+  const createTestAdMutation = useMutation({
+    mutationFn: async (adData: any) => {
+      return await apiRequest('POST', '/api/admin/test-advertisement', adData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/advertisements'] });
+      setTestAdDialogOpen(false);
+      setTestAdForm({
+        title: '',
+        linkUrl: 'https://proximareport.com',
+        placement: 'sidebar',
+        imageUrl: 'https://placehold.co/300x250/png',
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: addDays(new Date(), 30).toISOString().split('T')[0]
+      });
+      toast({
+        title: 'Success',
+        description: 'Test advertisement created successfully',
+      });
+    },
+    onError: (error) => {
+      console.error('Error creating test advertisement:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to create test advertisement',
+        variant: 'destructive',
+      });
+    },
+  });
+  
   // Improved pending ads filter that uses both status and isApproved fields
   const getPendingAds = () => {
     console.log('Getting pending ads. advertisements type:', typeof advertisements, Array.isArray(advertisements) ? 'is array' : 'not array', advertisements);
@@ -249,6 +290,26 @@ function AdvertisementTab() {
   
   const handlePreview = (ad: Advertisement) => {
     setPreviewAd(ad);
+  };
+  
+  // Helper methods for the test ad form
+  const handleTestAdInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setTestAdForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+  
+  const handleTestAdSelectChange = (name: string, value: string) => {
+    setTestAdForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+  
+  const handleCreateTestAd = () => {
+    createTestAdMutation.mutate(testAdForm);
   };
   
   const getPlacementLabel = (placement: string) => {
@@ -351,6 +412,115 @@ function AdvertisementTab() {
       ) : (
         <Tabs defaultValue="pending">
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Advertisement Management</h2>
+              
+              {/* Test Ad Creation Button */}
+              <Dialog open={testAdDialogOpen} onOpenChange={setTestAdDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <PlusCircle className="h-4 w-4" />
+                    Create Test Ad
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Create Test Advertisement</DialogTitle>
+                    <DialogDescription>
+                      Create a test advertisement that will be automatically approved and bypasses payment.
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="title">Title</Label>
+                      <Input 
+                        id="title" 
+                        name="title" 
+                        placeholder="Test Advertisement Title" 
+                        value={testAdForm.title} 
+                        onChange={handleTestAdInputChange} 
+                      />
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="linkUrl">Link URL</Label>
+                      <Input 
+                        id="linkUrl" 
+                        name="linkUrl" 
+                        placeholder="https://example.com" 
+                        value={testAdForm.linkUrl} 
+                        onChange={handleTestAdInputChange} 
+                      />
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="imageUrl">Image URL</Label>
+                      <Input 
+                        id="imageUrl" 
+                        name="imageUrl" 
+                        placeholder="https://example.com/image.png" 
+                        value={testAdForm.imageUrl} 
+                        onChange={handleTestAdInputChange} 
+                      />
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="placement">Placement</Label>
+                      <Select 
+                        value={testAdForm.placement} 
+                        onValueChange={(value) => handleTestAdSelectChange('placement', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a placement" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="homepage">Homepage Banner</SelectItem>
+                          <SelectItem value="sidebar">Sidebar</SelectItem>
+                          <SelectItem value="article">In-Article</SelectItem>
+                          <SelectItem value="newsletter">Newsletter</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="startDate">Start Date</Label>
+                        <Input 
+                          id="startDate" 
+                          name="startDate" 
+                          type="date" 
+                          value={testAdForm.startDate} 
+                          onChange={handleTestAdInputChange} 
+                        />
+                      </div>
+                      
+                      <div className="grid gap-2">
+                        <Label htmlFor="endDate">End Date</Label>
+                        <Input 
+                          id="endDate" 
+                          name="endDate" 
+                          type="date" 
+                          value={testAdForm.endDate} 
+                          onChange={handleTestAdInputChange} 
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <DialogFooter>
+                    <Button 
+                      type="submit" 
+                      onClick={handleCreateTestAd}
+                      disabled={createTestAdMutation.isPending}
+                    >
+                      {createTestAdMutation.isPending ? 'Creating...' : 'Create Test Ad'}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+            
             <TabsList className="grid grid-cols-3 max-w-md mx-auto">
               <TabsTrigger value="pending" className="flex gap-2 items-center">
                 <AlertTriangle className="h-4 w-4" /> 
