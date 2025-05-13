@@ -63,7 +63,7 @@ export default function UserManagement() {
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Fetch users with admin flag for detailed info
-  const { data: users = [], isLoading } = useQuery({
+  const { data: usersData, isLoading } = useQuery({
     queryKey: ['/api/users', { admin: true }],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/users?admin=true');
@@ -71,6 +71,9 @@ export default function UserManagement() {
     },
     enabled: true,
   });
+  
+  // Extract users from paginated response
+  const users = usersData?.users || [];
 
   // Update user role mutation
   const updateRoleMutation = useMutation({

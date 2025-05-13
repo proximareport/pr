@@ -2038,9 +2038,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
       const type = req.query.type as string;
       
-      const media = await storage.getMediaItems(page, limit, type);
+      let media;
+      if (type) {
+        media = await storage.getMediaLibraryItemsByType(type, req.session?.userId);
+      } else {
+        media = await storage.getMediaLibraryItems(req.session?.userId);
+      }
       
-      res.json(media);
+      // Manual pagination
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const paginatedMedia = media.slice(startIndex, endIndex);
+      
+      res.json({
+        media: paginatedMedia,
+        total: media.length,
+        page,
+        totalPages: Math.ceil(media.length / limit)
+      });
     } catch (error) {
       console.error("Error fetching media items:", error);
       res.status(500).json({ message: "Error fetching media items" });
