@@ -130,6 +130,11 @@ export interface IStorage {
   
   // Category operations
   getCategories(): Promise<{ id: number; name: string; slug: string }[]>;
+  getCategoryByName(name: string): Promise<{ id: number; name: string; slug: string } | undefined>;
+  getCategoryBySlug(slug: string): Promise<{ id: number; name: string; slug: string } | undefined>;
+  createCategory(data: { name: string; description?: string; }): Promise<{ id: number; name: string; slug: string }>;
+  updateCategory(id: number, data: { name?: string; slug?: string; description?: string; }): Promise<{ id: number; name: string; slug: string } | undefined>;
+  deleteCategory(id: number): Promise<boolean>;
   
   // Site Settings operations
   getSiteSettings(): Promise<SiteSettings | undefined>;
@@ -1211,6 +1216,82 @@ export class DatabaseStorage implements IStorage {
         slug: categories.slug,
       })
       .from(categories);
+  }
+
+  async getCategoryByName(name: string): Promise<{ id: number; name: string; slug: string } | undefined> {
+    const [category] = await db
+      .select({
+        id: categories.id,
+        name: categories.name,
+        slug: categories.slug,
+      })
+      .from(categories)
+      .where(eq(categories.name, name));
+    
+    return category;
+  }
+
+  async getCategoryBySlug(slug: string): Promise<{ id: number; name: string; slug: string } | undefined> {
+    const [category] = await db
+      .select({
+        id: categories.id,
+        name: categories.name,
+        slug: categories.slug,
+      })
+      .from(categories)
+      .where(eq(categories.slug, slug));
+    
+    return category;
+  }
+  
+  async createCategory(data: { name: string; description?: string; }): Promise<{ id: number; name: string; slug: string }> {
+    // Create a slug from the name
+    const slug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    
+    const [newCategory] = await db
+      .insert(categories)
+      .values({
+        name: data.name,
+        slug: slug,
+        description: data.description,
+      })
+      .returning({
+        id: categories.id,
+        name: categories.name,
+        slug: categories.slug,
+      });
+    
+    return newCategory;
+  }
+  
+  async updateCategory(id: number, data: { name?: string; slug?: string; description?: string; }): Promise<{ id: number; name: string; slug: string } | undefined> {
+    // If name is changing but slug isn't provided, auto-generate slug
+    if (data.name && !data.slug) {
+      data.slug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    }
+    
+    const [updatedCategory] = await db
+      .update(categories)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(categories.id, id))
+      .returning({
+        id: categories.id,
+        name: categories.name,
+        slug: categories.slug,
+      });
+    
+    return updatedCategory;
+  }
+  
+  async deleteCategory(id: number): Promise<boolean> {
+    const result = await db
+      .delete(categories)
+      .where(eq(categories.id, id));
+    
+    return result.rowCount > 0;
   }
 
   // Media Library operations
