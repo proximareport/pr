@@ -62,6 +62,9 @@ function Home() {
       filter: selectedFilter
     }],
   });
+  
+  // For debugging - log when the filter changes
+  console.log(`Current filter: ${selectedFilter}`);
 
   // Refetch when filters change
   useEffect(() => {

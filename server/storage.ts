@@ -798,18 +798,19 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`Filtering articles with category: ${category}`);
       
-      // Use raw SQL query to bypass the ORM issue with primary_author_id
-      const query = `
-        SELECT * FROM articles 
-        WHERE category = $1 
-        AND published_at IS NOT NULL 
-        ORDER BY published_at DESC
-        LIMIT $2 OFFSET $3
-      `;
+      // If our raw SQL query doesn't work, let's try a different approach
+      // Get all articles and then filter them directly
+      const allArticles = await this.getArticles(100, 0);
       
-      const result = await db.execute(query, [category, limit, offset]);
-      console.log(`Found ${result.rows.length} articles with category ${category}`);
-      return result.rows as Article[];
+      // Now filter them manually by category
+      const filteredArticles = allArticles.filter(article => article.category === category);
+      console.log(`Manually filtered for category '${category}': Found ${filteredArticles.length} out of ${allArticles.length} articles`);
+      
+      // Apply pagination
+      const paginatedArticles = filteredArticles.slice(offset, offset + limit);
+      
+      // Return the filtered and paginated results
+      return paginatedArticles;
     } catch (error) {
       console.error("Error in getArticlesByCategory:", error);
       // Fallback to get all articles
