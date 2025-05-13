@@ -1063,9 +1063,12 @@ export class DatabaseStorage implements IStorage {
     if (!includeNotApproved) {
       // Check both isApproved field AND status field for consistency
       conditions.push(eq(advertisements.isApproved, true));
-      conditions.push(sql`${advertisements.status} = 'active'`);
+      conditions.push(sql`${advertisements.status} = 'active' OR ${advertisements.status} = 'approved'`);
       conditions.push(sql`${advertisements.startDate} <= NOW()`);
       conditions.push(sql`${advertisements.endDate} >= NOW()`);
+      
+      // Exclude test advertisements from regular display
+      conditions.push(sql`${advertisements.isTest} = false`);
     }
     
     // Add placement filter if provided and not 'all'
