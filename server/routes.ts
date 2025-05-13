@@ -1574,19 +1574,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Category name is required" });
       }
       
-      // Check if category exists
-      const category = await storage.getCategory(id);
-      
-      if (!category) {
-        return res.status(404).json({ message: "Category not found" });
-      }
-      
-      // Check if new name already exists (if name is changing)
-      if (name !== category.name) {
-        const existingCategory = await storage.getCategoryByName(name);
-        if (existingCategory) {
-          return res.status(400).json({ message: "A category with this name already exists" });
-        }
+      // Check if name already exists
+      const existingCategory = await storage.getCategoryByName(name);
+      if (existingCategory && existingCategory.id !== id) {
+        return res.status(400).json({ message: "A category with this name already exists" });
       }
       
       // Update the category
@@ -1607,15 +1598,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid category ID" });
       }
       
-      // Check if category exists
-      const category = await storage.getCategory(id);
+      // Delete the category directly
+      const success = await storage.deleteCategory(id);
       
-      if (!category) {
-        return res.status(404).json({ message: "Category not found" });
+      if (!success) {
+        return res.status(404).json({ message: "Category not found or could not be deleted" });
       }
-      
-      // Delete the category
-      await storage.deleteCategory(id);
       
       res.json({ message: "Category deleted successfully" });
     } catch (error) {
