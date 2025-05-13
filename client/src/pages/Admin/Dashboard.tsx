@@ -45,6 +45,7 @@ import UserManagement from './UserManagement';
 import MediaLibraryTab from './MediaLibraryTab';
 import AdvertisementTab from './AdvertisementTab';
 import EmergencyBannerTab from './EmergencyBannerTab';
+import TaxonomyTab from './TaxonomyTab';
 import SiteSettingsForm from '@/components/admin/SiteSettingsForm';
 
 interface Article {
@@ -553,6 +554,16 @@ function AdminDashboard() {
               <div className="flex items-center gap-2">
                 <ImageIcon className="h-4 w-4" />
                 <span>Media</span>
+              </div>
+            </TabsTrigger>
+            
+            <TabsTrigger 
+              value="taxonomy" 
+              className="text-gray-400 hover:text-gray-200 data-[state=active]:text-blue-400 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
+            >
+              <div className="flex items-center gap-2">
+                <TagIcon className="h-4 w-4" />
+                <span>Taxonomy</span>
               </div>
             </TabsTrigger>
             
@@ -1195,6 +1206,10 @@ function AdminDashboard() {
         
         <TabsContent value="media" className="mt-6">
           <MediaLibraryTab />
+        </TabsContent>
+        
+        <TabsContent value="taxonomy" className="mt-6">
+          <TaxonomyTab />
         </TabsContent>
         
         <TabsContent value="settings" className="mt-6">

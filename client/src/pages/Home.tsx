@@ -26,7 +26,17 @@ interface Article {
 function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState("all");
-
+  
+  // Get site settings to fetch homepage categories
+  const { data: siteSettings } = useQuery({
+    queryKey: ["/api/site-settings"],
+  });
+  
+  // Get available categories
+  const { data: categories } = useQuery<any[]>({
+    queryKey: ["/api/categories"],
+  });
+  
   // Get articles with pagination
   const { data: articles, isLoading, refetch } = useQuery<Article[]>({
     queryKey: ["/api/articles", { limit: 12, offset: (currentPage - 1) * 12, category: selectedCategory }],
@@ -64,10 +74,14 @@ function Home() {
             >
               <TabsList className="bg-[#1E1E2D]">
                 <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="space">Space</TabsTrigger>
-                <TabsTrigger value="science">Science</TabsTrigger>
-                <TabsTrigger value="technology">Technology</TabsTrigger>
-                <TabsTrigger value="astronomy">Astronomy</TabsTrigger>
+                {siteSettings?.homeCategories?.map((catSlug: string) => {
+                  const category = categories?.find(c => c.slug === catSlug);
+                  return category ? (
+                    <TabsTrigger key={category.id} value={category.slug}>
+                      {category.name}
+                    </TabsTrigger>
+                  ) : null;
+                })}
               </TabsList>
             </Tabs>
             
@@ -78,10 +92,14 @@ function Home() {
                 className="bg-[#1E1E2D] text-white border border-white/10 rounded-md p-1"
               >
                 <option value="all">All</option>
-                <option value="space">Space</option>
-                <option value="science">Science</option>
-                <option value="technology">Technology</option>
-                <option value="astronomy">Astronomy</option>
+                {siteSettings?.homeCategories?.map((catSlug: string) => {
+                  const category = categories?.find(c => c.slug === catSlug);
+                  return category ? (
+                    <option key={category.id} value={category.slug}>
+                      {category.name}
+                    </option>
+                  ) : null;
+                })}
               </select>
             </div>
           </div>
