@@ -228,18 +228,37 @@ function AdvertisementTab() {
   
   // Improved pending ads filter that uses both status and isApproved fields
   const getPendingAds = () => {
-    console.log('Getting pending ads. advertisements type:', typeof advertisements, Array.isArray(advertisements) ? 'is array' : 'not array', advertisements);
+    console.log('Getting pending ads. Ads array length:', Array.isArray(advertisements) ? advertisements.length : 'not an array');
     
     if (!Array.isArray(advertisements)) {
       console.warn('advertisements is not an array:', advertisements);
       return [];
     }
     
-    return advertisements.filter((ad: Advertisement) => 
+    // Debug what advertisements we have
+    if (advertisements.length > 0) {
+      console.log('Checking ad types:');
+      advertisements.forEach((ad, index) => {
+        if (index < 5) { // To avoid excessive logging
+          console.log(`Ad ${index}:`, {
+            id: ad.id,
+            title: ad.title,
+            isApproved: ad.isApproved,
+            status: ad.status,
+            isTest: ad.isTest
+          });
+        }
+      });
+    }
+    
+    const pendingAds = advertisements.filter((ad: Advertisement) => 
       // Check for pending status or use isApproved flag as fallback
       // Exclude test ads from pending tab
       !ad.isTest && (ad.status === 'pending' || (!ad.isApproved && ad.status !== 'rejected'))
     );
+    
+    console.log(`Found ${pendingAds.length} pending ads`);
+    return pendingAds;
   };
   
   const getActiveAds = () => {
@@ -250,13 +269,16 @@ function AdvertisementTab() {
       return [];
     }
     
-    return advertisements.filter((ad: Advertisement) => 
+    const activeAds = advertisements.filter((ad: Advertisement) => 
       // Don't show test ads in regular active tab
       !ad.isTest && 
       ad.isApproved && 
       new Date(ad.startDate) <= now && 
       new Date(ad.endDate) >= now
     );
+    
+    console.log(`Found ${activeAds.length} active ads`);
+    return activeAds;
   };
 
   const getInactiveAds = () => {
@@ -267,12 +289,15 @@ function AdvertisementTab() {
       return [];
     }
     
-    return advertisements.filter((ad: Advertisement) => 
+    const inactiveAds = advertisements.filter((ad: Advertisement) => 
       // Don't show test ads in regular inactive tab
       !ad.isTest && 
       ad.isApproved && 
       (new Date(ad.startDate) > now || new Date(ad.endDate) < now)
     );
+    
+    console.log(`Found ${inactiveAds.length} inactive ads`);
+    return inactiveAds;
   };
   
   // New filter for test advertisements
@@ -282,7 +307,16 @@ function AdvertisementTab() {
       return [];
     }
     
-    return advertisements.filter((ad: Advertisement) => ad.isTest === true);
+    const testAds = advertisements.filter((ad: Advertisement) => {
+      // Enhanced test detection logic - check both isTest flag and admin notes
+      const isTestAd = ad.isTest === true || 
+                      (ad.adminNotes && ad.adminNotes.toLowerCase().includes('test'));
+      
+      return isTestAd;
+    });
+    
+    console.log(`Found ${testAds.length} test ads`);
+    return testAds;
   };
   
   const handleApprove = (adId: number) => {

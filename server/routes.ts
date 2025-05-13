@@ -1814,10 +1814,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = 100; // Get a large number of ads
       
       // For admin panel, we want to include all advertisements, including unapproved and test ads
-      const ads = await storage.getAdvertisements(page, limit, true, undefined, true); // Get with user details and include all ads
+      // Make sure to return all advertisements regardless of their status
+      // Here we need to be extra sure we're bypassing all filters to show the ads in the admin view
+      const rawAds = await storage.getAdvertisements(page, limit, true, undefined, true); // Get with user details and include all ads
       
       // Add console logging for debugging
-      console.log(`Admin advertisements API: Found ${ads.length} advertisements (including test advertisements)`);
+      console.log(`Admin advertisements API: Raw ads count: ${rawAds.length}`);
+      
+      // Make sure advertisements have the isTest flag set correctly
+      const ads = rawAds.map(ad => ({
+        ...ad,
+        // Make sure test advertisements have the isTest flag properly set
+        isTest: ad.isTest === true || (ad.adminNotes && ad.adminNotes.includes('test')),
+      }));
+      
+      // More detailed logging about the ads being returned
+      if (ads.length > 0) {
+        console.log(`Admin advertisements API: Found ${ads.length} advertisements to display`);
+        console.log(`Ad Types: Test ads: ${ads.filter(ad => ad.isTest).length}, Regular ads: ${ads.filter(ad => !ad.isTest).length}`);
+        console.log(`Ad Statuses: Approved: ${ads.filter(ad => ad.isApproved).length}, Pending: ${ads.filter(ad => !ad.isApproved).length}`);
+      } else {
+        console.log('Admin advertisements API: No advertisements found in the database');
+      }
       
       res.json(ads);
     } catch (error) {
