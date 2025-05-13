@@ -738,8 +738,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let articles: any[];
       
       if (tagId) {
-        // If filtering by tag, call the appropriate method
-        articles = await storage.getArticlesByTag(tagId, limit, (page - 1) * limit);
+        try {
+          console.log(`Server - Filtering articles by tag ID: ${tagId}`);
+          
+          // Execute a raw SQL query since we're having TypeScript interface issues
+          const query = `
+            SELECT * FROM articles 
+            WHERE published_at IS NOT NULL 
+            AND $1::integer = ANY(tags)
+            ORDER BY published_at DESC
+            LIMIT $2 OFFSET $3
+          `;
+          
+          const result = await pool.query(query, [tagId, limit, (page - 1) * limit]);
+          
+          console.log(`Server - Found ${result.rows.length} articles with tag ID ${tagId}`);
+          
+          articles = result.rows;
+        } catch (error) {
+          console.error("Error filtering by tag:", error);
+          articles = await storage.getArticles(limit, (page - 1) * limit);
+        }
       } else if (category && category !== 'all') {
         // If filtering by category, call the category filter method
         articles = await storage.getArticlesByCategory(category);
