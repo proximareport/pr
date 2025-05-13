@@ -528,6 +528,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { username, email, password } = req.body;
       
+      console.log("Login attempt with:", { 
+        email: email ? "provided" : "not provided", 
+        username: username ? "provided" : "not provided"
+      });
+      
       // Check if we have either username or email, and password
       if ((!username && !email) || !password) {
         return res.status(400).json({ message: "Username/email and password are required" });
@@ -538,24 +543,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Try to find user by email first if provided
       if (email) {
         const normalizedEmail = email.toLowerCase();
+        console.log("Looking up user by email:", normalizedEmail);
         user = await storage.getUserByEmail(normalizedEmail);
+        console.log("Email lookup result:", user ? "User found" : "No user found");
       }
       
       // If no user found by email or email wasn't provided, try username
       if (!user && username) {
         const normalizedUsername = username.toLowerCase();
+        console.log("Looking up user by username:", normalizedUsername);
         user = await storage.getUserByUsername(normalizedUsername);
+        console.log("Username lookup result:", user ? "User found" : "No user found");
       }
       
       if (!user) {
         return res.status(400).json({ message: "Invalid credentials" });
       }
       
+      console.log("User found:", { id: user.id, username: user.username, email: user.email });
+      
       // Special case for development with a known password format
       if (user.password === "hashed_" + password) {
+        console.log("Using development password shortcut");
         req.session.userId = user.id;
         req.session.isAdmin = user.role === 'admin';
         return res.json(user);
+      }
+      
+      // For development/debugging only - if the password starts with "hashed_", extract the actual password
+      if (user.password.startsWith("hashed_")) {
+        console.log("Using development hashed password extraction");
+        if (password === user.password.substring(7)) { // Remove "hashed_" prefix
+          req.session.userId = user.id;
+          req.session.isAdmin = user.role === 'admin';
+          return res.json(user);
+        }
       }
       
       // Handle case where password might be stored in different formats (uppercase, etc)
@@ -563,6 +585,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let isMatch = false;
       try {
+        console.log("Attempting password match with normalized password");
         isMatch = await bcrypt.compare(normalizedPassword, user.password);
         console.log("Password match result:", isMatch);
       } catch (compareError) {
@@ -573,6 +596,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!isMatch) {
         // If the login fails, try with the raw password as fallback (for fixing cross-device issues)
         try {
+          console.log("Attempting fallback password match with raw password");
           isMatch = await bcrypt.compare(password, user.password);
           console.log("Fallback password match result:", isMatch);
         } catch (fallbackError) {
