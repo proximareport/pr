@@ -16,10 +16,14 @@ import {
   insertAdvertisementSchema,
   insertMediaLibrarySchema,
   updateSiteSettingsSchema,
+  insertTaxonomySchema,
+  insertArticleTaxonomySchema,
   type User,
   type MediaLibraryItem,
   type SiteSettings,
   type UpdateSiteSettings,
+  type TaxonomyItem,
+  type ArticleTaxonomy,
   advertisements
 } from "@shared/schema";
 import { db } from "./db";

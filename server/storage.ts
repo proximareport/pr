@@ -13,6 +13,8 @@ import {
   articleAuthors,
   mediaLibrary,
   siteSettings,
+  taxonomy,
+  articleTaxonomy,
   type User, 
   type InsertUser, 
   type Article, 
@@ -33,7 +35,11 @@ import {
   type MediaLibraryItem,
   type InsertMediaLibraryItem,
   type SiteSettings,
-  type UpdateSiteSettings
+  type UpdateSiteSettings,
+  type TaxonomyItem,
+  type InsertTaxonomy,
+  type ArticleTaxonomy,
+  type InsertArticleTaxonomy
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, and, isNull, desc, sql, or, like, not, inArray, asc } from "drizzle-orm";
@@ -153,7 +159,7 @@ export interface IStorage {
   updateCategory(id: number, data: { name?: string; slug?: string; description?: string; }): Promise<{ id: number; name: string; slug: string } | undefined>;
   deleteCategory(id: number): Promise<boolean>;
   
-  // Tag operations
+  // Tag operations (Legacy)
   getTags(): Promise<{ id: number; name: string; slug: string; description?: string }[]>;
   getTag(id: number): Promise<{ id: number; name: string; slug: string; description?: string } | undefined>;
   getTagByName(name: string): Promise<{ id: number; name: string; slug: string; description?: string } | undefined>;
@@ -161,6 +167,22 @@ export interface IStorage {
   createTag(data: { name: string; slug: string; description?: string }): Promise<{ id: number; name: string; slug: string; description?: string }>;
   updateTag(id: number, data: Partial<{ name: string; slug: string; description?: string }>): Promise<{ id: number; name: string; slug: string; description?: string } | undefined>;
   deleteTag(id: number): Promise<boolean>;
+  
+  // Unified Taxonomy operations
+  getTaxonomyItems(type?: 'tag' | 'category'): Promise<TaxonomyItem[]>;
+  getTaxonomyItem(id: number): Promise<TaxonomyItem | undefined>;
+  getTaxonomyItemBySlug(slug: string, type?: 'tag' | 'category'): Promise<TaxonomyItem | undefined>;
+  getTaxonomyItemByName(name: string, type?: 'tag' | 'category'): Promise<TaxonomyItem | undefined>;
+  createTaxonomyItem(data: InsertTaxonomy): Promise<TaxonomyItem>;
+  updateTaxonomyItem(id: number, data: Partial<TaxonomyItem>): Promise<TaxonomyItem | undefined>;
+  deleteTaxonomyItem(id: number): Promise<boolean>;
+  
+  // Article Taxonomy operations
+  getArticleTaxonomy(articleId: number): Promise<(ArticleTaxonomy & { taxonomyItem: TaxonomyItem })[]>;
+  setArticleTaxonomy(articleId: number, taxonomyIds: number[]): Promise<boolean>;
+  addArticleTaxonomy(articleId: number, taxonomyId: number, isPrimary?: boolean): Promise<ArticleTaxonomy | undefined>;
+  removeArticleTaxonomy(articleId: number, taxonomyId: number): Promise<boolean>;
+  setPrimaryTaxonomy(articleId: number, taxonomyId: number): Promise<boolean>;
   
   // Site Settings operations
   getSiteSettings(): Promise<SiteSettings | undefined>;
@@ -1554,6 +1576,341 @@ export class DatabaseStorage implements IStorage {
       .where(eq(tags.id, id));
     
     return result.rowCount > 0;
+  }
+  
+  // Unified Taxonomy operations
+  async getTaxonomyItems(type?: 'tag' | 'category'): Promise<TaxonomyItem[]> {
+    let query = db
+      .select()
+      .from(taxonomy)
+      .orderBy(asc(taxonomy.name));
+    
+    if (type) {
+      query = query.where(eq(taxonomy.type, type));
+    }
+    
+    return await query;
+  }
+  
+  async getTaxonomyItem(id: number): Promise<TaxonomyItem | undefined> {
+    const [item] = await db
+      .select()
+      .from(taxonomy)
+      .where(eq(taxonomy.id, id));
+    
+    return item;
+  }
+  
+  async getTaxonomyItemBySlug(slug: string, type?: 'tag' | 'category'): Promise<TaxonomyItem | undefined> {
+    let query = db
+      .select()
+      .from(taxonomy)
+      .where(eq(taxonomy.slug, slug));
+    
+    if (type) {
+      query = query.where(eq(taxonomy.type, type));
+    }
+    
+    const [item] = await query;
+    return item;
+  }
+  
+  async getTaxonomyItemByName(name: string, type?: 'tag' | 'category'): Promise<TaxonomyItem | undefined> {
+    let query = db
+      .select()
+      .from(taxonomy)
+      .where(eq(taxonomy.name, name));
+    
+    if (type) {
+      query = query.where(eq(taxonomy.type, type));
+    }
+    
+    const [item] = await query;
+    return item;
+  }
+  
+  async createTaxonomyItem(data: InsertTaxonomy): Promise<TaxonomyItem> {
+    // Generate slug if not provided
+    if (!data.slug && data.name) {
+      data.slug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    }
+    
+    const [item] = await db
+      .insert(taxonomy)
+      .values(data)
+      .returning();
+    
+    return item;
+  }
+  
+  async updateTaxonomyItem(id: number, data: Partial<TaxonomyItem>): Promise<TaxonomyItem | undefined> {
+    // Generate slug if name is changing but slug isn't provided
+    if (data.name && !data.slug) {
+      data.slug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    }
+    
+    const [updatedItem] = await db
+      .update(taxonomy)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(taxonomy.id, id))
+      .returning();
+    
+    return updatedItem;
+  }
+  
+  async deleteTaxonomyItem(id: number): Promise<boolean> {
+    // First delete all article-taxonomy relations
+    await db
+      .delete(articleTaxonomy)
+      .where(eq(articleTaxonomy.taxonomyId, id));
+    
+    // Then delete the taxonomy item
+    const result = await db
+      .delete(taxonomy)
+      .where(eq(taxonomy.id, id));
+    
+    return result.rowCount > 0;
+  }
+  
+  // Article Taxonomy operations
+  async getArticleTaxonomy(articleId: number): Promise<(ArticleTaxonomy & { taxonomyItem: TaxonomyItem })[]> {
+    return await db
+      .select({
+        id: articleTaxonomy.id,
+        articleId: articleTaxonomy.articleId,
+        taxonomyId: articleTaxonomy.taxonomyId,
+        isPrimary: articleTaxonomy.isPrimary,
+        createdAt: articleTaxonomy.createdAt,
+        taxonomyItem: taxonomy,
+      })
+      .from(articleTaxonomy)
+      .leftJoin(taxonomy, eq(articleTaxonomy.taxonomyId, taxonomy.id))
+      .where(eq(articleTaxonomy.articleId, articleId));
+  }
+  
+  async setArticleTaxonomy(articleId: number, taxonomyIds: number[]): Promise<boolean> {
+    // First delete all existing taxonomy items for this article
+    await db
+      .delete(articleTaxonomy)
+      .where(eq(articleTaxonomy.articleId, articleId));
+    
+    // Then add the new taxonomy items
+    if (taxonomyIds.length > 0) {
+      const values = taxonomyIds.map(taxonomyId => ({
+        articleId,
+        taxonomyId,
+        isPrimary: false,
+      }));
+      
+      // If there's at least one taxonomy item, set the first one as primary
+      if (values.length > 0) {
+        values[0].isPrimary = true;
+      }
+      
+      await db
+        .insert(articleTaxonomy)
+        .values(values);
+      
+      // Also update the article's primaryTaxonomyId
+      if (values.length > 0) {
+        await db
+          .update(articles)
+          .set({ 
+            primaryTaxonomyId: taxonomyIds[0],
+            updatedAt: new Date(),
+          })
+          .where(eq(articles.id, articleId));
+      }
+    }
+    
+    return true;
+  }
+  
+  async addArticleTaxonomy(articleId: number, taxonomyId: number, isPrimary: boolean = false): Promise<ArticleTaxonomy | undefined> {
+    // Check if this article-taxonomy pair already exists
+    const [existingItem] = await db
+      .select()
+      .from(articleTaxonomy)
+      .where(and(
+        eq(articleTaxonomy.articleId, articleId),
+        eq(articleTaxonomy.taxonomyId, taxonomyId)
+      ));
+    
+    if (existingItem) {
+      // If it exists and we're setting it as primary, update it
+      if (isPrimary && !existingItem.isPrimary) {
+        // First reset all primary flags for this article
+        if (isPrimary) {
+          await db
+            .update(articleTaxonomy)
+            .set({ isPrimary: false })
+            .where(and(
+              eq(articleTaxonomy.articleId, articleId),
+              eq(articleTaxonomy.isPrimary, true)
+            ));
+        }
+        
+        // Update this item
+        const [updatedItem] = await db
+          .update(articleTaxonomy)
+          .set({ isPrimary })
+          .where(eq(articleTaxonomy.id, existingItem.id))
+          .returning();
+        
+        // Update the article's primaryTaxonomyId if we're setting this as primary
+        if (isPrimary) {
+          await db
+            .update(articles)
+            .set({ 
+              primaryTaxonomyId: taxonomyId,
+              updatedAt: new Date(),
+            })
+            .where(eq(articles.id, articleId));
+        }
+        
+        return updatedItem;
+      }
+      
+      return existingItem;
+    }
+    
+    // If we're adding a new item and it's primary, reset all primary flags
+    if (isPrimary) {
+      await db
+        .update(articleTaxonomy)
+        .set({ isPrimary: false })
+        .where(and(
+          eq(articleTaxonomy.articleId, articleId),
+          eq(articleTaxonomy.isPrimary, true)
+        ));
+    }
+    
+    // Add the new item
+    const [newItem] = await db
+      .insert(articleTaxonomy)
+      .values({
+        articleId,
+        taxonomyId,
+        isPrimary,
+      })
+      .returning();
+    
+    // Update the article's primaryTaxonomyId if we're setting this as primary
+    if (isPrimary) {
+      await db
+        .update(articles)
+        .set({ 
+          primaryTaxonomyId: taxonomyId,
+          updatedAt: new Date(),
+        })
+        .where(eq(articles.id, articleId));
+    }
+    
+    return newItem;
+  }
+  
+  async removeArticleTaxonomy(articleId: number, taxonomyId: number): Promise<boolean> {
+    // Check if this is the primary taxonomy for the article
+    const [item] = await db
+      .select()
+      .from(articleTaxonomy)
+      .where(and(
+        eq(articleTaxonomy.articleId, articleId),
+        eq(articleTaxonomy.taxonomyId, taxonomyId)
+      ));
+    
+    const isPrimary = item?.isPrimary || false;
+    
+    // Delete the item
+    await db
+      .delete(articleTaxonomy)
+      .where(and(
+        eq(articleTaxonomy.articleId, articleId),
+        eq(articleTaxonomy.taxonomyId, taxonomyId)
+      ));
+    
+    // If this was the primary taxonomy, find another one to set as primary
+    if (isPrimary) {
+      const [nextItem] = await db
+        .select()
+        .from(articleTaxonomy)
+        .where(eq(articleTaxonomy.articleId, articleId))
+        .limit(1);
+      
+      if (nextItem) {
+        // Set this as the new primary
+        await db
+          .update(articleTaxonomy)
+          .set({ isPrimary: true })
+          .where(eq(articleTaxonomy.id, nextItem.id));
+        
+        // Update the article's primaryTaxonomyId
+        await db
+          .update(articles)
+          .set({ 
+            primaryTaxonomyId: nextItem.taxonomyId,
+            updatedAt: new Date(),
+          })
+          .where(eq(articles.id, articleId));
+      } else {
+        // No more taxonomy items, set primaryTaxonomyId to null
+        await db
+          .update(articles)
+          .set({ 
+            primaryTaxonomyId: null,
+            updatedAt: new Date(),
+          })
+          .where(eq(articles.id, articleId));
+      }
+    }
+    
+    return true;
+  }
+  
+  async setPrimaryTaxonomy(articleId: number, taxonomyId: number): Promise<boolean> {
+    // First check if this article-taxonomy pair exists
+    const [existingItem] = await db
+      .select()
+      .from(articleTaxonomy)
+      .where(and(
+        eq(articleTaxonomy.articleId, articleId),
+        eq(articleTaxonomy.taxonomyId, taxonomyId)
+      ));
+    
+    if (!existingItem) {
+      // If it doesn't exist, add it
+      await this.addArticleTaxonomy(articleId, taxonomyId, true);
+      return true;
+    }
+    
+    // Reset all primary flags for this article
+    await db
+      .update(articleTaxonomy)
+      .set({ isPrimary: false })
+      .where(and(
+        eq(articleTaxonomy.articleId, articleId),
+        eq(articleTaxonomy.isPrimary, true)
+      ));
+    
+    // Set this item as primary
+    await db
+      .update(articleTaxonomy)
+      .set({ isPrimary: true })
+      .where(eq(articleTaxonomy.id, existingItem.id));
+    
+    // Update the article's primaryTaxonomyId
+    await db
+      .update(articles)
+      .set({ 
+        primaryTaxonomyId: taxonomyId,
+        updatedAt: new Date(),
+      })
+      .where(eq(articles.id, articleId));
+    
+    return true;
   }
 
   // Media Library operations
