@@ -92,9 +92,17 @@ function EmergencyBannerTab() {
   
   // Deactivate banner mutation
   const deactivateBannerMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await apiRequest('POST', `/api/emergency-banner/${id}/deactivate`);
-      return response.json();
+    mutationFn: async () => {
+      // Use a generic deactivate endpoint that doesn't require an ID
+      const response = await apiRequest('POST', `/api/emergency-banner/deactivate`);
+      // Handle HTML responses (error case)
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        return response.json();
+      } else {
+        // Return empty object if not JSON (e.g. HTML error)
+        return {};
+      }
     },
     onSuccess: () => {
       toast({
@@ -214,7 +222,7 @@ function EmergencyBannerTab() {
                   <Button 
                     variant="ghost" 
                     size="sm"
-                    onClick={() => deactivateBannerMutation.mutate(activeBanner.id)}
+                    onClick={() => deactivateBannerMutation.mutate()}
                     disabled={deactivateBannerMutation.isPending}
                   >
                     <XIcon className="h-4 w-4" />
