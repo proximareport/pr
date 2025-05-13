@@ -1772,7 +1772,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`No ads found for placement ${placement}`);
         } else {
           console.log(`No approved ads found for placement ${placement}, checking if any exist regardless of approval`);
-          const allPlacements = await storage.countAdvertisementsByPlacement();
+          // Remove the call to countAdvertisementsByPlacement which doesn't exist
           console.log(`Found ${allAds.length} total ads (including unapproved) for placement ${placement}`);
           
           if (allAds.length > 0) {

@@ -837,9 +837,9 @@ const MediaLibraryTab = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
 
-  // Query to fetch media items
-  const { data: mediaItems, isLoading, isError } = useQuery({
-    queryKey: ['/api/media', searchQuery, activeTab],
+  // Query to fetch media items with pagination
+  const { data: mediaResponse, isLoading, isError } = useQuery({
+    queryKey: ['/api/media', searchQuery, activeTab, currentPage, itemsPerPage],
     queryFn: async () => {
       let url = '/api/media';
       const params = new URLSearchParams();
@@ -851,6 +851,10 @@ const MediaLibraryTab = () => {
       if (activeTab !== 'all') {
         params.append('type', activeTab);
       }
+      
+      // Add pagination parameters
+      params.append('page', currentPage.toString());
+      params.append('limit', itemsPerPage.toString());
       
       const queryString = params.toString();
       if (queryString) {
@@ -865,9 +869,14 @@ const MediaLibraryTab = () => {
     }
   });
 
+  // Extract the actual media items from the response
+  const mediaItems = mediaResponse?.media || [];
+  const serverTotalPages = mediaResponse?.totalPages || 1;
+  const serverTotalItems = mediaResponse?.total || 0;
+  
   // Filter and sort media items based on active tab, search query, and sort options
   const filteredMedia = React.useMemo(() => {
-    if (!mediaItems) return [];
+    if (!mediaItems || mediaItems.length === 0) return [];
     
     // Apply sorting
     return [...mediaItems].sort((a, b) => {
@@ -890,17 +899,25 @@ const MediaLibraryTab = () => {
     });
   }, [mediaItems, sortBy, sortOrder]);
   
-  // Paginate the results
+  // Use client-side pagination when filters are applied, otherwise use server pagination
   const paginatedMedia = React.useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return filteredMedia.slice(startIndex, endIndex);
-  }, [filteredMedia, currentPage, itemsPerPage]);
+    // If we're using search or sorting (client-side filters), handle pagination locally
+    if (searchQuery || sortBy !== 'date' || sortOrder !== 'desc') {
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      return filteredMedia.slice(startIndex, endIndex);
+    }
+    // Otherwise, just use what the server gave us since it's already paginated
+    return filteredMedia;
+  }, [filteredMedia, currentPage, itemsPerPage, searchQuery, sortBy, sortOrder]);
   
-  // Calculate total pages
+  // Calculate total pages - use server value when no client filtering is done
   const totalPages = React.useMemo(() => {
-    return Math.ceil(filteredMedia.length / itemsPerPage);
-  }, [filteredMedia.length, itemsPerPage]);
+    if (searchQuery || sortBy !== 'date' || sortOrder !== 'desc') {
+      return Math.ceil(filteredMedia.length / itemsPerPage);
+    }
+    return serverTotalPages;
+  }, [filteredMedia.length, itemsPerPage, serverTotalPages, searchQuery, sortBy, sortOrder]);
 
   const handleEditItem = (item: MediaItem) => {
     setSelectedItem(item);
