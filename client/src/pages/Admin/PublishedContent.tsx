@@ -48,10 +48,12 @@ interface Article {
   updatedAt: string;
   publishedAt?: string;
   authors?: Array<{
-    id: number;
-    username: string;
-    profilePicture?: string;
-    role: string;
+    user: {
+      id: number;
+      username: string;
+      profilePicture?: string;
+      role?: string;
+    };
   }>;
 }
 

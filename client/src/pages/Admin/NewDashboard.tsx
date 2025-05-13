@@ -559,11 +559,11 @@ function NewAdminDashboard() {
               </div>
                 
               <TabsContent value="published">
-                <PublishedContent />
+                <PublishedContent statusFilter="published" />
               </TabsContent>
               
               <TabsContent value="drafts">
-                <DraftManagement />
+                <PublishedContent statusFilter="draft" />
               </TabsContent>
               
               <TabsContent value="all">
@@ -591,6 +591,8 @@ function NewAdminDashboard() {
                     </TabsTrigger>
                     <TabsTrigger value="published">Published</TabsTrigger>
                   </TabsList>
+                  
+                  {/* Use the PublishedContent component for each status filter */}
                   
                   <TabsContent value="all">
                     {articlesLoading ? (
