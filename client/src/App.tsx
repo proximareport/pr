@@ -194,9 +194,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <TooltipProvider>
-          <MainApp />
-        </TooltipProvider>
+        <MainApp />
       </AuthProvider>
     </QueryClientProvider>
   );
