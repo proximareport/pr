@@ -915,6 +915,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add or update article tags
+  app.post("/api/articles/:id/tags", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const articleId = parseInt(req.params.id);
+      const { tagIds } = req.body;
+      
+      if (isNaN(articleId)) {
+        return res.status(400).json({ message: "Invalid article ID" });
+      }
+      
+      if (!Array.isArray(tagIds)) {
+        return res.status(400).json({ message: "tagIds must be an array of tag IDs" });
+      }
+      
+      // Check if article exists
+      const article = await storage.getArticleById(articleId);
+      
+      if (!article) {
+        return res.status(404).json({ message: "Article not found" });
+      }
+      
+      // Check if user has permission to update this article
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Only allow update if user is an author of the article, or an admin/editor
+      const isAuthor = (article.primaryAuthorId === userId);
+      
+      if (!isAuthor && user.role !== 'admin' && user.role !== 'editor') {
+        return res.status(403).json({ message: "You don't have permission to update this article's tags" });
+      }
+      
+      // Ensure the tags are a unique set of IDs
+      const uniqueTagIds = [...new Set(tagIds.map(id => parseInt(id)))];
+      
+      // Update the article with the new tag IDs
+      const updatedArticle = await storage.updateArticle(articleId, { 
+        tags: uniqueTagIds 
+      });
+      
+      res.json(updatedArticle);
+    } catch (error) {
+      console.error("Error updating article tags:", error);
+      res.status(500).json({ message: "Error updating article tags" });
+    }
+  });
+  
   // Delete article
   app.delete("/api/articles/:id", requireAuth, async (req: Request, res: Response) => {
     try {
@@ -1716,8 +1767,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Tag already exists" });
       }
       
+      // Generate a slug from the name
+      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      
       // Create the tag
-      const newTag = await storage.createTag({ name, description });
+      const newTag = await storage.createTag({ name, slug, description });
       
       res.status(201).json(newTag);
     } catch (error) {
