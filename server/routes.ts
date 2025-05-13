@@ -2316,6 +2316,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add a dedicated endpoint for deactivating the emergency banner
+  app.post("/api/emergency-banner/deactivate", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      // Update emergency banner to disabled
+      const updates: Partial<SiteSettings> = {
+        emergencyBannerEnabled: false
+      };
+      
+      const updatedSettings = await storage.updateSiteSettings(updates);
+      
+      res.json({
+        success: true,
+        enabled: false,
+        message: "Emergency banner has been deactivated"
+      });
+    } catch (error) {
+      console.error("Error deactivating emergency banner:", error);
+      res.status(500).json({ message: "Error deactivating emergency banner" });
+    }
+  });
+
   // ----------------------------------------------------
   // Stripe webhook handler for subscription events
   // ----------------------------------------------------
