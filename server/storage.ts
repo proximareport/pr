@@ -151,6 +151,15 @@ export interface IStorage {
   updateCategory(id: number, data: { name?: string; slug?: string; description?: string; }): Promise<{ id: number; name: string; slug: string } | undefined>;
   deleteCategory(id: number): Promise<boolean>;
   
+  // Tag operations
+  getTags(): Promise<{ id: number; name: string; slug: string; description?: string }[]>;
+  getTag(id: number): Promise<{ id: number; name: string; slug: string; description?: string } | undefined>;
+  getTagByName(name: string): Promise<{ id: number; name: string; slug: string; description?: string } | undefined>;
+  getTagBySlug(slug: string): Promise<{ id: number; name: string; slug: string; description?: string } | undefined>;
+  createTag(data: { name: string; slug: string; description?: string }): Promise<{ id: number; name: string; slug: string; description?: string }>;
+  updateTag(id: number, data: Partial<{ name: string; slug: string; description?: string }>): Promise<{ id: number; name: string; slug: string; description?: string } | undefined>;
+  deleteTag(id: number): Promise<boolean>;
+  
   // Site Settings operations
   getSiteSettings(): Promise<SiteSettings | undefined>;
   updateSiteSettings(settingsId: number, data: Partial<SiteSettings>, updatedBy: number): Promise<SiteSettings | undefined>;
