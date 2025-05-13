@@ -16,6 +16,7 @@ import { Save as SaveIcon, Upload as UploadIcon, Plus as PlusIcon, X as XIcon, I
 const AUTOSAVE_DELAY = 2000;
 import RichTextEditor from '@/components/article/RichTextEditor';
 import MediaSelector from '@/components/MediaSelector';
+import TagSelector from '@/components/article/TagSelector';
 import { EditorLayout, EditorMainCard, EditorSideCard } from '@/components/admin/EditorLayout';
 import { 
   TextFormField, 
@@ -42,8 +43,7 @@ function AdminArticleEditor() {
   const [summary, setSummary] = useState('');
   const [content, setContent] = useState<string>('');
   const [category, setCategory] = useState('space-exploration');
-  const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState('');
+  const [tagIds, setTagIds] = useState<number[]>([]);
   const [featuredImage, setFeaturedImage] = useState('');
   const [readTime, setReadTime] = useState(5);
   const [isDraft, setIsDraft] = useState(true);
@@ -543,7 +543,7 @@ function AdminArticleEditor() {
     summary: string;
     content: string;
     category: string;
-    tags: string[];
+    tags: number[]; // Changed from string[] to number[] to use tag IDs
     featuredImage: string;
     readTime: number;
     status: string;
