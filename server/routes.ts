@@ -1893,6 +1893,397 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ----------------------------------------------------
+  // Unified Taxonomy API
+  // ----------------------------------------------------
+  // Get all taxonomy items (optionally filtered by type)
+  app.get("/api/taxonomy", async (req: Request, res: Response) => {
+    try {
+      const type = req.query.type as 'tag' | 'category' | undefined;
+      const taxonomyItems = await storage.getTaxonomyItems(type);
+      res.json(taxonomyItems);
+    } catch (error) {
+      console.error("Error fetching taxonomy items:", error);
+      res.status(500).json({ message: "Error fetching taxonomy items" });
+    }
+  });
+  
+  // Get a single taxonomy item by ID
+  app.get("/api/taxonomy/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid taxonomy item ID" });
+      }
+      
+      const taxonomyItem = await storage.getTaxonomyItem(id);
+      
+      if (!taxonomyItem) {
+        return res.status(404).json({ message: "Taxonomy item not found" });
+      }
+      
+      res.json(taxonomyItem);
+    } catch (error) {
+      console.error("Error fetching taxonomy item:", error);
+      res.status(500).json({ message: "Error fetching taxonomy item" });
+    }
+  });
+  
+  // Get taxonomy item by slug
+  app.get("/api/taxonomy/slug/:slug", async (req: Request, res: Response) => {
+    try {
+      const slug = req.params.slug;
+      const type = req.query.type as 'tag' | 'category' | undefined;
+      
+      if (!slug) {
+        return res.status(400).json({ message: "Slug is required" });
+      }
+      
+      const taxonomyItem = await storage.getTaxonomyItemBySlug(slug, type);
+      
+      if (!taxonomyItem) {
+        return res.status(404).json({ message: "Taxonomy item not found" });
+      }
+      
+      res.json(taxonomyItem);
+    } catch (error) {
+      console.error("Error fetching taxonomy item by slug:", error);
+      res.status(500).json({ message: "Error fetching taxonomy item" });
+    }
+  });
+  
+  // Create a new taxonomy item
+  app.post("/api/taxonomy", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const taxonomyData = req.body;
+      
+      // Validate data
+      try {
+        insertTaxonomySchema.parse(taxonomyData);
+      } catch (validationError) {
+        if (validationError instanceof ZodError) {
+          return res.status(400).json({
+            message: "Validation error",
+            errors: validationError.errors
+          });
+        }
+      }
+      
+      // Check required fields
+      if (!taxonomyData.name) {
+        return res.status(400).json({ message: "Taxonomy item name is required" });
+      }
+      
+      if (!taxonomyData.type) {
+        return res.status(400).json({ message: "Taxonomy item type is required" });
+      }
+      
+      // Check if an item with this name already exists
+      const existingItem = await storage.getTaxonomyItemByName(taxonomyData.name, taxonomyData.type);
+      if (existingItem) {
+        return res.status(400).json({ 
+          message: `A ${taxonomyData.type} with this name already exists` 
+        });
+      }
+      
+      // Create the taxonomy item
+      const newItem = await storage.createTaxonomyItem(taxonomyData);
+      
+      res.status(201).json(newItem);
+    } catch (error) {
+      console.error("Error creating taxonomy item:", error);
+      res.status(500).json({ message: "Error creating taxonomy item" });
+    }
+  });
+  
+  // Update a taxonomy item
+  app.patch("/api/taxonomy/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid taxonomy item ID" });
+      }
+      
+      // Check if the item exists
+      const taxonomyItem = await storage.getTaxonomyItem(id);
+      
+      if (!taxonomyItem) {
+        return res.status(404).json({ message: "Taxonomy item not found" });
+      }
+      
+      // Check if the updated name already exists (if name is changing)
+      if (updates.name && updates.name !== taxonomyItem.name) {
+        const existingItem = await storage.getTaxonomyItemByName(
+          updates.name, 
+          updates.type || taxonomyItem.type
+        );
+        
+        if (existingItem && existingItem.id !== id) {
+          return res.status(400).json({ 
+            message: `A ${taxonomyItem.type} with this name already exists` 
+          });
+        }
+      }
+      
+      // Update the taxonomy item
+      const updatedItem = await storage.updateTaxonomyItem(id, updates);
+      
+      res.json(updatedItem);
+    } catch (error) {
+      console.error("Error updating taxonomy item:", error);
+      res.status(500).json({ message: "Error updating taxonomy item" });
+    }
+  });
+  
+  // Delete a taxonomy item
+  app.delete("/api/taxonomy/:id", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid taxonomy item ID" });
+      }
+      
+      // Check if the item exists
+      const taxonomyItem = await storage.getTaxonomyItem(id);
+      
+      if (!taxonomyItem) {
+        return res.status(404).json({ message: "Taxonomy item not found" });
+      }
+      
+      // Delete the taxonomy item and all its relationships
+      const success = await storage.deleteTaxonomyItem(id);
+      
+      if (!success) {
+        return res.status(500).json({ message: "Failed to delete taxonomy item" });
+      }
+      
+      res.json({ message: "Taxonomy item deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting taxonomy item:", error);
+      res.status(500).json({ message: "Error deleting taxonomy item" });
+    }
+  });
+  
+  // ----------------------------------------------------
+  // Article Taxonomy API
+  // ----------------------------------------------------
+  // Get all taxonomy items for an article
+  app.get("/api/articles/:articleId/taxonomy", async (req: Request, res: Response) => {
+    try {
+      const articleId = parseInt(req.params.articleId);
+      
+      if (isNaN(articleId)) {
+        return res.status(400).json({ message: "Invalid article ID" });
+      }
+      
+      const articleTaxonomy = await storage.getArticleTaxonomy(articleId);
+      
+      res.json(articleTaxonomy);
+    } catch (error) {
+      console.error("Error fetching article taxonomy:", error);
+      res.status(500).json({ message: "Error fetching article taxonomy" });
+    }
+  });
+  
+  // Set/replace all taxonomy items for an article
+  app.put("/api/articles/:articleId/taxonomy", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const articleId = parseInt(req.params.articleId);
+      const taxonomyIds = req.body.taxonomyIds as number[];
+      
+      if (isNaN(articleId)) {
+        return res.status(400).json({ message: "Invalid article ID" });
+      }
+      
+      if (!Array.isArray(taxonomyIds)) {
+        return res.status(400).json({ message: "taxonomyIds must be an array of numbers" });
+      }
+      
+      // Check if the article exists
+      const article = await storage.getArticle(articleId);
+      
+      if (!article) {
+        return res.status(404).json({ message: "Article not found" });
+      }
+      
+      // Check if user has permission to update this article
+      const userId = req.session?.userId;
+      const user = userId ? await storage.getUser(userId) : null;
+      
+      // Check if user has permission to edit the article
+      if (!user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const isAdmin = user.role === 'admin' || user.role === 'editor';
+      const isAuthor = article.primaryAuthorId === userId;
+      
+      if (!isAdmin && !isAuthor) {
+        return res.status(403).json({ message: "You don't have permission to update this article's taxonomy" });
+      }
+      
+      // Set the taxonomy items
+      await storage.setArticleTaxonomy(articleId, taxonomyIds);
+      
+      // Get the updated list
+      const updatedTaxonomy = await storage.getArticleTaxonomy(articleId);
+      
+      res.json(updatedTaxonomy);
+    } catch (error) {
+      console.error("Error updating article taxonomy:", error);
+      res.status(500).json({ message: "Error updating article taxonomy" });
+    }
+  });
+  
+  // Add a taxonomy item to an article
+  app.post("/api/articles/:articleId/taxonomy", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const articleId = parseInt(req.params.articleId);
+      const { taxonomyId, isPrimary } = req.body;
+      
+      if (isNaN(articleId)) {
+        return res.status(400).json({ message: "Invalid article ID" });
+      }
+      
+      if (!taxonomyId || isNaN(parseInt(taxonomyId))) {
+        return res.status(400).json({ message: "Valid taxonomy ID is required" });
+      }
+      
+      // Check if the article exists
+      const article = await storage.getArticle(articleId);
+      
+      if (!article) {
+        return res.status(404).json({ message: "Article not found" });
+      }
+      
+      // Check if user has permission to update this article
+      const userId = req.session?.userId;
+      const user = userId ? await storage.getUser(userId) : null;
+      
+      // Check if user has permission to edit the article
+      if (!user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const isAdmin = user.role === 'admin' || user.role === 'editor';
+      const isAuthor = article.primaryAuthorId === userId;
+      
+      if (!isAdmin && !isAuthor) {
+        return res.status(403).json({ message: "You don't have permission to update this article's taxonomy" });
+      }
+      
+      // Add the taxonomy item
+      const result = await storage.addArticleTaxonomy(articleId, parseInt(taxonomyId), isPrimary);
+      
+      if (!result) {
+        return res.status(500).json({ message: "Failed to add taxonomy to article" });
+      }
+      
+      res.status(201).json(result);
+    } catch (error) {
+      console.error("Error adding taxonomy to article:", error);
+      res.status(500).json({ message: "Error adding taxonomy to article" });
+    }
+  });
+  
+  // Remove a taxonomy item from an article
+  app.delete("/api/articles/:articleId/taxonomy/:taxonomyId", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const articleId = parseInt(req.params.articleId);
+      const taxonomyId = parseInt(req.params.taxonomyId);
+      
+      if (isNaN(articleId) || isNaN(taxonomyId)) {
+        return res.status(400).json({ message: "Invalid article or taxonomy ID" });
+      }
+      
+      // Check if the article exists
+      const article = await storage.getArticle(articleId);
+      
+      if (!article) {
+        return res.status(404).json({ message: "Article not found" });
+      }
+      
+      // Check if user has permission to update this article
+      const userId = req.session?.userId;
+      const user = userId ? await storage.getUser(userId) : null;
+      
+      // Check if user has permission to edit the article
+      if (!user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const isAdmin = user.role === 'admin' || user.role === 'editor';
+      const isAuthor = article.primaryAuthorId === userId;
+      
+      if (!isAdmin && !isAuthor) {
+        return res.status(403).json({ message: "You don't have permission to update this article's taxonomy" });
+      }
+      
+      // Remove the taxonomy item
+      const success = await storage.removeArticleTaxonomy(articleId, taxonomyId);
+      
+      if (!success) {
+        return res.status(500).json({ message: "Failed to remove taxonomy from article" });
+      }
+      
+      res.json({ message: "Taxonomy item removed from article successfully" });
+    } catch (error) {
+      console.error("Error removing taxonomy from article:", error);
+      res.status(500).json({ message: "Error removing taxonomy from article" });
+    }
+  });
+  
+  // Set a taxonomy item as primary for an article
+  app.post("/api/articles/:articleId/taxonomy/:taxonomyId/primary", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const articleId = parseInt(req.params.articleId);
+      const taxonomyId = parseInt(req.params.taxonomyId);
+      
+      if (isNaN(articleId) || isNaN(taxonomyId)) {
+        return res.status(400).json({ message: "Invalid article or taxonomy ID" });
+      }
+      
+      // Check if the article exists
+      const article = await storage.getArticle(articleId);
+      
+      if (!article) {
+        return res.status(404).json({ message: "Article not found" });
+      }
+      
+      // Check if user has permission to update this article
+      const userId = req.session?.userId;
+      const user = userId ? await storage.getUser(userId) : null;
+      
+      // Check if user has permission to edit the article
+      if (!user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const isAdmin = user.role === 'admin' || user.role === 'editor';
+      const isAuthor = article.primaryAuthorId === userId;
+      
+      if (!isAdmin && !isAuthor) {
+        return res.status(403).json({ message: "You don't have permission to update this article's taxonomy" });
+      }
+      
+      // Set as primary
+      const success = await storage.setPrimaryTaxonomy(articleId, taxonomyId);
+      
+      if (!success) {
+        return res.status(500).json({ message: "Failed to set primary taxonomy" });
+      }
+      
+      res.json({ message: "Primary taxonomy set successfully" });
+    } catch (error) {
+      console.error("Error setting primary taxonomy:", error);
+      res.status(500).json({ message: "Error setting primary taxonomy" });
+    }
+  });
+
+  // ----------------------------------------------------
   // Advertisements API
   // ----------------------------------------------------
   app.get("/api/advertisements", requireAdmin, async (req: Request, res: Response) => {
