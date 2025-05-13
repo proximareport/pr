@@ -280,7 +280,10 @@ function AdvertisementTab() {
             <TableRow key={ad.id}>
               <TableCell className="font-medium">{ad.title}</TableCell>
               <TableCell>{getPlacementLabel(ad.placement)}</TableCell>
-              <TableCell>{ad.user?.username || 'Unknown'}</TableCell>
+              <TableCell>
+                {ad.user?.username || 'Unknown'} 
+                {ad.user?.email && <div className="text-xs text-gray-500">{ad.user.email}</div>}
+              </TableCell>
               <TableCell>
                 <div className="text-xs">
                   <div>Start: {new Date(ad.startDate).toLocaleDateString()}</div>
@@ -382,7 +385,12 @@ function AdvertisementTab() {
           <DialogHeader>
             <DialogTitle>Advertisement Preview</DialogTitle>
             <DialogDescription>
-              Submitted by {previewAd?.user?.username || 'Unknown'} ({previewAd?.user?.email})
+              Submitted by {previewAd?.user?.username || 'Unknown'} 
+              {previewAd?.user?.email && (
+                <span className="block text-sm text-gray-500 mt-1">
+                  {previewAd.user.email}
+                </span>
+              )}
             </DialogDescription>
           </DialogHeader>
           
@@ -423,6 +431,11 @@ function AdvertisementTab() {
             <div className="grid grid-cols-[80px_1fr] gap-2">
               <div className="font-medium">Price:</div>
               <div>{previewAd?.price ? `$${(previewAd.price / 100).toFixed(2)}` : 'No price set'}</div>
+            </div>
+
+            <div className="grid grid-cols-[80px_1fr] gap-2">
+              <div className="font-medium">User ID:</div>
+              <div>{previewAd?.userId || 'Unknown'}</div>
             </div>
             
             {previewAd?.adminNotes && (
