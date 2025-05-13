@@ -175,36 +175,14 @@ function EmergencyBannerTab() {
     
     createBannerMutation.mutate({
       message,
-      type: bannerType,
+      level: bannerType,
       expiresAt: expiresAt ? expiresAt.toISOString() : undefined
     });
   };
   
-  // Get Icon based on banner type
-  const getBannerIcon = (type: string) => {
-    switch (type) {
-      case 'warning':
-        return <AlertTriangleIcon className="h-5 w-5 text-amber-500" />;
-      case 'critical':
-        return <AlertOctagonIcon className="h-5 w-5 text-red-500" />;
-      case 'info':
-      default:
-        return <InfoIcon className="h-5 w-5 text-blue-500" />;
-    }
-  };
+
   
-  // Get banner background color based on type
-  const getBannerBackground = (type: string) => {
-    switch (type) {
-      case 'warning':
-        return 'bg-amber-500/10 border-amber-500/50';
-      case 'critical':
-        return 'bg-red-500/10 border-red-500/50';
-      case 'info':
-      default:
-        return 'bg-blue-500/10 border-blue-500/50';
-    }
-  };
+
   
   return (
     <div className="space-y-6">
