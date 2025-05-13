@@ -122,7 +122,13 @@ export interface IStorage {
   approveJobListing(id: number): Promise<JobListing | undefined>;
   
   // Advertisement operations
-  getAdvertisements(placement?: string): Promise<Advertisement[]>;
+  getAdvertisements(
+    page?: number, 
+    limit?: number, 
+    includeUserData?: boolean,
+    placement?: string, 
+    includeNotApproved?: boolean
+  ): Promise<Advertisement[]>;
   getAdvertisementById(id: number): Promise<Advertisement | undefined>;
   createAdvertisement(ad: InsertAdvertisement): Promise<Advertisement>;
   createAdvertisementWithStatus(ad: any): Promise<Advertisement>;
@@ -1067,17 +1073,53 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(advertisements.placement, placement));
     }
     
-    // Build the query with conditions if any exist
-    let query;
+    // Build base query
+    let baseQuery;
     if (conditions.length > 0) {
-      query = db.select().from(advertisements).where(and(...conditions));
+      baseQuery = db.select().from(advertisements).where(and(...conditions));
     } else {
       // If no conditions (or 'all' with includeNotApproved=true), just get all ads
-      query = db.select().from(advertisements);
+      baseQuery = db.select().from(advertisements);
     }
     
-    console.log('Running advertisement query with params:', { placement, includeNotApproved });
-    const results = await query;
+    // Add pagination
+    const offset = (page - 1) * limit;
+    
+    // If includeUserData is true, join with users table to get user information
+    let results;
+    if (includeUserData) {
+      results = await db.select({
+        advertisement: advertisements,
+        user: {
+          id: users.id,
+          username: users.username,
+          email: users.email
+        }
+      })
+      .from(advertisements)
+      .leftJoin(users, eq(advertisements.userId, users.id))
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .limit(limit)
+      .offset(offset)
+      .orderBy(desc(advertisements.createdAt));
+      
+      // Transform results to include user as a nested object
+      results = results.map(row => ({
+        ...row.advertisement,
+        user: row.user.id ? {
+          id: row.user.id,
+          username: row.user.username,
+          email: row.user.email
+        } : null
+      }));
+    } else {
+      // Standard query without user data
+      results = await baseQuery
+        .limit(limit)
+        .offset(offset)
+        .orderBy(desc(advertisements.createdAt));
+    }
+    
     console.log(`Found ${results.length} advertisements` + (includeNotApproved ? ' (including unapproved)' : ' (approved only)'));
     
     // Log a more detailed breakdown

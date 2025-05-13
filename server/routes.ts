@@ -1799,8 +1799,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Fetch approved ads for the requested placement
       // (or include unapproved if user is admin and requested them)
       const ads = await storage.getAdvertisements(
-        placement, 
-        isAdmin && includeNotApproved
+        1, // page
+        50, // limit - get enough ads for rotation
+        false, // don't include user data here
+        placement, // placement 
+        isAdmin && includeNotApproved // include unapproved if admin
       );
       
       // If no approved ads are found, and this is for the frontend display, 
@@ -1809,7 +1812,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("Found 0 advertisements (approved only)");
         
         // Check if there are any ads at all for this placement (approved or not)
-        const allAds = await storage.getAdvertisements(placement, true);
+        const allAds = await storage.getAdvertisements(1, 50, false, placement, true);
         console.log(`Found ${allAds.length} ads for placement ${placement}, of which ${allAds.filter(ad => ad.isApproved).length} are actually approved`);
         
         if (allAds.length === 0) {
