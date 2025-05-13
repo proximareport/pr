@@ -552,9 +552,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Specific emergency fix - allow login for this specific user and password
+      console.log("CHECKING EMERGENCY LOGIN:", { 
+        email, 
+        password,
+        emailMatch: email === 'Samthibault28@gmail.com',
+        passwordMatch: password === 'sam345113'
+      });
+      
       if (email === 'Samthibault28@gmail.com' && password === 'sam345113') {
+        console.log("USING EMERGENCY LOGIN FOR USER:", user.id);
         req.session.userId = user.id;
         req.session.isAdmin = user.role === 'admin';
+        console.log("SESSION SET:", req.session);
         return res.json(user);
       }
       
