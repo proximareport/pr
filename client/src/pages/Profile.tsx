@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { ThemeSelector } from "@/components/theme/ThemeSelector";
 
 interface ProfileProps {
   params: {
@@ -22,10 +23,18 @@ function Profile({ params }: ProfileProps) {
   // Check if we're on settings page or viewing user profile
   const isSettings = location.includes("/settings");
   
+  // Debug logging
+  console.log('Profile page render:', {
+    location,
+    isSettings,
+    user: user?.username,
+    activeTab
+  });
+  
   useEffect(() => {
     // Set active tab based on URL hash
     const hash = window.location.hash.replace("#", "");
-    if (hash && ["privacy", "comments", "notifications", "subscription", "security", "data"].includes(hash)) {
+    if (hash && ["privacy", "comments", "notifications", "subscription", "security", "data", "themes"].includes(hash)) {
       setActiveTab(hash);
     } else if (isSettings && !window.location.hash) {
       // Set default hash if on settings page without hash
@@ -50,6 +59,13 @@ function Profile({ params }: ProfileProps) {
     }
   }, [isSettings, user, toast, setLocation]);
 
+  // Debug: Log when themes tab is active
+  useEffect(() => {
+    if (activeTab === 'themes') {
+      console.log('Themes tab is now active');
+    }
+  }, [activeTab]);
+
   return (
     <div className="bg-[#0D0D17] min-h-screen pt-8 pb-16">
       {isSettings ? (
@@ -57,7 +73,7 @@ function Profile({ params }: ProfileProps) {
           <h1 className="text-2xl font-space font-bold mb-6">Account Settings</h1>
           
           <Tabs defaultValue="privacy" value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-8 bg-[#14141E] p-1 border border-white/10 rounded-lg grid grid-cols-3 md:grid-cols-6">
+            <TabsList className="mb-8 bg-[#14141E] p-1 border border-white/10 rounded-lg grid grid-cols-3 md:grid-cols-7">
               <TabsTrigger value="privacy" onClick={() => {
                 window.history.replaceState(null, '', '#privacy');
               }}>
@@ -72,6 +88,11 @@ function Profile({ params }: ProfileProps) {
                 window.history.replaceState(null, '', '#comments');
               }}>
                 Comments
+              </TabsTrigger>
+              <TabsTrigger value="themes" onClick={() => {
+                window.history.replaceState(null, '', '#themes');
+              }}>
+                Themes
               </TabsTrigger>
               <TabsTrigger value="subscription" onClick={() => {
                 window.history.replaceState(null, '', '#subscription');
@@ -177,6 +198,12 @@ function Profile({ params }: ProfileProps) {
                     Save Preferences
                   </Button>
                 </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="themes">
+              <div className="bg-[#14141E] border border-white/10 rounded-lg p-6">
+                <ThemeSelector />
               </div>
             </TabsContent>
             

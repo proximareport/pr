@@ -1,0 +1,755 @@
+/* Import Google Fonts for better theme authenticity */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Theme System CSS Variables and Effects */
+
+/* Default Theme - Clean and Modern */
+.theme-default {
+  --bg-primary: #0D0D17 !important;
+  --bg-secondary: #14141E !important;
+  --bg-tertiary: #1E1E2D !important;
+  --text-primary: #FFFFFF !important;
+  --text-secondary: #E5E7EB !important;
+  --text-muted: #9CA3AF !important;
+  --accent-primary: #8B5CF6 !important;
+  --accent-secondary: #7C3AED !important;
+  --border-primary: #374151 !important;
+  --border-secondary: #4B5563 !important;
+  --font-family: "Inter", system-ui, sans-serif !important;
+  --font-weight: normal !important;
+}
+
+/* APOLLO MISSION CONTROL - Authentic 1960s NASA Green CRT */
+.theme-apollo {
+  --bg-primary: #000000 !important;
+  --bg-secondary: #001100 !important;
+  --bg-tertiary: #002200 !important;
+  --text-primary: #00FF00 !important;
+  --text-secondary: #00CC00 !important;
+  --text-muted: #008800 !important;
+  --accent-primary: #00FF00 !important;
+  --accent-secondary: #00CC00 !important;
+  --border-primary: #004400 !important;
+  --border-secondary: #006600 !important;
+  --font-family: "Courier", "Courier New", monospace !important;
+  --font-weight: bold !important;
+  --scan-lines: 1;
+  --crt-effect: 1;
+  --mission-control: 1;
+}
+
+/* CYBERPUNK SPACE - Neon Synthwave Aesthetic */
+.theme-cyberpunk {
+  --bg-primary: #0A0A0F !important;
+  --bg-secondary: #1A1A2E !important;
+  --bg-tertiary: #16213E !important;
+  --text-primary: #FF00FF !important;
+  --text-secondary: #00FFFF !important;
+  --text-muted: #FF69B4 !important;
+  --accent-primary: #FF00FF !important;
+  --accent-secondary: #00FFFF !important;
+  --border-primary: #FF1493 !important;
+  --border-secondary: #00CED1 !important;
+  --font-family: "Orbitron", "Courier New", monospace !important;
+  --font-weight: bold !important;
+  --neon-glow: 1;
+  --glitch-effect: 1;
+  --grid-overlay: 1;
+}
+
+/* 2001: A SPACE ODYSSEY - HAL 9000 Minimalist White */
+.theme-space-odyssey {
+  --bg-primary: #FFFFFF !important;
+  --bg-secondary: #F8F9FA !important;
+  --bg-tertiary: #E9ECEF !important;
+  --text-primary: #000000 !important;
+  --text-secondary: #212529 !important;
+  --text-muted: #6C757D !important;
+  --accent-primary: #DC3545 !important;
+  --accent-secondary: #C82333 !important;
+  --border-primary: #DEE2E6 !important;
+  --border-secondary: #CED4DA !important;
+  --font-family: "Eurostile", "Arial", sans-serif !important;
+  --font-weight: normal !important;
+  --minimal: 1;
+  --hal-9000: 1;
+}
+
+/* Alien Computer Theme - Based on Nostromo MU/TH/UR 6000 */
+.theme-alien-computer {
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #2a2a2a;
+  --text-primary: #00ff00;
+  --text-secondary: #00cc00;
+  --text-muted: #008800;
+  --accent-primary: #00ff00;
+  --accent-secondary: #00cc00;
+  --border-primary: #00ff00;
+  --border-secondary: #008800;
+  --shadow-primary: 0 0 10px rgba(0, 255, 0, 0.3);
+  --shadow-secondary: 0 0 5px rgba(0, 255, 0, 0.2);
+  --font-primary: 'Courier New', monospace;
+  --font-secondary: 'Courier New', monospace;
+  
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-primary);
+}
+
+/* Terminal-style headers - exclude header area */
+.theme-alien-computer main h1, .theme-alien-computer main h2, .theme-alien-computer main h3,
+.theme-alien-computer main h4, .theme-alien-computer main h5, .theme-alien-computer main h6,
+.theme-alien-computer .content h1, .theme-alien-computer .content h2, .theme-alien-computer .content h3,
+.theme-alien-computer .content h4, .theme-alien-computer .content h5, .theme-alien-computer .content h6 {
+  color: var(--text-primary) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 2px !important;
+  font-weight: bold !important;
+  text-shadow: var(--shadow-primary) !important;
+  border-bottom: 2px solid var(--border-primary) !important;
+  padding-bottom: 8px !important;
+}
+
+/* MU/TH/UR 6000 style terminal text - exclude header */
+.theme-alien-computer main p, .theme-alien-computer main span, .theme-alien-computer main div,
+.theme-alien-computer .content p, .theme-alien-computer .content span, .theme-alien-computer .content div {
+  color: var(--text-primary) !important;
+  text-shadow: 0 0 2px var(--text-primary) !important;
+}
+
+/* Terminal-style buttons - exclude header */
+.theme-alien-computer main button, .theme-alien-computer main .btn,
+.theme-alien-computer .content button, .theme-alien-computer .content .btn {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border: 2px solid var(--border-primary) !important;
+  font-family: var(--font-primary) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  box-shadow: var(--shadow-primary) !important;
+  transition: all 0.3s ease !important;
+}
+
+.theme-alien-computer main button:hover, .theme-alien-computer main .btn:hover,
+.theme-alien-computer .content button:hover, .theme-alien-computer .content .btn:hover {
+  background: var(--text-primary) !important;
+  color: var(--bg-primary) !important;
+  box-shadow: 0 0 15px var(--text-primary) !important;
+}
+
+/* Terminal-style inputs - exclude header */
+.theme-alien-computer main input, .theme-alien-computer main textarea, .theme-alien-computer main select,
+.theme-alien-computer .content input, .theme-alien-computer .content textarea, .theme-alien-computer .content select {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border: 2px solid var(--border-primary) !important;
+  font-family: var(--font-primary) !important;
+  box-shadow: var(--shadow-secondary) !important;
+}
+
+.theme-alien-computer main input:focus, .theme-alien-computer main textarea:focus, .theme-alien-computer main select:focus,
+.theme-alien-computer .content input:focus, .theme-alien-computer .content textarea:focus, .theme-alien-computer .content select:focus {
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 0 10px var(--accent-primary) !important;
+  outline: none !important;
+}
+
+/* Navigation and menus - exclude header */
+.theme-alien-computer main nav, .theme-alien-computer main .navbar,
+.theme-alien-computer .content nav, .theme-alien-computer .content .navbar {
+  background: var(--bg-secondary) !important;
+  border-bottom: 2px solid var(--border-primary) !important;
+  box-shadow: var(--shadow-primary) !important;
+}
+
+.theme-alien-computer main .nav-link, .theme-alien-computer .content .nav-link {
+  color: var(--text-primary) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  border-right: 1px solid var(--border-secondary) !important;
+}
+
+.theme-alien-computer main .nav-link:hover, .theme-alien-computer .content .nav-link:hover {
+  background: var(--text-primary) !important;
+  color: var(--bg-primary) !important;
+}
+
+/* Cards and containers - exclude header */
+.theme-alien-computer main .card, .theme-alien-computer main .container,
+.theme-alien-computer .content .card, .theme-alien-computer .content .container {
+  background: var(--bg-secondary) !important;
+  border: 2px solid var(--border-primary) !important;
+  box-shadow: var(--shadow-primary) !important;
+}
+
+/* Tables - exclude header */
+.theme-alien-computer main table, .theme-alien-computer .content table {
+  border: 2px solid var(--border-primary) !important;
+  background: var(--bg-secondary) !important;
+}
+
+.theme-alien-computer main th, .theme-alien-computer .content th {
+  background: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  border: 1px solid var(--border-primary) !important;
+}
+
+.theme-alien-computer main td, .theme-alien-computer .content td {
+  border: 1px solid var(--border-secondary) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* Code blocks */
+.theme-alien-computer pre, .theme-alien-computer code {
+  background: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-primary) !important;
+  font-family: var(--font-primary) !important;
+}
+
+/* Scrollbars */
+.theme-alien-computer ::-webkit-scrollbar {
+  width: 12px !important;
+  background: var(--bg-primary) !important;
+}
+
+.theme-alien-computer ::-webkit-scrollbar-thumb {
+  background: var(--border-primary) !important;
+  border: 1px solid var(--bg-primary) !important;
+}
+
+.theme-alien-computer ::-webkit-scrollbar-track {
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-secondary) !important;
+}
+
+/* Alien Computer Effects */
+.theme-alien-computer.terminal-flicker {
+  animation: terminal-flicker 0.1s infinite linear;
+}
+
+@keyframes terminal-flicker {
+  0% { opacity: 0.98; }
+  50% { opacity: 1; }
+  100% { opacity: 0.98; }
+}
+
+.theme-alien-computer.scan-lines::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 1px,
+    rgba(0, 255, 0, 0.02) 1px,
+    rgba(0, 255, 0, 0.02) 2px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.theme-alien-computer.data-stream::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 2px;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--text-primary),
+    transparent
+  );
+  animation: data-stream 2s linear infinite;
+  pointer-events: none;
+  z-index: 9998;
+}
+
+@keyframes data-stream {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+.theme-alien-computer.system-status {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  color: var(--text-primary);
+  font-family: var(--font-primary);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  z-index: 10000;
+}
+
+.theme-alien-computer.system-status::before {
+  content: 'MU/TH/UR 6000 ONLINE';
+  animation: status-blink 2s infinite;
+}
+
+@keyframes status-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.3; }
+}
+
+/* MARS COLONY - Dusty Red Martian Surface */
+.theme-mars-colony {
+  --bg-primary: #8B4513 !important;
+  --bg-secondary: #CD853F !important;
+  --bg-tertiary: #DEB887 !important;
+  --text-primary: #FFFFFF !important;
+  --text-secondary: #F5F5DC !important;
+  --text-muted: #D2B48C !important;
+  --accent-primary: #DC143C !important;
+  --accent-secondary: #B22222 !important;
+  --border-primary: #A0522D !important;
+  --border-secondary: #CD853F !important;
+  --font-family: "Helvetica", "Arial", sans-serif !important;
+  --font-weight: bold !important;
+  --dust-texture: 1;
+  --mars-atmosphere: 1;
+}
+
+/* BLADE RUNNER - Neo-Noir Cyberpunk with Rain */
+.theme-blade-runner {
+  --bg-primary: #0A0A0A !important;
+  --bg-secondary: #1A1A1A !important;
+  --bg-tertiary: #2A2A2A !important;
+  --text-primary: #FFD700 !important;
+  --text-secondary: #FFA500 !important;
+  --text-muted: #808080 !important;
+  --accent-primary: #FFD700 !important;
+  --accent-secondary: #FFA500 !important;
+  --border-primary: #333333 !important;
+  --border-secondary: #444444 !important;
+  --font-family: "Courier New", "Courier", monospace !important;
+  --font-weight: normal !important;
+  --rain-effect: 1;
+  --neon-reflection: 1;
+  --neo-noir: 1;
+}
+
+/* INTERSTELLAR - Deep Space with Wormhole Colors */
+.theme-interstellar {
+  --bg-primary: #000033 !important;
+  --bg-secondary: #000066 !important;
+  --bg-tertiary: #000099 !important;
+  --text-primary: #FFFFFF !important;
+  --text-secondary: #E6E6FA !important;
+  --text-muted: #B0C4DE !important;
+  --accent-primary: #00FFFF !important;
+  --accent-secondary: #4169E1 !important;
+  --border-primary: #191970 !important;
+  --border-secondary: #483D8B !important;
+  --font-family: "Arial", sans-serif !important;
+  --font-weight: normal !important;
+  --wormhole-effect: 1;
+  --cosmic-particles: 1;
+  --space-time: 1;
+}
+
+/* Apply theme variables to body and main content areas only */
+[class*="theme-"] body {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  font-family: var(--font-family) !important;
+  font-weight: var(--font-weight) !important;
+}
+
+/* Apply theme styles to main content areas, excluding header */
+[class*="theme-"] main,
+[class*="theme-"] .main-content,
+[class*="theme-"] .content,
+[class*="theme-"] .container:not(header .container),
+[class*="theme-"] .page-content,
+[class*="theme-"] .article-content,
+[class*="theme-"] .sidebar-content,
+[class*="theme-"] .footer-content {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  font-family: var(--font-family) !important;
+  font-weight: var(--font-weight) !important;
+}
+
+/* Additional theme overrides for common elements */
+[class*="theme-"] {
+  /* Override Tailwind's default background colors */
+  --tw-bg-opacity: 1 !important;
+}
+
+[class*="theme-"] .bg-white,
+[class*="theme-"] .bg-gray-50,
+[class*="theme-"] .bg-gray-100,
+[class*="theme-"] .bg-gray-200,
+[class*="theme-"] .bg-gray-300,
+[class*="theme-"] .bg-gray-400,
+[class*="theme-"] .bg-gray-500,
+[class*="theme-"] .bg-gray-600,
+[class*="theme-"] .bg-gray-700,
+[class*="theme-"] .bg-gray-800,
+[class*="theme-"] .bg-gray-900,
+[class*="theme-"] .bg-black {
+  background-color: var(--bg-secondary) !important;
+}
+
+[class*="theme-"] .text-white,
+[class*="theme-"] .text-gray-50,
+[class*="theme-"] .text-gray-100,
+[class*="theme-"] .text-gray-200,
+[class*="theme-"] .text-gray-300,
+[class*="theme-"] .text-gray-400,
+[class*="theme-"] .text-gray-500,
+[class*="theme-"] .text-gray-600,
+[class*="theme-"] .text-gray-700,
+[class*="theme-"] .text-gray-800,
+[class*="theme-"] .text-gray-900,
+[class*="theme-"] .text-black {
+  color: var(--text-primary) !important;
+}
+
+/* Override specific Tailwind classes that might be used */
+[class*="theme-"] .bg-slate-50,
+[class*="theme-"] .bg-slate-100,
+[class*="theme-"] .bg-slate-200,
+[class*="theme-"] .bg-slate-300,
+[class*="theme-"] .bg-slate-400,
+[class*="theme-"] .bg-slate-500,
+[class*="theme-"] .bg-slate-600,
+[class*="theme-"] .bg-slate-700,
+[class*="theme-"] .bg-slate-800,
+[class*="theme-"] .bg-slate-900 {
+  background-color: var(--bg-secondary) !important;
+}
+
+[class*="theme-"] .text-slate-50,
+[class*="theme-"] .text-slate-100,
+[class*="theme-"] .text-slate-200,
+[class*="theme-"] .text-slate-300,
+[class*="theme-"] .text-slate-400,
+[class*="theme-"] .text-slate-500,
+[class*="theme-"] .text-slate-600,
+[class*="theme-"] .text-slate-700,
+[class*="theme-"] .text-slate-800,
+[class*="theme-"] .text-slate-900 {
+  color: var(--text-primary) !important;
+}
+
+/* Override common UI components */
+[class*="theme-"] .card,
+[class*="theme-"] .bg-card,
+[class*="theme-"] .bg-popover,
+[class*="theme-"] .bg-muted {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+[class*="theme-"] .text-card-foreground,
+[class*="theme-"] .text-popover-foreground,
+[class*="theme-"] .text-muted-foreground {
+  color: var(--text-secondary) !important;
+}
+
+[class*="theme-"] .border,
+[class*="theme-"] .border-border {
+  border-color: var(--border-primary) !important;
+}
+
+[class*="theme-"] .border-input {
+  border-color: var(--border-secondary) !important;
+}
+
+/* Override button styles */
+[class*="theme-"] .btn,
+[class*="theme-"] .button {
+  background-color: var(--accent-primary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-primary) !important;
+}
+
+[class*="theme-"] .btn:hover,
+[class*="theme-"] .button:hover {
+  background-color: var(--accent-secondary) !important;
+}
+
+/* Override input styles */
+[class*="theme-"] input,
+[class*="theme-"] textarea,
+[class*="theme-"] select {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-secondary) !important;
+}
+
+[class*="theme-"] input:focus,
+[class*="theme-"] textarea:focus,
+[class*="theme-"] select:focus {
+  border-color: var(--accent-primary) !important;
+  outline-color: var(--accent-primary) !important;
+}
+
+/* Override link styles */
+[class*="theme-"] a {
+  color: var(--accent-primary) !important;
+}
+
+[class*="theme-"] a:hover {
+  color: var(--accent-secondary) !important;
+}
+
+/* Override header and navigation */
+[class*="theme-"] header,
+[class*="theme-"] nav,
+[class*="theme-"] .header,
+[class*="theme-"] .navigation {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border-bottom-color: var(--border-primary) !important;
+}
+
+/* Override footer */
+[class*="theme-"] footer,
+[class*="theme-"] .footer {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--text-secondary) !important;
+  border-top-color: var(--border-primary) !important;
+}
+
+/* Override sidebar */
+[class*="theme-"] .sidebar,
+[class*="theme-"] .side-panel {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border-right-color: var(--border-primary) !important;
+}
+
+/* Override modal/dialog */
+[class*="theme-"] .modal,
+[class*="theme-"] .dialog,
+[class*="theme-"] [role="dialog"] {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-primary) !important;
+}
+
+/* Override dropdown/menu */
+[class*="theme-"] .dropdown,
+[class*="theme-"] .menu,
+[class*="theme-"] [role="menu"] {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-primary) !important;
+}
+
+/* Override table styles */
+[class*="theme-"] table {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+[class*="theme-"] th,
+[class*="theme-"] td {
+  border-color: var(--border-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+[class*="theme-"] tr:nth-child(even) {
+  background-color: var(--bg-tertiary) !important;
+}
+
+/* Override code blocks */
+[class*="theme-"] pre,
+[class*="theme-"] code {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-secondary) !important;
+}
+
+/* Override blockquote */
+[class*="theme-"] blockquote {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--text-secondary) !important;
+  border-left-color: var(--accent-primary) !important;
+}
+
+/* Override scrollbar */
+[class*="theme-"] ::-webkit-scrollbar {
+  background-color: var(--bg-secondary) !important;
+}
+
+[class*="theme-"] ::-webkit-scrollbar-thumb {
+  background-color: var(--border-primary) !important;
+}
+
+[class*="theme-"] ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--border-secondary) !important;
+}
+
+/* Theme Effects and Animations */
+
+/* Apollo Mission Control Effects */
+.theme-apollo.scan-lines::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 0, 0.03) 2px,
+    rgba(0, 255, 0, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.theme-apollo.crt-effect {
+  animation: flicker 0.15s infinite linear;
+}
+
+@keyframes flicker {
+  0% { opacity: 0.98; }
+  50% { opacity: 1; }
+  100% { opacity: 0.98; }
+}
+
+/* Cyberpunk Effects */
+.theme-cyberpunk.neon-glow {
+  text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor;
+}
+
+.theme-cyberpunk.glitch-effect {
+  animation: glitch 2s infinite;
+}
+
+@keyframes glitch {
+  0% { transform: translate(0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(-2px, -2px); }
+  60% { transform: translate(2px, 2px); }
+  80% { transform: translate(2px, -2px); }
+  100% { transform: translate(0); }
+}
+
+.theme-cyberpunk.grid-overlay::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    linear-gradient(rgba(255, 0, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 0, 255, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+  pointer-events: none;
+  z-index: 9998;
+}
+
+/* Space Odyssey HAL 9000 Effects */
+.theme-space-odyssey.hal-9000 {
+  color: var(--accent-primary) !important;
+  font-weight: bold !important;
+}
+
+.theme-space-odyssey.minimal {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Mars Colony Effects */
+.theme-mars-colony.dust-texture::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" stitchTiles="stitch"/></filter></defs><rect width="100" height="100" filter="url(%23noise)" opacity="0.1"/></svg>');
+  pointer-events: none;
+  z-index: 9997;
+}
+
+.theme-mars-colony.mars-atmosphere {
+  background: radial-gradient(circle, var(--bg-tertiary), var(--bg-secondary), var(--bg-primary)) !important;
+}
+
+/* Blade Runner Effects */
+.theme-blade-runner.rain-effect::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(transparent, rgba(255, 215, 0, 0.02));
+  animation: rain 3s linear infinite;
+  pointer-events: none;
+  z-index: 9996;
+}
+
+@keyframes rain {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+.theme-blade-runner.neon-reflection {
+  text-shadow: 0 0 2px currentColor !important;
+}
+
+.theme-blade-runner.neo-noir {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Interstellar Effects */
+.theme-interstellar.wormhole-effect {
+  background: conic-gradient(from 0deg, var(--bg-primary), rgba(0, 255, 255, 0.05), var(--bg-primary));
+  background-size: 200% 200%;
+  animation: subtle-rotation 60s linear infinite;
+}
+
+@keyframes subtle-rotation {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.theme-interstellar.cosmic-particles::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(1px 1px at 20px 30px, rgba(255, 255, 255, 0.1), transparent),
+    radial-gradient(1px 1px at 40px 70px, rgba(0, 255, 255, 0.1), transparent),
+    radial-gradient(1px 1px at 90px 40px, rgba(255, 255, 255, 0.1), transparent),
+    radial-gradient(1px 1px at 130px 80px, rgba(0, 255, 255, 0.1), transparent),
+    radial-gradient(1px 1px at 160px 30px, rgba(255, 255, 255, 0.1), transparent);
+  background-repeat: repeat;
+  background-size: 200px 100px;
+  animation: cosmic-drift 120s linear infinite;
+  pointer-events: none;
+  z-index: 9997;
+}
+
+@keyframes cosmic-drift {
+  0% { transform: translateY(0px); }
+  100% { transform: translateY(-100px); }
+}
+
+.theme-interstellar.space-time {
+  text-shadow: 0 0 1px rgba(0, 255, 255, 0.3) !important;
+} 

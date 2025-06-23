@@ -1,9 +1,49 @@
+import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 // We now register newsletter routes directly in routes.ts
 import { setupVite, serveStatic, log } from "./vite";
+import session from 'express-session';
+import cors from 'cors';
+
+// Validate required environment variables
+const requiredEnvVars = {
+  GHOST_URL: process.env.GHOST_URL,
+  GHOST_CONTENT_API_KEY: process.env.GHOST_CONTENT_API_KEY
+};
+
+console.log('Environment Variables:', {
+  ...requiredEnvVars,
+  NODE_ENV: process.env.NODE_ENV
+});
+
+const missingEnvVars = Object.entries(requiredEnvVars)
+  .filter(([_, value]) => !value)
+  .map(([key]) => key);
+
+if (missingEnvVars.length > 0) {
+  console.error('Missing required environment variables:', missingEnvVars);
+  process.exit(1);
+}
 
 const app = express();
+
+// Session configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// Middleware
+app.use(cors({
+  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 

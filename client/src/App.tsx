@@ -14,7 +14,9 @@ import Register from "@/pages/Register";
 import Profile from "@/pages/Profile";
 import EditProfile from "@/pages/EditProfile";
 import Launches from "@/pages/Launches";
+import MissionControl from "@/pages/MissionControl";
 import Astronomy from "@/pages/Astronomy";
+import Jobs from "@/pages/Jobs";
 import Subscribe from "@/pages/Subscribe";
 import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
 import TagView from "@/pages/TagView";
@@ -23,8 +25,14 @@ import NewsletterVerify from "@/pages/NewsletterVerify";
 import NewsletterUnsubscribe from "@/pages/NewsletterUnsubscribe";
 import MaintenanceMode from "@/components/MaintenanceMode";
 import AdminDashboard from "@/pages/Admin/NewDashboard";
-import AdminArticleEditor from "@/pages/Admin/NewArticleEditor";
 import { useAuth, AuthProvider } from "@/lib/AuthContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
+import { MissionControlSidebar } from "@/components/theme/MissionControlSidebar";
+import { StardateDisplay } from "@/components/theme/StardateDisplay";
+import Gallery from './pages/Gallery';
+
+// Import theme styles
+import '@/styles/themes.css';
 
 // Redirect component to navigate to the main admin dashboard with a specific tab
 const RedirectToDashboardTab = ({ tab, subtab }: { tab: string, subtab?: string }) => {
@@ -74,6 +82,8 @@ function Router() {
       <Route path="/profile/:username?" component={Profile} />
       <Route path="/edit-profile" component={EditProfile} />
       <Route path="/launches" component={Launches} />
+      <Route path="/missioncontrol" component={MissionControl} />
+      <Route path="/jobs" component={Jobs} />
       <Route path="/astronomy" component={Astronomy} />
       <Route path="/subscribe" component={Subscribe} />
       <Route path="/subscription/success" component={SubscriptionSuccess} />
@@ -84,10 +94,6 @@ function Router() {
       
       {/* Main Admin Dashboard */}
       <Route path="/admin" component={AdminDashboard} />
-      <Route path="/admin/articles/new" component={AdminArticleEditor} />
-      <Route path="/admin/articles/:id/edit" component={AdminArticleEditor} />
-      {/* Keep old route format for backward compatibility */}
-      <Route path="/admin/articles/edit/:id" component={AdminArticleEditor} />
       
       {/* Redirects to main dashboard with appropriate tabs */}
       <Route path="/admin/users" component={() => <RedirectToDashboardTab tab="users" />} />
@@ -136,6 +142,8 @@ function Router() {
           </React.Suspense>
         );
       }} />
+      
+      <Route path="/gallery" component={Gallery} />
       
       <Route component={NotFound} />
     </Switch>
@@ -186,6 +194,10 @@ function MainApp() {
         <Router />
       </main>
       <Footer />
+      
+      {/* Theme-specific components */}
+      <MissionControlSidebar />
+      <StardateDisplay />
     </div>
   );
 }
@@ -195,7 +207,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>
-          <MainApp />
+          <ThemeProvider>
+            <MainApp />
+          </ThemeProvider>
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>

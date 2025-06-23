@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -31,18 +32,19 @@ import {
   PieChart,
   Layers,
   Compass,
-  Clock
+  Clock,
+  FileText
 } from 'lucide-react';
 
 // Import all tab components
 import UserManagement from './UserManagement';
 import MediaLibraryTab from './MediaLibraryTab';
 import AdvertisementTab from './AdvertisementTab';
+import JobListingsTab from './JobListingsTab';
 import EmergencyBannerTab from './EmergencyBannerTab';
 import TaxonomyTab from './TaxonomyTab';
 import SiteSettingsForm from '@/components/admin/SiteSettingsForm';
-import DraftManagement from './DraftManagement';
-import PublishedContent from './PublishedContent';
+
 
 // Types
 interface Article {
@@ -141,6 +143,13 @@ function NewAdminDashboard() {
     enabled: !!isAdmin
   });
   
+  const { data: jobs = [], isLoading: jobsLoading } = useQuery({
+    queryKey: ['/api/admin/job-listings'],
+    queryFn: () => apiRequest('GET', '/api/admin/job-listings?includeUnapproved=true'),
+    retry: false,
+    enabled: !!isAdmin
+  });
+  
   // Calculate dashboard statistics
   const stats = {
     totalArticles: Array.isArray(articles) ? articles.length : 0,
@@ -152,6 +161,9 @@ function NewAdminDashboard() {
     totalMedia: Array.isArray(mediaItems) ? mediaItems.length : 0,
     totalCategories: Array.isArray(categories) ? categories.length : 0,
     totalTags: Array.isArray(tags) ? tags.length : 0,
+    totalJobs: Array.isArray(jobs) ? jobs.length : 0,
+    pendingJobs: Array.isArray(jobs) ? jobs.filter((job: any) => !job.isApproved).length : 0,
+    approvedJobs: Array.isArray(jobs) ? jobs.filter((job: any) => job.isApproved).length : 0,
     // Get recent activity - latest 5 articles
     recentArticles: Array.isArray(articles) 
       ? [...articles].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()).slice(0, 5)
@@ -217,13 +229,11 @@ function NewAdminDashboard() {
           </div>
           <div className="flex items-center space-x-2">
             <Button 
-              asChild 
               className="bg-blue-600 hover:bg-blue-700"
+              onClick={() => window.open('https://proxima-report.ghost.io/ghost/', '_blank')}
             >
-              <Link href="/admin/articles/new">
-                <PlusIcon className="h-4 w-4 mr-2" />
-                New Article
-              </Link>
+              <PlusIcon className="h-4 w-4 mr-2" />
+              Write in Ghost CMS
             </Button>
           </div>
         </div>
@@ -265,6 +275,10 @@ function NewAdminDashboard() {
                   {stats.pendingAds}
                 </span>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="jobs" className="data-[state=active]:bg-blue-600">
+              <BriefcaseIcon className="h-4 w-4 mr-2" />
+              Job Listings
             </TabsTrigger>
             <TabsTrigger value="emergency" className="data-[state=active]:bg-blue-600">
               <AlertOctagonIcon className="h-4 w-4 mr-2" />
@@ -497,6 +511,15 @@ function NewAdminDashboard() {
                       </Alert>
                     )}
                     
+                    {stats.pendingJobs > 0 && (
+                      <Alert className="bg-gray-800 border-blue-700">
+                        <BriefcaseIcon className="h-4 w-4 text-blue-400" />
+                        <AlertDescription className="text-gray-300">
+                          {stats.pendingJobs} job listing{stats.pendingJobs !== 1 ? 's' : ''} pending approval
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    
                     {stats.needsEditsArticles > 0 && (
                       <Alert className="bg-gray-800 border-yellow-700">
                         <Edit3 className="h-4 w-4 text-yellow-400" />
@@ -515,7 +538,7 @@ function NewAdminDashboard() {
                       </Alert>
                     )}
                     
-                    {stats.pendingAds === 0 && stats.needsEditsArticles === 0 && (daysSinceLastPublish === null || daysSinceLastPublish <= 7) && (
+                    {stats.pendingAds === 0 && stats.pendingJobs === 0 && stats.needsEditsArticles === 0 && (daysSinceLastPublish === null || daysSinceLastPublish <= 7) && (
                       <Alert className="bg-gray-800 border-green-700">
                         <CheckCircle2 className="h-4 w-4 text-green-400" />
                         <AlertDescription className="text-gray-300">
@@ -532,14 +555,25 @@ function NewAdminDashboard() {
                     </Button>
                   )}
                   
+                  {stats.pendingJobs > 0 && (
+                    <Button asChild variant="outline" size="sm" className="w-full border-gray-700 text-gray-300">
+                      <Link href="?tab=jobs">Review Job Listings</Link>
+                    </Button>
+                  )}
+                  
                   {stats.needsEditsArticles > 0 && (
                     <Button asChild variant="outline" size="sm" className="w-full border-gray-700 text-gray-300">
                       <Link href="?tab=content">Edit Articles</Link>
                     </Button>
                   )}
                   
-                  <Button asChild variant="default" size="sm" className="w-full bg-blue-600 hover:bg-blue-700">
-                    <Link href="/admin/articles/new">Create New Article</Link>
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    onClick={() => window.open('https://proxima-report.ghost.io/ghost/', '_blank')}
+                  >
+                    Write in Ghost CMS
                   </Button>
                 </CardFooter>
               </Card>
@@ -548,80 +582,63 @@ function NewAdminDashboard() {
           
           {/* Content Management */}
           <TabsContent value="content" className="mt-6">
-            <Tabs defaultValue="published">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-white">Content Management</h2>
-                <TabsList>
-                  <TabsTrigger value="published">Published</TabsTrigger>
-                  <TabsTrigger value="drafts">Drafts</TabsTrigger>
-                  <TabsTrigger value="all">All Articles</TabsTrigger>
-                </TabsList>
-              </div>
-                
-              <TabsContent value="published">
-                <PublishedContent statusFilter="published" />
-              </TabsContent>
-              
-              <TabsContent value="drafts">
-                <PublishedContent statusFilter="draft" />
-              </TabsContent>
-              
-              <TabsContent value="all">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold text-white">All Articles</h3>
-                  <Button asChild className="bg-blue-600 hover:bg-blue-700">
-                    <Link href="/admin/articles/new">
-                      <PlusIcon className="h-4 w-4 mr-2" />
-                      New Article
-                    </Link>
-                  </Button>
+            <Card className="bg-gray-900 border-gray-800">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center">
+                  <Newspaper className="h-5 w-5 mr-2 text-blue-400" />
+                  Content Management
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                  Content is now managed through Ghost CMS for better publishing workflow
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                      <FileText className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-white font-medium">Ghost CMS Integration</h3>
+                      <p className="text-sm text-gray-400">Manage all articles through the Ghost CMS dashboard</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-400">Published Articles:</span>
+                      <span className="text-white ml-2">{stats.publishedArticles}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Total Articles:</span>
+                      <span className="text-white ml-2">{stats.totalArticles}</span>
+                    </div>
+                  </div>
                 </div>
                 
-                <Tabs defaultValue="all" className="w-full">
-                  <TabsList className="w-full grid grid-cols-5 mb-6">
-                    <TabsTrigger value="all">All</TabsTrigger>
-                    <TabsTrigger value="needs_edits" className="flex gap-2 items-center">
-                      <AlertTriangle className="h-4 w-4" /> Needs Edits
-                    </TabsTrigger>
-                    <TabsTrigger value="good_to_publish" className="flex gap-2 items-center">
-                      <CheckCircle2 className="h-4 w-4" /> Ready to Publish
-                    </TabsTrigger>
-                    <TabsTrigger value="do_not_publish" className="flex gap-2 items-center">
-                      <XCircle className="h-4 w-4" /> Do Not Publish
-                    </TabsTrigger>
-                    <TabsTrigger value="published">Published</TabsTrigger>
-                  </TabsList>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Button 
+                    className="bg-blue-600 hover:bg-blue-700 text-white h-16"
+                    onClick={() => window.open('https://proxima-report.ghost.io/ghost/', '_blank')}
+                  >
+                    <div className="flex flex-col items-center">
+                      <PlusIcon className="h-5 w-5 mb-1" />
+                      <span>Write New Article</span>
+                    </div>
+                  </Button>
                   
-                  {/* Use the PublishedContent component for each status filter */}
-                  
-                  <TabsContent value="all">
-                    {articlesLoading ? (
-                      <div className="flex items-center justify-center py-12">
-                        <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
-                      </div>
-                    ) : (
-                      <PublishedContent showAll={true} />
-                    )}
-                  </TabsContent>
-                  
-                  <TabsContent value="needs_edits">
-                    <PublishedContent statusFilter="needs_edits" />
-                  </TabsContent>
-                  
-                  <TabsContent value="good_to_publish">
-                    <PublishedContent statusFilter="good_to_publish" />
-                  </TabsContent>
-                  
-                  <TabsContent value="do_not_publish">
-                    <PublishedContent statusFilter="do_not_publish" />
-                  </TabsContent>
-                  
-                  <TabsContent value="published">
-                    <PublishedContent statusFilter="published" />
-                  </TabsContent>
-                </Tabs>
-              </TabsContent>
-            </Tabs>
+                  <Button 
+                    variant="outline"
+                    className="border-gray-700 text-gray-300 hover:bg-gray-800 h-16"
+                    onClick={() => window.open('https://proxima-report.ghost.io/ghost/#/posts', '_blank')}
+                  >
+                    <div className="flex flex-col items-center">
+                      <FileText className="h-5 w-5 mb-1" />
+                      <span>Manage Articles</span>
+                    </div>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
           
           {/* Users tab */}
@@ -642,6 +659,11 @@ function NewAdminDashboard() {
           {/* Advertisements */}
           <TabsContent value="advertisements" className="mt-6">
             <AdvertisementTab />
+          </TabsContent>
+          
+          {/* Job Listings */}
+          <TabsContent value="jobs" className="mt-6">
+            <JobListingsTab />
           </TabsContent>
           
           {/* Emergency Banner */}

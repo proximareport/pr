@@ -17,8 +17,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MenuIcon, SearchIcon, LogOutIcon, UserIcon, SettingsIcon, ShieldIcon, LineChartIcon, X } from "lucide-react";
-import { SearchBar } from "@/components/search/SearchBar";
+import { MenuIcon, LogOutIcon, UserIcon, SettingsIcon, ShieldIcon, LineChartIcon, Search } from "lucide-react";
+import { SearchPopup } from "@/components/search/SearchPopup";
 
 // Import logo images
 import desktopLogo from "../../assets/images/proxima-logo-desktop.png";
@@ -32,8 +32,8 @@ function Header() {
   const navLinks = [
     { name: "Latest", href: "/" },
     { name: "Launches", href: "/launches" },
-    { name: "Astronomy", href: "/astronomy" },
-    { name: "Science", href: "/science" },
+    { name: "Mission\u00A0Control", href: "/missioncontrol" },
+    { name: "Gallery", href: "/gallery" },
     { name: "Jobs", href: "/jobs" },
     { name: "Advertise", href: "/advertise" },
   ];
@@ -67,7 +67,7 @@ function Header() {
                 <Link 
                   key={link.name} 
                   href={link.href}
-                  className={`text-sm font-medium transition ${
+                  className={`text-sm font-medium transition whitespace-nowrap ${
                     isActive(link.href) 
                       ? "text-purple-500" 
                       : "text-white/90 hover:text-purple-500"
@@ -80,18 +80,15 @@ function Header() {
           </div>
           
           <div className="flex items-center space-x-4">
-            {/* Desktop search bar (hidden on mobile) */}
-            <div className="hidden md:block">
-              <SearchBar />
-            </div>
-            
-            {/* Mobile search icon */}
-            <button 
-              className="md:hidden text-white/90 hover:text-purple-500 transition"
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
+            {/* Search Icon Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsSearchOpen(true)}
+              className="text-white/90 hover:text-purple-500"
             >
-              <SearchIcon className="h-5 w-5" />
-            </button>
+              <Search className="h-5 w-5" />
+            </Button>
             
             {user ? (
               <DropdownMenu>
@@ -223,23 +220,8 @@ function Header() {
         </div>
       </div>
       
-      {/* Mobile Search Modal */}
-      {isSearchOpen && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-start justify-center p-4 md:hidden">
-          <div className="bg-[#14141E] border border-purple-900/30 rounded-lg w-full max-w-md p-4 mt-16">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium">Search</h3>
-              <button 
-                onClick={() => setIsSearchOpen(false)}
-                className="text-white/70 hover:text-white"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <SearchBar />
-          </div>
-        </div>
-      )}
+      {/* Search Popup */}
+      <SearchPopup isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </header>
   );
 }

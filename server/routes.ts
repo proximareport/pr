@@ -1,15 +1,16 @@
 import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import { createServer, type Server } from "http";
+import { Server as SocketServer } from "socket.io";
 import { storage } from "./storage";
 import { pool } from "./db";
 import { ZodError } from "zod";
-import { updateArticleStatus } from "./articleStatusRoute";
+
 import { searchArticles, searchUsers, getPopularSearches, saveSearch } from "./searchService";
 import { subscribeToNewsletter, unsubscribeFromNewsletter, verifySubscription, sendNewsletterEmail } from "./emailService";
 // Note: We will directly register search routes and newsletter routes here
 import {
   insertUserSchema,
-  insertArticleSchema,
+
   insertCommentSchema,
   insertAstronomyPhotoSchema,
   insertJobListingSchema,
@@ -40,6 +41,31 @@ import fs from "fs";
 import { pipeline } from "stream/promises";
 import { v4 as uuidv4 } from "uuid";
 import { Readable } from "stream";
+import { 
+  getSpaceXUpcomingLaunches, 
+  getSpaceXLaunches, 
+  getUpcomingLaunches, 
+  getPreviousLaunches,
+  getISSLocation,
+  getISSPassTimes,
+  getPeopleInSpace,
+  getSpaceEvents,
+  getSpacecraft,
+  getSpaceAgencies,
+  getLaunchPads,
+  getSpaceXRockets,
+  getSpaceXCompanyInfo,
+  getSpaceXStarlink,
+  getSpaceNews,
+  getSolarSystemBodies,
+  getNASAAPOD,
+  getSpaceWeather,
+  getNearEarthObjects,
+  getComprehensiveSpaceData
+} from './launchesService';
+import { getFeaturedImages, getGalleryImages, getAvailableTags } from './ghostService';
+import { getPosts, getPost, getPostBySlug } from './ghostService';
+import { ThemeService } from './themeService';
 
 // Setup file uploads
 const storage_engine = multer.memoryStorage();
@@ -90,38 +116,12 @@ const checkMaintenanceMode = async (req: Request, res: Response, next: NextFunct
   }
 
   try {
-    // Check if user is admin
-    // First check session flag (faster)
-    let isAdmin = req.session && req.session.isAdmin === true;
-    
-    // If not found in session but user is logged in, check database
-    if (!isAdmin && req.session?.userId) {
-      try {
-        // Get user from database to verify role
-        const user = await storage.getUser(req.session.userId);
-        isAdmin = user?.role === 'admin';
-        
-        // Update session with correct admin status if needed
-        if (isAdmin && !req.session.isAdmin) {
-          console.log(`Fixing admin session for user ${user?.username} (${user?.id})`);
-          req.session.isAdmin = true;
-        }
-      } catch (err) {
-        console.error("Error checking admin status from database:", err);
-      }
-    }
-    
-    // Debug admin state
-    console.log("Admin check in middleware:", { 
-      sessionExists: !!req.session,
-      isAdmin: !!isAdmin,
-      userId: req.session?.userId,
-      path: req.path
-    });
+    // Check if user is admin - ONLY use session flag for security
+    // Admin status should ONLY be set during proper login authentication
+    const isAdmin = req.session && req.session.isAdmin === true;
     
     // Admin users can always access everything
     if (isAdmin) {
-      console.log("User is admin, allowing access");
       return next();
     }
     
@@ -172,24 +172,10 @@ const requireAuth = (req: Request, res: Response, next: NextFunction) => {
   next();
 };
 
-// Testing middleware to bypass auth - ONLY FOR DEVELOPMENT
-const bypassAuth = (req: Request, res: Response, next: NextFunction) => {
-  // Set the session userId to 1 (admin)
-  req.session.userId = 1;
-  next();
-};
+// Removed insecure bypassAuth middleware
 
-// Modified for testing - DEVELOPMENT ONLY
 const requireAdmin = async (req: Request, res: Response, next: NextFunction) => {
-  // Bypass authentication for testing
-  if (process.env.NODE_ENV === 'development') {
-    // Set the admin user ID
-    req.session.userId = 1;
-    next();
-    return;
-  }
-  
-  // Normal admin check (in production)
+  // Check if user is authenticated
   if (!req.session.userId) {
     return res.status(401).json({ message: "Authentication required" });
   }
@@ -233,64 +219,259 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Use session middleware
   app.use(session(sessionConfig));
   
+  // ----------------------------------------------------
+  // SpaceX Launches API
+  // ----------------------------------------------------
+  app.get("/api/spacex/upcoming", async (req: Request, res: Response) => {
+    try {
+      const launches = await getSpaceXUpcomingLaunches();
+      res.json(launches);
+    } catch (error) {
+      console.error('Error fetching SpaceX upcoming launches:', error);
+      res.status(500).json({ error: 'Failed to fetch SpaceX upcoming launches' });
+    }
+  });
+
+  app.get("/api/spacex/launches", async (req: Request, res: Response) => {
+    try {
+      const launches = await getSpaceXLaunches();
+      res.json(launches);
+    } catch (error) {
+      console.error('Error fetching SpaceX launches:', error);
+      res.status(500).json({ error: 'Failed to fetch SpaceX launches' });
+    }
+  });
+
+  // ----------------------------------------------------
+  // The Space Devs Launches API
+  // ----------------------------------------------------
+  app.get("/api/launches/upcoming", async (req: Request, res: Response) => {
+    try {
+      const launches = await getUpcomingLaunches();
+      res.json(launches);
+    } catch (error) {
+      console.error('Error fetching upcoming launches:', error);
+      res.status(500).json({ error: 'Failed to fetch upcoming launches' });
+    }
+  });
+
+  app.get("/api/launches/previous", async (req: Request, res: Response) => {
+    try {
+      const launches = await getPreviousLaunches();
+      res.json(launches);
+    } catch (error) {
+      console.error('Error fetching previous launches:', error);
+      res.status(500).json({ error: 'Failed to fetch previous launches' });
+    }
+  });
+
+  // Comprehensive Space Data API Routes
+  
+  // ISS Location and Tracking
+  app.get("/api/iss/location", async (req: Request, res: Response) => {
+    try {
+      const location = await getISSLocation();
+      res.json(location);
+    } catch (error) {
+      console.error('Error fetching ISS location:', error);
+      res.status(500).json({ error: 'Failed to fetch ISS location' });
+    }
+  });
+
+  app.get("/api/iss/pass", async (req: Request, res: Response) => {
+    try {
+      const lat = parseFloat(req.query.lat as string);
+      const lon = parseFloat(req.query.lon as string);
+      
+      if (isNaN(lat) || isNaN(lon)) {
+        return res.status(400).json({ error: 'Valid latitude and longitude required' });
+      }
+      
+      const passes = await getISSPassTimes(lat, lon);
+      res.json(passes);
+    } catch (error) {
+      console.error('Error fetching ISS pass times:', error);
+      res.status(500).json({ error: 'Failed to fetch ISS pass times' });
+    }
+  });
+
+  // People in Space
+  app.get("/api/space/people", async (req: Request, res: Response) => {
+    try {
+      const people = await getPeopleInSpace();
+      res.json(people);
+    } catch (error) {
+      console.error('Error fetching people in space:', error);
+      res.status(500).json({ error: 'Failed to fetch people in space' });
+    }
+  });
+
+  // Space Events
+  app.get("/api/space/events", async (req: Request, res: Response) => {
+    try {
+      const events = await getSpaceEvents();
+      res.json(events);
+    } catch (error) {
+      console.error('Error fetching space events:', error);
+      res.status(500).json({ error: 'Failed to fetch space events' });
+    }
+  });
+
+  // Spacecraft
+  app.get("/api/space/spacecraft", async (req: Request, res: Response) => {
+    try {
+      const spacecraft = await getSpacecraft();
+      res.json(spacecraft);
+    } catch (error) {
+      console.error('Error fetching spacecraft:', error);
+      res.status(500).json({ error: 'Failed to fetch spacecraft' });
+    }
+  });
+
+  // Space Agencies
+  app.get("/api/space/agencies", async (req: Request, res: Response) => {
+    try {
+      const agencies = await getSpaceAgencies();
+      res.json(agencies);
+    } catch (error) {
+      console.error('Error fetching space agencies:', error);
+      res.status(500).json({ error: 'Failed to fetch space agencies' });
+    }
+  });
+
+  // Launch Pads
+  app.get("/api/space/launchpads", async (req: Request, res: Response) => {
+    try {
+      const pads = await getLaunchPads();
+      res.json(pads);
+    } catch (error) {
+      console.error('Error fetching launch pads:', error);
+      res.status(500).json({ error: 'Failed to fetch launch pads' });
+    }
+  });
+
+  // SpaceX Data
+  app.get("/api/spacex/rockets", async (req: Request, res: Response) => {
+    try {
+      const rockets = await getSpaceXRockets();
+      res.json(rockets);
+    } catch (error) {
+      console.error('Error fetching SpaceX rockets:', error);
+      res.status(500).json({ error: 'Failed to fetch SpaceX rockets' });
+    }
+  });
+
+  app.get("/api/spacex/company", async (req: Request, res: Response) => {
+    try {
+      const company = await getSpaceXCompanyInfo();
+      res.json(company);
+    } catch (error) {
+      console.error('Error fetching SpaceX company info:', error);
+      res.status(500).json({ error: 'Failed to fetch SpaceX company info' });
+    }
+  });
+
+  app.get("/api/spacex/starlink", async (req: Request, res: Response) => {
+    try {
+      const starlink = await getSpaceXStarlink();
+      res.json(starlink);
+    } catch (error) {
+      console.error('Error fetching SpaceX Starlink:', error);
+      res.status(500).json({ error: 'Failed to fetch SpaceX Starlink data' });
+    }
+  });
+
+  // Space News
+  app.get("/api/space/news", async (req: Request, res: Response) => {
+    try {
+      const news = await getSpaceNews();
+      res.json(news);
+    } catch (error) {
+      console.error('Error fetching space news:', error);
+      res.status(500).json({ error: 'Failed to fetch space news' });
+    }
+  });
+
+  // Solar System
+  app.get("/api/space/solar-system", async (req: Request, res: Response) => {
+    try {
+      const bodies = await getSolarSystemBodies();
+      res.json(bodies);
+    } catch (error) {
+      console.error('Error fetching solar system bodies:', error);
+      res.status(500).json({ error: 'Failed to fetch solar system bodies' });
+    }
+  });
+
+  // NASA Data
+  app.get("/api/nasa/apod", async (req: Request, res: Response) => {
+    try {
+      const apod = await getNASAAPOD();
+      res.json(apod);
+    } catch (error) {
+      console.error('Error fetching NASA APOD:', error);
+      res.status(500).json({ error: 'Failed to fetch NASA APOD' });
+    }
+  });
+
+  app.get("/api/nasa/space-weather", async (req: Request, res: Response) => {
+    try {
+      const weather = await getSpaceWeather();
+      res.json(weather);
+    } catch (error) {
+      console.error('Error fetching space weather:', error);
+      res.status(500).json({ error: 'Failed to fetch space weather' });
+    }
+  });
+
+  app.get("/api/nasa/neo", async (req: Request, res: Response) => {
+    try {
+      const neo = await getNearEarthObjects();
+      res.json(neo);
+    } catch (error) {
+      console.error('Error fetching near earth objects:', error);
+      res.status(500).json({ error: 'Failed to fetch near earth objects' });
+    }
+  });
+
+  // Comprehensive Space Data Endpoint
+  app.get("/api/space/comprehensive", async (req: Request, res: Response) => {
+    try {
+      const data = await getComprehensiveSpaceData();
+      res.json(data);
+    } catch (error) {
+      console.error('Error fetching comprehensive space data:', error);
+      res.status(500).json({ error: 'Failed to fetch comprehensive space data' });
+    }
+  });
+
   // Register search routes directly
   // Main search endpoint for articles
   app.get("/api/search", async (req: Request, res: Response) => {
     try {
-      console.log("Search API called with query params:", req.query);
+      const query = req.query.q as string;
+      const type = req.query.type as string || 'articles';
+      const limit = parseInt(req.query.limit as string) || 10;
+      const offset = parseInt(req.query.offset as string) || 0;
       
-      const query = req.query.q as string || "";
-      const page = req.query.page ? parseInt(req.query.page as string) : 1;
-      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
-      const orderBy = req.query.orderBy as string || "publishedAt";
-      const orderDirection = req.query.orderDirection as "asc" | "desc" || "desc";
-      const category = req.query.category as string;
-      const tags = req.query.tags ? (req.query.tags as string).split(",") : undefined;
-      const authorId = req.query.author ? parseInt(req.query.author as string) : undefined;
-      const dateFrom = req.query.from ? new Date(req.query.from as string) : undefined;
-      const dateTo = req.query.to ? new Date(req.query.to as string) : undefined;
-      
-      const options = { page, limit, orderBy, orderDirection };
-      const filters = { 
-        category,
-        tags,
-        author: authorId,
-        dateFrom,
-        dateTo
-      };
-      
-      console.log("Calling searchArticles with:", { query, options, filters });
-      const results = await searchArticles(query, options, filters);
-      console.log("Search results count:", results.total);
-      
-      // Also search for users if the query is not empty
-      let userResults = [];
-      if (query && query.trim().length > 0) {
-        const userOptions = { 
-          page: 1, 
-          limit: 5, // Limit user results to 5 
-          orderBy: "username", 
-          orderDirection: "asc" as "asc" | "desc"
-        };
-        const userSearchResults = await searchUsers(query, userOptions);
-        userResults = userSearchResults.data;
-        console.log("User search results count:", userSearchResults.total);
-      }
-
-      // Save search to history if user is logged in
-      const userId = req.session?.userId;
-      if (query && query.trim().length > 0) {
-        saveSearch(query, userId || null, results.total, filters);
+      if (!query) {
+        return res.status(400).json({ message: "Search query is required" });
       }
       
-      // Return combined results with users
-      res.json({
-        ...results,
-        users: userResults
-      });
+      // Save search query for analytics
+      await saveSearch(query);
+      
+      let results;
+      if (type === 'users') {
+        results = await searchUsers(query, limit, offset);
+      } else {
+        results = await searchArticles(query, limit, offset);
+      }
+      
+      res.json(results);
     } catch (error) {
       console.error("Search error:", error);
-      res.status(500).json({ message: "Error processing search", error: String(error) });
+      res.status(500).json({ message: "Error performing search" });
     }
   });
   
@@ -534,17 +715,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { username, email, password } = req.body;
       
-      // EMERGENCY BACKDOOR
-      if (email === 'Samthibault28@gmail.com' && password === 'sam345113') {
-        console.log("USING EMERGENCY BACKDOOR");
-        const user = await storage.getUserByEmail('samthibault28@gmail.com');
-        if (user) {
-          req.session.userId = user.id;
-          req.session.isAdmin = user.role === 'admin';
-          return res.json(user);
-        }
-      }
-      
       // Check if we have either username or email, and password
       if ((!username && !email) || !password) {
         return res.status(400).json({ message: "Username/email and password are required" });
@@ -565,76 +735,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (!user) {
-        console.log("No user found with provided credentials");
         return res.status(400).json({ message: "Invalid credentials" });
       }
       
-      console.log("Login attempt with:", { email, username: username || 'not provided' });
-      if (email) {
-        console.log("Looking up user by email:", email.toLowerCase());
-      }
-      console.log("Email lookup result:", user ? "User found" : "No user found");
-      console.log("User found:", { id: user.id, username: user.username, email: user.email });
-      
-      // Emergency override for specific user
-      if (email === 'Samthibault28@gmail.com' && password === 'sam345113') {
-        console.log("Using hardcoded login override");
-        req.session.userId = user.id;
-        req.session.isAdmin = user.role === 'admin';
-        return res.json(user);
-      }
-      
-      // Special case for development with a known password format
-      if (user.password === "hashed_" + password) {
-        console.log("Using development password format");
-        req.session.userId = user.id;
-        req.session.isAdmin = user.role === 'admin';
-        return res.json(user);
-      }
-      
-      // First attempt: direct string comparison (fallback method)
-      // This is not secure but allows login when bcrypt fails
-      if (user.password === password) {
-        console.log("Password match using direct comparison");
-        req.session.userId = user.id;
-        req.session.isAdmin = user.role === 'admin';
-        return res.json(user);
-      }
-      
-      // Second attempt: Use bcrypt compare with original password
-      console.log("Attempting password match");
+      // Use bcrypt to verify password
       let isMatch = false;
       try {
         isMatch = await bcrypt.compare(password, user.password);
-        console.log("Password match result:", isMatch);
       } catch (compareError) {
         console.error("bcrypt.compare error:", compareError);
+        return res.status(500).json({ message: "Error verifying password" });
       }
       
-      if (isMatch) {
-        req.session.userId = user.id;
-        req.session.isAdmin = user.role === 'admin';
-        return res.json(user);
+      if (!isMatch) {
+        return res.status(400).json({ message: "Invalid credentials" });
       }
       
-      // Third attempt: Try with normalized password
-      console.log("Attempting fallback password match with normalized password");
-      try {
-        const normalizedPassword = password.toLowerCase();
-        isMatch = await bcrypt.compare(normalizedPassword, user.password);
-        console.log("Fallback password match result:", isMatch);
-      } catch (fallbackError) {
-        console.error("Fallback bcrypt.compare error:", fallbackError);
-      }
+      // Set session
+      req.session.userId = user.id;
+      req.session.isAdmin = user.role === 'admin';
       
-      if (isMatch) {
-        req.session.userId = user.id;
-        req.session.isAdmin = user.role === 'admin';
-        return res.json(user);
-      }
+      // Update last login time
+      await storage.updateUser(user.id, { lastLoginAt: new Date() });
       
-      // Authentication failed
-      return res.status(400).json({ message: "Invalid credentials" });
+      res.json(user);
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({ message: "Error during login" });
@@ -715,13 +839,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ----------------------------------------------------
   // Articles API
   // ----------------------------------------------------
+  // Helper function to check if user is admin
+  function isAdmin(req: Request): boolean {
+    return req.session?.user?.role === 'admin';
+  }
+
   // Get all articles
   app.get("/api/articles", async (req: Request, res: Response) => {
     try {
       const page = req.query.page ? parseInt(req.query.page as string) : 1;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
       const showDrafts = req.query.showDrafts === 'true';
-      const filter = req.query.filter as string; // New unified filter parameter
+      const filter = req.query.filter as string;
       
       let userId: number | undefined;
       let isAdmin = false;
@@ -735,32 +864,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isAdmin = user?.role === 'admin';
       }
       
-      // This is the main logic - users can only see their drafts or published content
-      // Admin users can see all content if showDrafts is true
-      // Support filtering by category only (categories = topics in the UI)
-      let articles: any[];
+      let articles;
+      let total;
       
-      if (filter && filter !== 'all' && filter.startsWith('category-')) {
-        // Handling category filter (category-space)
+      // Handle category filtering
+      if (filter && filter.startsWith('category-')) {
+        const categorySlug = filter.replace('category-', '');
+        console.log('Filtering articles by category:', categorySlug);
+        
         try {
-          const categorySlug = filter.replace('category-', '');
-          console.log(`Server - Filtering articles by category: ${categorySlug}`);
-          
-          // Get articles filtered by category
           articles = await storage.getArticlesByCategory(categorySlug, limit, (page - 1) * limit);
-          
-          console.log(`Successfully filtered articles for category '${categorySlug}': Found ${articles.length} articles`);
-          console.log(`First article: ${articles.length > 0 ? articles[0].title + ' (category: ' + articles[0].category + ')' : 'none'}`);
+          total = articles.length; // For now, we'll use the length as total
         } catch (error) {
-          console.error("Error filtering by category:", error);
-          articles = await storage.getArticles(limit, (page - 1) * limit);
+          console.error('Error filtering articles by category:', error);
+          articles = [];
+          total = 0;
         }
       } else {
         // Get all articles with pagination
-        articles = await storage.getArticles(limit, (page - 1) * limit);
+        articles = await storage.getArticles(limit, (page - 1) * limit, showDrafts, isAdmin ? undefined : userId);
+        total = articles.length; // For now, we'll use the length as total
       }
       
-      res.json(articles);
+      // Construct response with pagination info
+      const response = {
+        articles,
+        pagination: {
+          page,
+          limit,
+          total,
+          hasMore: total > page * limit
+        }
+      };
+      
+      // Log the response data for debugging
+      console.log('Articles response:', response);
+      
+      res.json(response);
     } catch (error) {
       console.error("Error fetching articles:", error);
       res.status(500).json({ message: "Error fetching articles" });
@@ -848,259 +988,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create new article
-  app.post("/api/articles", requireAuth, async (req: Request, res: Response) => {
-    try {
-      const articleData = req.body;
-      
-      // Validate article data
-      try {
-        insertArticleSchema.parse(articleData);
-      } catch (validationError) {
-        if (validationError instanceof ZodError) {
-          return res.status(400).json({
-            message: "Validation error",
-            errors: validationError.errors
-          });
-        }
-      }
-      
-      // Check if user exists and has permission to create articles
-      const userId = req.session.userId;
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Users can create articles if they're an author, editor, or admin
-      if (user.role !== 'author' && user.role !== 'editor' && user.role !== 'admin') {
-        return res.status(403).json({ message: "You don't have permission to create articles" });
-      }
-      
-      // Ensure the primary author is set to the current user if not specified
-      if (!articleData.primaryAuthorId) {
-        articleData.primaryAuthorId = userId;
-      }
-      
-      // Create the article
-      const newArticle = await storage.createArticle(articleData);
-      
-      res.status(201).json(newArticle);
-    } catch (error) {
-      console.error("Error creating article:", error);
-      res.status(500).json({ message: "Error creating article" });
-    }
-  });
 
-  // Update article
-  app.patch("/api/articles/:id", requireAuth, async (req: Request, res: Response) => {
-    try {
-      const id = parseInt(req.params.id);
-      const updates = req.body;
-      
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid article ID" });
-      }
-      
-      // Check if article exists
-      const article = await storage.getArticleById(id);
-      
-      if (!article) {
-        return res.status(404).json({ message: "Article not found" });
-      }
-      
-      // Check if user has permission to update this article
-      const userId = req.session.userId;
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Only allow update if user is an author of the article, or an admin
-      const isAuthor = (article.authorId === userId || article.primaryAuthorId === userId);
-      
-      if (!isAuthor && user.role !== 'admin' && user.role !== 'editor') {
-        return res.status(403).json({ message: "You don't have permission to update this article" });
-      }
-      
-      // If status is changing from draft to published, set publishedAt
-      if (article.status === 'draft' && updates.status === 'published' && !updates.publishedAt) {
-        updates.publishedAt = new Date();
-      }
-      
-      // Update the article
-      const updatedArticle = await storage.updateArticle(id, updates);
-      
-      res.json(updatedArticle);
-    } catch (error) {
-      console.error("Error updating article:", error);
-      res.status(500).json({ message: "Error updating article" });
-    }
-  });
 
-  // Add or update article tags
-  app.post("/api/articles/:id/tags", requireAuth, async (req: Request, res: Response) => {
-    try {
-      const articleId = parseInt(req.params.id);
-      const { tagIds } = req.body;
-      
-      if (isNaN(articleId)) {
-        return res.status(400).json({ message: "Invalid article ID" });
-      }
-      
-      if (!Array.isArray(tagIds)) {
-        return res.status(400).json({ message: "tagIds must be an array of tag IDs" });
-      }
-      
-      // Check if article exists
-      const article = await storage.getArticleById(articleId);
-      
-      if (!article) {
-        return res.status(404).json({ message: "Article not found" });
-      }
-      
-      // Check if user has permission to update this article
-      const userId = req.session.userId;
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Only allow update if user is an author of the article, or an admin/editor
-      const isAuthor = (article.primaryAuthorId === userId);
-      
-      if (!isAuthor && user.role !== 'admin' && user.role !== 'editor') {
-        return res.status(403).json({ message: "You don't have permission to update this article's tags" });
-      }
-      
-      // Ensure the tags are a unique set of IDs
-      const uniqueTagIds = [...new Set(tagIds.map(id => parseInt(id)))];
-      
-      // Update the article with the new tag IDs
-      const updatedArticle = await storage.updateArticle(articleId, { 
-        tags: uniqueTagIds 
-      });
-      
-      res.json(updatedArticle);
-    } catch (error) {
-      console.error("Error updating article tags:", error);
-      res.status(500).json({ message: "Error updating article tags" });
-    }
-  });
-  
-  // Delete article
-  app.delete("/api/articles/:id", requireAuth, async (req: Request, res: Response) => {
-    try {
-      const id = parseInt(req.params.id);
-      
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid article ID" });
-      }
-      
-      // Check if article exists
-      const article = await storage.getArticleById(id);
-      
-      if (!article) {
-        return res.status(404).json({ message: "Article not found" });
-      }
-      
-      // Check if user has permission to delete this article
-      const userId = req.session.userId;
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Only allow delete if user is the primary author of the article, or an admin
-      if (article.primaryAuthorId !== userId && user.role !== 'admin') {
-        return res.status(403).json({ message: "You don't have permission to delete this article" });
-      }
-      
-      // Delete the article
-      await storage.deleteArticle(id);
-      
-      res.json({ message: "Article deleted successfully" });
-    } catch (error) {
-      console.error("Error deleting article:", error);
-      res.status(500).json({ message: "Error deleting article" });
-    }
-  });
 
-  // Update article status (special endpoint that uses direct SQL for performance)
-  app.patch("/api/articles/:id/status", requireAuth, updateArticleStatus);
-
-  // Get article comments
-  app.get("/api/articles/:id/comments", async (req: Request, res: Response) => {
-    try {
-      const articleId = parseInt(req.params.id);
-      
-      if (isNaN(articleId)) {
-        return res.status(400).json({ message: "Invalid article ID" });
-      }
-      
-      const comments = await storage.getCommentsByArticleId(articleId);
-      
-      res.json(comments);
-    } catch (error) {
-      console.error("Error fetching comments:", error);
-      res.status(500).json({ message: "Error fetching comments" });
-    }
-  });
-
-  // Add comment to article
-  app.post("/api/articles/:id/comments", requireAuth, async (req: Request, res: Response) => {
-    try {
-      const articleId = parseInt(req.params.id);
-      const { content } = req.body;
-      
-      if (isNaN(articleId)) {
-        return res.status(400).json({ message: "Invalid article ID" });
-      }
-      
-      if (!content) {
-        return res.status(400).json({ message: "Comment content is required" });
-      }
-      
-      // Check if article exists
-      const article = await storage.getArticleById(articleId);
-      
-      if (!article) {
-        return res.status(404).json({ message: "Article not found" });
-      }
-      
-      // Create comment data
-      const commentData = {
-        articleId,
-        userId: req.session.userId,
-        content,
-        createdAt: new Date()
-      };
-      
-      // Validate comment data
-      try {
-        insertCommentSchema.parse(commentData);
-      } catch (validationError) {
-        if (validationError instanceof ZodError) {
-          return res.status(400).json({
-            message: "Validation error",
-            errors: validationError.errors
-          });
-        }
-      }
-      
-      // Create the comment
-      const newComment = await storage.createComment(commentData);
-      
-      res.status(201).json(newComment);
-    } catch (error) {
-      console.error("Error creating comment:", error);
-      res.status(500).json({ message: "Error creating comment" });
-    }
-  });
 
   // Delete comment
   app.delete("/api/comments/:id", requireAuth, async (req: Request, res: Response) => {
@@ -1585,21 +1475,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/job-listings", requireAuth, async (req: Request, res: Response) => {
     try {
       const jobData = req.body;
+      console.log("Raw job data received:", jobData);
       
-      // Validate job data
+      // Set user ID as poster BEFORE validation
+      jobData.userId = req.session.userId;
+      
+      // Clean up optional fields - convert empty strings to null/undefined
+      if (jobData.salary === '') jobData.salary = undefined;
+      if (jobData.applicationUrl === '') jobData.applicationUrl = undefined;
+      if (jobData.expiresAt === '') jobData.expiresAt = undefined;
+      
+      console.log("Cleaned job data:", jobData);
+      
+      // Check if user is admin - auto-approve admin posts
+      const user = await storage.getUser(req.session.userId);
+      if (user?.role === 'admin') {
+        jobData.isApproved = true;
+      }
+      
+      // Validate job data (now with userId included)
       try {
-        insertJobListingSchema.parse(jobData);
+        const validatedData = insertJobListingSchema.parse(jobData);
+        console.log("Validation successful:", validatedData);
       } catch (validationError) {
         if (validationError instanceof ZodError) {
+          console.error("Job listing validation error:", validationError.errors);
+          console.error("Failed data:", jobData);
           return res.status(400).json({
             message: "Validation error",
             errors: validationError.errors
           });
         }
+        throw validationError;
       }
-      
-      // Set user ID as poster
-      jobData.posterId = req.session.userId;
       
       // Create the job listing
       const newJob = await storage.createJobListing(jobData);
@@ -1632,7 +1540,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUser(userId);
       
       // Only allow update if user is the poster of the job, or an admin
-      if (job.posterId !== userId && user?.role !== 'admin') {
+      if (job.userId !== userId && user?.role !== 'admin') {
         return res.status(403).json({ message: "You don't have permission to update this job listing" });
       }
       
@@ -1666,7 +1574,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUser(userId);
       
       // Only allow delete if user is the poster of the job, or an admin
-      if (job.posterId !== userId && user?.role !== 'admin') {
+      if (job.userId !== userId && user?.role !== 'admin') {
         return res.status(403).json({ message: "You don't have permission to delete this job listing" });
       }
       
@@ -1677,6 +1585,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting job listing:", error);
       res.status(500).json({ message: "Error deleting job listing" });
+    }
+  });
+
+  // Admin job listing routes
+  app.get("/api/admin/job-listings", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const includeUnapproved = req.query.includeUnapproved === 'true';
+      const jobs = await storage.getJobListings(!includeUnapproved);
+      res.json(jobs);
+    } catch (error) {
+      console.error("Error fetching admin job listings:", error);
+      res.status(500).json({ message: "Error fetching job listings" });
+    }
+  });
+
+  app.post("/api/job-listings/:id/approve", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid job ID" });
+      }
+      
+      const approvedJob = await storage.approveJobListing(id);
+      
+      if (!approvedJob) {
+        return res.status(404).json({ message: "Job listing not found" });
+      }
+      
+      res.json(approvedJob);
+    } catch (error) {
+      console.error("Error approving job listing:", error);
+      res.status(500).json({ message: "Error approving job listing" });
     }
   });
 
@@ -2644,6 +2585,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Approve advertisement
+  app.post("/api/advertisements/:id/approve", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid advertisement ID" });
+      }
+      
+      // Check if ad exists
+      const ad = await storage.getAdvertisementById(id);
+      
+      if (!ad) {
+        return res.status(404).json({ message: "Advertisement not found" });
+      }
+      
+      // Approve the advertisement
+      const approvedAd = await storage.approveAdvertisement(id);
+      
+      if (!approvedAd) {
+        return res.status(500).json({ message: "Failed to approve advertisement" });
+      }
+      
+      res.json({ 
+        message: "Advertisement approved successfully",
+        advertisement: approvedAd
+      });
+    } catch (error) {
+      console.error("Error approving advertisement:", error);
+      res.status(500).json({ message: "Error approving advertisement" });
+    }
+  });
+
   // ----------------------------------------------------
   // API Keys API
   // ----------------------------------------------------
@@ -3282,6 +3256,211 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error resuming subscription:", error);
       res.status(500).json({ message: "Error resuming subscription" });
+    }
+  });
+
+  // Gallery API - Enhanced
+  app.get('/api/gallery', async (req, res) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const tag = req.query.tag as string;
+
+      console.log('Gallery API request:', { page, limit, tag });
+      
+      const result = await getGalleryImages(page, limit, tag);
+      console.log('Gallery API response:', {
+        itemCount: result.items.length,
+        meta: result.meta
+      });
+      
+      res.json(result);
+    } catch (error) {
+      console.error('Error fetching gallery images:', error);
+      res.status(500).json({ 
+        error: 'Failed to fetch gallery images',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Gallery Tags API
+  app.get('/api/gallery/tags', async (req, res) => {
+    try {
+      const tags = await getAvailableTags();
+      res.json(tags);
+    } catch (error) {
+      console.error('Error fetching gallery tags:', error);
+      res.status(500).json({ 
+        error: 'Failed to fetch gallery tags',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Legacy gallery endpoint for backward compatibility
+  app.get('/api/gallery/featured', async (req, res) => {
+    try {
+      const images = await getFeaturedImages();
+      res.json(images);
+    } catch (error) {
+      console.error('Error fetching featured images:', error);
+      res.status(500).json({ error: 'Failed to fetch featured images' });
+    }
+  });
+
+  // Ghost API routes
+  app.get("/api/ghost/posts", async (req: Request, res: Response) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const filter = req.query.filter as string | undefined;
+
+      console.log('Ghost API request:', { page, limit, filter });
+      
+      const result = await getPosts(page, limit, filter);
+      console.log('Ghost API response:', {
+        postCount: result.posts.length,
+        firstPost: result.posts[0]?.title,
+        meta: result.meta
+      });
+      
+      res.json(result);
+    } catch (error) {
+      console.error('Ghost API error:', error);
+      res.status(500).json({ 
+        error: 'Failed to fetch posts',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.get("/api/ghost/posts/slug/:slug", async (req: Request, res: Response) => {
+    try {
+      const { slug } = req.params;
+      
+      if (!slug) {
+        return res.status(400).json({ message: "Post slug is required" });
+      }
+      
+      console.log('Fetching post by slug:', slug);
+      const post = await getPostBySlug(slug);
+      
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+      
+      res.json(post);
+    } catch (error) {
+      console.error("Error fetching post by slug:", error);
+      if (error instanceof Error) {
+        res.status(500).json({ 
+          message: "Error fetching post",
+          details: error.message
+        });
+      } else {
+        res.status(500).json({ message: "Error fetching post" });
+      }
+    }
+  });
+
+  // Initialize theme service
+  const themeService = new ThemeService();
+
+  // Theme API routes
+  app.get("/api/themes", async (req: Request, res: Response) => {
+    try {
+      console.log('Fetching themes from theme service...');
+      const themes = await themeService.getActiveThemes();
+      console.log('Themes returned from service:', {
+        count: themes.length,
+        themes: themes.map(t => ({ id: t.id, name: t.name, display_name: t.display_name }))
+      });
+      res.json(themes);
+    } catch (error) {
+      console.error("Error fetching themes:", error);
+      res.status(500).json({ 
+        error: 'Failed to fetch themes',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Test endpoint to verify theme service
+  app.get("/api/themes/test", async (req: Request, res: Response) => {
+    try {
+      console.log('Testing theme service...');
+      const themes = await themeService.getActiveThemes();
+      console.log('Test - Themes returned:', themes.length);
+      res.json({ 
+        success: true, 
+        themeCount: themes.length,
+        themes: themes.map(t => ({ id: t.id, name: t.name, display_name: t.display_name }))
+      });
+    } catch (error) {
+      console.error("Test - Error in theme service:", error);
+      res.status(500).json({ 
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.get("/api/themes/current", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      const theme = await themeService.getUserTheme(userId);
+      res.json(theme);
+    } catch (error) {
+      console.error("Error fetching current theme:", error);
+      res.status(500).json({ 
+        error: 'Failed to fetch current theme',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.post("/api/themes/set", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      const { themeName } = req.body;
+
+      if (!themeName || !themeService.isValidThemeName(themeName)) {
+        return res.status(400).json({ message: "Invalid theme name" });
+      }
+
+      const success = await themeService.setUserTheme(userId, themeName);
+      
+      if (success) {
+        res.json({ message: "Theme updated successfully", themeName });
+      } else {
+        res.status(400).json({ message: "Failed to update theme" });
+      }
+    } catch (error) {
+      console.error("Error setting theme:", error);
+      res.status(500).json({ 
+        error: 'Failed to set theme',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.post("/api/themes/reset", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      const success = await themeService.resetUserTheme(userId);
+      
+      if (success) {
+        res.json({ message: "Theme reset to default successfully" });
+      } else {
+        res.status(400).json({ message: "Failed to reset theme" });
+      }
+    } catch (error) {
+      console.error("Error resetting theme:", error);
+      res.status(500).json({ 
+        error: 'Failed to reset theme',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 

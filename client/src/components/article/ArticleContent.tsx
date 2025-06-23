@@ -14,30 +14,61 @@ import {
 } from "@/components/ui/tooltip";
 
 interface ArticleContentProps {
-  article: {
-    id: number;
-    title: string;
-    content: any;
-    featuredImage: string;
-    publishedAt: string;
-    author: {
-      id: number;
-      username: string;
-      profilePicture?: string;
-    };
-    category: string;
-    readTime: number;
-    tags?: string[];
-  };
+  content: string;
 }
 
-function ArticleContent({ article }: ArticleContentProps) {
+function ArticleContent({ content }: ArticleContentProps) {
   const { user } = useAuth();
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [visibleSections, setVisibleSections] = useState<string[]>([]);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const [pollVotes, setPollVotes] = useState<Record<number, number[]>>({});
   const [pollResults, setPollResults] = useState<Record<number, number[]>>({});
+
+  // Extract headings from content for TOC
+  useEffect(() => {
+    if (content) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(content, 'text/html');
+      const headingElements = doc.querySelectorAll('h1, h2, h3, h4, h5, h6');
+      
+      const extractedHeadings = Array.from(headingElements).map((heading, index) => ({
+        id: `heading-${index}`,
+        content: heading.textContent || '',
+        level: parseInt(heading.tagName[1])
+      }));
+      
+      setVisibleSections(extractedHeadings.map(h => h.id));
+    }
+  }, [content]);
+
+  // Set up intersection observer for headings
+  useEffect(() => {
+    if (!visibleSections.length) return;
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setVisibleSections(prev => [...prev, entry.target.id]);
+          } else {
+            setVisibleSections(prev => prev.filter(id => id !== entry.target.id));
+          }
+        });
+      },
+      { rootMargin: "-100px 0px -70% 0px" }
+    );
+    
+    // Observe all heading elements
+    visibleSections.forEach((id) => {
+      const element = document.getElementById(id);
+      if (element) observer.observe(element);
+    });
+    
+    return () => {
+      observer.disconnect();
+    };
+  }, [visibleSections]);
 
   // In a real implementation, this would fetch poll results from the server
   useEffect(() => {
@@ -46,15 +77,18 @@ function ArticleContent({ article }: ArticleContentProps) {
     const initialResults: Record<number, number[]> = {};
     
     // Find all poll blocks in the article content
-    article.content.forEach((block: any, index: number) => {
-      if (block.type === 'poll' && block.options && Array.isArray(block.options)) {
-        // Generate some random votes for each option (between 0-10 votes per option)
-        initialResults[index] = block.options.map((_: any) => Math.floor(Math.random() * 10));
-      }
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(content, 'text/html');
+    const pollBlocks = doc.querySelectorAll('div.poll');
+    
+    pollBlocks.forEach((block: Element, index: number) => {
+      const pollOptions = block.querySelectorAll('div.poll-option');
+      const pollVotes: number[] = Array.from(pollOptions).map((_: Element) => 0);
+      initialResults[index] = pollVotes;
     });
     
     setPollResults(initialResults);
-  }, [article.content]);
+  }, [content]);
 
   // Handle voting on polls
   const handlePollVote = (blockIndex: number, optionIndex: number, allowMultiple: boolean) => {
@@ -106,7 +140,7 @@ function ArticleContent({ article }: ArticleContentProps) {
         const blockResults = [...(results[blockIndex] || [])];
         
         // Make sure we have an array of the correct length
-        while (blockResults.length < article.content[blockIndex].options.length) {
+        while (blockResults.length < pollOptions.length) {
           blockResults.push(0);
         }
         
@@ -344,31 +378,6 @@ function ArticleContent({ article }: ArticleContentProps) {
     }
   };
 
-  // Intersection Observer for headings
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setVisibleSections((prev) => [...prev, entry.target.id]);
-          } else {
-            setVisibleSections((prev) => prev.filter((id) => id !== entry.target.id));
-          }
-        });
-      },
-      { rootMargin: "0px 0px -80% 0px" }
-    );
-
-    // Observe all section headings
-    Object.values(sectionRefs.current).forEach((ref) => {
-      if (ref) observer.observe(ref);
-    });
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [article]);
-
   // Toggle bookmark
   const toggleBookmark = () => {
     setIsBookmarked(!isBookmarked);
@@ -379,7 +388,7 @@ function ArticleContent({ article }: ArticleContentProps) {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: article.title,
+          title: "Article Title",
           text: "Check out this article on Proxima Report",
           url: window.location.href,
         });
@@ -394,108 +403,9 @@ function ArticleContent({ article }: ArticleContentProps) {
   };
 
   return (
-    <article className="prose prose-invert max-w-none">
-      {/* Article header */}
-      <div className="mb-8">
-        <div className="flex items-center space-x-4 mb-6">
-          <Avatar className="h-12 w-12 border-2 border-purple-500">
-            <AvatarImage src={article.author.profilePicture} alt={article.author.username} />
-            <AvatarFallback className="bg-purple-900 text-white">
-              {article.author.username.substring(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <p className="text-white font-medium">{article.author.username}</p>
-            <p className="text-white/70 text-sm">
-              {formatDistance(new Date(article.publishedAt), new Date(), { addSuffix: true })} •{" "}
-              {article.readTime} min read
-            </p>
-          </div>
-        </div>
-
-        {/* Article tags */}
-        {article.tags && article.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-6 mt-4">
-            {article.tags.map((tag) => (
-              <Link key={tag} href={`/tag/${tag}`}>
-                <Badge 
-                  className="bg-purple-800 hover:bg-purple-700 px-3 py-1 cursor-pointer"
-                >
-                  {tag}
-                </Badge>
-              </Link>
-            ))}
-          </div>
-        )}
-
-        {/* Article sharing tools */}
-        <div className="flex space-x-2 mb-8">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={toggleBookmark}
-                  className={isBookmarked ? "text-purple-500" : "text-white/70"}
-                >
-                  <BookmarkIcon className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{isBookmarked ? "Saved" : "Save Article"}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" onClick={shareArticle}>
-                  <Share2Icon className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Share Article</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      </div>
-
-      {/* Article content */}
-      <div>
-        {article.content.blocks.map((block: any, index: number) => renderContentBlock(block, index))}
-      </div>
-
-      {/* Article footer */}
-      <div className="mt-12 pt-6 border-t border-white/10">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center text-white/70 text-sm">
-            <EyeIcon className="h-4 w-4 mr-1" /> Views: 1,234
-          </div>
-          <div className="flex space-x-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={shareArticle}
-              className="text-white/70 hover:text-purple-500"
-            >
-              <Share2Icon className="h-4 w-4 mr-2" /> Share
-            </Button>
-            <Button
-              variant={isBookmarked ? "secondary" : "outline"}
-              size="sm"
-              onClick={toggleBookmark}
-              className={isBookmarked ? "bg-purple-900/30 text-purple-500" : "text-white/70"}
-            >
-              <BookmarkIcon className="h-4 w-4 mr-2" />
-              {isBookmarked ? "Saved" : "Save"}
-            </Button>
-          </div>
-        </div>
-      </div>
-    </article>
+    <div className="prose prose-invert prose-lg max-w-none">
+      <div dangerouslySetInnerHTML={{ __html: content }} />
+    </div>
   );
 }
 

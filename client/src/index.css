@@ -133,6 +133,8 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    background-color: var(--bg-primary, #0D0D17);
+    color: var(--text-primary, #F9FAFB);
   }
 }
 
@@ -165,11 +167,6 @@
 
 .font-mono {
   font-family: 'JetBrains Mono', monospace;
-}
-
-body {
-  background-color: #0D0D17;
-  color: #F9FAFB;
 }
 
 /* Membership badge animation */

@@ -514,11 +514,22 @@ export const insertAstronomyPhotoSchema = createInsertSchema(astronomyPhotos).om
   isApproved: true,
 });
 
-export const insertJobListingSchema = createInsertSchema(jobListings).omit({
-  id: true,
-  createdAt: true,
-  isApproved: true,
-});
+export const insertJobListingSchema = createInsertSchema(jobListings)
+  .omit({
+    id: true,
+    createdAt: true,
+    isApproved: true,
+  })
+  .extend({
+    // Handle expiresAt field - convert empty strings to null
+    expiresAt: z.union([
+      z.date(),
+      z.string().min(1).transform((str) => new Date(str)),
+      z.literal('').transform(() => null),
+      z.null(),
+      z.undefined()
+    ]).optional(),
+  });
 
 export const insertAdvertisementSchema = createInsertSchema(advertisements)
   .extend({

@@ -66,21 +66,7 @@ export interface IStorage {
   deleteApiKey(id: number): Promise<boolean>;
   updateApiKeyLastUsed(id: number): Promise<void>;
   
-  // Article operations
-  getArticles(limit?: number, offset?: number): Promise<Article[]>;
-  getAllArticles(): Promise<Article[]>;
-  getArticleBySlug(slug: string): Promise<Article | undefined>;
-  getArticleById(id: number): Promise<Article | undefined>;
-  createArticle(article: InsertArticle): Promise<Article>;
-  updateArticle(id: number, data: Partial<Article>): Promise<Article | undefined>;
-  deleteArticle(id: number): Promise<boolean>;
-  getArticlesByAuthor(authorId: number): Promise<Article[]>;
-  getArticlesByCategory(category: string): Promise<Article[]>;
-  getArticlesByTag(tagId: number, limit?: number, offset?: number): Promise<Article[]>;
-  getFeaturedArticles(limit?: number): Promise<Article[]>;
-  searchArticles(query: string): Promise<Article[]>;
-  getArticlesByStatus(status: string): Promise<Article[]>;
-  getAuthorDrafts(authorId: number): Promise<Article[]>;
+
   
   // Article Author operations
   addAuthorToArticle(articleId: number, userId: number, role?: string): Promise<ArticleAuthor>;
@@ -126,7 +112,10 @@ export interface IStorage {
   
   // Job Listing operations
   getJobListings(approved?: boolean): Promise<JobListing[]>;
+  getJobListing(id: number): Promise<JobListing | undefined>;
   createJobListing(listing: InsertJobListing): Promise<JobListing>;
+  updateJobListing(id: number, data: Partial<JobListing>): Promise<JobListing | undefined>;
+  deleteJobListing(id: number): Promise<boolean>;
   approveJobListing(id: number): Promise<JobListing | undefined>;
   
   // Advertisement operations
@@ -346,25 +335,39 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Article operations
-  async getArticles(limit = 10, offset = 0): Promise<Article[]> {
+  async getArticles(limit = 10, offset = 0, showDrafts = false, userId?: number): Promise<Article[]> {
     try {
-      // Use a simple SQL query to avoid schema mismatch issues during migration
-      const result = await db.execute(sql`
+      // Build the WHERE clause based on parameters
+      let whereClause = 'WHERE published_at IS NOT NULL';
+      const params: any[] = [];
+      
+      if (showDrafts && userId) {
+        // If showDrafts is true and userId is provided, show drafts for that user or published articles
+        whereClause = `WHERE (published_at IS NOT NULL OR (status = 'draft' AND author_id = $1))`;
+        params.push(userId);
+      } else if (!showDrafts) {
+        // If showDrafts is false, only show published articles
+        whereClause = 'WHERE published_at IS NOT NULL AND status = \'published\'';
+      }
+      
+      // Use a direct SQL query to get articles with pagination
+      const query = `
         SELECT * FROM articles 
-        WHERE published_at IS NOT NULL 
-        ORDER BY published_at DESC
-        LIMIT ${limit} OFFSET ${offset}
-      `);
+        ${whereClause}
+        ORDER BY published_at DESC, created_at DESC
+        LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+      `;
+      
+      // Log the SQL query and parameters for debugging
+      console.log('SQL Query:', query);
+      console.log('Query Parameters:', [...params, limit, offset]);
+      
+      const result = await pool.query(query, [...params, limit, offset]);
       
       return result.rows as Article[];
     } catch (error) {
       console.error("Error in getArticles:", error);
-      if (error instanceof Error) {
-        console.error("Error name:", error.name);
-        console.error("Error message:", error.message);
-        console.error("Error stack:", error.stack);
-      }
-      throw error;
+      return [];
     }
   }
   
@@ -820,23 +823,45 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`Filtering articles with category: ${category}`);
       
-      // If our raw SQL query doesn't work, let's try a different approach
-      // Get all articles and then filter them directly
-      const allArticles = await this.getArticles(100, 0);
+      // First get the category by slug if it's a slug
+      let categoryToUse = category;
+      if (category.startsWith('category-')) {
+        const categorySlug = category.replace('category-', '');
+        const categoryData = await this.getCategoryBySlug(categorySlug);
+        if (categoryData) {
+          categoryToUse = categoryData.name;
+        }
+      }
       
-      // Now filter them manually by category
-      const filteredArticles = allArticles.filter(article => article.category === category);
-      console.log(`Manually filtered for category '${category}': Found ${filteredArticles.length} out of ${allArticles.length} articles`);
+      // Use a direct SQL query to filter by category
+      const query = `
+        SELECT * FROM articles 
+        WHERE published_at IS NOT NULL 
+        AND status = 'published'
+        AND category = $1
+        ORDER BY published_at DESC
+        LIMIT $2 OFFSET $3
+      `;
       
-      // Apply pagination
-      const paginatedArticles = filteredArticles.slice(offset, offset + limit);
+      const result = await pool.query(query, [categoryToUse, limit, offset]);
       
-      // Return the filtered and paginated results
-      return paginatedArticles;
+      // Get total count for pagination
+      const countQuery = `
+        SELECT COUNT(*) as total FROM articles 
+        WHERE published_at IS NOT NULL 
+        AND status = 'published'
+        AND category = $1
+      `;
+      
+      const countResult = await pool.query(countQuery, [categoryToUse]);
+      const total = parseInt(countResult.rows[0].total);
+      
+      console.log(`Found ${result.rows.length} articles in category '${categoryToUse}' (total: ${total})`);
+      
+      return result.rows as Article[];
     } catch (error) {
       console.error("Error in getArticlesByCategory:", error);
-      // Fallback to get all articles
-      return await this.getArticles(limit, offset);
+      return [];
     }
   }
 
@@ -1108,9 +1133,35 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(jobListings.createdAt));
   }
 
+  async getJobListing(id: number): Promise<JobListing | undefined> {
+    const [listing] = await db
+      .select()
+      .from(jobListings)
+      .where(eq(jobListings.id, id))
+      .limit(1);
+    return listing;
+  }
+
   async createJobListing(listing: InsertJobListing): Promise<JobListing> {
     const [newListing] = await db.insert(jobListings).values(listing).returning();
     return newListing;
+  }
+
+  async updateJobListing(id: number, data: Partial<JobListing>): Promise<JobListing | undefined> {
+    const [listing] = await db
+      .update(jobListings)
+      .set(data)
+      .where(eq(jobListings.id, id))
+      .returning();
+    return listing;
+  }
+
+  async deleteJobListing(id: number): Promise<boolean> {
+    const result = await db
+      .delete(jobListings)
+      .where(eq(jobListings.id, id))
+      .returning({ id: jobListings.id });
+    return result.length > 0;
   }
 
   async approveJobListing(id: number): Promise<JobListing | undefined> {
@@ -1144,6 +1195,7 @@ export class DatabaseStorage implements IStorage {
     if (!includeNotApproved) {
       // Check both isApproved field AND status field for consistency
       conditions.push(eq(advertisements.isApproved, true));
+      // Accept both 'active' and 'approved' status for active ads
       conditions.push(sql`(${advertisements.status} = 'active' OR ${advertisements.status} = 'approved')`);
       conditions.push(sql`${advertisements.startDate} <= NOW()`);
       conditions.push(sql`${advertisements.endDate} >= NOW()`);
@@ -1251,7 +1303,7 @@ export class DatabaseStorage implements IStorage {
       .update(advertisements)
       .set({ 
         isApproved: true,
-        status: 'active'  // Synchronize status with isApproved
+        status: 'active'  // Set to active when approved
       })
       .where(eq(advertisements.id, id))
       .returning();

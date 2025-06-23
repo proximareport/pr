@@ -51,13 +51,13 @@ function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/astronomy" className="text-white/70 hover:text-purple-500 transition">
-                  Astronomy
+                <Link href="/missioncontrol" className="text-white/70 hover:text-purple-500 transition">
+                  Mission Control
                 </Link>
               </li>
               <li>
-                <Link href="/science" className="text-white/70 hover:text-purple-500 transition">
-                  Science
+                <Link href="/astronomy" className="text-white/70 hover:text-purple-500 transition">
+                  Astronomy
                 </Link>
               </li>
               <li>

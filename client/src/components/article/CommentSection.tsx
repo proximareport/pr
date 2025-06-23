@@ -34,7 +34,7 @@ interface CommentSectionProps {
   refetchComments: () => void;
 }
 
-function CommentSection({ articleId, comments, refetchComments }: CommentSectionProps) {
+function CommentSection({ articleId, comments = [], refetchComments }: CommentSectionProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [commentText, setCommentText] = useState("");
@@ -43,6 +43,14 @@ function CommentSection({ articleId, comments, refetchComments }: CommentSection
   const [replyText, setReplyText] = useState("");
   const [userVotes, setUserVotes] = useState<Record<number, "up" | "down" | null>>({});
   const [loadingVotes, setLoadingVotes] = useState<Record<number, boolean>>({});
+
+  // Ensure comments is always an array
+  const safeComments = Array.isArray(comments) ? comments : [];
+  
+  // Sort comments by date
+  const sortedComments = [...safeComments].sort((a, b) => {
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
 
   // Submit a new comment
   const handleSubmitComment = async () => {
@@ -312,55 +320,26 @@ function CommentSection({ articleId, comments, refetchComments }: CommentSection
     );
   };
 
-  // Sort comments - Pro users first, then by votes, then by date
-  const sortedComments = [...comments].sort((a, b) => {
-    // Pro users first
-    if (a.author.membershipTier === "pro" && b.author.membershipTier !== "pro") return -1;
-    if (a.author.membershipTier !== "pro" && b.author.membershipTier === "pro") return 1;
-    
-    // Then by net votes
-    const aVotes = a.upvotes - a.downvotes;
-    const bVotes = b.upvotes - b.downvotes;
-    if (aVotes !== bVotes) return bVotes - aVotes;
-    
-    // Finally by date (newest first)
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
-
   return (
-    <div className="mt-10">
-      <h3 className="font-space font-bold text-xl mb-4">Comments ({comments.length})</h3>
-
+    <div className="space-y-6">
       {/* Comment form */}
-      {user ? (
-        <div className="mb-6">
-          <Textarea
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            className="w-full bg-[#14141E] border border-white/20 rounded-lg p-4 text-white placeholder-white/40 focus:border-purple-500 focus:outline-none transition"
-            rows={4}
-            placeholder="Join the discussion..."
-          />
-          <div className="flex justify-end mt-2">
-            <Button
-              className="bg-purple-800 hover:bg-purple-700"
-              onClick={handleSubmitComment}
-              disabled={isSubmitting || !commentText.trim()}
-            >
-              Post Comment
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="mb-6 p-4 bg-[#14141E] rounded-lg border border-white/10 text-center">
-          <p className="text-white/70 mb-2">
-            Please sign in to join the discussion.
-          </p>
-          <Button asChild className="bg-purple-800 hover:bg-purple-700">
-            <Link href="/login">Sign In</Link>
+      <div className="bg-[#14141E] rounded-lg border border-white/10 p-4">
+        <Textarea
+          placeholder="Write a comment..."
+          value={commentText}
+          onChange={(e) => setCommentText(e.target.value)}
+          className="min-h-[100px] bg-[#1A1A24] border-white/10 text-white"
+        />
+        <div className="mt-4 flex justify-end">
+          <Button
+            onClick={handleSubmitComment}
+            disabled={isSubmitting || !commentText.trim()}
+            className="bg-purple-600 hover:bg-purple-700 text-white"
+          >
+            {isSubmitting ? "Posting..." : "Post Comment"}
           </Button>
         </div>
-      )}
+      </div>
 
       {/* Comments list */}
       <div>
@@ -368,17 +347,10 @@ function CommentSection({ articleId, comments, refetchComments }: CommentSection
           sortedComments.map((comment) => renderComment(comment))
         ) : (
           <div className="p-6 bg-[#14141E] rounded-lg border border-white/10 text-center">
-            <p className="text-white/70">Be the first to comment!</p>
+            <p className="text-white/60">No comments yet. Be the first to comment!</p>
           </div>
         )}
       </div>
-
-      {/* Load more comments button */}
-      {comments.length > 10 && (
-        <div className="text-center mt-6">
-          <Button variant="outline">Load More Comments</Button>
-        </div>
-      )}
     </div>
   );
 }
