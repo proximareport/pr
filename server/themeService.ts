@@ -1,5 +1,7 @@
 import { db } from "./db";
 import { eq, and, isNull, desc, sql, or, like, not, inArray, asc } from "drizzle-orm";
+import { users } from "@shared/schema";
+import { storage } from "./storage";
 
 export interface Theme {
   id: number;
@@ -21,9 +23,6 @@ export interface UserTheme {
 }
 
 export class ThemeService {
-  // In-memory storage for user themes (since we're not using database)
-  private userThemes: Map<number, string> = new Map();
-
   // Get all active themes - simplified to always use hardcoded themes
   async getActiveThemes(): Promise<Theme[]> {
     try {
@@ -255,11 +254,19 @@ export class ThemeService {
     }
   }
 
-  // Get user's current theme - now properly returns stored theme
+  // Get user's current theme - now reads from database
   async getUserTheme(userId: number): Promise<Theme | null> {
     try {
-      // Get the user's stored theme name
-      const userThemeName = this.userThemes.get(userId) || 'default';
+      // Get the user from database to read their theme preference
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        console.error(`ThemeService: User ${userId} not found`);
+        return await this.getThemeByName('default');
+      }
+      
+      // Get the user's stored theme name from database
+      const userThemeName = user.themePreference || 'default';
       console.log(`ThemeService: Getting theme for user ${userId} - returning ${userThemeName}`);
       
       // Return the actual theme object
@@ -270,7 +277,7 @@ export class ThemeService {
     }
   }
 
-  // Set user's theme - now properly stores the theme preference
+  // Set user's theme - now stores in database
   async setUserTheme(userId: number, themeName: string): Promise<boolean> {
     try {
       const theme = await this.getThemeByName(themeName);
@@ -279,9 +286,15 @@ export class ThemeService {
         return false;
       }
 
-      // Store the user's theme preference
-      this.userThemes.set(userId, themeName);
-      console.log(`ThemeService: User ${userId} theme set to ${themeName}`);
+      // Update the user's theme preference in the database
+      const updatedUser = await storage.updateUser(userId, { themePreference: themeName });
+      
+      if (!updatedUser) {
+        console.error(`ThemeService: Failed to update user ${userId} theme preference`);
+        return false;
+      }
+
+      console.log(`ThemeService: User ${userId} theme set to ${themeName} (persisted to database)`);
       return true;
     } catch (error) {
       console.error('Error setting user theme:', error);
@@ -292,9 +305,15 @@ export class ThemeService {
   // Reset user's theme to default
   async resetUserTheme(userId: number): Promise<boolean> {
     try {
-      // Remove the user's theme preference (will default to 'default')
-      this.userThemes.delete(userId);
-      console.log(`ThemeService: User ${userId} theme reset to default`);
+      // Update the user's theme preference to 'default' in the database
+      const updatedUser = await storage.updateUser(userId, { themePreference: 'default' });
+      
+      if (!updatedUser) {
+        console.error(`ThemeService: Failed to reset user ${userId} theme preference`);
+        return false;
+      }
+
+      console.log(`ThemeService: User ${userId} theme reset to default (persisted to database)`);
       return true;
     } catch (error) {
       console.error('Error resetting user theme:', error);

@@ -1,6 +1,5 @@
 import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import { createServer, type Server } from "http";
-import { Server as SocketServer } from "socket.io";
 import { storage } from "./storage";
 import { pool } from "./db";
 import { ZodError } from "zod";
@@ -64,7 +63,7 @@ import {
   getComprehensiveSpaceData
 } from './launchesService';
 import { getFeaturedImages, getGalleryImages, getAvailableTags } from './ghostService';
-import { getPosts, getPost, getPostBySlug } from './ghostService';
+import { getPosts, getPostBySlug } from './ghostService';
 import { ThemeService } from './themeService';
 
 // Setup file uploads
@@ -1159,6 +1158,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check if user has permission to update this user
       const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const currentUser = await storage.getUser(userId);
       
       if (!currentUser) {
@@ -1208,6 +1211,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check if user has permission to change this password
       const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const currentUser = await storage.getUser(userId);
       
       if (!currentUser) {
@@ -3409,6 +3416,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/themes/current", requireAuth, async (req: Request, res: Response) => {
     try {
       const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const theme = await themeService.getUserTheme(userId);
       res.json(theme);
     } catch (error) {
@@ -3423,6 +3434,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/themes/set", requireAuth, async (req: Request, res: Response) => {
     try {
       const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const { themeName } = req.body;
 
       if (!themeName || !themeService.isValidThemeName(themeName)) {
@@ -3448,6 +3463,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/themes/reset", requireAuth, async (req: Request, res: Response) => {
     try {
       const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const success = await themeService.resetUserTheme(userId);
       
       if (success) {
