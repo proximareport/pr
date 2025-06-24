@@ -4,7 +4,7 @@ services:
     env: node
     plan: free
     buildCommand: npm install && npm run build
-    startCommand: node dist/server/test-server.js
+    startCommand: npx tsx server/test-server.ts
     envVars:
       - key: NODE_ENV
         value: production
@@ -21,6 +21,6 @@ services:
       - key: STRIPE_WEBHOOK_SECRET
         value: whsec_1234567890abcdef1234567890abcdef12345678
       - key: DATABASE_URL
-        value: postgresql://user:password@localhost:5432/proxima
+        value: postgresql://neondb_owner:npg_sZcWROjl9i6C@ep-black-frog-a8nomna0-pooler.eastus2.azure.neon.tech/neondb?sslmode=require
       - key: SESSION_SECRET
         value: your-super-secret-session-key-change-this-in-production 
