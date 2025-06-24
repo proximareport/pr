@@ -23,7 +23,8 @@ const missingEnvVars = Object.entries(requiredEnvVars)
 
 if (missingEnvVars.length > 0) {
   console.error('Missing required environment variables:', missingEnvVars);
-  process.exit(1);
+  console.error('Server will start but some features may not work properly');
+  // Don't exit - let the server start and handle missing vars gracefully
 }
 
 const app = express();
@@ -79,34 +80,39 @@ app.use((req, res, next) => {
 
 // Initialize the app
 async function initializeApp() {
-  // First register all API routes
-  const server = await registerRoutes(app);
-  
-  // Newsletter and search routes are now directly registered in routes.ts
-  // before the Vite middleware
-
-  // Global error handler for API routes
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    console.error("API Error:", err);
+  try {
+    // First register all API routes
+    const server = await registerRoutes(app);
     
-    // Only send response if headers haven't been sent yet
-    if (!res.headersSent) {
-      res.status(status).json({ message });
+    // Newsletter and search routes are now directly registered in routes.ts
+    // before the Vite middleware
+
+    // Global error handler for API routes
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
+
+      console.error("API Error:", err);
+      
+      // Only send response if headers haven't been sent yet
+      if (!res.headersSent) {
+        res.status(status).json({ message });
+      }
+    });
+
+    // Setup Vite AFTER all API routes are registered
+    // This ensures the catch-all doesn't interfere with API routes
+    if (app.get("env") === "development") {
+      await setupVite(app, server);
+    } else {
+      serveStatic(app);
     }
-  });
 
-  // Setup Vite AFTER all API routes are registered
-  // This ensures the catch-all doesn't interfere with API routes
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
+    return server;
+  } catch (error) {
+    console.error("Error initializing app:", error);
+    throw error;
   }
-
-  return server;
 }
 
 // Start the server
@@ -117,5 +123,10 @@ initializeApp().then(server => {
     host: "0.0.0.0",
   }, () => {
     log(`serving on port ${port}`);
+    log(`Environment: ${process.env.NODE_ENV}`);
+    log(`Missing env vars: ${missingEnvVars.join(', ') || 'none'}`);
   });
+}).catch(error => {
+  console.error("Failed to start server:", error);
+  process.exit(1);
 });
