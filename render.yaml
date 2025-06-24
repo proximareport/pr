@@ -2,7 +2,7 @@ services:
   - type: web
     name: proxima-report-backend
     env: node
-    buildCommand: npm ci && npm run build:client
+    buildCommand: npm ci && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
@@ -13,9 +13,19 @@ services:
         value: dcc78244feda64ba082fb51fff
       - key: SESSION_SECRET
         value: your-super-secret-session-key-change-this-in-production
+      - key: CLIENT_URL
+        value: https://proxima-report-backend.onrender.com
       - key: VITE_API_BASE_URL
-        value: https://your-render-app.onrender.com
+        value: https://proxima-report-backend.onrender.com
       - key: VITE_GHOST_URL
         value: https://proxima-report.ghost.io
       - key: VITE_GHOST_CONTENT_API_KEY
-        value: dcc78244feda64ba082fb51fff 
+        value: dcc78244feda64ba082fb51fff
+      - key: SENDGRID_API_KEY
+        value: your-sendgrid-api-key
+      - key: STRIPE_SECRET_KEY
+        value: sk_test_your-stripe-secret-key
+      - key: STRIPE_WEBHOOK_SECRET
+        value: whsec_your-webhook-secret
+      - key: DATABASE_URL
+        value: postgresql://username:password@localhost:5432/proxima_report 

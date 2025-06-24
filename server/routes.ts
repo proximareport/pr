@@ -218,6 +218,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Use session middleware
   app.use(session(sessionConfig));
   
+  // Debug endpoint to check environment variables
+  app.get("/api/debug/env", (req: Request, res: Response) => {
+    res.json({
+      NODE_ENV: process.env.NODE_ENV,
+      GHOST_URL: process.env.GHOST_URL,
+      GHOST_CONTENT_API_KEY: process.env.GHOST_CONTENT_API_KEY ? 'SET' : 'NOT SET',
+      SESSION_SECRET: process.env.SESSION_SECRET ? 'SET' : 'NOT SET',
+      CLIENT_URL: process.env.CLIENT_URL,
+      VITE_API_BASE_URL: process.env.VITE_API_BASE_URL,
+      timestamp: new Date().toISOString()
+    });
+  });
+  
   // ----------------------------------------------------
   // SpaceX Launches API
   // ----------------------------------------------------
