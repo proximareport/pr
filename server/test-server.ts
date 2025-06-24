@@ -12,6 +12,7 @@ app.get('/', (req, res) => {
   });
 });
 
+// Test different API paths
 app.get('/api/test', (req, res) => {
   res.json({
     message: 'Test server is working!',
@@ -26,6 +27,28 @@ app.get('/api/env', (req, res) => {
     PORT: process.env.PORT,
     GHOST_URL: process.env.GHOST_URL,
     DATABASE_URL: process.env.DATABASE_URL ? '***HIDDEN***' : 'NOT_SET',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Test different path patterns
+app.get('/test', (req, res) => {
+  res.json({
+    message: 'Direct test endpoint working!',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/backend/test', (req, res) => {
+  res.json({
+    message: 'Backend test endpoint working!',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/v1/test', (req, res) => {
+  res.json({
+    message: 'V1 test endpoint working!',
     timestamp: new Date().toISOString()
   });
 });

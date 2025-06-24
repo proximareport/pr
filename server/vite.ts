@@ -23,7 +23,7 @@ export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
     middlewareMode: true,
     hmr: { server },
-    allowedHosts: true,
+    allowedHosts: true as true,
   };
 
   const vite = await createViteServer({
@@ -78,8 +78,14 @@ export function serveStatic(app: Express) {
 
   app.use(express.static(distPath));
 
-  // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
+  // Only serve index.html for non-API routes
+  app.use("*", (req, res, next) => {
+    // Skip API routes - let them be handled by the API middleware
+    if (req.path.startsWith('/api/') || req.path.startsWith('/test') || req.path.startsWith('/backend/') || req.path.startsWith('/v1/')) {
+      return next();
+    }
+    
+    // For all other routes, serve the frontend
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }
