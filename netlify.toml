@@ -1,6 +1,6 @@
 [build]
   # Simple build command that should work reliably
-  command = "npm ci && npm run build:client"
+  command = "npm ci && npx vite build"
   # Publish directory (where the built client files are)
   publish = "dist/public"
   # Functions directory (if you want to add serverless functions later)
@@ -11,6 +11,8 @@
   NODE_ENV = "production"
   # Specify Node.js version
   NODE_VERSION = "20"
+  # Ensure dev dependencies are installed
+  NPM_FLAGS = "--include=dev"
 
 # Redirects for SPA routing - all routes go to index.html
 [[redirects]]
