@@ -231,6 +231,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
+  // Simple health check endpoint
+  app.get("/api/health", (req: Request, res: Response) => {
+    res.json({
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    });
+  });
+  
   // ----------------------------------------------------
   // SpaceX Launches API
   // ----------------------------------------------------
