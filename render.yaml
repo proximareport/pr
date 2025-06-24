@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: proxima-report-backend
+    env: node
+    buildCommand: npm ci && npm run build:client
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GHOST_URL
+        value: https://proxima-report.ghost.io
+      - key: GHOST_CONTENT_API_KEY
+        value: dcc78244feda64ba082fb51fff
+      - key: SESSION_SECRET
+        value: your-super-secret-session-key-change-this-in-production
+      - key: VITE_API_BASE_URL
+        value: https://your-render-app.onrender.com
+      - key: VITE_GHOST_URL
+        value: https://proxima-report.ghost.io
+      - key: VITE_GHOST_CONTENT_API_KEY
+        value: dcc78244feda64ba082fb51fff 

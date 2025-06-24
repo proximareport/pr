@@ -109,25 +109,13 @@ async function initializeApp() {
   return server;
 }
 
-// Initialize the app
-const serverPromise = initializeApp();
-
-// Export for Vercel
-export default async function handler(req: Request, res: Response) {
-  const server = await serverPromise;
-  return app(req, res);
-}
-
-// Only start the server if not on Vercel
-if (process.env.VERCEL !== '1') {
-  serverPromise.then(server => {
-    const port = process.env.PORT || 5000;
-    server.listen({
-      port: Number(port),
-      host: "0.0.0.0",
-      reusePort: true,
-    }, () => {
-      log(`serving on port ${port}`);
-    });
+// Start the server
+initializeApp().then(server => {
+  const port = process.env.PORT || 5000;
+  server.listen({
+    port: Number(port),
+    host: "0.0.0.0",
+  }, () => {
+    log(`serving on port ${port}`);
   });
-}
+});
