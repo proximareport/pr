@@ -1,6 +1,6 @@
 [build]
   # Simple build command that should work reliably
-  command = "npm ci && npm run build:netlify"
+  command = "npm ci && npm run build:client"
   # Publish directory (where the built client files are)
   publish = "dist/public"
   # Functions directory (if you want to add serverless functions later)
