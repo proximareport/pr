@@ -23,4 +23,8 @@ services:
       - key: DATABASE_URL
         value: postgresql://neondb_owner:npg_sZcWROjl9i6C@ep-black-frog-a8nomna0-pooler.eastus2.azure.neon.tech/neondb?sslmode=require
       - key: SESSION_SECRET
-        value: your-super-secret-session-key-change-this-in-production 
+        value: your-super-secret-session-key-change-this-in-production
+      - key: CLIENT_URL
+        value: https://pr-chgf.onrender.com
+      - key: VITE_API_BASE_URL
+        value: https://pr-chgf.onrender.com 
