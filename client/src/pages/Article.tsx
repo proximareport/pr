@@ -6,12 +6,13 @@ import ArticleContent from "@/components/article/ArticleContent";
 import TableOfContents from "@/components/article/TableOfContents";
 import CommentSection from "@/components/article/CommentSection";
 import Advertisement from "@/components/Advertisement";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Clock, User, Calendar, Eye, Share2, Bookmark } from "lucide-react";
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import type { GhostPost } from '../../../server/ghostService';
+import { ModernButton } from "@/components/ui/modern-button";
 
 interface ArticleParams {
   slug: string;
@@ -41,14 +42,34 @@ function Article() {
   // Extract headings from article content for TOC
   useEffect(() => {
     if (article?.html) {
+      // Debug: Log the article data to see what we're actually getting
+      console.log('Article data received in Article component:', {
+        id: article.id,
+        title: article.title,
+        hasReadingTime: !!article.reading_time,
+        readingTimeValue: article.reading_time,
+        readingTimeType: typeof article.reading_time,
+        hasAuthors: !!article.authors,
+        authorsLength: article.authors?.length || 0,
+        hasPrimaryAuthor: !!article.primary_author,
+        primaryAuthorName: article.primary_author?.name,
+        authorsData: article.authors?.map(a => ({ id: a.id, name: a.name, profile_image: a.profile_image })) || [],
+        primaryAuthorData: article.primary_author ? { 
+          id: article.primary_author.id, 
+          name: article.primary_author.name, 
+          profile_image: article.primary_author.profile_image 
+        } : null,
+        allFields: Object.keys(article)
+      });
+      
       const parser = new DOMParser();
       const doc = parser.parseFromString(article.html, 'text/html');
       const headingElements = doc.querySelectorAll('h1, h2, h3, h4, h5, h6');
       
-      const extractedHeadings = Array.from(headingElements).map((heading, index) => ({
+      const extractedHeadings: Array<{ id: string; content: string; level: number }> = Array.from(headingElements).map((heading, index) => ({
         id: `heading-${index}`,
         content: heading.textContent || '',
-        level: parseInt(heading.tagName[1])
+        level: Number(heading.tagName[1]) || 1
       }));
       
       setHeadings(extractedHeadings);
@@ -83,10 +104,23 @@ function Article() {
   
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#0D0D17] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin h-12 w-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-white/70">Loading article...</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/40 to-black relative overflow-hidden flex flex-col">
+        {/* Geometric ambient effects */}
+        <div className="absolute inset-0">
+          <div className="absolute top-20 left-10 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute top-40 right-20 w-24 h-24 bg-violet-600/10 rounded-full blur-2xl animate-pulse delay-1000"></div>
+          <div className="absolute bottom-32 left-1/4 w-40 h-40 bg-purple-600/10 rounded-full blur-3xl animate-pulse delay-2000"></div>
+          <div className="absolute bottom-20 right-1/3 w-28 h-28 bg-indigo-500/10 rounded-full blur-2xl animate-pulse delay-3000"></div>
+        </div>
+        
+        <div className="relative z-10 flex-grow flex items-center justify-center">
+          <div className="text-center">
+            <div className="relative mb-8">
+              <div className="animate-spin h-16 w-16 border-4 border-purple-500 border-t-transparent rounded-full mx-auto glow-effect"></div>
+              <div className="absolute inset-0 animate-ping h-16 w-16 border-2 border-purple-400/30 rounded-full opacity-40"></div>
+            </div>
+            <p className="text-white/80 text-lg font-medium">Loading article...</p>
+          </div>
         </div>
       </div>
     );
@@ -94,13 +128,24 @@ function Article() {
   
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0D0D17] flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">Error</h1>
-          <p className="text-white/70 mb-6">Failed to load article</p>
-          <Button asChild variant="outline">
-            <Link href="/">Back to Home</Link>
-          </Button>
+      <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/40 to-black relative overflow-hidden flex flex-col">
+        {/* Geometric ambient effects */}
+        <div className="absolute inset-0">
+          <div className="absolute top-20 left-10 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute top-40 right-20 w-24 h-24 bg-violet-600/10 rounded-full blur-2xl animate-pulse delay-1000"></div>
+          <div className="absolute bottom-32 left-1/4 w-40 h-40 bg-purple-600/10 rounded-full blur-3xl animate-pulse delay-2000"></div>
+        </div>
+        
+        <div className="relative z-10 flex-grow flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-white mb-4 bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">⚠️ Error</h1>
+            <p className="text-white/70 mb-8 text-lg">Failed to load article</p>
+            <Link href="/">
+              <ModernButton variant="futuristic">
+                Back to Home
+              </ModernButton>
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -108,62 +153,162 @@ function Article() {
 
   if (!article) {
     return (
-      <div className="min-h-screen bg-[#0D0D17] flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">Article Not Found</h1>
-          <p className="text-white/70 mb-6">The article you're looking for doesn't exist.</p>
-          <Button asChild variant="outline">
-            <Link href="/">Back to Home</Link>
-          </Button>
+      <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/40 to-black relative overflow-hidden flex flex-col">
+        {/* Geometric ambient effects */}
+        <div className="absolute inset-0">
+          <div className="absolute top-20 left-10 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute top-40 right-20 w-24 h-24 bg-violet-600/10 rounded-full blur-2xl animate-pulse delay-1000"></div>
+          <div className="absolute bottom-32 left-1/4 w-40 h-40 bg-purple-600/10 rounded-full blur-3xl animate-pulse delay-2000"></div>
+        </div>
+        
+        <div className="relative z-10 flex-grow flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-white mb-4 bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">📄 Article Not Found</h1>
+            <p className="text-white/70 mb-8 text-lg">The article you're looking for doesn't exist.</p>
+            <Link href="/">
+              <ModernButton variant="futuristic">
+                Back to Home
+              </ModernButton>
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0D0D17]">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/40 to-black relative overflow-hidden flex flex-col">
+      {/* Geometric ambient effects */}
+      <div className="absolute inset-0">
+        <div className="absolute top-20 left-10 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-40 right-20 w-24 h-24 bg-violet-600/10 rounded-full blur-2xl animate-pulse delay-1000"></div>
+        <div className="absolute bottom-32 left-1/4 w-40 h-40 bg-purple-600/10 rounded-full blur-3xl animate-pulse delay-2000"></div>
+        <div className="absolute bottom-20 right-1/3 w-28 h-28 bg-indigo-500/10 rounded-full blur-2xl animate-pulse delay-3000"></div>
+        <div className="absolute top-1/3 left-1/2 w-36 h-36 bg-purple-400/5 rounded-full blur-3xl animate-pulse delay-4000"></div>
+      </div>
+
+      <div className="relative z-10 container mx-auto px-4 py-8 flex-grow">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Main Content */}
           <div className="lg:w-3/4">
             <div className="mb-8">
-              <Button asChild variant="ghost" className="mb-4">
-                <Link href="/">
+              <Link href="/">
+                <ModernButton variant="neon" className="mb-8 bg-purple-500/10 hover:bg-purple-500/20 border-purple-400/30 hover:border-purple-400 text-purple-400 hover:text-purple-300 transition-all duration-300">
                   <ChevronLeft className="mr-2 h-4 w-4" />
                   Back to Articles
-                </Link>
-              </Button>
+                </ModernButton>
+              </Link>
               
-              <h1 className="text-4xl font-bold text-white mb-4">{article.title}</h1>
+              <h1 className="text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent hover:from-purple-400 hover:to-violet-400 transition-all duration-500">{article.title}</h1>
               
-              <div className="flex items-center gap-4 text-white/70 mb-8">
-                <div className="flex items-center gap-2">
-                  <img 
-                    src={article.primary_author?.profile_image || '/default-avatar.png'} 
-                    alt={article.primary_author?.name || 'Author'} 
-                    className="w-8 h-8 rounded-full"
-                  />
-                  <span>{article.primary_author?.name || 'Unknown Author'}</span>
+              {/* Enhanced metadata section */}
+              <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-purple-500/20 shadow-2xl mb-8">
+                <div className="flex flex-wrap items-center gap-6 text-white/80">
+                  {/* Authors */}
+                  <div className="flex items-center gap-3">
+                    {article.authors && article.authors.length > 1 ? (
+                      <div className="flex items-center gap-3 group">
+                        <div className="flex -space-x-2">
+                          {article.authors.slice(0, 3).map((author, index) => (
+                            <div key={author.id} className="relative">
+                              <img 
+                                src={author.profile_image || '/default-avatar.png'} 
+                                alt={author.name || 'Author'} 
+                                className="w-10 h-10 rounded-full border-2 border-purple-400/30 transition-all duration-300 group-hover:border-purple-400 group-hover:scale-110"
+                                style={{ zIndex: article.authors.length - index }}
+                              />
+                              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 to-violet-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            </div>
+                          ))}
+                          {article.authors.length > 3 && (
+                            <div className="w-10 h-10 rounded-full border-2 border-purple-400/30 bg-purple-900/50 flex items-center justify-center text-xs font-medium text-white">
+                              +{article.authors.length - 3}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-medium text-white group-hover:text-purple-300 transition-colors duration-300">
+                            {article.authors.slice(0, 2).map(author => author.name).join(', ')}
+                            {article.authors.length > 2 && ` and ${article.authors.length - 2} more`}
+                          </span>
+                          <span className="text-sm text-white/60">Authors</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3 group">
+                        <div className="relative">
+                          <img 
+                            src={(article.authors?.[0]?.profile_image || article.primary_author?.profile_image) || '/default-avatar.png'} 
+                            alt={(article.authors?.[0]?.name || article.primary_author?.name) || 'Author'} 
+                            className="w-12 h-12 rounded-full border-2 border-purple-400/30 transition-all duration-300 group-hover:border-purple-400 group-hover:scale-110"
+                          />
+                          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 to-violet-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-medium text-white group-hover:text-purple-300 transition-colors duration-300">
+                            {(article.authors?.[0]?.name || article.primary_author?.name) || 'Unknown Author'}
+                          </span>
+                          <span className="text-sm text-white/60">Author</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="hidden sm:block w-px h-8 bg-purple-500/30"></div>
+                  
+                  {/* Date */}
+                  <div className="flex items-center gap-2 hover:text-purple-300 transition-colors duration-300">
+                    <Calendar className="w-4 h-4 text-purple-400" />
+                    <span className="font-medium">{format(new Date(article.published_at), 'MMMM d, yyyy')}</span>
+                  </div>
+                  
+                  <div className="hidden sm:block w-px h-8 bg-purple-500/30"></div>
+                  
+                  {/* Reading time */}
+                  <div className="flex items-center gap-2 hover:text-purple-300 transition-colors duration-300">
+                    <Clock className="w-4 h-4 text-purple-400" />
+                    <span className="font-medium">{article.reading_time || 5} min read</span>
+                  </div>
+                  
+                  {/* Action buttons */}
+                  <div className="ml-auto flex items-center gap-3">
+                    <button className="p-2 rounded-full bg-purple-500/10 hover:bg-purple-500/20 border border-purple-400/30 hover:border-purple-400 text-purple-400 hover:text-purple-300 transition-all duration-300 group">
+                      <Share2 className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
+                    </button>
+                    <button className="p-2 rounded-full bg-purple-500/10 hover:bg-purple-500/20 border border-purple-400/30 hover:border-purple-400 text-purple-400 hover:text-purple-300 transition-all duration-300 group">
+                      <Bookmark className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
+                    </button>
+                  </div>
                 </div>
-                <span>•</span>
-                <span>{format(new Date(article.published_at), 'MMMM d, yyyy')}</span>
-                <span>•</span>
-                <span>{article.reading_time || 5} min read</span>
               </div>
               
               {article.feature_image && (
-                <img 
-                  src={article.feature_image} 
-                  alt={article.title}
-                  className="w-full h-[400px] object-cover rounded-lg mb-8"
-                />
+                <div className="relative mb-8 overflow-hidden rounded-2xl group">
+                  <img 
+                    src={article.feature_image} 
+                    alt={article.title}
+                    className="w-full h-[400px] lg:h-[500px] object-cover transition-all duration-700 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-purple-900/10 group-hover:from-black/50 transition-all duration-500"></div>
+                  <div className="absolute inset-0 border-2 border-purple-500/20 rounded-2xl group-hover:border-purple-400/40 transition-all duration-500"></div>
+                </div>
               )}
             </div>
             
-            <ArticleContent content={article.html} />
+            {/* Article content */}
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 lg:p-12 border border-purple-500/20 shadow-2xl hover:border-purple-400/30 transition-all duration-500">
+              <ArticleContent content={article.html} />
+            </div>
             
+            {/* Comments section */}
             <div className="mt-12">
-              <CommentSection articleId={article.id} />
+              <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-purple-500/20 shadow-2xl">
+                <CommentSection 
+                  articleId={parseInt(article.id)} 
+                  comments={[]} 
+                  refetchComments={() => {}} 
+                />
+              </div>
             </div>
           </div>
           
@@ -171,16 +316,37 @@ function Article() {
           <div className="lg:w-1/4 space-y-8">
             {headings.length > 0 && (
               <div className="sticky top-8">
-                <TableOfContents 
-                  headings={headings} 
-                  activeHeadingId={activeHeadingId} 
-                />
+                <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-purple-500/20 shadow-2xl hover:border-purple-400/30 transition-all duration-500">
+                  <h3 className="text-lg font-bold mb-4 text-white flex items-center gap-2">
+                    <Eye className="w-5 h-5 text-purple-400" />
+                    Table of Contents
+                  </h3>
+                  <TableOfContents 
+                    headings={headings} 
+                    activeHeadingId={activeHeadingId} 
+                  />
+                </div>
               </div>
             )}
             
-            <div>
-              <h3 className="text-lg font-bold mb-4">Sponsored</h3>
+            {/* Advertisement */}
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-purple-500/20 shadow-2xl hover:border-purple-400/30 transition-all duration-500">
+              <h3 className="text-lg font-bold mb-4 text-white flex items-center gap-2">
+                <Share2 className="w-5 h-5 text-purple-400" />
+                Sponsored
+              </h3>
               <Advertisement placement="sidebar" />
+            </div>
+            
+            {/* Additional sidebar card */}
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-purple-500/20 shadow-2xl hover:border-purple-400/30 transition-all duration-500">
+              <h3 className="text-lg font-bold mb-4 text-white">📚 Related Articles</h3>
+              <p className="text-white/60 text-sm">Discover more space exploration content</p>
+              <div className="mt-4">
+                <ModernButton variant="neon" className="w-full text-sm">
+                  Browse Articles
+                </ModernButton>
+              </div>
             </div>
           </div>
         </div>

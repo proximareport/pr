@@ -40,6 +40,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
+  // Set default theme back to original
+  const defaultThemeName = 'default';
+
   // Apply theme-specific effects
   const applyThemeEffects = useCallback((themeName: string) => {
     // Remove all existing effect classes
@@ -50,7 +53,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       'biomechanical', 'alien-glow', 'organic-curves',
       'dust-texture', 'mars-atmosphere',
       'rain-effect', 'neon-reflection', 'neo-noir',
-      'wormhole-effect', 'cosmic-particles', 'space-time'
+      'wormhole-effect', 'cosmic-particles', 'space-time',
+      'holographic', 'particle-field', 'neural-network', 'quantum-glow', 'temporal-shift'
     );
 
     // Add theme-specific effect classes
@@ -75,6 +79,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         break;
       case 'interstellar':
         document.body.classList.add('wormhole-effect', 'cosmic-particles', 'space-time');
+        break;
+      case 'futuristic':
+        document.body.classList.add('holographic', 'particle-field', 'neural-network', 'quantum-glow', 'temporal-shift');
         break;
     }
   }, []);
@@ -230,14 +237,75 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     }
   }, [user, fetchThemes, applyThemeToBody]);
 
-  // Initialize themes and current theme on mount - only run once
+  // Load themes and set current theme
   useEffect(() => {
-    const initThemes = async () => {
-      await fetchThemes();
-      await fetchCurrentTheme();
+    const loadThemes = async () => {
+      try {
+        const response = await fetch('/api/themes');
+        if (response.ok) {
+          const themesData = await response.json();
+          setThemes(themesData);
+          
+          // Try to get user's saved theme, otherwise use futuristic as default
+          if (user) {
+            const userThemeResponse = await fetch('/api/themes/user');
+            if (userThemeResponse.ok) {
+              const userTheme = await userThemeResponse.json();
+              if (userTheme && userTheme.theme) {
+                setCurrentTheme(userTheme.theme);
+                applyThemeToBody(userTheme.theme.name);
+                return;
+              }
+            }
+          }
+          
+          // Set futuristic theme as default
+          const futuristicTheme = themesData.find((t: Theme) => t.name === defaultThemeName);
+          if (futuristicTheme) {
+            setCurrentTheme(futuristicTheme);
+            applyThemeToBody(futuristicTheme.name);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading themes:', error);
+        // Fallback to hardcoded futuristic theme
+        const fallbackTheme = {
+          id: 9,
+          name: 'futuristic',
+          display_name: 'Futuristic',
+          description: 'Modern sci-fi theme with holographic effects, particle fields, and quantum animations',
+          css_variables: JSON.stringify({
+            "--bg-primary": "#0A0A0F",
+            "--bg-secondary": "#1A1A2E", 
+            "--bg-tertiary": "#16213E",
+            "--text-primary": "#FFFFFF",
+            "--text-secondary": "#E5E7EB",
+            "--text-muted": "#9CA3AF",
+            "--accent-primary": "#00D4FF",
+            "--accent-secondary": "#0099CC",
+            "--border-primary": "#2A2A3E",
+            "--border-secondary": "#3A3A4E",
+            "--font-family": "Space Grotesk, Inter, sans-serif",
+            "--font-weight": "500",
+            "--holographic": "1",
+            "--particle-field": "1",
+            "--neural-network": "1",
+            "--quantum-glow": "1",
+            "--temporal-shift": "1"
+          }),
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        setCurrentTheme(fallbackTheme);
+        applyThemeToBody(fallbackTheme.name);
+      } finally {
+        setLoading(false);
+      }
     };
-    initThemes();
-  }, []); // Empty dependency array - only run on mount
+
+    loadThemes();
+  }, [user, applyThemeToBody]);
 
   const value: ThemeContextType = {
     themes,

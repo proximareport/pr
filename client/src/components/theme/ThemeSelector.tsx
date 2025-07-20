@@ -14,6 +14,7 @@ const themeIcons = {
   'mars-colony': Rocket,
   'blade-runner': Film,
   'interstellar': Space,
+  'futuristic': Palette,
 };
 
 const themeDescriptions = {
@@ -25,6 +26,7 @@ const themeDescriptions = {
   'mars-colony': 'Near-future sci-fi with dusty red/white color scheme',
   'blade-runner': 'Neo-noir cyberpunk aesthetic with rain effects and neon reflections',
   'interstellar': 'Space exploration theme with wormhole effects and cosmic colors',
+  'futuristic': 'Modern sci-fi theme with holographic effects and quantum animations',
 };
 
 export const ThemeSelector: React.FC = () => {
@@ -211,6 +213,15 @@ export const ThemeSelector: React.FC = () => {
                 <li>• Wormhole effects</li>
                 <li>• Cosmic particles</li>
                 <li>• Space-time distortions</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-2">Futuristic</h4>
+              <ul className="space-y-1 text-muted-foreground">
+                <li>• Modern sci-fi theme</li>
+                <li>• Holographic effects</li>
+                <li>• Quantum animations</li>
+                <li>• High-tech interface</li>
               </ul>
             </div>
             <div>

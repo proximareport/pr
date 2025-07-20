@@ -1,22 +1,10 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/lib/AuthContext";
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { MenuIcon, LogOutIcon, UserIcon, SettingsIcon, ShieldIcon, LineChartIcon, Search } from "lucide-react";
 import { SearchPopup } from "@/components/search/SearchPopup";
 
@@ -32,45 +20,41 @@ function Header() {
   const navLinks = [
     { name: "Latest", href: "/" },
     { name: "Launches", href: "/launches" },
-    { name: "Mission\u00A0Control", href: "/missioncontrol" },
+    { name: "Mission Control", href: "/missioncontrol" },
     { name: "Gallery", href: "/gallery" },
     { name: "Jobs", href: "/jobs" },
     { name: "Advertise", href: "/advertise" },
   ];
 
-  const isActive = (path: string) => {
-    return location === path;
-  };
+  const isActive = (path: string) => location === path;
 
   return (
-    <header className="sticky top-0 z-50 bg-[#0D0D17] border-b border-purple-700/30">
+    <header className="sticky top-0 z-50 bg-[#14141E] border-b border-white/10">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between py-3">
-          <div className="flex items-center space-x-6">
+        <div className="flex items-center justify-between py-4">
+          <div className="flex items-center space-x-8">
             <Link href="/" className="flex items-center">
               {/* Desktop logo (visible on md and larger screens) */}
               <img 
                 src={desktopLogo} 
                 alt="Proxima Report" 
-                className="hidden md:block h-auto w-auto max-h-5 max-w-[180px] object-contain" 
+                className="hidden md:block h-auto w-auto max-h-6 max-w-[200px] object-contain" 
               />
               {/* Mobile logo (visible on smaller screens) */}
               <img 
                 src={mobileLogo} 
                 alt="Proxima Report" 
-                className="block md:hidden h-auto w-auto max-h-12 max-w-[48px] object-contain" 
+                className="block md:hidden h-auto w-auto max-h-14 max-w-[56px] object-contain" 
               />
             </Link>
             
-            <nav className="hidden md:flex items-center space-x-6">
+            <nav className="hidden md:flex items-center space-x-8">
               {navLinks.map((link) => (
                 <Link 
                   key={link.name} 
                   href={link.href}
-                  className={`text-sm font-medium transition whitespace-nowrap ${
-                    isActive(link.href) 
-                      ? "text-purple-500" 
-                      : "text-white/90 hover:text-purple-500"
+                  className={`text-sm font-medium transition-colors ${
+                    isActive(link.href) ? "text-purple-400" : "text-white/90 hover:text-purple-400"
                   }`}
                 >
                   {link.name}
@@ -85,7 +69,7 @@ function Header() {
               variant="ghost"
               size="icon"
               onClick={() => setIsSearchOpen(true)}
-              className="text-white/90 hover:text-purple-500"
+              className="text-white/90 hover:text-purple-400"
             >
               <Search className="h-5 w-5" />
             </Button>
@@ -94,19 +78,19 @@ function Header() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="rounded-full">
-                    <Avatar className="h-9 w-9 border border-purple-700/40">
+                    <Avatar className="h-10 w-10 border-2 border-purple-500/40">
                       <AvatarImage src={user.profilePicture} alt={user.username} />
-                      <AvatarFallback className="bg-purple-900 text-white">{user.username.substring(0, 2).toUpperCase()}</AvatarFallback>
+                      <AvatarFallback className="bg-purple-600 text-white font-semibold">{user.username.substring(0, 2).toUpperCase()}</AvatarFallback>
                     </Avatar>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuContent className="w-64" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{user.username}</p>
+                    <div className="flex flex-col space-y-2">
+                      <p className="text-sm font-semibold leading-none">{user.username}</p>
                       <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
                       {user.membershipTier !== "free" && (
-                        <p className="text-xs font-medium text-purple-500 mt-1">
+                        <p className="text-xs font-semibold text-purple-400 mt-1">
                           {user.membershipTier === "supporter" ? "Supporter" : "Pro Member"}
                         </p>
                       )}
@@ -150,7 +134,7 @@ function Header() {
               </DropdownMenu>
             ) : (
               <div className="hidden md:block">
-                <Button asChild className="bg-purple-800 hover:bg-purple-700 text-white">
+                <Button asChild variant="outline">
                   <Link href="/login">Sign In</Link>
                 </Button>
               </div>
@@ -163,30 +147,28 @@ function Header() {
                     <MenuIcon className="h-6 w-6" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="bg-[#14141E] border-l border-purple-900/30 max-w-[300px]">
+                <SheetContent side="right" className="bg-[#14141E] border-l border-white/10 max-w-[300px]">
                   <div className="py-6">
-                    <div className="flex items-center mb-6">
+                    <div className="flex items-center mb-8">
                       <img 
                         src={mobileLogo} 
                         alt="Proxima Report" 
-                        className="h-auto w-auto max-h-14 max-w-[56px] object-contain" 
+                        className="h-auto w-auto max-h-16 max-w-[64px] object-contain" 
                       />
                       <img 
                         src={desktopLogo} 
                         alt="Proxima Report" 
-                        className="ml-3 h-auto w-auto max-h-4 max-w-[120px] object-contain" 
+                        className="ml-3 h-auto w-auto max-h-5 max-w-[140px] object-contain" 
                       />
                     </div>
                     
-                    <nav className="flex flex-col space-y-4">
+                    <nav className="flex flex-col space-y-6">
                       {navLinks.map((link) => (
                         <Link 
                           key={link.name} 
                           href={link.href}
-                          className={`text-base font-medium transition ${
-                            isActive(link.href) 
-                              ? "text-purple-500" 
-                              : "text-white/90 hover:text-purple-500"
+                          className={`text-lg font-semibold transition-colors ${
+                            isActive(link.href) ? "text-purple-400" : "text-white/90 hover:text-purple-400"
                           }`}
                         >
                           {link.name}
@@ -194,10 +176,10 @@ function Header() {
                       ))}
                     </nav>
                     
-                    <div className="mt-8 pt-4 border-t border-white/10">
+                    <div className="mt-8 pt-6 border-t border-white/10">
                       {!user && (
-                        <div className="space-y-3">
-                          <Button asChild className="w-full bg-purple-800 hover:bg-purple-700 text-white">
+                        <div className="space-y-4">
+                          <Button asChild variant="outline" className="w-full">
                             <Link href="/login">Sign In</Link>
                           </Button>
                           <Button asChild variant="outline" className="w-full">
@@ -207,7 +189,7 @@ function Header() {
                       )}
                       
                       {user && user.membershipTier === "free" && (
-                        <Button asChild className="w-full bg-purple-800 hover:bg-purple-700 text-white">
+                        <Button asChild variant="outline" className="w-full">
                           <Link href="/subscribe">Upgrade Membership</Link>
                         </Button>
                       )}
@@ -220,7 +202,6 @@ function Header() {
         </div>
       </div>
       
-      {/* Search Popup */}
       <SearchPopup isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </header>
   );

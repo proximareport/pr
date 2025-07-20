@@ -29,7 +29,9 @@ import { useAuth, AuthProvider } from "@/lib/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { MissionControlSidebar } from "@/components/theme/MissionControlSidebar";
 import { StardateDisplay } from "@/components/theme/StardateDisplay";
+import AnimatedBackground from "@/components/ui/animated-background";
 import Gallery from './pages/Gallery';
+import { GoogleAdsProvider, CookieConsentBanner } from '@/components/GoogleAdsProvider';
 
 // Import theme styles
 import '@/styles/themes.css';
@@ -145,6 +147,61 @@ function Router() {
       
       <Route path="/gallery" component={Gallery} />
       
+      <Route path="/sitemap" component={() => {
+        const SitemapPage = React.lazy(() => import('./pages/Sitemap'));
+        return (
+          <React.Suspense fallback={<div className="flex justify-center p-12"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
+            <SitemapPage />
+          </React.Suspense>
+        );
+      }} />
+      
+      {/* Legal and Compliance Pages */}
+      <Route path="/privacy" component={() => {
+        const PrivacyPage = React.lazy(() => import('./pages/PrivacyPolicy'));
+        return (
+          <React.Suspense fallback={<div className="flex justify-center p-12"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
+            <PrivacyPage />
+          </React.Suspense>
+        );
+      }} />
+      
+      <Route path="/terms" component={() => {
+        const TermsPage = React.lazy(() => import('./pages/TermsOfService'));
+        return (
+          <React.Suspense fallback={<div className="flex justify-center p-12"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
+            <TermsPage />
+          </React.Suspense>
+        );
+      }} />
+      
+      <Route path="/cookies" component={() => {
+        const CookiesPage = React.lazy(() => import('./pages/CookiePolicy'));
+        return (
+          <React.Suspense fallback={<div className="flex justify-center p-12"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
+            <CookiesPage />
+          </React.Suspense>
+        );
+      }} />
+      
+      <Route path="/about" component={() => {
+        const AboutPage = React.lazy(() => import('./pages/About'));
+        return (
+          <React.Suspense fallback={<div className="flex justify-center p-12"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
+            <AboutPage />
+          </React.Suspense>
+        );
+      }} />
+      
+      <Route path="/contact" component={() => {
+        const ContactPage = React.lazy(() => import('./pages/Contact'));
+        return (
+          <React.Suspense fallback={<div className="flex justify-center p-12"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
+            <ContactPage />
+          </React.Suspense>
+        );
+      }} />
+      
       <Route component={NotFound} />
     </Switch>
   );
@@ -190,8 +247,11 @@ function MainApp() {
     <div className="min-h-screen flex flex-col">
       <Header />
       <EmergencyBanner />
-      <main className="flex-grow">
-        <Router />
+      <main className="flex-grow relative">
+        <AnimatedBackground variant="particles" intensity="low" />
+        <div className="relative z-10">
+          <Router />
+        </div>
       </main>
       <Footer />
       
@@ -206,11 +266,14 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <TooltipProvider>
-          <ThemeProvider>
-            <MainApp />
-          </ThemeProvider>
-        </TooltipProvider>
+        <GoogleAdsProvider>
+          <TooltipProvider>
+            <ThemeProvider>
+              <MainApp />
+              <CookieConsentBanner />
+            </ThemeProvider>
+          </TooltipProvider>
+        </GoogleAdsProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

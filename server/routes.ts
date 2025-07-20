@@ -2254,6 +2254,665 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ----------------------------------------------------
+  // Sitemap API
+  // ----------------------------------------------------
+  // Enhanced XML Sitemap for SEO and Google Ads compliance
+  app.get("/sitemap.xml", async (req: Request, res: Response) => {
+    try {
+      const baseUrl = process.env.SITE_URL || `https://${req.get('host') || 'proximareport.com'}`;
+      const currentDate = new Date().toISOString();
+      
+      let articles = [];
+      let categories = [];
+      let tags = [];
+      let jobListings = [];
+      
+      try {
+        // Get all published articles
+        articles = await storage.getArticles(1000, 0, false);
+        
+        // Get all categories and tags
+        categories = await storage.getCategories();
+        tags = await storage.getTags();
+        
+        // Get job listings
+        jobListings = await storage.getJobListings(true);
+      } catch (dbError) {
+        console.error("Database error in sitemap generation, using fallback:", dbError);
+        // Use empty arrays for fallback - sitemap will still include static pages
+        articles = [];
+        categories = [];
+        tags = [];
+        jobListings = [];
+      }
+      
+      // Build enhanced XML sitemap with proper namespaces
+      let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  
+  <!-- Homepage -->
+  <url>
+    <loc>${baseUrl}</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  
+  <!-- Important Static Pages -->
+  <url>
+    <loc>${baseUrl}/about</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/contact</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/privacy</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>quarterly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/terms</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>quarterly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/cookies</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>quarterly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <!-- Content Pages -->
+  <url>
+    <loc>${baseUrl}/launches</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/astronomy</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/missioncontrol</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/jobs</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/gallery</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <!-- User Pages -->
+  <url>
+    <loc>${baseUrl}/subscribe</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/advertise</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/login</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/register</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  
+  <!-- Utility Pages -->
+  <url>
+    <loc>${baseUrl}/sitemap</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  
+  <!-- RSS and JSON Feeds -->
+  <url>
+    <loc>${baseUrl}/rss.xml</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/feed.json</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <!-- Articles with enhanced metadata -->`;
+      
+      // Add articles to sitemap with image and news metadata
+      articles.forEach(article => {
+        const lastmod = article.updatedAt || article.publishedAt || article.createdAt;
+        const publishDate = article.publishedAt || article.createdAt;
+        
+        sitemap += `
+  <url>
+    <loc>${baseUrl}/article/${article.slug}</loc>
+    <lastmod>${new Date(lastmod).toISOString()}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>`;
+        
+        // Add news metadata for recent articles (last 2 days)
+        const articleDate = new Date(publishDate);
+        const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+        
+        if (articleDate > twoDaysAgo) {
+          sitemap += `
+    <news:news>
+      <news:publication>
+        <news:name>Proxima Report</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>${new Date(publishDate).toISOString()}</news:publication_date>
+      <news:title><![CDATA[${article.title}]]></news:title>
+    </news:news>`;
+        }
+        
+        // Add image metadata if article has featured image
+        if (article.featuredImage) {
+          sitemap += `
+    <image:image>
+      <image:loc>${article.featuredImage}</image:loc>
+      <image:title><![CDATA[${article.title}]]></image:title>
+      <image:caption><![CDATA[${article.excerpt || article.title}]]></image:caption>
+    </image:image>`;
+        }
+        
+        sitemap += `
+  </url>`;
+      });
+      
+      // Add categories with enhanced metadata
+      categories.forEach(category => {
+        sitemap += `
+  <url>
+    <loc>${baseUrl}/category/${category.slug}</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>`;
+      });
+      
+      // Add tags with enhanced metadata
+      tags.forEach(tag => {
+        sitemap += `
+  <url>
+    <loc>${baseUrl}/tag/${tag.slug}</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>`;
+      });
+      
+      // Add job listings if available
+      jobListings.forEach(job => {
+        if (job.isActive) {
+          sitemap += `
+  <url>
+    <loc>${baseUrl}/jobs/${job.id}</loc>
+    <lastmod>${new Date(job.updatedAt || job.createdAt).toISOString()}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>`;
+        }
+      });
+      
+      sitemap += `
+</urlset>`;
+      
+      res.set('Content-Type', 'application/xml');
+      res.set('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+      res.send(sitemap);
+    } catch (error) {
+      console.error("Error generating sitemap:", error);
+      res.status(500).json({ message: "Error generating sitemap" });
+    }
+  });
+
+  // Sitemap data endpoint for the React component
+  app.get("/api/sitemap-data", async (req: Request, res: Response) => {
+    try {
+      let articles = [];
+      let categories = [];
+      let tags = [];
+      let jobListings = [];
+      
+      try {
+        // Try to get data from database
+        articles = await storage.getArticles(1000, 0, false);
+        categories = await storage.getCategories();
+        tags = await storage.getTags();
+        jobListings = await storage.getJobListings(true);
+      } catch (dbError) {
+        console.error("Database error, using fallback data:", dbError);
+        // Provide fallback static data when database is unavailable
+        articles = [];
+        categories = [
+          { id: 1, name: 'Space Exploration', slug: 'space-exploration' },
+          { id: 2, name: 'Rocket Technology', slug: 'rocket-technology' },
+          { id: 3, name: 'Astronomy', slug: 'astronomy' },
+          { id: 4, name: 'Mars Missions', slug: 'mars-missions' },
+          { id: 5, name: 'International Space Station', slug: 'iss' }
+        ];
+        tags = [
+          { id: 1, name: 'SpaceX', slug: 'spacex' },
+          { id: 2, name: 'NASA', slug: 'nasa' },
+          { id: 3, name: 'Mars', slug: 'mars' },
+          { id: 4, name: 'Moon', slug: 'moon' },
+          { id: 5, name: 'Satellites', slug: 'satellites' }
+        ];
+        jobListings = [];
+      }
+      
+      // Process articles for sitemap display
+      const processedArticles = articles.map(article => ({
+        id: article.id,
+        title: article.title,
+        slug: article.slug,
+        publishedAt: article.publishedAt || article.createdAt,
+        category: article.category || 'Uncategorized'
+      }));
+      
+      // Process categories with article counts
+      const processedCategories = categories.map(category => ({
+        id: category.id,
+        name: category.name,
+        slug: category.slug,
+        count: articles.filter(article => article.category === category.name).length
+      }));
+      
+      // Process tags with article counts
+      const processedTags = tags.map(tag => ({
+        id: tag.id,
+        name: tag.name,
+        slug: tag.slug,
+        count: articles.filter(article => 
+          article.tags && article.tags.includes(tag.name)
+        ).length
+      }));
+      
+      // Process job listings
+      const processedJobs = jobListings.map(job => ({
+        id: job.id,
+        title: job.title,
+        company: job.company,
+        location: job.location,
+        createdAt: job.createdAt
+      }));
+      
+      const stats = {
+        totalArticles: articles.length,
+        totalCategories: categories.length,
+        totalTags: tags.length,
+        totalJobs: jobListings.length,
+        lastUpdated: new Date().toISOString()
+      };
+      
+      res.json({
+        articles: processedArticles,
+        categories: processedCategories,
+        tags: processedTags,
+        jobListings: processedJobs,
+        stats
+      });
+    } catch (error) {
+      console.error("Error fetching sitemap data:", error);
+      res.status(500).json({ message: "Error fetching sitemap data" });
+    }
+  });
+
+  // Robots.txt
+  app.get("/robots.txt", (req: Request, res: Response) => {
+    const baseUrl = process.env.SITE_URL || `https://${req.get('host') || 'proximareport.com'}`;
+    const robots = `User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: ${baseUrl}/sitemap.xml
+
+# RSS and JSON Feeds
+# RSS Feed: ${baseUrl}/rss.xml
+# JSON Feed: ${baseUrl}/feed.json
+
+# Google Ads authentication
+# ads.txt location: ${baseUrl}/ads.txt
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /api/
+Disallow: /login
+Disallow: /register
+Disallow: /edit-profile
+Disallow: /newsletter/verify
+Disallow: /newsletter/unsubscribe
+Disallow: /advertiser-dashboard
+
+# Allow important public pages
+Allow: /
+Allow: /article/
+Allow: /category/
+Allow: /tag/
+Allow: /launches
+Allow: /astronomy
+Allow: /missioncontrol
+Allow: /jobs
+Allow: /gallery
+Allow: /subscribe
+Allow: /advertise
+Allow: /sitemap
+Allow: /about
+Allow: /contact
+Allow: /privacy
+Allow: /terms
+Allow: /cookies
+Allow: /ads.txt
+Allow: /rss.xml
+Allow: /feed.json
+
+# Crawl-delay for politeness
+Crawl-delay: 1`;
+    
+    res.set('Content-Type', 'text/plain');
+    res.set('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
+    res.send(robots);
+  });
+
+  // Ads.txt for Google Ads and other advertising networks
+  app.get("/ads.txt", (req: Request, res: Response) => {
+    const adsTxt = `# ads.txt file for Proxima Report
+# This file is used to authenticate authorized digital advertising sellers
+# Format: domain.com, publisher_id, relationship_type, certification_authority_id
+
+# Google AdSense
+google.com, pub-XXXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
+
+# Google Ad Manager (if using)
+# google.com, pub-XXXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
+
+# Other advertising networks can be added here
+# Example:
+# openx.com, 123456789, RESELLER, 6ac7d628ccd632a7
+# rubiconproject.com, 12345, RESELLER, 0bfd66d529a55807
+
+# Contact information
+# Contact: ads@proximareport.com
+
+# This file should be updated when:
+# 1. Adding new advertising partners
+# 2. Changing publisher IDs
+# 3. Modifying relationships with ad networks
+
+# Last updated: ${new Date().toISOString().split('T')[0]}`;
+    
+    res.set('Content-Type', 'text/plain');
+    res.set('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
+    res.send(adsTxt);
+  });
+
+  // RSS Feed for articles
+  app.get("/rss.xml", async (req: Request, res: Response) => {
+    try {
+      const baseUrl = process.env.SITE_URL || `https://${req.get('host') || 'proximareport.com'}`;
+      const currentDate = new Date().toISOString();
+      
+      let articles = [];
+      
+      try {
+        // Get latest 50 published articles for RSS feed
+        articles = await storage.getArticles(50, 0, false);
+      } catch (dbError) {
+        console.error("Database error in RSS generation:", dbError);
+        // Use empty array for fallback
+        articles = [];
+      }
+      
+      // Escape XML special characters
+      const escapeXml = (str: string) => {
+        if (!str) return '';
+        return str
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      };
+
+      // Strip HTML tags for plain text content
+      const stripHtml = (html: string) => {
+        if (!html) return '';
+        return html.replace(/<[^>]*>/g, '').trim();
+      };
+
+      // Generate RSS 2.0 feed
+      let rss = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" 
+     xmlns:content="http://purl.org/rss/1.0/modules/content/"
+     xmlns:dc="http://purl.org/dc/elements/1.1/"
+     xmlns:atom="http://www.w3.org/2005/Atom"
+     xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <title>Proxima Report</title>
+    <link>${baseUrl}</link>
+    <description>Your premier destination for space exploration and scientific discovery. Get the latest news on space missions, astronomy, and technological breakthroughs.</description>
+    <language>en-US</language>
+    <lastBuildDate>${currentDate}</lastBuildDate>
+    <pubDate>${currentDate}</pubDate>
+    <ttl>60</ttl>
+    <generator>Proxima Report CMS</generator>
+    <managingEditor>editorial@proximareport.com (Proxima Report Editorial Team)</managingEditor>
+    <webMaster>tech@proximareport.com (Proxima Report Technical Team)</webMaster>
+    <copyright>© ${new Date().getFullYear()} Proxima Report. All rights reserved.</copyright>
+    <category>Science/Technology</category>
+    <category>Space Exploration</category>
+    <category>Astronomy</category>
+    
+    <!-- RSS feed discovery -->
+    <atom:link href="${baseUrl}/rss.xml" rel="self" type="application/rss+xml"/>
+    
+    <!-- Channel image -->
+    <image>
+      <url>${baseUrl}/logo.png</url>
+      <title>Proxima Report</title>
+      <link>${baseUrl}</link>
+      <description>Proxima Report Logo</description>
+      <width>144</width>
+      <height>144</height>
+    </image>`;
+
+      // Add articles to RSS feed
+      articles.forEach(article => {
+        const pubDate = new Date(article.publishedAt || article.createdAt).toUTCString();
+        const link = `${baseUrl}/article/${article.slug}`;
+        
+        // Create article excerpt/description
+        let description = '';
+        if (article.excerpt) {
+          description = stripHtml(article.excerpt);
+        } else if (article.summary) {
+          description = stripHtml(article.summary);
+        } else if (article.content) {
+          // Extract first 200 characters from content
+          const contentText = stripHtml(article.content.toString());
+          description = contentText.substring(0, 200) + (contentText.length > 200 ? '...' : '');
+        }
+
+        rss += `
+    <item>
+      <title>${escapeXml(article.title)}</title>
+      <link>${link}</link>
+      <description>${escapeXml(description)}</description>
+      <pubDate>${pubDate}</pubDate>
+      <guid isPermaLink="true">${link}</guid>
+      <dc:creator>${escapeXml(article.primaryAuthor || 'Proxima Report')}</dc:creator>
+      <category>${escapeXml(article.category || 'Space News')}</category>`;
+      
+      // Add content:encoded for full article content (if available)
+      if (article.content) {
+        rss += `
+      <content:encoded><![CDATA[${article.content.toString()}]]></content:encoded>`;
+      }
+      
+      // Add featured image if available
+      if (article.featuredImage) {
+        rss += `
+      <media:content url="${article.featuredImage}" type="image/jpeg">
+        <media:description>${escapeXml(article.title)}</media:description>
+      </media:content>
+      <enclosure url="${article.featuredImage}" type="image/jpeg" length="0"/>`;
+      }
+      
+      // Add tags if available
+      if (article.tags && Array.isArray(article.tags)) {
+        article.tags.forEach(tag => {
+          rss += `
+      <category>${escapeXml(tag.name || tag)}</category>`;
+        });
+      }
+      
+      rss += `
+    </item>`;
+      });
+      
+      rss += `
+  </channel>
+</rss>`;
+      
+      res.set('Content-Type', 'application/rss+xml; charset=utf-8');
+      res.set('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+      res.send(rss);
+    } catch (error) {
+      console.error("Error generating RSS feed:", error);
+      res.status(500).json({ message: "Error generating RSS feed" });
+    }
+  });
+
+  // JSON Feed (modern alternative to RSS)
+  app.get("/feed.json", async (req: Request, res: Response) => {
+    try {
+      const baseUrl = process.env.SITE_URL || `https://${req.get('host') || 'proximareport.com'}`;
+      
+      let articles = [];
+      
+      try {
+        // Get latest 50 published articles for JSON feed
+        articles = await storage.getArticles(50, 0, false);
+      } catch (dbError) {
+        console.error("Database error in JSON feed generation:", dbError);
+        articles = [];
+      }
+
+      // Strip HTML tags for plain text content
+      const stripHtml = (html: string) => {
+        if (!html) return '';
+        return html.replace(/<[^>]*>/g, '').trim();
+      };
+
+      const jsonFeed = {
+        version: "https://jsonfeed.org/version/1.1",
+        title: "Proxima Report",
+        home_page_url: baseUrl,
+        feed_url: `${baseUrl}/feed.json`,
+        description: "Your premier destination for space exploration and scientific discovery. Get the latest news on space missions, astronomy, and technological breakthroughs.",
+        icon: `${baseUrl}/favicon.ico`,
+        favicon: `${baseUrl}/favicon.ico`,
+        language: "en-US",
+        authors: [
+          {
+            name: "Proxima Report Editorial Team",
+            url: `${baseUrl}/about`
+          }
+        ],
+        items: articles.map(article => {
+          let description = '';
+          if (article.excerpt) {
+            description = stripHtml(article.excerpt);
+          } else if (article.summary) {
+            description = stripHtml(article.summary);
+          } else if (article.content) {
+            const contentText = stripHtml(article.content.toString());
+            description = contentText.substring(0, 200) + (contentText.length > 200 ? '...' : '');
+          }
+
+          const item = {
+            id: `${baseUrl}/article/${article.slug}`,
+            url: `${baseUrl}/article/${article.slug}`,
+            title: article.title,
+            content_html: article.content ? article.content.toString() : description,
+            content_text: description,
+            summary: description,
+            date_published: new Date(article.publishedAt || article.createdAt).toISOString(),
+            date_modified: new Date(article.updatedAt || article.publishedAt || article.createdAt).toISOString(),
+            authors: [
+              {
+                name: article.primaryAuthor || 'Proxima Report'
+              }
+            ],
+            tags: []
+          };
+
+          // Add featured image
+          if (article.featuredImage) {
+            item.image = article.featuredImage;
+          }
+
+          // Add tags
+          if (article.tags && Array.isArray(article.tags)) {
+            item.tags = article.tags.map(tag => tag.name || tag);
+          }
+
+          // Add category as tag
+          if (article.category) {
+            item.tags.push(article.category);
+          }
+
+          return item;
+        })
+      };
+      
+      res.set('Content-Type', 'application/feed+json; charset=utf-8');
+      res.set('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+      res.json(jsonFeed);
+    } catch (error) {
+      console.error("Error generating JSON feed:", error);
+      res.status(500).json({ message: "Error generating JSON feed" });
+    }
+  });
+
+  // ----------------------------------------------------
   // Advertisements API
   // ----------------------------------------------------
   app.get("/api/advertisements", requireAdmin, async (req: Request, res: Response) => {

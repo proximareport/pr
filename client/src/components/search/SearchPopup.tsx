@@ -104,7 +104,7 @@ export function SearchPopup({ isOpen, onClose }: SearchPopupProps) {
           page: '1',
           limit: '10',
           include: 'tags,authors',
-          fields: 'id,title,slug,excerpt,custom_excerpt,feature_image,published_at,reading_time,primary_tag,primary_author'
+          fields: 'id,title,slug,excerpt,custom_excerpt,feature_image,published_at,reading_time,primary_tag,primary_author,authors'
         });
 
         // Clean and escape the search query to prevent API errors
@@ -240,7 +240,7 @@ export function SearchPopup({ isOpen, onClose }: SearchPopupProps) {
                             category: post.primary_tag?.name || 'Uncategorized',
                             featuredImage: post.feature_image,
                             isBreaking: false,
-                            readTime: post.reading_time || 0,
+                            readTime: post.reading_time || 5,
                             publishedAt: post.published_at,
                             author: {
                               id: parseInt(post.primary_author?.id || '0'),

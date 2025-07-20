@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/lib/AuthContext';
+import { GoogleAd, useGoogleAds } from './GoogleAdsProvider';
 
 interface AdData {
   id: number;
@@ -25,9 +26,16 @@ interface AdData {
 interface AdvertisementProps {
   placement: string;
   className?: string;
+  preferGoogle?: boolean; // Whether to prefer Google Ads over custom ads
+  googleAdSlot?: string; // Google Ad slot ID for this placement
 }
 
-const Advertisement: React.FC<AdvertisementProps> = ({ placement, className = '' }) => {
+const Advertisement: React.FC<AdvertisementProps> = ({ 
+  placement, 
+  className = '', 
+  preferGoogle = false,
+  googleAdSlot 
+}) => {
   const { data: ads, isLoading, error } = useQuery<AdData[]>({
     queryKey: [`/api/advertisements/${placement}`],
     staleTime: 60 * 1000, // 1 minute
@@ -36,6 +44,22 @@ const Advertisement: React.FC<AdvertisementProps> = ({ placement, className = ''
   // Get auth context to check if user is admin
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  
+  // Get Google Ads context
+  const { consentGiven, trackEvent } = useGoogleAds();
+  
+  // Helper function to get sizing classes
+  const getSizingClasses = () => {
+    if (placement.includes('article_') || placement === 'article') {
+      if (placement === 'article_sidebar') {
+        return 'max-w-[220px] mx-auto';
+      }
+      if (placement === 'article_middle') {
+        return 'max-w-[300px] mx-auto';
+      }
+    }
+    return '';
+  };
   
   // State to track the selected ad
   const [selectedAd, setSelectedAd] = useState<AdData | null>(null);
@@ -104,6 +128,8 @@ const Advertisement: React.FC<AdvertisementProps> = ({ placement, className = ''
     return () => clearInterval(rotationInterval);
   }, [eligibleAds]);
 
+
+
   // Record impression when the ad is viewed
   useEffect(() => {
     if (selectedAd?.id) {
@@ -116,6 +142,7 @@ const Advertisement: React.FC<AdvertisementProps> = ({ placement, className = ''
     if (selectedAd?.id) {
       try {
         await apiRequest('POST', `/api/advertisements/${selectedAd.id}/click`, {});
+        trackEvent('ad_click', { ad_id: selectedAd.id, placement });
       } catch (err) {
         console.error('Failed to record click:', err);
       }
@@ -149,7 +176,18 @@ const Advertisement: React.FC<AdvertisementProps> = ({ placement, className = ''
     );
   }
 
+  // If no custom ads and Google Ads is enabled, show Google Ad
   if (!selectedAd) {
+    if (googleAdSlot && consentGiven) {
+      return (
+        <GoogleAd 
+          adSlot={googleAdSlot}
+          className={`${className} ${getSizingClasses()}`}
+          style={{ minHeight: '100px' }}
+        />
+      );
+    }
+    
     return (
       <div className={`bg-gray-100 rounded-md ${className}`} style={{ minHeight: '50px' }}>
         <div className="p-2 text-xs text-gray-500">No advertisements available</div>
@@ -160,22 +198,6 @@ const Advertisement: React.FC<AdvertisementProps> = ({ placement, className = ''
   // Determine if this is a test ad
   const isTestAd = selectedAd.isTest === true || 
                   (selectedAd.adminNotes && selectedAd.adminNotes.toLowerCase().includes('test'));
-  
-  // Determine sizing classes based on placement
-  const getSizingClasses = () => {
-    if (placement.includes('article_') || placement === 'article') {
-      if (placement === 'article_sidebar') {
-        // Make article sidebar ads smaller
-        return 'max-w-[220px] mx-auto';
-      }
-      if (placement === 'article_middle') {
-        // Make article middle ads medium sized
-        return 'max-w-[300px] mx-auto';
-      }
-    }
-    // Default sizing (for sidebar, banner, etc.)
-    return '';
-  };
   
   // Get size classes based on placement
   const sizeClasses = getSizingClasses();

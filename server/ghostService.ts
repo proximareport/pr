@@ -60,6 +60,7 @@ export interface GhostPost {
   feature_image: string;
   published_at: string;
   excerpt: string;
+  reading_time: number;
   primary_author: GhostAuthor;
   primary_tag: GhostTag;
   tags: GhostTag[];
@@ -84,7 +85,23 @@ export interface GhostResponse {
 function formatGhostPost(post: any): GhostPost | null {
   if (!post) return null;
   
-  return {
+  // Debug: Log the raw post data to see what fields we're actually getting
+  console.log('Raw Ghost post data:', {
+    id: post.id,
+    title: post.title,
+    hasReadingTime: !!post.reading_time,
+    readingTimeValue: post.reading_time,
+    readingTimeType: typeof post.reading_time,
+    hasAuthors: !!post.authors,
+    authorsLength: post.authors?.length || 0,
+    hasPrimaryAuthor: !!post.primary_author,
+    authorsData: post.authors?.map((a: any) => ({ id: a.id, name: a.name })) || [],
+    primaryAuthorData: post.primary_author ? { id: post.primary_author.id, name: post.primary_author.name } : null,
+    allFields: Object.keys(post),
+    rawPost: JSON.stringify(post, null, 2).substring(0, 500) + '...'
+  });
+  
+  const formattedPost = {
     id: post.id,
     title: post.title,
     slug: post.slug,
@@ -92,11 +109,23 @@ function formatGhostPost(post: any): GhostPost | null {
     feature_image: post.feature_image,
     published_at: post.published_at,
     excerpt: post.excerpt,
+    reading_time: post.reading_time || 5,
     primary_author: post.primary_author as GhostAuthor,
     primary_tag: post.primary_tag as GhostTag,
     tags: (post.tags || []) as GhostTag[],
     authors: (post.authors || []) as GhostAuthor[]
   };
+  
+  console.log('Formatted post data:', {
+    id: formattedPost.id,
+    title: formattedPost.title,
+    readingTime: formattedPost.reading_time,
+    authorsCount: formattedPost.authors.length,
+    hasPrimaryAuthor: !!formattedPost.primary_author,
+    authorsNames: formattedPost.authors.map(a => a.name)
+  });
+  
+  return formattedPost;
 }
 
 // Get posts with pagination
@@ -107,7 +136,7 @@ export async function getPosts(page = 1, limit = 10, filter?: string) {
     params.append('page', page.toString());
     params.append('limit', limit.toString());
     params.append('include', 'tags,authors');
-    params.append('fields', 'id,title,slug,excerpt,custom_excerpt,feature_image,published_at,reading_time,primary_tag,primary_author');
+    params.append('fields', 'id,title,slug,excerpt,custom_excerpt,feature_image,published_at,reading_time,primary_tag');
 
     if (filter) {
       params.append('filter', filter);
@@ -166,7 +195,7 @@ export async function getPostBySlug(slug: string): Promise<GhostPost | null> {
     const params = new URLSearchParams();
     params.append('key', GHOST_CONTENT_API_KEY);
     params.append('include', 'tags,authors');
-    params.append('fields', 'id,title,slug,html,excerpt,custom_excerpt,feature_image,published_at,reading_time,primary_tag,primary_author');
+    params.append('fields', 'id,title,slug,html,excerpt,custom_excerpt,feature_image,published_at,reading_time,primary_tag');
     
     const response = await axios.get(`${GHOST_URL}/ghost/api/v3/content/posts/slug/${slug}/`, {
       params,
@@ -311,7 +340,7 @@ export async function getGalleryImages(page = 1, limit = 20, tag?: string) {
     params.append('page', page.toString());
     params.append('limit', limit.toString());
     params.append('include', 'tags,authors');
-    params.append('fields', 'id,title,slug,excerpt,feature_image,published_at,primary_tag,primary_author,html');
+    params.append('fields', 'id,title,slug,excerpt,feature_image,published_at,reading_time,primary_tag,html');
     
     // Filter posts that have featured images
     let filter = 'feature_image:-null';

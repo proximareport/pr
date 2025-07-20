@@ -44,6 +44,19 @@ export async function setupVite(app: Express, server: Server) {
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
 
+    // Skip SEO and compliance routes - let them be handled by the API middleware
+    if (req.path === '/sitemap.xml' || 
+        req.path === '/robots.txt' || 
+        req.path === '/rss.xml' || 
+        req.path === '/ads.txt' || 
+        req.path === '/feed.json' ||
+        req.path.startsWith('/api/') || 
+        req.path.startsWith('/test') || 
+        req.path.startsWith('/backend/') || 
+        req.path.startsWith('/v1/')) {
+      return next();
+    }
+
     try {
       const clientTemplate = path.resolve(
         import.meta.dirname,
@@ -80,8 +93,16 @@ export function serveStatic(app: Express) {
 
   // Only serve index.html for non-API routes
   app.use("*", (req, res, next) => {
-    // Skip API routes - let them be handled by the API middleware
-    if (req.path.startsWith('/api/') || req.path.startsWith('/test') || req.path.startsWith('/backend/') || req.path.startsWith('/v1/')) {
+    // Skip SEO and compliance routes - let them be handled by the API middleware
+    if (req.path === '/sitemap.xml' || 
+        req.path === '/robots.txt' || 
+        req.path === '/rss.xml' || 
+        req.path === '/ads.txt' || 
+        req.path === '/feed.json' ||
+        req.path.startsWith('/api/') || 
+        req.path.startsWith('/test') || 
+        req.path.startsWith('/backend/') || 
+        req.path.startsWith('/v1/')) {
       return next();
     }
     

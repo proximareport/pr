@@ -239,6 +239,34 @@ export class ThemeService {
         is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
+      },
+      {
+        id: 9,
+        name: 'futuristic',
+        display_name: 'Futuristic',
+        description: 'Modern sci-fi theme with holographic effects, particle fields, and quantum animations',
+        css_variables: JSON.stringify({
+          "--bg-primary": "#0A0A0F",
+          "--bg-secondary": "#1A1A2E", 
+          "--bg-tertiary": "#16213E",
+          "--text-primary": "#FFFFFF",
+          "--text-secondary": "#E5E7EB",
+          "--text-muted": "#9CA3AF",
+          "--accent-primary": "#00D4FF",
+          "--accent-secondary": "#0099CC",
+          "--border-primary": "#2A2A3E",
+          "--border-secondary": "#3A3A4E",
+          "--font-family": "Space Grotesk, Inter, sans-serif",
+          "--font-weight": "500",
+          "--holographic": "1",
+          "--particle-field": "1",
+          "--neural-network": "1",
+          "--quantum-glow": "1",
+          "--temporal-shift": "1"
+        }),
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
     ];
   }
