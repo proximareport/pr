@@ -34,9 +34,9 @@ function ArticleCard({ article }: ArticleCardProps) {
         <img 
           src={article.featuredImage} 
           alt={article.title}
-          className="w-full h-48 object-cover" 
+          className="w-full h-40 md:h-48 object-cover" 
         />
-        <div className="absolute top-3 left-3">
+        <div className="absolute top-2 md:top-3 left-2 md:left-3">
           <Badge variant="secondary" className="bg-purple-600 text-white border-none text-xs">
             {article.category}
           </Badge>
@@ -47,17 +47,17 @@ function ArticleCard({ article }: ArticleCardProps) {
           )}
         </div>
       </div>
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         <Link href={`/article/${article.slug}`}>
-          <h3 className="font-bold text-xl mb-3 line-clamp-2 text-white hover:text-purple-400 transition-colors duration-300">
+          <h3 className="font-bold text-lg md:text-xl mb-2 md:mb-3 line-clamp-2 text-white hover:text-purple-400 transition-colors duration-300">
             {article.title}
           </h3>
         </Link>
-        <p className="text-gray-300 mb-4 line-clamp-2">{article.summary}</p>
+        <p className="text-gray-300 mb-3 md:mb-4 line-clamp-2 text-sm md:text-base">{article.summary}</p>
 
         {/* Tags */}
         {article.tags && article.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
+          <div className="flex flex-wrap gap-1.5 md:gap-2 mb-3 md:mb-4">
             {article.tags.slice(0, 3).map((tag, index) => (
               <Link key={tag} href={`/tag/${tag}`}>
                 <Badge className="bg-purple-800/50 hover:bg-purple-700/50 text-xs py-1 px-2 transition-colors duration-300">
@@ -74,13 +74,13 @@ function ArticleCard({ article }: ArticleCardProps) {
         )}
         
         <div className="flex items-center justify-between">
-          <div className="flex items-center">
+          <div className="flex items-center min-w-0 flex-1">
             {/* If there are multiple authors, show them */}
             {article.authors && article.authors.length > 0 ? (
-              <div className="flex items-center">
-                <div className="flex -space-x-2 mr-3">
+              <div className="flex items-center min-w-0">
+                <div className="flex -space-x-1 md:-space-x-2 mr-2 md:mr-3 flex-shrink-0">
                   {article.authors.slice(0, 3).map((author, index) => (
-                    <Avatar key={author.id} className="h-8 w-8 border-2 border-[#14141E]">
+                    <Avatar key={author.id} className="h-6 w-6 md:h-8 md:w-8 border-2 border-[#14141E]">
                       <AvatarImage 
                         src={author.profilePicture || ''} 
                         alt={author.username} 
@@ -91,8 +91,8 @@ function ArticleCard({ article }: ArticleCardProps) {
                     </Avatar>
                   ))}
                 </div>
-                <div>
-                  <p className="text-white text-sm font-medium">
+                <div className="min-w-0 flex-1">
+                  <p className="text-white text-xs md:text-sm font-medium truncate">
                     {article.authors[0].username}
                     {article.authors.length > 1 && ` + ${article.authors.length - 1} more`}
                   </p>
@@ -103,8 +103,8 @@ function ArticleCard({ article }: ArticleCardProps) {
               </div>
             ) : (
               // Fallback to use the original author field
-              <div className="flex items-center">
-                <Avatar className="h-8 w-8 border-2 border-purple-500/40">
+              <div className="flex items-center min-w-0">
+                <Avatar className="h-6 w-6 md:h-8 md:w-8 border-2 border-purple-500/40 flex-shrink-0">
                   <AvatarImage 
                     src={article.author?.profilePicture || ''} 
                     alt={article.author?.username || 'Author'} 
@@ -115,13 +115,13 @@ function ArticleCard({ article }: ArticleCardProps) {
                       : 'AU'}
                   </AvatarFallback>
                 </Avatar>
-                <div className="ml-3">
-                  <p className="text-white text-sm font-medium">{article.author?.username || 'Anonymous'}</p>
+                <div className="ml-2 md:ml-3 min-w-0">
+                  <p className="text-white text-xs md:text-sm font-medium truncate">{article.author?.username || 'Anonymous'}</p>
                 </div>
               </div>
             )}
           </div>
-          <span className="text-white/60 text-sm font-medium">{article.readTime} min read</span>
+          <span className="text-white/60 text-xs md:text-sm font-medium flex-shrink-0 ml-2">{article.readTime} min read</span>
         </div>
       </div>
     </article>

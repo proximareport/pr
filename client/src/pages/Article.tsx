@@ -13,6 +13,8 @@ import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import type { GhostPost } from '../../../server/ghostService';
 import { ModernButton } from "@/components/ui/modern-button";
+import { shareArticle } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface ArticleParams {
   slug: string;
@@ -23,6 +25,7 @@ function Article() {
   const [activeHeadingId, setActiveHeadingId] = useState<string | null>(null);
   const [headings, setHeadings] = useState<Array<{ id: string; content: string; level: number }>>([]);
   const { user } = useAuth();
+  const { toast } = useToast();
   
   // Get slug from URL params
   const slug = params?.slug;
@@ -102,6 +105,44 @@ function Article() {
     };
   }, [headings]);
   
+  // Share and bookmark functions
+  const handleShare = async () => {
+    try {
+      const result = await shareArticle(
+        article?.title,
+        `Check out this article: ${article?.title}`,
+        window.location.href
+      );
+      
+      if (result.success) {
+        if (result.method === 'clipboard') {
+          toast({
+            title: "Link copied!",
+            description: "Article link has been copied to your clipboard",
+            duration: 3000,
+          });
+        }
+        // For native sharing, no toast needed as the system provides feedback
+      }
+    } catch (error) {
+      toast({
+        title: "Share failed",
+        description: "Could not share the article. Please try again.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
+  };
+
+  const handleBookmark = () => {
+    // TODO: Implement bookmark functionality
+    toast({
+      title: "Bookmark saved",
+      description: "Article has been saved to your bookmarks",
+      duration: 3000,
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/40 to-black relative overflow-hidden flex flex-col">
@@ -187,96 +228,104 @@ function Article() {
         <div className="absolute top-1/3 left-1/2 w-36 h-36 bg-purple-400/5 rounded-full blur-3xl animate-pulse delay-4000"></div>
       </div>
 
-      <div className="relative z-10 container mx-auto px-4 py-8 flex-grow">
-        <div className="flex flex-col lg:flex-row gap-8">
+      <div className="relative z-10 container mx-auto px-3 md:px-4 py-4 md:py-8 flex-grow">
+        <div className="flex flex-col lg:flex-row gap-4 md:gap-8">
           {/* Main Content */}
           <div className="lg:w-3/4">
-            <div className="mb-8">
+            <div className="mb-6 md:mb-8">
               <Link href="/">
-                <ModernButton variant="neon" className="mb-8 bg-purple-500/10 hover:bg-purple-500/20 border-purple-400/30 hover:border-purple-400 text-purple-400 hover:text-purple-300 transition-all duration-300">
-                  <ChevronLeft className="mr-2 h-4 w-4" />
+                <ModernButton variant="neon" className="mb-4 md:mb-8 bg-purple-500/10 hover:bg-purple-500/20 border-purple-400/30 hover:border-purple-400 text-purple-400 hover:text-purple-300 transition-all duration-300 text-sm md:text-base">
+                  <ChevronLeft className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
                   Back to Articles
                 </ModernButton>
               </Link>
               
-              <h1 className="text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent hover:from-purple-400 hover:to-violet-400 transition-all duration-500">{article.title}</h1>
+              <h1 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-white mb-4 md:mb-6 leading-tight bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent hover:from-purple-400 hover:to-violet-400 transition-all duration-500">{article.title}</h1>
               
               {/* Enhanced metadata section */}
-              <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-purple-500/20 shadow-2xl mb-8">
-                <div className="flex flex-wrap items-center gap-6 text-white/80">
+              <div className="bg-white/5 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-6 border border-purple-500/20 shadow-2xl mb-6 md:mb-8">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-3 md:gap-6 text-white/80">
                   {/* Authors */}
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto">
                     {article.authors && article.authors.length > 1 ? (
-                      <div className="flex items-center gap-3 group">
-                        <div className="flex -space-x-2">
+                      <div className="flex items-center gap-2 md:gap-3 group w-full sm:w-auto">
+                        <div className="flex -space-x-1 md:-space-x-2 flex-shrink-0">
                           {article.authors.slice(0, 3).map((author, index) => (
                             <div key={author.id} className="relative">
                               <img 
                                 src={author.profile_image || '/default-avatar.png'} 
                                 alt={author.name || 'Author'} 
-                                className="w-10 h-10 rounded-full border-2 border-purple-400/30 transition-all duration-300 group-hover:border-purple-400 group-hover:scale-110"
+                                className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-purple-400/30 transition-all duration-300 group-hover:border-purple-400 group-hover:scale-110"
                                 style={{ zIndex: article.authors.length - index }}
                               />
                               <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 to-violet-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                             </div>
                           ))}
                           {article.authors.length > 3 && (
-                            <div className="w-10 h-10 rounded-full border-2 border-purple-400/30 bg-purple-900/50 flex items-center justify-center text-xs font-medium text-white">
+                            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-purple-400/30 bg-purple-900/50 flex items-center justify-center text-xs font-medium text-white">
                               +{article.authors.length - 3}
                             </div>
                           )}
                         </div>
-                        <div className="flex flex-col">
-                          <span className="font-medium text-white group-hover:text-purple-300 transition-colors duration-300">
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-medium text-white group-hover:text-purple-300 transition-colors duration-300 text-sm md:text-base truncate">
                             {article.authors.slice(0, 2).map(author => author.name).join(', ')}
                             {article.authors.length > 2 && ` and ${article.authors.length - 2} more`}
                           </span>
-                          <span className="text-sm text-white/60">Authors</span>
+                          <span className="text-xs md:text-sm text-white/60">Authors</span>
                         </div>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-3 group">
-                        <div className="relative">
+                      <div className="flex items-center gap-2 md:gap-3 group w-full sm:w-auto">
+                        <div className="relative flex-shrink-0">
                           <img 
                             src={(article.authors?.[0]?.profile_image || article.primary_author?.profile_image) || '/default-avatar.png'} 
                             alt={(article.authors?.[0]?.name || article.primary_author?.name) || 'Author'} 
-                            className="w-12 h-12 rounded-full border-2 border-purple-400/30 transition-all duration-300 group-hover:border-purple-400 group-hover:scale-110"
+                            className="w-8 h-8 md:w-12 md:h-12 rounded-full border-2 border-purple-400/30 transition-all duration-300 group-hover:border-purple-400 group-hover:scale-110"
                           />
                           <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 to-violet-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         </div>
-                        <div className="flex flex-col">
-                          <span className="font-medium text-white group-hover:text-purple-300 transition-colors duration-300">
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-medium text-white group-hover:text-purple-300 transition-colors duration-300 text-sm md:text-base truncate">
                             {(article.authors?.[0]?.name || article.primary_author?.name) || 'Unknown Author'}
                           </span>
-                          <span className="text-sm text-white/60">Author</span>
+                          <span className="text-xs md:text-sm text-white/60">Author</span>
                         </div>
                       </div>
                     )}
                   </div>
                   
-                  <div className="hidden sm:block w-px h-8 bg-purple-500/30"></div>
+                  <div className="hidden md:block w-px h-6 md:h-8 bg-purple-500/30"></div>
                   
                   {/* Date */}
-                  <div className="flex items-center gap-2 hover:text-purple-300 transition-colors duration-300">
-                    <Calendar className="w-4 h-4 text-purple-400" />
-                    <span className="font-medium">{format(new Date(article.published_at), 'MMMM d, yyyy')}</span>
+                  <div className="flex items-center gap-1 md:gap-2 hover:text-purple-300 transition-colors duration-300">
+                    <Calendar className="w-3 h-3 md:w-4 md:h-4 text-purple-400 flex-shrink-0" />
+                    <span className="font-medium text-xs md:text-sm lg:text-base">{format(new Date(article.published_at), 'MMM d, yyyy')}</span>
                   </div>
                   
-                  <div className="hidden sm:block w-px h-8 bg-purple-500/30"></div>
+                  <div className="hidden md:block w-px h-6 md:h-8 bg-purple-500/30"></div>
                   
                   {/* Reading time */}
-                  <div className="flex items-center gap-2 hover:text-purple-300 transition-colors duration-300">
-                    <Clock className="w-4 h-4 text-purple-400" />
-                    <span className="font-medium">{article.reading_time || 5} min read</span>
+                  <div className="flex items-center gap-1 md:gap-2 hover:text-purple-300 transition-colors duration-300">
+                    <Clock className="w-3 h-3 md:w-4 md:h-4 text-purple-400 flex-shrink-0" />
+                    <span className="font-medium text-xs md:text-sm lg:text-base">{article.reading_time || 5} min read</span>
                   </div>
                   
                   {/* Action buttons */}
-                  <div className="ml-auto flex items-center gap-3">
-                    <button className="p-2 rounded-full bg-purple-500/10 hover:bg-purple-500/20 border border-purple-400/30 hover:border-purple-400 text-purple-400 hover:text-purple-300 transition-all duration-300 group">
-                      <Share2 className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
+                  <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto justify-end sm:ml-auto">
+                    <button 
+                      onClick={handleShare}
+                      className="p-1.5 md:p-2 rounded-full bg-purple-500/10 hover:bg-purple-500/20 border border-purple-400/30 hover:border-purple-400 text-purple-400 hover:text-purple-300 transition-all duration-300 group"
+                      aria-label="Share article"
+                    >
+                      <Share2 className="w-3 h-3 md:w-4 md:h-4 group-hover:scale-110 transition-transform duration-300" />
                     </button>
-                    <button className="p-2 rounded-full bg-purple-500/10 hover:bg-purple-500/20 border border-purple-400/30 hover:border-purple-400 text-purple-400 hover:text-purple-300 transition-all duration-300 group">
-                      <Bookmark className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
+                    <button 
+                      onClick={handleBookmark}
+                      className="p-1.5 md:p-2 rounded-full bg-purple-500/10 hover:bg-purple-500/20 border border-purple-400/30 hover:border-purple-400 text-purple-400 hover:text-purple-300 transition-all duration-300 group"
+                      aria-label="Bookmark article"
+                    >
+                      <Bookmark className="w-3 h-3 md:w-4 md:h-4 group-hover:scale-110 transition-transform duration-300" />
                     </button>
                   </div>
                 </div>
@@ -296,13 +345,13 @@ function Article() {
             </div>
             
             {/* Article content */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 lg:p-12 border border-purple-500/20 shadow-2xl hover:border-purple-400/30 transition-all duration-500">
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-6 lg:p-8 xl:p-12 border border-purple-500/20 shadow-2xl hover:border-purple-400/30 transition-all duration-500">
               <ArticleContent content={article.html} />
             </div>
             
             {/* Comments section */}
-            <div className="mt-12">
-              <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-purple-500/20 shadow-2xl">
+            <div className="mt-8 md:mt-12">
+              <div className="bg-white/5 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-6 lg:p-8 border border-purple-500/20 shadow-2xl">
                 <CommentSection 
                   articleId={parseInt(article.id)} 
                   comments={[]} 
@@ -313,12 +362,12 @@ function Article() {
           </div>
           
           {/* Sidebar */}
-          <div className="lg:w-1/4 space-y-8">
+          <div className="lg:w-1/4 space-y-4 md:space-y-6 lg:space-y-8">
             {headings.length > 0 && (
-              <div className="sticky top-8">
-                <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-purple-500/20 shadow-2xl hover:border-purple-400/30 transition-all duration-500">
-                  <h3 className="text-lg font-bold mb-4 text-white flex items-center gap-2">
-                    <Eye className="w-5 h-5 text-purple-400" />
+              <div className="lg:sticky lg:top-8">
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-6 border border-purple-500/20 shadow-2xl hover:border-purple-400/30 transition-all duration-500">
+                  <h3 className="text-base md:text-lg font-bold mb-3 md:mb-4 text-white flex items-center gap-2">
+                    <Eye className="w-4 h-4 md:w-5 md:h-5 text-purple-400" />
                     Table of Contents
                   </h3>
                   <TableOfContents 
@@ -330,19 +379,19 @@ function Article() {
             )}
             
             {/* Advertisement */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-purple-500/20 shadow-2xl hover:border-purple-400/30 transition-all duration-500">
-              <h3 className="text-lg font-bold mb-4 text-white flex items-center gap-2">
-                <Share2 className="w-5 h-5 text-purple-400" />
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-6 border border-purple-500/20 shadow-2xl hover:border-purple-400/30 transition-all duration-500">
+              <h3 className="text-base md:text-lg font-bold mb-3 md:mb-4 text-white flex items-center gap-2">
+                <Share2 className="w-4 h-4 md:w-5 md:h-5 text-purple-400" />
                 Sponsored
               </h3>
               <Advertisement placement="sidebar" />
             </div>
             
             {/* Additional sidebar card */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-purple-500/20 shadow-2xl hover:border-purple-400/30 transition-all duration-500">
-              <h3 className="text-lg font-bold mb-4 text-white">📚 Related Articles</h3>
-              <p className="text-white/60 text-sm">Discover more space exploration content</p>
-              <div className="mt-4">
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-6 border border-purple-500/20 shadow-2xl hover:border-purple-400/30 transition-all duration-500">
+              <h3 className="text-base md:text-lg font-bold mb-3 md:mb-4 text-white">📚 Related Articles</h3>
+              <p className="text-white/60 text-sm mb-3 md:mb-4">Discover more space exploration content</p>
+              <div className="mt-3 md:mt-4">
                 <ModernButton variant="neon" className="w-full text-sm">
                   Browse Articles
                 </ModernButton>

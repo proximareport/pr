@@ -23,28 +23,29 @@ function Header() {
     { name: "Mission Control", href: "/missioncontrol" },
     { name: "Gallery", href: "/gallery" },
     { name: "Jobs", href: "/jobs" },
+    { name: "Pricing", href: "/pricing" },
     { name: "Advertise", href: "/advertise" },
   ];
 
   const isActive = (path: string) => location === path;
 
   return (
-    <header className="sticky top-0 z-50 bg-[#14141E] border-b border-white/10">
+    <header className="bg-[#14141E] border-b border-white/10">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between py-4">
+        <div className="flex items-center justify-between py-2">
           <div className="flex items-center space-x-8">
             <Link href="/" className="flex items-center">
               {/* Desktop logo (visible on md and larger screens) */}
               <img 
                 src={desktopLogo} 
                 alt="Proxima Report" 
-                className="hidden md:block h-auto w-auto max-h-6 max-w-[200px] object-contain" 
+                className="hidden md:block h-auto w-auto max-h-5 max-w-[180px] object-contain" 
               />
               {/* Mobile logo (visible on smaller screens) */}
               <img 
                 src={mobileLogo} 
                 alt="Proxima Report" 
-                className="block md:hidden h-auto w-auto max-h-14 max-w-[56px] object-contain" 
+                className="block md:hidden h-auto w-auto max-h-10 max-w-[40px] object-contain" 
               />
             </Link>
             

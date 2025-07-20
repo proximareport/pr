@@ -104,7 +104,7 @@ export function SearchPopup({ isOpen, onClose }: SearchPopupProps) {
           page: '1',
           limit: '10',
           include: 'tags,authors',
-          fields: 'id,title,slug,excerpt,custom_excerpt,feature_image,published_at,reading_time,primary_tag,primary_author,authors'
+          fields: 'id,title,slug,excerpt,custom_excerpt,feature_image,published_at,reading_time,primary_tag,primary_author,authors,html'
         });
 
         // Clean and escape the search query to prevent API errors

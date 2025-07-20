@@ -3947,6 +3947,120 @@ google.com, pub-XXXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
     }
   });
 
+  // Gift membership endpoint
+  app.post("/api/gift-membership", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { 
+        recipientEmail, 
+        recipientName, 
+        giftMessage, 
+        senderName, 
+        tier, 
+        duration = 'monthly' 
+      } = req.body;
+      
+      // Validate required fields
+      if (!recipientEmail || !recipientName || !tier) {
+        return res.status(400).json({ 
+          message: "Recipient email, name, and tier are required" 
+        });
+      }
+      
+      // Validate tier
+      if (!['supporter', 'pro'].includes(tier)) {
+        return res.status(400).json({ 
+          message: "Invalid tier. Must be 'supporter' or 'pro'" 
+        });
+      }
+      
+      // Get the gifter's information
+      const gifterId = req.session.userId;
+      const gifter = await storage.getUser(gifterId);
+      
+      if (!gifter) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Determine price ID based on tier and duration
+      let priceId = '';
+      if (tier === 'supporter') {
+        priceId = duration === 'yearly' ? 'price_supporter_yearly' : SUBSCRIPTION_PRICES.supporter;
+      } else if (tier === 'pro') {
+        priceId = duration === 'yearly' ? 'price_pro_yearly' : SUBSCRIPTION_PRICES.pro;
+      }
+      
+      // Create or get Stripe customer for the gifter
+      let customerId = gifter.stripeCustomerId;
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: gifter.email,
+          name: gifter.username,
+          metadata: {
+            userId: gifter.id.toString(),
+          },
+        });
+        customerId = customer.id;
+        
+        // Update user with Stripe customer ID
+        await storage.updateUser(gifter.id, { stripeCustomerId: customerId });
+      }
+      
+      // Create checkout session for gift
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price: priceId,
+            quantity: 1,
+          },
+        ],
+        mode: 'payment', // One-time payment for gift
+        success_url: `${process.env.APP_URL || 'http://localhost:5000'}/gift/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.APP_URL || 'http://localhost:5000'}/pricing`,
+        metadata: {
+          gifterId: gifter.id.toString(),
+          recipientEmail,
+          recipientName,
+          giftMessage: giftMessage || '',
+          senderName: senderName || gifter.username,
+          tier,
+          duration,
+          isGift: 'true'
+        },
+      });
+      
+      res.json({ checkoutUrl: session.url });
+    } catch (error) {
+      console.error("Error creating gift membership:", error);
+      res.status(500).json({ message: "Error creating gift membership" });
+    }
+  });
+
+  // Redeem gift membership endpoint
+  app.post("/api/gift/redeem", async (req: Request, res: Response) => {
+    try {
+      const { giftCode } = req.body;
+      
+      if (!giftCode) {
+        return res.status(400).json({ message: "Gift code is required" });
+      }
+      
+      // Here you would validate the gift code and apply the membership
+      // For now, this is a placeholder implementation
+      
+      res.json({ 
+        success: true, 
+        message: "Gift membership redeemed successfully!",
+        tier: "supporter", // This would come from the gift code
+        duration: "monthly"
+      });
+    } catch (error) {
+      console.error("Error redeeming gift:", error);
+      res.status(500).json({ message: "Error redeeming gift membership" });
+    }
+  });
+
   // Gallery API - Enhanced
   app.get('/api/gallery', async (req, res) => {
     try {

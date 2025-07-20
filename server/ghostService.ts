@@ -1,5 +1,6 @@
 import axios from 'axios';
 import dotenv from 'dotenv';
+import { calculateReadingTime } from '../shared/utils';
 
 dotenv.config();
 
@@ -101,6 +102,15 @@ function formatGhostPost(post: any): GhostPost | null {
     rawPost: JSON.stringify(post, null, 2).substring(0, 500) + '...'
   });
   
+  // Calculate reading time from content if not provided by Ghost
+  let readingTime = post.reading_time;
+  if (!readingTime && post.html) {
+    readingTime = calculateReadingTime(post.html);
+    console.log('Calculated reading time from content:', readingTime, 'minutes');
+  } else if (!readingTime) {
+    readingTime = 5; // Final fallback
+  }
+  
   const formattedPost = {
     id: post.id,
     title: post.title,
@@ -109,7 +119,7 @@ function formatGhostPost(post: any): GhostPost | null {
     feature_image: post.feature_image,
     published_at: post.published_at,
     excerpt: post.excerpt,
-    reading_time: post.reading_time || 5,
+    reading_time: readingTime,
     primary_author: post.primary_author as GhostAuthor,
     primary_tag: post.primary_tag as GhostTag,
     tags: (post.tags || []) as GhostTag[],
@@ -136,7 +146,7 @@ export async function getPosts(page = 1, limit = 10, filter?: string) {
     params.append('page', page.toString());
     params.append('limit', limit.toString());
     params.append('include', 'tags,authors');
-    params.append('fields', 'id,title,slug,excerpt,custom_excerpt,feature_image,published_at,reading_time,primary_tag');
+    params.append('fields', 'id,title,slug,excerpt,custom_excerpt,feature_image,published_at,reading_time,primary_tag,html');
 
     if (filter) {
       params.append('filter', filter);
@@ -160,8 +170,9 @@ export async function getPosts(page = 1, limit = 10, filter?: string) {
       postCount: response.data?.posts?.length || 0
     });
 
-    // Ensure posts is always an array
-    const posts = Array.isArray(response.data?.posts) ? response.data.posts : [];
+    // Ensure posts is always an array and format each post
+    const rawPosts = Array.isArray(response.data?.posts) ? response.data.posts : [];
+    const posts = rawPosts.map((post: any) => formatGhostPost(post)).filter(Boolean);
     
     return {
       posts,

@@ -12,6 +12,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { shareArticle } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface ArticleContentProps {
   content: string;
@@ -19,6 +21,7 @@ interface ArticleContentProps {
 
 function ArticleContent({ content }: ArticleContentProps) {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [visibleSections, setVisibleSections] = useState<string[]>([]);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
@@ -383,22 +386,29 @@ function ArticleContent({ content }: ArticleContentProps) {
     setIsBookmarked(!isBookmarked);
   };
 
-  // Share article
-  const shareArticle = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: "Article Title",
-          text: "Check out this article on Proxima Report",
-          url: window.location.href,
+  // Share article using shared utility
+  const handleShareArticle = async () => {
+    try {
+      const result = await shareArticle(
+        "Article Title",
+        "Check out this article on Proxima Report",
+        window.location.href
+      );
+      
+      if (result.success && result.method === 'clipboard') {
+        toast({
+          title: "Link copied!",
+          description: "Article URL copied to clipboard!",
+          duration: 3000,
         });
-      } catch (error) {
-        console.log("Error sharing article:", error);
       }
-    } else {
-      // Fallback for browsers that don't support the Web Share API
-      navigator.clipboard.writeText(window.location.href);
-      alert("Article URL copied to clipboard!");
+    } catch (error) {
+      toast({
+        title: "Share failed",
+        description: "Could not share the article. Please try again.",
+        variant: "destructive",
+        duration: 3000,
+      });
     }
   };
 
