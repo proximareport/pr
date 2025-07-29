@@ -56,10 +56,11 @@ const Contact: React.FC = () => {
         category: '',
         message: ''
       });
+
     } catch (error) {
       toast({
         title: "Error sending message",
-        description: "Please try again later or use our direct email contact.",
+        description: "Please try again later or contact us directly via email.",
         variant: "destructive",
       });
     } finally {
@@ -68,266 +69,243 @@ const Contact: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-12">
-      <div className="container mx-auto px-4 max-w-6xl">
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/40 to-black relative overflow-hidden">
+      {/* Geometric ambient effects */}
+      <div className="absolute inset-0">
+        <div className="absolute top-20 left-10 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-40 right-20 w-24 h-24 bg-violet-600/10 rounded-full blur-2xl animate-pulse delay-1000"></div>
+        <div className="absolute bottom-32 left-1/4 w-40 h-40 bg-purple-600/10 rounded-full blur-3xl animate-pulse delay-2000"></div>
+        <div className="absolute top-1/2 right-1/3 w-28 h-28 bg-indigo-500/10 rounded-full blur-2xl animate-pulse delay-3000"></div>
+      </div>
+
+      <div className="relative z-10 container mx-auto px-4 py-12 max-w-6xl">
         
-        {/* Header */}
+        {/* Hero Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
-            Contact <span className="text-cyan-400">Us</span>
+            Contact <span className="text-purple-400">Us</span>
           </h1>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-            Get in touch with our team. We're here to help with questions, feedback, partnerships, or anything space-related!
+          <p className="text-xl text-white/80 max-w-3xl mx-auto leading-relaxed">
+            Have a question, story tip, or feedback? We'd love to hear from you. 
+            Get in touch with our team and join the conversation about space exploration.
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-2 gap-8 mb-8">
           
+          {/* Contact Form */}
+          <Card className="bg-white/5 backdrop-blur-sm border border-purple-500/20">
+            <CardHeader className="border-b border-purple-500/20 bg-purple-900/10">
+              <CardTitle className="text-2xl text-white flex items-center">
+                <MessageSquareIcon className="w-6 h-6 mr-2 text-purple-400" />
+                Send us a Message
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="name" className="text-white/90">Name *</Label>
+                    <Input
+                      id="name"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      required
+                      className="bg-white/10 border-purple-500/30 text-white placeholder-white/50 focus:border-purple-400"
+                      placeholder="Your full name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email" className="text-white/90">Email *</Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
+                      className="bg-white/10 border-purple-500/30 text-white placeholder-white/50 focus:border-purple-400"
+                      placeholder="your@email.com"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="category" className="text-white/90">Category</Label>
+                  <Select onValueChange={handleSelectChange} value={formData.category}>
+                    <SelectTrigger className="bg-white/10 border-purple-500/30 text-white focus:border-purple-400">
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-900 border-purple-500/30">
+                      <SelectItem value="general">General Inquiry</SelectItem>
+                      <SelectItem value="editorial">Editorial/Story Tip</SelectItem>
+                      <SelectItem value="technical">Technical Support</SelectItem>
+                      <SelectItem value="partnership">Partnership/Collaboration</SelectItem>
+                      <SelectItem value="advertising">Advertising</SelectItem>
+                      <SelectItem value="press">Press Inquiry</SelectItem>
+                      <SelectItem value="feedback">Feedback/Suggestion</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="subject" className="text-white/90">Subject *</Label>
+                  <Input
+                    id="subject"
+                    name="subject"
+                    value={formData.subject}
+                    onChange={handleInputChange}
+                    required
+                    className="bg-white/10 border-purple-500/30 text-white placeholder-white/50 focus:border-purple-400"
+                    placeholder="Brief subject line"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="message" className="text-white/90">Message *</Label>
+                  <Textarea
+                    id="message"
+                    name="message"
+                    value={formData.message}
+                    onChange={handleInputChange}
+                    required
+                    rows={6}
+                    className="bg-white/10 border-purple-500/30 text-white placeholder-white/50 focus:border-purple-400 resize-none"
+                    placeholder="Tell us what's on your mind..."
+                  />
+                </div>
+
+                <Button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3"
+                >
+                  {isSubmitting ? 'Sending...' : 'Send Message'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
           {/* Contact Information */}
-          <div className="lg:col-span-1 space-y-6">
+          <div className="space-y-6">
             
-            <Card className="bg-gray-800/50 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center">
-                  <MailIcon className="w-5 h-5 mr-2 text-cyan-400" />
-                  Email Contact
+            {/* Direct Contact */}
+            <Card className="bg-white/5 backdrop-blur-sm border border-purple-500/20">
+              <CardHeader className="border-b border-purple-500/20 bg-purple-900/10">
+                <CardTitle className="text-xl text-white flex items-center">
+                  <HeadphonesIcon className="w-5 h-5 mr-2 text-purple-400" />
+                  Direct Contact
                 </CardTitle>
               </CardHeader>
-              <CardContent className="text-gray-300 space-y-3">
-                <div>
-                  <h4 className="font-medium text-white">General Inquiries</h4>
-                  <p className="text-sm">contact@proximareport.com</p>
+              <CardContent className="pt-4 space-y-4">
+                <div className="flex items-start space-x-3">
+                  <MailIcon className="w-5 h-5 text-purple-400 mt-1 flex-shrink-0" />
+                  <div>
+                    <p className="text-white/90 font-medium">General Inquiries</p>
+                    <p className="text-white/70">contact@proximareport.com</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-medium text-white">Editorial Team</h4>
-                  <p className="text-sm">editorial@proximareport.com</p>
+                
+                <div className="flex items-start space-x-3">
+                  <MailIcon className="w-5 h-5 text-purple-400 mt-1 flex-shrink-0" />
+                  <div>
+                    <p className="text-white/90 font-medium">Editorial Team</p>
+                    <p className="text-white/70">editorial@proximareport.com</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-medium text-white">Technical Support</h4>
-                  <p className="text-sm">support@proximareport.com</p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-white">Advertising</h4>
-                  <p className="text-sm">ads@proximareport.com</p>
+                
+                <div className="flex items-start space-x-3">
+                  <MailIcon className="w-5 h-5 text-purple-400 mt-1 flex-shrink-0" />
+                  <div>
+                    <p className="text-white/90 font-medium">Press Inquiries</p>
+                    <p className="text-white/70">press@proximareport.com</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-gray-800/50 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center">
-                  <MapPinIcon className="w-5 h-5 mr-2 text-green-400" />
-                  Mailing Address
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-gray-300">
-                <address className="not-italic">
-                  Proxima Report<br />
-                  [Your Street Address]<br />
-                  [City, State ZIP Code]<br />
-                  [Country]
-                </address>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gray-800/50 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center">
-                  <ClockIcon className="w-5 h-5 mr-2 text-yellow-400" />
+            {/* Response Times */}
+            <Card className="bg-white/5 backdrop-blur-sm border border-purple-500/20">
+              <CardHeader className="border-b border-purple-500/20 bg-purple-900/10">
+                <CardTitle className="text-xl text-white flex items-center">
+                  <ClockIcon className="w-5 h-5 mr-2 text-purple-400" />
                   Response Times
                 </CardTitle>
               </CardHeader>
-              <CardContent className="text-gray-300 space-y-2">
-                <div className="flex justify-between">
-                  <span>General Inquiries:</span>
-                  <span className="text-cyan-400">24-48 hours</span>
+              <CardContent className="pt-4 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-white/90">General Inquiries</span>
+                  <span className="text-purple-300">24-48 hours</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Technical Support:</span>
-                  <span className="text-cyan-400">12-24 hours</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-white/90">Editorial/News Tips</span>
+                  <span className="text-purple-300">12-24 hours</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Press Inquiries:</span>
-                  <span className="text-cyan-400">4-8 hours</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-white/90">Technical Support</span>
+                  <span className="text-purple-300">24-72 hours</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Advertising:</span>
-                  <span className="text-cyan-400">1-2 business days</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-white/90">Press Inquiries</span>
+                  <span className="text-purple-300">6-12 hours</span>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-gray-800/50 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center">
-                  <HeadphonesIcon className="w-5 h-5 mr-2 text-purple-400" />
-                  Other Ways to Reach Us
+            {/* Office Information */}
+            <Card className="bg-white/5 backdrop-blur-sm border border-purple-500/20">
+              <CardHeader className="border-b border-purple-500/20 bg-purple-900/10">
+                <CardTitle className="text-xl text-white flex items-center">
+                  <MapPinIcon className="w-5 h-5 mr-2 text-purple-400" />
+                  Our Mission
                 </CardTitle>
               </CardHeader>
-              <CardContent className="text-gray-300 space-y-3">
-                <div>
-                  <h4 className="font-medium text-white">Social Media</h4>
-                  <p className="text-sm">Follow us for updates and quick responses</p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-white">Community Forum</h4>
-                  <p className="text-sm">Join discussions with our community</p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-white">Emergency Contact</h4>
-                  <p className="text-sm">For urgent press or security issues</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Contact Form */}
-          <div className="lg:col-span-2">
-            <Card className="bg-gray-800/50 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-2xl text-white flex items-center">
-                  <MessageSquareIcon className="w-6 h-6 mr-2 text-cyan-400" />
-                  Send us a Message
-                </CardTitle>
-                <p className="text-gray-400">
-                  Fill out the form below and we'll get back to you as soon as possible.
+              <CardContent className="pt-4">
+                <p className="text-white/80 leading-relaxed">
+                  We're a digital-first publication dedicated to making space science accessible to everyone. 
+                  Our team works around the clock to bring you the latest in space exploration, STEM education, 
+                  and cosmic discoveries.
                 </p>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="name" className="text-white">Name *</Label>
-                      <Input
-                        id="name"
-                        name="name"
-                        type="text"
-                        required
-                        value={formData.name}
-                        onChange={handleInputChange}
-                        className="bg-gray-700 border-gray-600 text-white mt-1"
-                        placeholder="Your full name"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="email" className="text-white">Email *</Label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        required
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        className="bg-gray-700 border-gray-600 text-white mt-1"
-                        placeholder="your@email.com"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="category" className="text-white">Category</Label>
-                    <Select onValueChange={handleSelectChange} value={formData.category}>
-                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white mt-1">
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="general">General Inquiry</SelectItem>
-                        <SelectItem value="editorial">Editorial/Content</SelectItem>
-                        <SelectItem value="technical">Technical Support</SelectItem>
-                        <SelectItem value="advertising">Advertising/Partnership</SelectItem>
-                        <SelectItem value="press">Press Inquiry</SelectItem>
-                        <SelectItem value="feedback">Feedback/Suggestions</SelectItem>
-                        <SelectItem value="bug">Bug Report</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="subject" className="text-white">Subject *</Label>
-                    <Input
-                      id="subject"
-                      name="subject"
-                      type="text"
-                      required
-                      value={formData.subject}
-                      onChange={handleInputChange}
-                      className="bg-gray-700 border-gray-600 text-white mt-1"
-                      placeholder="Brief description of your inquiry"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="message" className="text-white">Message *</Label>
-                    <Textarea
-                      id="message"
-                      name="message"
-                      required
-                      value={formData.message}
-                      onChange={handleInputChange}
-                      className="bg-gray-700 border-gray-600 text-white mt-1 min-h-[120px]"
-                      placeholder="Please provide details about your inquiry..."
-                    />
-                  </div>
-
-                  <div className="text-sm text-gray-400">
-                    <p>* Required fields</p>
-                    <p className="mt-2">
-                      By submitting this form, you agree to our{' '}
-                      <a href="/privacy" className="text-cyan-400 hover:underline">Privacy Policy</a>{' '}
-                      and{' '}
-                      <a href="/terms" className="text-cyan-400 hover:underline">Terms of Service</a>.
-                    </p>
-                  </div>
-
-                  <Button 
-                    type="submit" 
-                    disabled={isSubmitting}
-                    className="w-full bg-cyan-600 hover:bg-cyan-700 text-white"
-                  >
-                    {isSubmitting ? 'Sending...' : 'Send Message'}
-                  </Button>
-                </form>
               </CardContent>
             </Card>
+
           </div>
         </div>
 
         {/* FAQ Section */}
-        <Card className="bg-gray-800/50 border-gray-700 mt-12">
-          <CardHeader>
+        <Card className="bg-white/5 backdrop-blur-sm border border-purple-500/20">
+          <CardHeader className="border-b border-purple-500/20 bg-purple-900/10">
             <CardTitle className="text-2xl text-white">Frequently Asked Questions</CardTitle>
           </CardHeader>
-          <CardContent className="text-gray-300">
-            <div className="grid md:grid-cols-2 gap-8">
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-semibold text-white mb-2">How can I submit a news tip?</h3>
-                  <p className="text-sm">Send your tips to editorial@proximareport.com with "News Tip" in the subject line. Include all relevant details and sources.</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-white mb-2">Can I advertise on your website?</h3>
-                  <p className="text-sm">Yes! Contact ads@proximareport.com for advertising opportunities and rates. We offer various placement options.</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-white mb-2">How do I report a technical issue?</h3>
-                  <p className="text-sm">Use our contact form with "Technical Support" category or email support@proximareport.com with details about the issue.</p>
-                </div>
+          <CardContent className="pt-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-lg font-semibold text-purple-300 mb-2">How can I submit a story tip?</h3>
+                <p className="text-white/80 mb-4">
+                  We welcome story tips! Use our contact form above with the "Editorial/Story Tip" category, 
+                  or email us directly at editorial@proximareport.com with your news tip or story idea.
+                </p>
+                
+                <h3 className="text-lg font-semibold text-purple-300 mb-2">Do you accept guest articles?</h3>
+                <p className="text-white/80">
+                  Yes! We're always looking for quality content from space enthusiasts, scientists, and educators. 
+                  Please contact our editorial team with your article proposal and writing samples.
+                </p>
               </div>
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-semibold text-white mb-2">Can I contribute content?</h3>
-                  <p className="text-sm">We welcome guest contributions! Contact editorial@proximareport.com with your proposal and writing samples.</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-white mb-2">How do I unsubscribe from emails?</h3>
-                  <p className="text-sm">Use the unsubscribe link in any email, or contact support@proximareport.com for assistance.</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-white mb-2">Do you offer internships?</h3>
-                  <p className="text-sm">We occasionally offer internship opportunities. Send your resume and cover letter to contact@proximareport.com.</p>
-                </div>
+              
+              <div>
+                <h3 className="text-lg font-semibold text-purple-300 mb-2">How can I advertise with you?</h3>
+                <p className="text-white/80 mb-4">
+                  We offer various advertising opportunities for space-related businesses and organizations. 
+                  Contact us using the "Advertising" category for information about our advertising packages.
+                </p>
+                
+                <h3 className="text-lg font-semibold text-purple-300 mb-2">Can I use your content?</h3>
+                <p className="text-white/80">
+                  Our content is protected by copyright. For permission to republish or use our content, 
+                  please contact us with details about your intended use.
+                </p>
               </div>
             </div>
           </CardContent>

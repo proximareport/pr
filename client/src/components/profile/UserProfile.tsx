@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { RoleBadges } from "@/components/ui/role-badge";
 import {
   Card,
   CardContent,
@@ -214,25 +215,7 @@ const UserProfile = ({ username, isEditable = false }: ProfileProps) => {
     }
   };
   
-  // Get membership badge elements
-  const getMembershipBadge = () => {
-    const tier = user?.membershipTier || "free";
-    
-    if (tier === "pro") {
-      return (
-        <Badge className="bg-purple-500 text-white border-none">
-          <CrownIcon className="h-3 w-3 mr-1" /> PRO
-        </Badge>
-      );
-    } else if (tier === "supporter") {
-      return (
-        <Badge className="bg-purple-700 text-white border-none">
-          <span className="mr-1">✦</span> SUPPORTER
-        </Badge>
-      );
-    }
-    return null;
-  };
+
 
   // Background style for profile based on membership
   const getProfileBackgroundStyle = () => {
@@ -288,15 +271,19 @@ const UserProfile = ({ username, isEditable = false }: ProfileProps) => {
                   </AvatarFallback>
                 </Avatar>
               </div>
-              {user?.membershipTier !== "free" && (
-                <div className="absolute -bottom-1 -right-1">
-                  {getMembershipBadge()}
-                </div>
-              )}
+
             </div>
             
             <div className="md:flex-1 text-center md:text-left">
-              <h1 className="text-2xl font-space font-bold">{user?.username}</h1>
+              <div className="flex items-center gap-2 justify-center md:justify-start">
+                <h1 className="text-2xl font-space font-bold">{user?.username}</h1>
+                <RoleBadges 
+                  role={user?.role} 
+                  membershipTier={user?.membershipTier}
+                  size="md"
+                  showAll={true}
+                />
+              </div>
               <p className="text-white/70 mt-1 max-w-md">
                 {user?.bio || "No bio provided"}
               </p>

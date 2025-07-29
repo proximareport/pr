@@ -1,236 +1,400 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { RocketIcon, StarIcon, UsersIcon, GlobeIcon, ShieldIcon, HeartIcon } from 'lucide-react';
-import { Link } from 'wouter';
+import { 
+  RocketIcon, 
+  UsersIcon, 
+  StarIcon, 
+  GlobeIcon, 
+  HeartIcon, 
+  TargetIcon,
+  TrendingUpIcon,
+  AwardIcon,
+  ExternalLinkIcon,
+  LinkedinIcon,
+  TwitterIcon,
+  MailIcon,
+  ShoppingCartIcon
+} from 'lucide-react';
 
-const About: React.FC = () => {
+import { useQuery } from '@tanstack/react-query';
+
+// Types
+interface TeamMember {
+  id: number;
+  name: string;
+  role: string;
+  bio: string;
+  profile_image_url?: string;
+  is_founder: boolean;
+  expertise: string[];
+  social_linkedin?: string;
+  social_twitter?: string;
+  social_email?: string;
+  display_order: number;
+}
+
+const stats = [
+  { icon: <UsersIcon className="h-6 w-6" />, value: "50K+", label: "Active Users" },
+  { icon: <GlobeIcon className="h-6 w-6" />, value: "195", label: "Countries Reached" },
+  { icon: <StarIcon className="h-6 w-6" />, value: "99.9%", label: "Uptime" },
+  { icon: <RocketIcon className="h-6 w-6" />, value: "1000+", label: "Launches Tracked" }
+];
+
+const values = [
+  {
+    icon: <TargetIcon className="h-6 w-6 text-blue-400" />,
+    title: "Accuracy",
+    description: "We provide the most accurate and up-to-date space data from trusted sources."
+  },
+  {
+    icon: <HeartIcon className="h-6 w-6 text-red-400" />,
+    title: "Passion",
+    description: "Our team is driven by genuine passion for space exploration and discovery."
+  },
+  {
+    icon: <TrendingUpIcon className="h-6 w-6 text-green-400" />,
+    title: "Innovation",
+    description: "We continuously push the boundaries of what's possible in space data presentation."
+  },
+  {
+    icon: <AwardIcon className="h-6 w-6 text-yellow-400" />,
+    title: "Excellence",
+    description: "We strive for excellence in every aspect of our platform and user experience."
+  }
+];
+
+export default function About() {
+  // Fetch team members from API
+  const { data: teamMembers, isLoading, error } = useQuery<TeamMember[]>({
+    queryKey: ['team-members'],
+    queryFn: async () => {
+      const response = await fetch('/api/team-members');
+      if (!response.ok) {
+        throw new Error('Failed to fetch team members');
+      }
+      return response.json();
+    }
+  });
+
+  // Separate founders and regular team members
+  const founders = teamMembers?.filter(member => member.is_founder).sort((a, b) => a.display_order - b.display_order) || [];
+  const regularTeam = teamMembers?.filter(member => !member.is_founder).sort((a, b) => a.display_order - b.display_order) || [];
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-12">
-      <div className="container mx-auto px-4 max-w-6xl">
-        
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/40 to-black relative overflow-hidden">
+      {/* Background effects */}
+      <div className="absolute inset-0">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-purple-900/10 via-violet-900/10 to-purple-800/10"></div>
+        <div className="absolute top-20 left-20 w-64 h-64 bg-gradient-to-r from-purple-600/10 to-violet-600/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-20 w-48 h-48 bg-gradient-to-r from-blue-600/10 to-cyan-600/10 rounded-full blur-3xl animate-pulse"></div>
+      </div>
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Hero Section */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
-            About <span className="text-cyan-400">Proxima Report</span>
+        <div className="text-center mb-16">
+          <div className="flex justify-center mb-6">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-r from-purple-500 to-violet-700 flex items-center justify-center shadow-lg shadow-purple-500/25">
+              <RocketIcon className="h-8 w-8 text-white" />
+            </div>
+          </div>
+          <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
+            About <span className="text-purple-400">Proxima Report</span>
           </h1>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-            Your premier destination for STEM and space exploration news, bringing the universe closer to Earth through cutting-edge journalism and interactive experiences.
+          <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-8">
+            We're on a mission to make space exploration data accessible, beautiful, and inspiring for everyone. 
+            From rocket launches to distant exoplanets, we bring the universe closer to you.
           </p>
+          
+          {/* Store CTA */}
+          <div className="flex justify-center gap-4 mb-12">
+            <a 
+              href="https://store.proximareport.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-violet-700 hover:from-purple-700 hover:to-violet-800 text-white px-6 py-3 rounded-lg transition-all duration-300 shadow-lg shadow-purple-500/25 font-medium"
+            >
+              <ShoppingCartIcon className="h-5 w-5" />
+              Visit Our Store
+              <ExternalLinkIcon className="h-4 w-4" />
+            </a>
+            <button className="border border-purple-600 text-purple-400 hover:bg-purple-600 hover:text-white px-6 py-3 rounded-lg transition-all duration-300">
+              Learn More
+            </button>
+          </div>
         </div>
 
-        {/* Mission Section */}
-        <Card className="bg-gray-800/50 border-gray-700 mb-8">
-          <CardHeader>
-            <CardTitle className="text-2xl text-white flex items-center">
-              <RocketIcon className="w-6 h-6 mr-2 text-cyan-400" />
-              Our Mission
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-gray-300">
-            <p className="text-lg leading-relaxed">
-              At Proxima Report, we believe that space exploration and STEM education are the keys to humanity's future. 
-              Our mission is to make complex scientific concepts accessible to everyone, inspire the next generation of 
-              explorers, and keep the world informed about the latest developments in space technology, astronomy, and 
-              scientific discovery.
+        {/* Stats Section */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
+          {stats.map((stat, index) => (
+            <div key={index} className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-purple-900/30 text-center">
+              <div className="flex justify-center text-purple-400 mb-3">
+                {stat.icon}
+              </div>
+              <div className="text-2xl font-bold text-white mb-1">{stat.value}</div>
+              <div className="text-gray-400 text-sm">{stat.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Mission Statement */}
+        <div className="bg-gray-900/60 backdrop-blur-sm rounded-xl p-8 border border-purple-900/30 mb-16">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-3xl font-bold text-white mb-6">Our Mission</h2>
+            <p className="text-lg text-gray-300 leading-relaxed mb-6">
+              At Proxima Report, we believe that space exploration should be accessible to everyone. 
+              Our platform aggregates real-time data from space agencies, research institutions, and 
+              astronomical databases to create a comprehensive, user-friendly experience that brings 
+              the wonders of the universe to your fingertips.
             </p>
-          </CardContent>
-        </Card>
-
-        {/* Values Grid */}
-        <div className="grid md:grid-cols-3 gap-6 mb-12">
-          <Card className="bg-gray-800/50 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center">
-                <StarIcon className="w-5 h-5 mr-2 text-yellow-400" />
-                Excellence
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-gray-300">
-              <p>We strive for accuracy, depth, and clarity in every article, ensuring our readers receive the highest quality space and science news.</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gray-800/50 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center">
-                <UsersIcon className="w-5 h-5 mr-2 text-green-400" />
-                Community
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-gray-300">
-              <p>We foster a vibrant community of space enthusiasts, scientists, and curious minds who share our passion for exploration and discovery.</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gray-800/50 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center">
-                <GlobeIcon className="w-5 h-5 mr-2 text-blue-400" />
-                Accessibility
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-gray-300">
-              <p>We make complex scientific information accessible to all, breaking down barriers to STEM education and space knowledge.</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* What We Offer */}
-        <Card className="bg-gray-800/50 border-gray-700 mb-8">
-          <CardHeader>
-            <CardTitle className="text-2xl text-white">What We Offer</CardTitle>
-          </CardHeader>
-          <CardContent className="text-gray-300">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="text-lg font-semibold text-cyan-400 mb-3">Content & News</h3>
-                <ul className="space-y-2">
-                  <li className="flex items-center"><Badge variant="outline" className="mr-2">•</Badge> Breaking space news and discoveries</li>
-                  <li className="flex items-center"><Badge variant="outline" className="mr-2">•</Badge> In-depth analysis of space missions</li>
-                  <li className="flex items-center"><Badge variant="outline" className="mr-2">•</Badge> Educational STEM content</li>
-                  <li className="flex items-center"><Badge variant="outline" className="mr-2">•</Badge> Astronomy guides and sky maps</li>
-                  <li className="flex items-center"><Badge variant="outline" className="mr-2">•</Badge> Launch tracking and countdowns</li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-cyan-400 mb-3">Community Features</h3>
-                <ul className="space-y-2">
-                  <li className="flex items-center"><Badge variant="outline" className="mr-2">•</Badge> Interactive discussion forums</li>
-                  <li className="flex items-center"><Badge variant="outline" className="mr-2">•</Badge> User comments and engagement</li>
-                  <li className="flex items-center"><Badge variant="outline" className="mr-2">•</Badge> Premium membership benefits</li>
-                  <li className="flex items-center"><Badge variant="outline" className="mr-2">•</Badge> Career opportunities in STEM</li>
-                  <li className="flex items-center"><Badge variant="outline" className="mr-2">•</Badge> Newsletter and updates</li>
-                </ul>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Company Information */}
-        <div className="grid md:grid-cols-2 gap-8 mb-12">
-          <Card className="bg-gray-800/50 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-xl text-white flex items-center">
-                <ShieldIcon className="w-5 h-5 mr-2 text-green-400" />
-                Trust & Transparency
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-gray-300 space-y-3">
-              <p>We are committed to maintaining the highest standards of journalistic integrity and transparency in our operations.</p>
-              <ul className="space-y-1 text-sm">
-                <li>• Rigorous fact-checking processes</li>
-                <li>• Clear editorial guidelines and standards</li>
-                <li>• Transparent advertising and sponsorship policies</li>
-                <li>• Commitment to user privacy and data protection</li>
-              </ul>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gray-800/50 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-xl text-white flex items-center">
-                <HeartIcon className="w-5 h-5 mr-2 text-red-400" />
-                Our Commitment
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-gray-300 space-y-3">
-              <p>We're dedicated to inspiring curiosity about the universe and supporting the global space community.</p>
-              <ul className="space-y-1 text-sm">
-                <li>• Supporting STEM education initiatives</li>
-                <li>• Promoting diversity in space sciences</li>
-                <li>• Environmental responsibility in space exploration</li>
-                <li>• Accessible content for all audiences</li>
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Contact Information */}
-        <Card className="bg-gray-800/50 border-gray-700 mb-8">
-          <CardHeader>
-            <CardTitle className="text-2xl text-white">Contact Information</CardTitle>
-          </CardHeader>
-          <CardContent className="text-gray-300">
-            <div className="grid md:grid-cols-2 gap-8">
-              <div>
-                <h3 className="text-lg font-semibold text-cyan-400 mb-4">General Contact</h3>
-                <ul className="space-y-2">
-                  <li><strong>Email:</strong> contact@proximareport.com</li>
-                  <li><strong>Press Inquiries:</strong> press@proximareport.com</li>
-                  <li><strong>Editorial:</strong> editorial@proximareport.com</li>
-                  <li><strong>Support:</strong> support@proximareport.com</li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-cyan-400 mb-4">Business Contact</h3>
-                <ul className="space-y-2">
-                  <li><strong>Advertising:</strong> ads@proximareport.com</li>
-                  <li><strong>Partnerships:</strong> partnerships@proximareport.com</li>
-                  <li><strong>Legal:</strong> legal@proximareport.com</li>
-                  <li><strong>Privacy:</strong> privacy@proximareport.com</li>
-                </ul>
-              </div>
-            </div>
-            
-            <Separator className="bg-gray-600 my-6" />
-            
-            <div className="text-center">
-              <p className="text-gray-400 mb-4">
-                Mailing Address: Proxima Report, [Your Street Address], [City, State, ZIP Code]
-              </p>
-              <div className="flex justify-center space-x-4">
-                <Button asChild variant="outline">
-                  <Link href="/contact">Contact Form</Link>
-                </Button>
-                <Button asChild variant="outline">
-                  <Link href="/subscribe">Subscribe to Newsletter</Link>
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Compliance Information */}
-        <Card className="bg-gray-700/50 border-gray-600">
-          <CardHeader>
-            <CardTitle className="text-lg text-white">Legal & Compliance</CardTitle>
-          </CardHeader>
-          <CardContent className="text-gray-300">
-            <p className="text-sm mb-4">
-              Proxima Report operates in compliance with all applicable laws and regulations. We are committed to 
-              protecting user privacy and maintaining transparent business practices.
+            <p className="text-lg text-gray-300 leading-relaxed">
+              Whether you're a space enthusiast, researcher, educator, or simply curious about the cosmos, 
+              we provide the tools and information you need to stay connected with humanity's greatest adventure.
             </p>
-            <div className="flex flex-wrap gap-2">
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/privacy">Privacy Policy</Link>
-              </Button>
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/terms">Terms of Service</Link>
-              </Button>
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/cookies">Cookie Policy</Link>
-              </Button>
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/sitemap">Sitemap</Link>
-              </Button>
-            </div>
-            
-            <div className="mt-4 p-3 bg-gray-800/50 rounded-lg">
-              <p className="text-xs text-gray-400">
-                <strong>Advertising Disclosure:</strong> This website displays advertisements from Google Ads and other advertising networks. 
-                We may receive compensation when you click on ads or make purchases through advertiser links. This helps support our mission 
-                to provide free, high-quality space and science content to our readers.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
+        {/* Values Section */}
+        <div className="mb-16">
+          <h2 className="text-3xl font-bold text-white text-center mb-12">Our Values</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {values.map((value, index) => (
+              <div key={index} className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-purple-900/30 text-center">
+                <div className="flex justify-center mb-4">
+                  {value.icon}
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-3">{value.title}</h3>
+                <p className="text-gray-400 text-sm">{value.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Founders Section */}
+        <div className="mb-16">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-white mb-4">Our Founders</h2>
+            <p className="text-lg text-gray-300 max-w-2xl mx-auto">
+              Click for news. Stay for the “how have I never heard this before?!” space facts.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            {founders.map((founder, index) => (
+              <div key={index} className="bg-gray-900/60 backdrop-blur-sm rounded-xl overflow-hidden border border-purple-900/30 hover:border-purple-800/50 transition-all duration-300">
+                <div className="relative">
+                  <div className="w-full h-56 bg-gradient-to-br from-purple-600/20 to-violet-700/20 flex items-center justify-center">
+                    <div className="w-28 h-28 rounded-full bg-gradient-to-r from-purple-500 to-violet-700 flex items-center justify-center text-2xl font-bold text-white shadow-lg">
+                      {founder.name.split(' ').map(n => n[0]).join('')}
+                    </div>
+                  </div>
+                  <div className="absolute top-4 right-4">
+                    <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold px-2 py-1 rounded-full">
+                      Founder
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="p-6">
+                  <h3 className="text-xl font-bold text-white mb-1">{founder.name}</h3>
+                  <p className="text-purple-400 text-sm font-medium mb-3">{founder.role}</p>
+                  <p className="text-gray-400 text-sm mb-4 line-clamp-4">{founder.bio}</p>
+                  
+                  <div className="mb-4">
+                    <h4 className="text-white text-sm font-medium mb-2">Expertise:</h4>
+                    <div className="flex flex-wrap gap-1">
+                      {founder.expertise.map((skill, skillIndex) => (
+                        <span key={skillIndex} className="bg-purple-950/50 text-purple-300 text-xs px-2 py-1 rounded-full">
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    {founder.social_linkedin && (
+                      <a 
+                        href={founder.social_linkedin} 
+                        className="text-gray-400 hover:text-blue-400 transition-colors"
+                        aria-label="LinkedIn"
+                      >
+                        <LinkedinIcon className="h-4 w-4" />
+                      </a>
+                    )}
+                    {founder.social_twitter && (
+                      <a 
+                        href={founder.social_twitter} 
+                        className="text-gray-400 hover:text-blue-400 transition-colors"
+                        aria-label="Twitter"
+                      >
+                        <TwitterIcon className="h-4 w-4" />
+                      </a>
+                    )}
+                    {founder.social_email && (
+                      <a 
+                        href={`mailto:${founder.social_email}`} 
+                        className="text-gray-400 hover:text-purple-400 transition-colors"
+                        aria-label="Email"
+                      >
+                        <MailIcon className="h-4 w-4" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Team Section */}
+        <div className="mb-16">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-white mb-4">Our Team</h2>
+            <p className="text-lg text-gray-300 max-w-2xl mx-auto">
+              Our talented team of scientists, engineers, designers, and communicators work together 
+              to bring you the most comprehensive space data platform in the world.
+            </p>
+          </div>
+          
+          {isLoading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto mb-4"></div>
+              <p className="text-gray-300">Loading team members...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <p className="text-red-400 mb-4">Failed to load team members</p>
+              <p className="text-gray-400 text-sm">{error.message}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {regularTeam.map((member, index) => (
+              <div key={index} className="bg-gray-900/60 backdrop-blur-sm rounded-xl overflow-hidden border border-purple-900/30 hover:border-purple-800/50 transition-all duration-300">
+                <div className="relative">
+                  <div className="w-full h-48 bg-gradient-to-br from-purple-600/20 to-violet-700/20 flex items-center justify-center">
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-r from-purple-500 to-violet-700 flex items-center justify-center text-2xl font-bold text-white">
+                      {member.name.split(' ').map(n => n[0]).join('')}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-6">
+                  <h3 className="text-xl font-bold text-white mb-1">{member.name}</h3>
+                  <p className="text-purple-400 text-sm font-medium mb-3">{member.role}</p>
+                  <p className="text-gray-400 text-sm mb-4 line-clamp-3">{member.bio}</p>
+                  
+                  <div className="mb-4">
+                    <h4 className="text-white text-sm font-medium mb-2">Expertise:</h4>
+                    <div className="flex flex-wrap gap-1">
+                      {member.expertise.map((skill, skillIndex) => (
+                        <span key={skillIndex} className="bg-purple-950/50 text-purple-300 text-xs px-2 py-1 rounded-full">
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    {member.social_linkedin && (
+                      <a 
+                        href={member.social_linkedin} 
+                        className="text-gray-400 hover:text-blue-400 transition-colors"
+                        aria-label="LinkedIn"
+                      >
+                        <LinkedinIcon className="h-4 w-4" />
+                      </a>
+                    )}
+                    {member.social_twitter && (
+                      <a 
+                        href={member.social_twitter} 
+                        className="text-gray-400 hover:text-blue-400 transition-colors"
+                        aria-label="Twitter"
+                      >
+                        <TwitterIcon className="h-4 w-4" />
+                      </a>
+                    )}
+                    {member.social_email && (
+                      <a 
+                        href={`mailto:${member.social_email}`} 
+                        className="text-gray-400 hover:text-purple-400 transition-colors"
+                        aria-label="Email"
+                      >
+                        <MailIcon className="h-4 w-4" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          )}
+        </div>
+
+        {/* Technology Stack */}
+        <div className="bg-gray-900/60 backdrop-blur-sm rounded-xl p-8 border border-purple-900/30 mb-16">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl font-bold text-white text-center mb-8">Our Technology</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="text-center">
+                <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <GlobeIcon className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-2">Real-time APIs</h3>
+                <p className="text-gray-400 text-sm">
+                  We integrate with NASA, SpaceX, ESA, and other space agencies to provide 
+                  real-time data on launches, weather, and astronomical events.
+                </p>
+              </div>
+              
+              <div className="text-center">
+                <div className="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <StarIcon className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-2">Modern Stack</h3>
+                <p className="text-gray-400 text-sm">
+                  Built with React, TypeScript, and Node.js for a fast, reliable, 
+                  and scalable user experience across all devices.
+                </p>
+              </div>
+              
+              <div className="text-center">
+                <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <TrendingUpIcon className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-2">Data Analytics</h3>
+                <p className="text-gray-400 text-sm">
+                  Advanced analytics and visualization tools help you understand 
+                  complex space data and discover meaningful patterns.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Contact CTA */}
+        <div className="text-center">
+          <div className="bg-gradient-to-r from-purple-600/20 to-violet-700/20 rounded-xl p-8 border border-purple-900/30">
+            <h2 className="text-3xl font-bold text-white mb-4">Join Our Mission</h2>
+            <p className="text-lg text-gray-300 mb-6">
+              Interested in collaborating, have feedback, or want to learn more about our platform?
+            </p>
+            <div className="flex justify-center gap-4">
+              <a 
+                href="/contact" 
+                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg transition-all duration-300 font-medium"
+              >
+                Get In Touch
+              </a>
+              <a 
+                href="https://store.proximareport.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="border border-purple-600 text-purple-400 hover:bg-purple-600 hover:text-white px-6 py-3 rounded-lg transition-all duration-300 flex items-center gap-2"
+              >
+                <ShoppingCartIcon className="h-4 w-4" />
+                Shop Now
+              </a>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
-};
-
-export default About; 
+} 

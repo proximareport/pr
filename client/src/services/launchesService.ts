@@ -189,6 +189,121 @@ export interface NearEarthObject {
   }>;
 }
 
+export interface MarsWeather {
+  sol: number;
+  season: string;
+  min_temp: number;
+  max_temp: number;
+  pressure: number;
+  wind_speed: number;
+  wind_direction: string;
+  sunrise: string;
+  sunset: string;
+  atmo_opacity: string;
+}
+
+export interface MoonPhase {
+  phase: number;
+  illumination: number;
+  phase_name: string;
+  moon_age: number;
+  distance_km: number;
+  angular_diameter: number;
+  sun_distance: number;
+  sun_angular_diameter: number;
+}
+
+export interface SpaceWeatherData {
+  time_tag: string;
+  solar_wind_speed: number;
+  solar_wind_density: number;
+  solar_wind_temperature: number;
+  magnetic_field: number;
+  kp_index: number;
+  aurora_activity: string;
+  solar_flare_probability: string;
+}
+
+export interface Satellite {
+  satid: number;
+  satname: string;
+  intDesignator: string;
+  launchDate: string;
+  satlat: number;
+  satlng: number;
+  satalt: number;
+}
+
+export interface Exoplanet {
+  pl_name: string;
+  hostname: string;
+  sy_dist: number;
+  pl_orbper: number;
+  pl_bmasse: number;
+  pl_rade: number;
+  st_teff: number;
+  disc_year: number;
+  discoverymethod: string;
+}
+
+export interface SolarActivity {
+  sunspot_number: number;
+  solar_flux: number;
+  ap_index: number;
+  solar_cycle_progress: number;
+  solar_wind_speed: number;
+  coronal_mass_ejections: number;
+}
+
+export interface HubbleImage {
+  id: string;
+  name: string;
+  description: string;
+  image_files: Array<{
+    file_url: string;
+    file_size: number;
+  }>;
+  mission: string;
+  collection: string;
+  date_created: string;
+}
+
+export interface Earthquake {
+  id: string;
+  properties: {
+    mag: number;
+    place: string;
+    time: number;
+    updated: number;
+    tz: number;
+    url: string;
+    detail: string;
+    felt: number;
+    cdi: number;
+    mmi: number;
+    alert: string;
+    status: string;
+    tsunami: number;
+    sig: number;
+    net: string;
+    code: string;
+    ids: string;
+    sources: string;
+    types: string;
+    nst: number;
+    dmin: number;
+    rms: number;
+    gap: number;
+    magType: string;
+    type: string;
+    title: string;
+  };
+  geometry: {
+    type: string;
+    coordinates: [number, number, number];
+  };
+}
+
 export function useSpaceXUpcomingLaunches() {
   return useQuery<SpaceXLaunch[]>({
     queryKey: ['spacex-upcoming'],
@@ -418,7 +533,7 @@ export function useNASAAPOD() {
 }
 
 export function useSpaceWeather() {
-  return useQuery<any[]>({
+  return useQuery<SpaceWeatherData[]>({
     queryKey: ['space-weather'],
     queryFn: async () => {
       const response = await fetch('/api/nasa/space-weather');
@@ -440,6 +555,144 @@ export function useNearEarthObjects() {
       }
       return response.json();
     },
+  });
+}
+
+// NEW API HOOKS FOR ALL THE ADDITIONAL DATA SOURCES
+
+export function useMarsWeather() {
+  return useQuery<MarsWeather>({
+    queryKey: ['mars-weather'],
+    queryFn: async () => {
+      const response = await fetch('/api/nasa/mars-weather');
+      if (!response.ok) {
+        throw new Error('Failed to fetch Mars weather data');
+      }
+      return response.json();
+    },
+    staleTime: 30 * 60 * 1000, // 30 minutes
+  });
+}
+
+export function useMoonPhase() {
+  return useQuery<MoonPhase>({
+    queryKey: ['moon-phase'],
+    queryFn: async () => {
+      const response = await fetch('/api/astronomy/moon-phase');
+      if (!response.ok) {
+        throw new Error('Failed to fetch moon phase data');
+      }
+      return response.json();
+    },
+    staleTime: 60 * 60 * 1000, // 1 hour
+  });
+}
+
+export function useISSPassPredictions(lat?: number, lon?: number) {
+  return useQuery<{ info: any; passes: Array<{ risetime: number; duration: number; mag: number }> }>({
+    queryKey: ['iss-pass-predictions', lat, lon],
+    queryFn: async () => {
+      if (!lat || !lon) {
+        // Use default location (New York) if coordinates not provided
+        lat = 40.7128;
+        lon = -74.0060;
+      }
+      const response = await fetch(`/api/satellites/iss-passes?lat=${lat}&lon=${lon}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch ISS pass predictions');
+      }
+      return response.json();
+    },
+    staleTime: 60 * 60 * 1000, // 1 hour
+  });
+}
+
+export function useSatelliteTracking() {
+  return useQuery<Satellite[]>({
+    queryKey: ['satellite-tracking'],
+    queryFn: async () => {
+      const response = await fetch('/api/satellites/tracking');
+      if (!response.ok) {
+        throw new Error('Failed to fetch satellite tracking data');
+      }
+      return response.json();
+    },
+    refetchInterval: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+export function useExoplanets() {
+  return useQuery<Exoplanet[]>({
+    queryKey: ['exoplanets'],
+    queryFn: async () => {
+      const response = await fetch('/api/nasa/exoplanets');
+      if (!response.ok) {
+        throw new Error('Failed to fetch exoplanet data');
+      }
+      return response.json();
+    },
+    staleTime: 24 * 60 * 60 * 1000, // 24 hours
+  });
+}
+
+export function useSolarActivity() {
+  return useQuery<SolarActivity>({
+    queryKey: ['solar-activity'],
+    queryFn: async () => {
+      const response = await fetch('/api/space-weather/solar-activity');
+      if (!response.ok) {
+        throw new Error('Failed to fetch solar activity data');
+      }
+      return response.json();
+    },
+    refetchInterval: 15 * 60 * 1000, // 15 minutes
+  });
+}
+
+export function useHubbleImages() {
+  return useQuery<HubbleImage[]>({
+    queryKey: ['hubble-images'],
+    queryFn: async () => {
+      const response = await fetch('/api/nasa/hubble-images');
+      if (!response.ok) {
+        throw new Error('Failed to fetch Hubble images');
+      }
+      return response.json();
+    },
+    staleTime: 60 * 60 * 1000, // 1 hour
+  });
+}
+
+export function useEarthquakeData() {
+  return useQuery<{ features: Earthquake[] }>({
+    queryKey: ['earthquake-data'],
+    queryFn: async () => {
+      const response = await fetch('/api/earth/earthquakes');
+      if (!response.ok) {
+        throw new Error('Failed to fetch earthquake data');
+      }
+      return response.json();
+    },
+    refetchInterval: 30 * 60 * 1000, // 30 minutes
+  });
+}
+
+export function useAdvancedSpaceWeather() {
+  return useQuery<{
+    aurora_forecast: any;
+    solar_wind: any;
+    magnetic_field: any;
+    radiation_belt: any;
+  }>({
+    queryKey: ['advanced-space-weather'],
+    queryFn: async () => {
+      const response = await fetch('/api/space-weather/advanced');
+      if (!response.ok) {
+        throw new Error('Failed to fetch advanced space weather data');
+      }
+      return response.json();
+    },
+    refetchInterval: 15 * 60 * 1000, // 15 minutes
   });
 }
 

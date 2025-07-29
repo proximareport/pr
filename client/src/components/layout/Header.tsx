@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MenuIcon, LogOutIcon, UserIcon, SettingsIcon, ShieldIcon, LineChartIcon, Search } from "lucide-react";
+import { MenuIcon, LogOutIcon, UserIcon, SettingsIcon, ShieldIcon, LineChartIcon, Search, ChevronDownIcon, ShoppingCartIcon, ExternalLinkIcon, BriefcaseIcon, MegaphoneIcon } from "lucide-react";
 import { SearchPopup } from "@/components/search/SearchPopup";
 
 // Import logo images
@@ -18,13 +18,15 @@ function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const navLinks = [
-    { name: "Latest", href: "/" },
-    { name: "Launches", href: "/launches" },
     { name: "Mission Control", href: "/missioncontrol" },
     { name: "Gallery", href: "/gallery" },
-    { name: "Jobs", href: "/jobs" },
-    { name: "Pricing", href: "/pricing" },
-    { name: "Advertise", href: "/advertise" },
+    { name: "About", href: "/about" },
+  ];
+
+  const businessLinks = [
+    { name: "Jobs", href: "/jobs", icon: <BriefcaseIcon className="h-4 w-4" /> },
+    { name: "Advertise", href: "/advertise", icon: <MegaphoneIcon className="h-4 w-4" /> },
+    { name: "Pricing", href: "/pricing", icon: <ShoppingCartIcon className="h-4 w-4" /> },
   ];
 
   const isActive = (path: string) => location === path;
@@ -61,6 +63,40 @@ function Header() {
                   {link.name}
                 </Link>
               ))}
+              
+              {/* Business Services Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className={`flex items-center text-sm font-medium transition-colors ${
+                    businessLinks.some(link => isActive(link.href)) ? "text-purple-400" : "text-white/90 hover:text-purple-400"
+                  }`}>
+                    Services
+                    <ChevronDownIcon className="ml-1 h-3 w-3" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center">
+                  {businessLinks.map((link) => (
+                    <DropdownMenuItem key={link.name} asChild>
+                      <Link href={link.href} className="flex items-center">
+                        {link.icon}
+                        <span className="ml-2">{link.name}</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              {/* Store Button */}
+              <a 
+                href="https://store.proximareport.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 bg-gradient-to-r from-purple-600 to-violet-700 hover:from-purple-700 hover:to-violet-800 text-white px-3 py-1.5 rounded-lg transition-all duration-300 shadow-lg shadow-purple-500/25 text-sm font-medium"
+              >
+                <ShoppingCartIcon className="h-4 w-4" />
+                Store
+                <ExternalLinkIcon className="h-3 w-3" />
+              </a>
             </nav>
           </div>
           
@@ -175,6 +211,37 @@ function Header() {
                           {link.name}
                         </Link>
                       ))}
+                      
+                      {/* Business Services */}
+                      <div>
+                        <div className="text-sm font-medium text-gray-400 mb-3">Services</div>
+                        <div className="flex flex-col space-y-3 ml-4">
+                          {businessLinks.map((link) => (
+                            <Link 
+                              key={link.name} 
+                              href={link.href}
+                              className={`text-md font-medium transition-colors flex items-center ${
+                                isActive(link.href) ? "text-purple-400" : "text-white/90 hover:text-purple-400"
+                              }`}
+                            >
+                              {link.icon}
+                              <span className="ml-2">{link.name}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Store Button Mobile */}
+                      <a 
+                        href="https://store.proximareport.com" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-violet-700 hover:from-purple-700 hover:to-violet-800 text-white px-4 py-3 rounded-lg transition-all duration-300 shadow-lg shadow-purple-500/25 font-medium"
+                      >
+                        <ShoppingCartIcon className="h-5 w-5" />
+                        Visit Store
+                        <ExternalLinkIcon className="h-4 w-4" />
+                      </a>
                     </nav>
                     
                     <div className="mt-8 pt-6 border-t border-white/10">

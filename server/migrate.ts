@@ -211,3 +211,32 @@ main().catch((error) => {
   console.error('Error creating database tables:', error);
   process.exit(1);
 });
+
+async function runRoleMigration() {
+  console.log('Running role-based features migration...');
+  
+  try {
+    // Update specific users to admin role
+    await db.execute(sql`UPDATE users SET role = 'admin' WHERE username IN ('sam', 'admin', 'tyler', 'jack')`);
+    console.log('✅ Updated admin users');
+
+    // Add new columns if they don't exist
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_status VARCHAR(50) DEFAULT 'inactive'`);
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_expires_at TIMESTAMP WITH TIME ZONE`);
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_cancel_at_period_end BOOLEAN DEFAULT false`);
+    console.log('✅ Added subscription columns');
+
+    // Set admin users to pro tier
+    await db.execute(sql`UPDATE users SET membership_tier = 'pro' WHERE role = 'admin'`);
+    console.log('✅ Updated admin membership tiers');
+
+    console.log('🎉 Role migration completed successfully!');
+  } catch (error) {
+    console.error('❌ Migration failed:', error);
+  }
+}
+
+// Run if this file is executed directly
+if (require.main === module) {
+  runRoleMigration().then(() => process.exit(0));
+}

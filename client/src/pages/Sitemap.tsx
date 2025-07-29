@@ -50,85 +50,72 @@ interface SitemapData {
     slug: string;
     count: number;
   }>;
-  jobListings: Array<{
-    id: number;
-    title: string;
-    company: string;
-    location: string;
-    createdAt: string;
-  }>;
-  stats: {
-    totalArticles: number;
-    totalCategories: number;
-    totalTags: number;
-    totalJobs: number;
-    lastUpdated: string;
-  };
 }
 
 const Sitemap: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
 
   const { data: sitemapData, isLoading, error } = useQuery<SitemapData>({
-    queryKey: ['sitemap-data'],
+    queryKey: ['sitemap'],
     queryFn: async () => {
       const response = await fetch('/api/sitemap-data');
       if (!response.ok) {
         throw new Error('Failed to fetch sitemap data');
       }
       return response.json();
-    },
+    }
   });
 
-  // Static navigation items
-  const mainNavigation = [
-    { name: 'Home', href: '/', icon: HomeIcon, description: 'Latest space news and featured articles' },
-    { name: 'Articles', href: '/articles', icon: FileTextIcon, description: 'Browse all published articles' },
-    { name: 'Launches', href: '/launches', icon: RocketIcon, description: 'Upcoming and past space launches' },
-    { name: 'Astronomy', href: '/astronomy', icon: StarIcon, description: 'Astronomical events and sky maps' },
-    { name: 'Mission Control', href: '/missioncontrol', icon: MonitorIcon, description: 'Space mission tracking and data' },
-    { name: 'Jobs', href: '/jobs', icon: BriefcaseIcon, description: 'Space industry career opportunities' },
-    { name: 'Gallery', href: '/gallery', icon: ImageIcon, description: 'Space photography and media gallery' },
+  // Main navigation pages
+  const mainPages = [
+    { name: 'Home', path: '/', icon: HomeIcon, description: 'Main landing page with latest articles' },
+    { name: 'About', path: '/about', icon: UserIcon, description: 'Learn about our mission and team' },
+    { name: 'Contact', path: '/contact', icon: UsersIcon, description: 'Get in touch with our team' },
+    { name: 'Subscribe', path: '/subscribe', icon: StarIcon, description: 'Join our newsletter and community' },
+    { name: 'Gallery', path: '/gallery', icon: ImageIcon, description: 'Stunning space photography' },
+    { name: 'Astronomy Portal', path: '/astronomy', icon: RocketIcon, description: 'Interactive astronomy tools and sky maps' },
+    { name: 'Jobs', path: '/jobs', icon: BriefcaseIcon, description: 'Career opportunities in STEM and space' },
+    { name: 'Privacy Policy', path: '/privacy', icon: ShieldCheckIcon, description: 'How we protect your privacy' },
+    { name: 'Terms of Service', path: '/terms', icon: SettingsIcon, description: 'Terms and conditions' },
+    { name: 'Cookie Policy', path: '/cookies', icon: MonitorIcon, description: 'Our cookie usage policy' }
   ];
 
+  // User pages
   const userPages = [
-    { name: 'Login', href: '/login', icon: UserIcon, description: 'Sign in to your account' },
-    { name: 'Register', href: '/register', icon: UsersIcon, description: 'Create a new account' },
-    { name: 'Profile', href: '/profile', icon: UserIcon, description: 'View and edit your profile' },
-    { name: 'Edit Profile', href: '/edit-profile', icon: SettingsIcon, description: 'Update your profile information' },
-    { name: 'Subscribe', href: '/subscribe', icon: Newspaper, description: 'Subscribe to our newsletter' },
+    { name: 'Login', path: '/login', icon: UserIcon, description: 'Sign in to your account' },
+    { name: 'Register', path: '/register', icon: UsersIcon, description: 'Create a new account' },
+    { name: 'Profile', path: '/profile', icon: UserIcon, description: 'View and edit your profile' },
+    { name: 'Edit Profile', path: '/profile/edit', icon: SettingsIcon, description: 'Update your account settings' }
   ];
 
-  const businessPages = [
-    { name: 'Advertise', href: '/advertise', icon: Globe, description: 'Advertise with Proxima Report' },
-    { name: 'Advertiser Dashboard', href: '/advertiser-dashboard', icon: SettingsIcon, description: 'Manage your advertisements' },
+  // Special pages
+  const specialPages = [
+    { name: 'Mission Control', path: '/mission-control', icon: RocketIcon, description: 'User dashboard and settings' },
+    { name: 'Newsletter Verify', path: '/newsletter/verify', icon: CalendarIcon, description: 'Email verification page' },
+    { name: 'Newsletter Unsubscribe', path: '/newsletter/unsubscribe', icon: CalendarIcon, description: 'Unsubscribe from newsletter' },
+    { name: 'Advertise', path: '/advertise', icon: Newspaper, description: 'Advertising opportunities' },
+    { name: 'Advertiser Dashboard', path: '/advertiser-dashboard', icon: SettingsIcon, description: 'Manage your advertisements' },
+    { name: 'Advertise Success', path: '/advertise-success', icon: StarIcon, description: 'Advertisement submission confirmation' },
+    { name: 'Subscription Success', path: '/subscription-success', icon: StarIcon, description: 'Subscription confirmation' }
   ];
 
-  const supportPages = [
-    { name: 'Newsletter Verify', href: '/newsletter/verify', icon: ShieldCheckIcon, description: 'Verify your newsletter subscription' },
-    { name: 'Newsletter Unsubscribe', href: '/newsletter/unsubscribe', icon: ShieldCheckIcon, description: 'Unsubscribe from newsletter' },
-  ];
-
-  const filteredArticles = sitemapData?.articles?.filter(article => {
-    const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         article.slug.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || article.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  }) || [];
-
-  const categories = sitemapData?.categories || [];
-  const tags = sitemapData?.tags || [];
-  const jobListings = sitemapData?.jobListings || [];
-  const stats = sitemapData?.stats;
+  // Filter function for search
+  const filterItems = (items: any[], searchTerm: string) => {
+    if (!searchTerm) return items;
+    return items.filter(item => 
+      item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  };
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-12">
-        <div className="container mx-auto px-4">
-          <div className="text-center text-white">
-            <h1 className="text-4xl font-bold mb-4">Sitemap</h1>
-            <p className="text-red-400">Error loading sitemap data. Please try again later.</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/40 to-black relative overflow-hidden">
+        <div className="relative z-10 container mx-auto px-4 py-12 max-w-6xl">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-white mb-4">Sitemap</h1>
+            <p className="text-white/70">Error loading sitemap data. Please try again later.</p>
           </div>
         </div>
       </div>
@@ -136,136 +123,78 @@ const Sitemap: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-12">
-      <div className="container mx-auto px-4">
-        {/* Header */}
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/40 to-black relative overflow-hidden">
+      {/* Geometric ambient effects */}
+      <div className="absolute inset-0">
+        <div className="absolute top-20 left-10 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-40 right-20 w-24 h-24 bg-violet-600/10 rounded-full blur-2xl animate-pulse delay-1000"></div>
+        <div className="absolute bottom-32 left-1/4 w-40 h-40 bg-purple-600/10 rounded-full blur-3xl animate-pulse delay-2000"></div>
+        <div className="absolute top-1/2 right-1/3 w-28 h-28 bg-indigo-500/10 rounded-full blur-2xl animate-pulse delay-3000"></div>
+      </div>
+
+      <div className="relative z-10 container mx-auto px-4 py-12 max-w-6xl">
+        
+        {/* Hero Section */}
         <div className="text-center mb-12">
-          <div className="flex items-center justify-center mb-4">
-            <MapIcon className="w-12 h-12 text-cyan-400 mr-4" />
-            <h1 className="text-4xl font-bold text-white">Sitemap</h1>
-          </div>
-          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-            Explore all pages and content on Proxima Report - your gateway to space exploration
+          <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
+            Site <span className="text-purple-400">Map</span>
+          </h1>
+          <p className="text-xl text-white/80 max-w-3xl mx-auto leading-relaxed mb-8">
+            Navigate through all sections of Proxima Report. Discover articles, features, and resources 
+            for your space exploration journey.
           </p>
-          {stats && (
-            <div className="mt-6 flex justify-center space-x-6 text-sm text-gray-400">
-              <span>{stats.totalArticles} Articles</span>
-              <span>{stats.totalCategories} Categories</span>
-              <span>{stats.totalTags} Tags</span>
-              <span>{stats.totalJobs} Jobs</span>
-              <span>Updated: {new Date(stats.lastUpdated).toLocaleDateString()}</span>
+
+          {/* Search */}
+          <div className="max-w-md mx-auto">
+            <div className="relative">
+              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/50" />
+              <Input
+                type="text"
+                placeholder="Search sitemap..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-white/10 border-purple-500/30 text-white placeholder-white/50 focus:border-purple-400"
+              />
             </div>
-          )}
+          </div>
         </div>
 
-        <Tabs defaultValue="pages" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 bg-gray-800 border-gray-700">
-            <TabsTrigger value="pages" className="text-white">Main Pages</TabsTrigger>
-            <TabsTrigger value="articles" className="text-white">Articles</TabsTrigger>
-            <TabsTrigger value="categories" className="text-white">Categories</TabsTrigger>
-            <TabsTrigger value="tags" className="text-white">Tags</TabsTrigger>
-            <TabsTrigger value="jobs" className="text-white">Jobs</TabsTrigger>
+        <Tabs defaultValue="main" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 mb-8 bg-white/10 border border-purple-500/20">
+            <TabsTrigger value="main" className="data-[state=active]:bg-purple-600 text-white">Main Pages</TabsTrigger>
+            <TabsTrigger value="articles" className="data-[state=active]:bg-purple-600 text-white">Articles</TabsTrigger>
+            <TabsTrigger value="categories" className="data-[state=active]:bg-purple-600 text-white">Categories</TabsTrigger>
+            <TabsTrigger value="user" className="data-[state=active]:bg-purple-600 text-white">User & Special</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="pages" className="space-y-8">
-            {/* Main Navigation */}
-            <Card className="bg-gray-800 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center">
-                  <HomeIcon className="w-5 h-5 mr-2 text-cyan-400" />
+          {/* Main Pages */}
+          <TabsContent value="main">
+            <Card className="bg-white/5 backdrop-blur-sm border border-purple-500/20">
+              <CardHeader className="border-b border-purple-500/20 bg-purple-900/10">
+                <CardTitle className="text-2xl text-white flex items-center">
+                  <HomeIcon className="w-6 h-6 mr-2 text-purple-400" />
                   Main Navigation
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {mainNavigation.map((item) => (
-                    <Link key={item.href} href={item.href}>
-                      <div className="flex items-center p-4 rounded-lg border border-gray-600 hover:border-cyan-400 transition-colors cursor-pointer group">
-                        <item.icon className="w-5 h-5 text-cyan-400 mr-3 group-hover:scale-110 transition-transform" />
-                        <div>
-                          <h3 className="text-white font-medium">{item.name}</h3>
-                          <p className="text-sm text-gray-400">{item.description}</p>
-                        </div>
-                        <ChevronRightIcon className="w-4 h-4 text-gray-400 ml-auto group-hover:text-cyan-400" />
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* User Pages */}
-            <Card className="bg-gray-800 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center">
-                  <UserIcon className="w-5 h-5 mr-2 text-cyan-400" />
-                  User Pages
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {userPages.map((item) => (
-                    <Link key={item.href} href={item.href}>
-                      <div className="flex items-center p-4 rounded-lg border border-gray-600 hover:border-cyan-400 transition-colors cursor-pointer group">
-                        <item.icon className="w-5 h-5 text-cyan-400 mr-3 group-hover:scale-110 transition-transform" />
-                        <div>
-                          <h3 className="text-white font-medium">{item.name}</h3>
-                          <p className="text-sm text-gray-400">{item.description}</p>
-                        </div>
-                        <ChevronRightIcon className="w-4 h-4 text-gray-400 ml-auto group-hover:text-cyan-400" />
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Business Pages */}
-            <Card className="bg-gray-800 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center">
-                  <Globe className="w-5 h-5 mr-2 text-cyan-400" />
-                  Business Pages
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {businessPages.map((item) => (
-                    <Link key={item.href} href={item.href}>
-                      <div className="flex items-center p-4 rounded-lg border border-gray-600 hover:border-cyan-400 transition-colors cursor-pointer group">
-                        <item.icon className="w-5 h-5 text-cyan-400 mr-3 group-hover:scale-110 transition-transform" />
-                        <div>
-                          <h3 className="text-white font-medium">{item.name}</h3>
-                          <p className="text-sm text-gray-400">{item.description}</p>
-                        </div>
-                        <ChevronRightIcon className="w-4 h-4 text-gray-400 ml-auto group-hover:text-cyan-400" />
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Support Pages */}
-            <Card className="bg-gray-800 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center">
-                  <ShieldCheckIcon className="w-5 h-5 mr-2 text-cyan-400" />
-                  Support Pages
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {supportPages.map((item) => (
-                    <Link key={item.href} href={item.href}>
-                      <div className="flex items-center p-4 rounded-lg border border-gray-600 hover:border-cyan-400 transition-colors cursor-pointer group">
-                        <item.icon className="w-5 h-5 text-cyan-400 mr-3 group-hover:scale-110 transition-transform" />
-                        <div>
-                          <h3 className="text-white font-medium">{item.name}</h3>
-                          <p className="text-sm text-gray-400">{item.description}</p>
-                        </div>
-                        <ChevronRightIcon className="w-4 h-4 text-gray-400 ml-auto group-hover:text-cyan-400" />
-                      </div>
+              <CardContent className="pt-6">
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filterItems(mainPages, searchTerm).map((page) => (
+                    <Link key={page.path} href={page.path}>
+                      <Card className="bg-white/5 border border-purple-500/20 hover:border-purple-400/40 transition-all duration-300 cursor-pointer h-full">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <page.icon className="w-5 h-5 text-purple-400 mt-1 flex-shrink-0" />
+                            <div>
+                              <h3 className="font-semibold text-white mb-1">{page.name}</h3>
+                              <p className="text-sm text-white/70 leading-relaxed">{page.description}</p>
+                              <div className="flex items-center mt-2 text-xs text-purple-300">
+                                <span>{page.path}</span>
+                                <ExternalLinkIcon className="w-3 h-3 ml-1" />
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
                     </Link>
                   ))}
                 </div>
@@ -273,62 +202,46 @@ const Sitemap: React.FC = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="articles" className="space-y-6">
-            <Card className="bg-gray-800 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center">
-                  <FileTextIcon className="w-5 h-5 mr-2 text-cyan-400" />
+          {/* Articles */}
+          <TabsContent value="articles">
+            <Card className="bg-white/5 backdrop-blur-sm border border-purple-500/20">
+              <CardHeader className="border-b border-purple-500/20 bg-purple-900/10">
+                <CardTitle className="text-2xl text-white flex items-center">
+                  <FileTextIcon className="w-6 h-6 mr-2 text-purple-400" />
                   Articles
+                  {sitemapData && (
+                    <Badge variant="outline" className="ml-2 border-purple-500/50 text-purple-300">
+                      {sitemapData.articles.length} articles
+                    </Badge>
+                  )}
                 </CardTitle>
-                <div className="flex flex-col sm:flex-row gap-4 mt-4">
-                  <Input
-                    placeholder="Search articles..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                  />
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white"
-                  >
-                    <option value="all">All Categories</option>
-                    {categories.map((category) => (
-                      <option key={category.id} value={category.name}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
                 {isLoading ? (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {[...Array(5)].map((_, i) => (
-                      <div key={i} className="flex items-center space-x-4">
-                        <Skeleton className="h-4 w-4 bg-gray-700" />
-                        <Skeleton className="h-4 flex-1 bg-gray-700" />
-                        <Skeleton className="h-4 w-24 bg-gray-700" />
-                      </div>
+                      <Skeleton key={i} className="h-16 w-full bg-white/10" />
                     ))}
                   </div>
+                ) : sitemapData?.articles.length === 0 ? (
+                  <p className="text-white/70 text-center py-8">No articles found.</p>
                 ) : (
-                  <div className="space-y-3">
-                    {filteredArticles.map((article) => (
-                      <Link key={article.id} href={`/article/${article.slug}`}>
-                        <div className="flex items-center justify-between p-3 rounded-lg border border-gray-600 hover:border-cyan-400 transition-colors cursor-pointer group">
-                          <div className="flex items-center space-x-3">
-                            <FileTextIcon className="w-4 h-4 text-cyan-400" />
-                            <div>
-                              <h3 className="text-white font-medium group-hover:text-cyan-400 transition-colors">
-                                {article.title}
-                              </h3>
-                              <p className="text-sm text-gray-400">
-                                {article.category} • {new Date(article.publishedAt).toLocaleDateString()}
-                              </p>
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {filterItems(sitemapData?.articles || [], searchTerm).map((article) => (
+                      <Link key={article.id} href={`/articles/${article.slug}`}>
+                        <div className="flex items-center justify-between p-3 bg-white/5 border border-purple-500/20 rounded-lg hover:border-purple-400/40 transition-all duration-300 cursor-pointer">
+                          <div className="flex-1">
+                            <h3 className="font-medium text-white mb-1">{article.title}</h3>
+                            <div className="flex items-center gap-4 text-sm text-white/60">
+                              <span>Published: {new Date(article.publishedAt).toLocaleDateString()}</span>
+                              {article.category && (
+                                <Badge variant="outline" className="border-purple-500/50 text-purple-300 text-xs">
+                                  {article.category}
+                                </Badge>
+                              )}
                             </div>
                           </div>
-                          <ChevronRightIcon className="w-4 h-4 text-gray-400 group-hover:text-cyan-400" />
+                          <ChevronRightIcon className="w-4 h-4 text-white/40" />
                         </div>
                       </Link>
                     ))}
@@ -338,150 +251,195 @@ const Sitemap: React.FC = () => {
             </Card>
           </TabsContent>
 
+          {/* Categories */}
           <TabsContent value="categories">
-            <Card className="bg-gray-800 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center">
-                  <TagIcon className="w-5 h-5 mr-2 text-cyan-400" />
-                  Categories
+            <Card className="bg-white/5 backdrop-blur-sm border border-purple-500/20">
+              <CardHeader className="border-b border-purple-500/20 bg-purple-900/10">
+                <CardTitle className="text-2xl text-white flex items-center">
+                  <TagIcon className="w-6 h-6 mr-2 text-purple-400" />
+                  Categories & Tags
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
                 {isLoading ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {[...Array(6)].map((_, i) => (
-                      <Skeleton key={i} className="h-16 bg-gray-700" />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {categories.map((category) => (
-                      <Link key={category.id} href={`/category/${category.slug}`}>
-                        <div className="flex items-center justify-between p-4 rounded-lg border border-gray-600 hover:border-cyan-400 transition-colors cursor-pointer group">
-                          <div>
-                            <h3 className="text-white font-medium group-hover:text-cyan-400 transition-colors">
-                              {category.name}
-                            </h3>
-                            <p className="text-sm text-gray-400">{category.count} articles</p>
-                          </div>
-                          <ChevronRightIcon className="w-4 h-4 text-gray-400 group-hover:text-cyan-400" />
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="tags">
-            <Card className="bg-gray-800 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center">
-                  <TagIcon className="w-5 h-5 mr-2 text-cyan-400" />
-                  Tags
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="flex flex-wrap gap-2">
-                    {[...Array(20)].map((_, i) => (
-                      <Skeleton key={i} className="h-8 w-20 bg-gray-700" />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {tags.map((tag) => (
-                      <Link key={tag.id} href={`/tag/${tag.slug}`}>
-                        <Badge 
-                          variant="secondary" 
-                          className="cursor-pointer hover:bg-cyan-400 hover:text-gray-900 transition-colors"
-                        >
-                          {tag.name} ({tag.count})
-                        </Badge>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="jobs">
-            <Card className="bg-gray-800 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center">
-                  <BriefcaseIcon className="w-5 h-5 mr-2 text-cyan-400" />
-                  Job Listings
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="space-y-4">
-                    {[...Array(5)].map((_, i) => (
-                      <div key={i} className="flex items-center space-x-4">
-                        <Skeleton className="h-4 w-4 bg-gray-700" />
-                        <Skeleton className="h-4 flex-1 bg-gray-700" />
-                        <Skeleton className="h-4 w-24 bg-gray-700" />
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <Skeleton className="h-6 w-24 mb-3 bg-white/10" />
+                      <div className="space-y-2">
+                        {[...Array(3)].map((_, i) => (
+                          <Skeleton key={i} className="h-8 w-full bg-white/10" />
+                        ))}
                       </div>
-                    ))}
+                    </div>
+                    <div>
+                      <Skeleton className="h-6 w-16 mb-3 bg-white/10" />
+                      <div className="space-y-2">
+                        {[...Array(5)].map((_, i) => (
+                          <Skeleton key={i} className="h-8 w-full bg-white/10" />
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {jobListings.map((job) => (
-                      <Link key={job.id} href={`/jobs#job-${job.id}`}>
-                        <div className="flex items-center justify-between p-3 rounded-lg border border-gray-600 hover:border-cyan-400 transition-colors cursor-pointer group">
-                          <div className="flex items-center space-x-3">
-                            <BriefcaseIcon className="w-4 h-4 text-cyan-400" />
-                            <div>
-                              <h3 className="text-white font-medium group-hover:text-cyan-400 transition-colors">
-                                {job.title}
-                              </h3>
-                              <p className="text-sm text-gray-400">
-                                {job.company} • {job.location} • {new Date(job.createdAt).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                          <ChevronRightIcon className="w-4 h-4 text-gray-400 group-hover:text-cyan-400" />
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {/* Categories */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-purple-300 mb-4">Categories</h3>
+                      {sitemapData?.categories.length === 0 ? (
+                        <p className="text-white/70">No categories found.</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {filterItems(sitemapData?.categories || [], searchTerm).map((category) => (
+                            <Link key={category.id} href={`/category/${category.slug}`}>
+                              <div className="flex items-center justify-between p-3 bg-white/5 border border-purple-500/20 rounded-lg hover:border-purple-400/40 transition-all duration-300 cursor-pointer">
+                                <span className="text-white">{category.name}</span>
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="border-purple-500/50 text-purple-300 text-xs">
+                                    {category.count} articles
+                                  </Badge>
+                                  <ChevronRightIcon className="w-4 h-4 text-white/40" />
+                                </div>
+                              </div>
+                            </Link>
+                          ))}
                         </div>
-                      </Link>
-                    ))}
+                      )}
+                    </div>
+
+                    {/* Tags */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-purple-300 mb-4">Tags</h3>
+                      {sitemapData?.tags.length === 0 ? (
+                        <p className="text-white/70">No tags found.</p>
+                      ) : (
+                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                          {filterItems(sitemapData?.tags || [], searchTerm).map((tag) => (
+                            <Link key={tag.id} href={`/tag/${tag.slug}`}>
+                              <div className="flex items-center justify-between p-2 bg-white/5 border border-purple-500/20 rounded-lg hover:border-purple-400/40 transition-all duration-300 cursor-pointer">
+                                <span className="text-white text-sm">{tag.name}</span>
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="border-purple-500/50 text-purple-300 text-xs">
+                                    {tag.count}
+                                  </Badge>
+                                  <ChevronRightIcon className="w-3 h-3 text-white/40" />
+                                </div>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* User & Special Pages */}
+          <TabsContent value="user">
+            <div className="grid gap-6">
+              
+              {/* User Pages */}
+              <Card className="bg-white/5 backdrop-blur-sm border border-purple-500/20">
+                <CardHeader className="border-b border-purple-500/20 bg-purple-900/10">
+                  <CardTitle className="text-xl text-white flex items-center">
+                    <UserIcon className="w-5 h-5 mr-2 text-purple-400" />
+                    User Account Pages
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="grid md:grid-cols-2 gap-3">
+                    {filterItems(userPages, searchTerm).map((page) => (
+                      <Link key={page.path} href={page.path}>
+                        <div className="flex items-center gap-3 p-3 bg-white/5 border border-purple-500/20 rounded-lg hover:border-purple-400/40 transition-all duration-300 cursor-pointer">
+                          <page.icon className="w-4 h-4 text-purple-400" />
+                          <div className="flex-1">
+                            <span className="text-white font-medium">{page.name}</span>
+                            <p className="text-xs text-white/60 mt-1">{page.description}</p>
+                          </div>
+                          <ChevronRightIcon className="w-4 h-4 text-white/40" />
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Special Pages */}
+              <Card className="bg-white/5 backdrop-blur-sm border border-purple-500/20">
+                <CardHeader className="border-b border-purple-500/20 bg-purple-900/10">
+                  <CardTitle className="text-xl text-white flex items-center">
+                    <RocketIcon className="w-5 h-5 mr-2 text-purple-400" />
+                    Special Features
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="grid md:grid-cols-2 gap-3">
+                    {filterItems(specialPages, searchTerm).map((page) => (
+                      <Link key={page.path} href={page.path}>
+                        <div className="flex items-center gap-3 p-3 bg-white/5 border border-purple-500/20 rounded-lg hover:border-purple-400/40 transition-all duration-300 cursor-pointer">
+                          <page.icon className="w-4 h-4 text-purple-400" />
+                          <div className="flex-1">
+                            <span className="text-white font-medium">{page.name}</span>
+                            <p className="text-xs text-white/60 mt-1">{page.description}</p>
+                          </div>
+                          <ChevronRightIcon className="w-4 h-4 text-white/40" />
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+            </div>
           </TabsContent>
         </Tabs>
 
-        {/* Footer Links */}
-        <div className="mt-12 pt-8 border-t border-gray-700">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div>
-              <h3 className="text-white font-bold mb-4">Quick Links</h3>
-              <ul className="space-y-2">
-                <li><Link href="/sitemap.xml" className="text-gray-400 hover:text-cyan-400 transition-colors flex items-center"><ExternalLinkIcon className="w-3 h-3 mr-1" />XML Sitemap</Link></li>
-                <li><Link href="/robots.txt" className="text-gray-400 hover:text-cyan-400 transition-colors flex items-center"><ExternalLinkIcon className="w-3 h-3 mr-1" />Robots.txt</Link></li>
-                <li><Link href="/rss" className="text-gray-400 hover:text-cyan-400 transition-colors flex items-center"><ExternalLinkIcon className="w-3 h-3 mr-1" />RSS Feed</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-white font-bold mb-4">Legal</h3>
-              <ul className="space-y-2">
-                <li><Link href="/privacy" className="text-gray-400 hover:text-cyan-400 transition-colors">Privacy Policy</Link></li>
-                <li><Link href="/terms" className="text-gray-400 hover:text-cyan-400 transition-colors">Terms of Service</Link></li>
-                <li><Link href="/cookies" className="text-gray-400 hover:text-cyan-400 transition-colors">Cookie Policy</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-white font-bold mb-4">Contact</h3>
-              <ul className="space-y-2">
-                <li><Link href="/contact" className="text-gray-400 hover:text-cyan-400 transition-colors">Contact Us</Link></li>
-                <li><Link href="/about" className="text-gray-400 hover:text-cyan-400 transition-colors">About</Link></li>
-                <li><Link href="/support" className="text-gray-400 hover:text-cyan-400 transition-colors">Support</Link></li>
-              </ul>
-            </div>
-          </div>
+        {/* Quick Stats */}
+        {sitemapData && (
+          <Card className="bg-white/5 backdrop-blur-sm border border-purple-500/20 mt-8">
+            <CardHeader className="border-b border-purple-500/20 bg-purple-900/10">
+              <CardTitle className="text-xl text-white flex items-center">
+                <Globe className="w-5 h-5 mr-2 text-purple-400" />
+                Site Statistics
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                <div>
+                  <div className="text-2xl font-bold text-purple-300">{sitemapData.articles.length}</div>
+                  <div className="text-sm text-white/70">Published Articles</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-purple-300">{sitemapData.categories.length}</div>
+                  <div className="text-sm text-white/70">Categories</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-purple-300">{sitemapData.tags.length}</div>
+                  <div className="text-sm text-white/70">Tags</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-purple-300">{mainPages.length + userPages.length + specialPages.length}</div>
+                  <div className="text-sm text-white/70">Total Pages</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* XML Sitemap */}
+        <div className="text-center mt-8">
+          <p className="text-white/60 mb-4">
+            For search engines and automated tools, access our XML sitemap:
+          </p>
+          <Button asChild variant="outline" className="border-purple-500/50 text-purple-300 hover:bg-purple-900/20">
+            <a href="/sitemap.xml" target="_blank" rel="noopener noreferrer">
+              View XML Sitemap
+              <ExternalLinkIcon className="w-4 h-4 ml-2" />
+            </a>
+          </Button>
         </div>
+
       </div>
     </div>
   );

@@ -60,7 +60,16 @@ import {
   getNASAAPOD,
   getSpaceWeather,
   getNearEarthObjects,
-  getComprehensiveSpaceData
+  getComprehensiveSpaceData,
+  getMarsWeather,
+  getMoonPhase,
+  getISSPassPredictions,
+  getSatelliteTracking,
+  getExoplanets,
+  getSolarActivity,
+  getHubbleImages,
+  getEarthquakeData,
+  getAdvancedSpaceWeather
 } from './launchesService';
 import { getFeaturedImages, getGalleryImages, getAvailableTags } from './ghostService';
 import { getPosts, getPostBySlug } from './ghostService';
@@ -466,6 +475,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // NEW API ENDPOINTS FOR ENHANCED MISSION CONTROL
+
+  // Mars Weather Data
+  app.get("/api/nasa/mars-weather", async (req: Request, res: Response) => {
+    try {
+      const weather = await getMarsWeather();
+      res.json(weather);
+    } catch (error) {
+      console.error('Error fetching Mars weather:', error);
+      res.status(500).json({ error: 'Failed to fetch Mars weather data' });
+    }
+  });
+
+  // Moon Phase Data
+  app.get("/api/astronomy/moon-phase", async (req: Request, res: Response) => {
+    try {
+      const moonPhase = await getMoonPhase();
+      res.json(moonPhase);
+    } catch (error) {
+      console.error('Error fetching moon phase:', error);
+      res.status(500).json({ error: 'Failed to fetch moon phase data' });
+    }
+  });
+
+  // ISS Pass Predictions
+  app.get("/api/satellites/iss-passes", async (req: Request, res: Response) => {
+    try {
+      const lat = parseFloat(req.query.lat as string);
+      const lon = parseFloat(req.query.lon as string);
+      
+      if (isNaN(lat) || isNaN(lon)) {
+        return res.status(400).json({ error: 'Valid latitude and longitude required' });
+      }
+      
+      const passes = await getISSPassPredictions(lat, lon);
+      res.json(passes);
+    } catch (error) {
+      console.error('Error fetching ISS pass predictions:', error);
+      res.status(500).json({ error: 'Failed to fetch ISS pass predictions' });
+    }
+  });
+
+  // Satellite Tracking
+  app.get("/api/satellites/tracking", async (req: Request, res: Response) => {
+    try {
+      const satellites = await getSatelliteTracking();
+      res.json(satellites);
+    } catch (error) {
+      console.error('Error fetching satellite tracking:', error);
+      res.status(500).json({ error: 'Failed to fetch satellite tracking data' });
+    }
+  });
+
+  // Exoplanets Data
+  app.get("/api/nasa/exoplanets", async (req: Request, res: Response) => {
+    try {
+      const exoplanets = await getExoplanets();
+      res.json(exoplanets);
+    } catch (error) {
+      console.error('Error fetching exoplanets:', error);
+      res.status(500).json({ error: 'Failed to fetch exoplanet data' });
+    }
+  });
+
+  // Solar Activity Monitor
+  app.get("/api/space-weather/solar-activity", async (req: Request, res: Response) => {
+    try {
+      const solarActivity = await getSolarActivity();
+      res.json(solarActivity);
+    } catch (error) {
+      console.error('Error fetching solar activity:', error);
+      res.status(500).json({ error: 'Failed to fetch solar activity data' });
+    }
+  });
+
+  // Hubble Space Telescope Images
+  app.get("/api/nasa/hubble-images", async (req: Request, res: Response) => {
+    try {
+      const images = await getHubbleImages();
+      res.json(images);
+    } catch (error) {
+      console.error('Error fetching Hubble images:', error);
+      res.status(500).json({ error: 'Failed to fetch Hubble images' });
+    }
+  });
+
+  // Earthquake Data
+  app.get("/api/earth/earthquakes", async (req: Request, res: Response) => {
+    try {
+      const earthquakes = await getEarthquakeData();
+      res.json(earthquakes);
+    } catch (error) {
+      console.error('Error fetching earthquake data:', error);
+      res.status(500).json({ error: 'Failed to fetch earthquake data' });
+    }
+  });
+
+  // Advanced Space Weather
+  app.get("/api/space-weather/advanced", async (req: Request, res: Response) => {
+    try {
+      const spaceWeather = await getAdvancedSpaceWeather();
+      res.json(spaceWeather);
+    } catch (error) {
+      console.error('Error fetching advanced space weather:', error);
+      res.status(500).json({ error: 'Failed to fetch advanced space weather data' });
+    }
+  });
+
   // Register search routes directly
   // Main search endpoint for articles
   app.get("/api/search", async (req: Request, res: Response) => {
@@ -728,6 +845,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
     } else {
       res.status(401).json({ message: "Not authenticated" });
+    }
+  });
+
+  // Update current user profile endpoint
+  app.put("/api/me", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      const updates = req.body;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Get current user
+      const currentUser = await storage.getUser(userId);
+      
+      if (!currentUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Prevent changing sensitive fields like role unless admin
+      if (updates.role && currentUser.role !== 'admin') {
+        delete updates.role;
+      }
+      
+      // Prevent changing ID, email, password through this endpoint
+      delete updates.id;
+      delete updates.password;
+      delete updates.email;
+      delete updates.stripeCustomerId;
+      delete updates.stripeSubscriptionId;
+      
+      // Update the user
+      const updatedUser = await storage.updateUser(userId, updates);
+      
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Failed to update user" });
+      }
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user profile:", error);
+      res.status(500).json({ message: "Error updating user profile" });
     }
   });
 
@@ -1647,6 +1807,346 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error approving job listing:", error);
       res.status(500).json({ message: "Error approving job listing" });
+    }
+  });
+
+  // ----------------------------------------------------
+  // Team Management API
+  // ----------------------------------------------------
+  
+  // Get all team members (public)
+  app.get("/api/team-members", async (req: Request, res: Response) => {
+    try {
+      const result = await pool.query(`
+        SELECT tm.*, u.username, u.email, u.profile_picture, u.bio as user_bio
+        FROM team_members tm
+        LEFT JOIN users u ON tm.user_id = u.id
+        WHERE tm.is_active = true
+        ORDER BY tm.is_founder DESC, tm.display_order ASC
+      `);
+      
+      const teamMembers = result.rows.map(row => ({
+        id: row.id,
+        user_id: row.user_id,
+        name: row.name,
+        role: row.role,
+        bio: row.bio || row.user_bio,
+        profile_image_url: row.profile_image_url || row.profile_picture,
+        is_founder: row.is_founder,
+        display_order: row.display_order,
+        expertise: row.expertise || [],
+        social_linkedin: row.social_linkedin,
+        social_twitter: row.social_twitter,
+        social_email: row.social_email,
+        user: row.user_id ? {
+          id: row.user_id,
+          username: row.username,
+          email: row.email,
+          profile_picture: row.profile_picture,
+          bio: row.user_bio
+        } : undefined
+      }));
+      
+      res.json(teamMembers);
+    } catch (error) {
+      console.error("Error fetching team members:", error);
+      res.status(500).json({ message: "Error fetching team members" });
+    }
+  });
+
+  // Get all team members (admin)
+  app.get("/api/admin/team-members", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const result = await pool.query(`
+        SELECT tm.*, u.username, u.email, u.profile_picture, u.bio as user_bio
+        FROM team_members tm
+        LEFT JOIN users u ON tm.user_id = u.id
+        ORDER BY tm.is_founder DESC, tm.display_order ASC
+      `);
+      
+      const teamMembers = result.rows.map(row => ({
+        id: row.id,
+        user_id: row.user_id,
+        name: row.name,
+        role: row.role,
+        bio: row.bio || row.user_bio,
+        profile_image_url: row.profile_image_url || row.profile_picture,
+        is_founder: row.is_founder,
+        display_order: row.display_order,
+        expertise: row.expertise || [],
+        social_linkedin: row.social_linkedin,
+        social_twitter: row.social_twitter,
+        social_email: row.social_email,
+        is_active: row.is_active,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        user: row.user_id ? {
+          id: row.user_id,
+          username: row.username,
+          email: row.email,
+          profile_picture: row.profile_picture,
+          bio: row.user_bio
+        } : undefined
+      }));
+      
+      res.json(teamMembers);
+    } catch (error) {
+      console.error("Error fetching admin team members:", error);
+      res.status(500).json({ message: "Error fetching team members" });
+    }
+  });
+
+  // Get users for team member selection
+  app.get("/api/admin/users", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const result = await pool.query(`
+        SELECT id, username, email, profile_picture, bio
+        FROM users
+        WHERE id NOT IN (SELECT user_id FROM team_members WHERE user_id IS NOT NULL)
+        ORDER BY username ASC
+      `);
+      
+      res.json(result.rows);
+    } catch (error) {
+      console.error("Error fetching users for team selection:", error);
+      res.status(500).json({ message: "Error fetching users" });
+    }
+  });
+
+  // Create team member
+  app.post("/api/admin/team-members", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const {
+        user_id,
+        name,
+        role,
+        bio,
+        profile_image_url,
+        is_founder,
+        display_order,
+        expertise,
+        social_linkedin,
+        social_twitter,
+        social_email,
+        is_active
+      } = req.body;
+
+      if (!name || !role) {
+        return res.status(400).json({ message: "Name and role are required" });
+      }
+
+      // Check if user_id already exists
+      if (user_id) {
+        const existingMember = await pool.query(
+          "SELECT id FROM team_members WHERE user_id = $1",
+          [user_id]
+        );
+        
+        if (existingMember.rows.length > 0) {
+          return res.status(400).json({ message: "This user is already a team member" });
+        }
+      }
+
+      const result = await pool.query(`
+        INSERT INTO team_members (
+          user_id, name, role, bio, profile_image_url, is_founder, 
+          display_order, expertise, social_linkedin, social_twitter, 
+          social_email, is_active, created_by
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        RETURNING *
+      `, [
+        user_id || null,
+        name,
+        role,
+        bio || '',
+        profile_image_url || null,
+        is_founder || false,
+        display_order || 0,
+        expertise || [],
+        social_linkedin || null,
+        social_twitter || null,
+        social_email || null,
+        is_active !== false,
+        req.session.userId
+      ]);
+
+      res.status(201).json(result.rows[0]);
+    } catch (error) {
+      console.error("Error creating team member:", error);
+      res.status(500).json({ message: "Error creating team member" });
+    }
+  });
+
+  // Update team member
+  app.put("/api/admin/team-members/:id", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid team member ID" });
+      }
+
+      const {
+        user_id,
+        name,
+        role,
+        bio,
+        profile_image_url,
+        is_founder,
+        display_order,
+        expertise,
+        social_linkedin,
+        social_twitter,
+        social_email,
+        is_active
+      } = req.body;
+
+      if (!name || !role) {
+        return res.status(400).json({ message: "Name and role are required" });
+      }
+
+      // Check if user_id already exists for another team member
+      if (user_id) {
+        const existingMember = await pool.query(
+          "SELECT id FROM team_members WHERE user_id = $1 AND id != $2",
+          [user_id, id]
+        );
+        
+        if (existingMember.rows.length > 0) {
+          return res.status(400).json({ message: "This user is already linked to another team member" });
+        }
+      }
+
+      const result = await pool.query(`
+        UPDATE team_members SET
+          user_id = $1,
+          name = $2,
+          role = $3,
+          bio = $4,
+          profile_image_url = $5,
+          is_founder = $6,
+          display_order = $7,
+          expertise = $8,
+          social_linkedin = $9,
+          social_twitter = $10,
+          social_email = $11,
+          is_active = $12,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = $13
+        RETURNING *
+      `, [
+        user_id || null,
+        name,
+        role,
+        bio || '',
+        profile_image_url || null,
+        is_founder || false,
+        display_order || 0,
+        expertise || [],
+        social_linkedin || null,
+        social_twitter || null,
+        social_email || null,
+        is_active !== false,
+        id
+      ]);
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ message: "Team member not found" });
+      }
+
+      res.json(result.rows[0]);
+    } catch (error) {
+      console.error("Error updating team member:", error);
+      res.status(500).json({ message: "Error updating team member" });
+    }
+  });
+
+  // Delete team member
+  app.delete("/api/admin/team-members/:id", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid team member ID" });
+      }
+
+      const result = await pool.query(
+        "DELETE FROM team_members WHERE id = $1 RETURNING *",
+        [id]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ message: "Team member not found" });
+      }
+
+      res.json({ message: "Team member deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting team member:", error);
+      res.status(500).json({ message: "Error deleting team member" });
+    }
+  });
+
+  // Reorder team member
+  app.post("/api/admin/team-members/:id/reorder", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { direction } = req.body;
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid team member ID" });
+      }
+
+      if (!['up', 'down'].includes(direction)) {
+        return res.status(400).json({ message: "Direction must be 'up' or 'down'" });
+      }
+
+      // Get current member
+      const currentMember = await pool.query(
+        "SELECT * FROM team_members WHERE id = $1",
+        [id]
+      );
+
+      if (currentMember.rows.length === 0) {
+        return res.status(404).json({ message: "Team member not found" });
+      }
+
+      const currentOrder = currentMember.rows[0].display_order;
+      const isFounder = currentMember.rows[0].is_founder;
+
+      // Find the member to swap with (within the same founder/team category)
+      const swapQuery = direction === 'up' 
+        ? "SELECT * FROM team_members WHERE display_order < $1 AND is_founder = $2 ORDER BY display_order DESC LIMIT 1"
+        : "SELECT * FROM team_members WHERE display_order > $1 AND is_founder = $2 ORDER BY display_order ASC LIMIT 1";
+
+      const swapMember = await pool.query(swapQuery, [currentOrder, isFounder]);
+
+      if (swapMember.rows.length === 0) {
+        return res.status(400).json({ message: "Cannot move in that direction" });
+      }
+
+      const swapOrder = swapMember.rows[0].display_order;
+      const swapId = swapMember.rows[0].id;
+
+      // Perform the swap
+      await pool.query("BEGIN");
+      
+      await pool.query(
+        "UPDATE team_members SET display_order = $1 WHERE id = $2",
+        [swapOrder, id]
+      );
+      
+      await pool.query(
+        "UPDATE team_members SET display_order = $1 WHERE id = $2",
+        [currentOrder, swapId]
+      );
+      
+      await pool.query("COMMIT");
+
+      res.json({ message: "Team member reordered successfully" });
+    } catch (error) {
+      await pool.query("ROLLBACK");
+      console.error("Error reordering team member:", error);
+      res.status(500).json({ message: "Error reordering team member" });
     }
   });
 
@@ -4275,6 +4775,41 @@ google.com, pub-XXXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
         error: 'Failed to reset theme',
         details: error instanceof Error ? error.message : 'Unknown error'
       });
+    }
+  });
+
+  // Temporary admin endpoint to run role migration
+  app.post("/api/admin/migrate-roles", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      // Only allow user "sam" to run this migration
+      if (!user || user.username !== 'sam') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      console.log('Running role-based features migration...');
+      
+      // Update specific users to admin role
+      await db.execute(sql`UPDATE users SET role = 'admin' WHERE username IN ('sam', 'admin', 'tyler', 'jack')`);
+      console.log('✅ Updated admin users');
+
+      // Add new columns if they don't exist
+      await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_status VARCHAR(50) DEFAULT 'inactive'`);
+      await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_expires_at TIMESTAMP WITH TIME ZONE`);
+      await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_cancel_at_period_end BOOLEAN DEFAULT false`);
+      console.log('✅ Added subscription columns');
+
+      // Set admin users to pro tier
+      await db.execute(sql`UPDATE users SET membership_tier = 'pro' WHERE role = 'admin'`);
+      console.log('✅ Updated admin membership tiers');
+
+      console.log('🎉 Role migration completed successfully!');
+      res.json({ success: true, message: "Migration completed successfully!" });
+    } catch (error) {
+      console.error('❌ Migration failed:', error);
+      res.status(500).json({ success: false, message: "Migration failed", error: error.message });
     }
   });
 

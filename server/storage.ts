@@ -219,7 +219,7 @@ export class DatabaseStorage implements IStorage {
       const [user] = await db
         .select()
         .from(users)
-        .where(eq(users.role, role))
+        .where(sql`role = ${role}`)
         .limit(1);
       return user;
     } catch (error) {
@@ -967,15 +967,46 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Comment operations
-  async getCommentsByArticle(articleId: number): Promise<Comment[]> {
-    return await db
-      .select()
+  async getCommentsByArticle(articleId: number): Promise<any[]> {
+    // Fetch comments with user information including role
+    const commentsWithUsers = await db
+      .select({
+        id: comments.id,
+        content: comments.content,
+        articleId: comments.articleId,
+        authorId: comments.userId,
+        parentId: comments.parentId,
+        upvotes: comments.upvotes,
+        downvotes: comments.downvotes,
+        createdAt: comments.createdAt,
+        updatedAt: comments.updatedAt,
+        author: {
+          id: users.id,
+          username: users.username,
+          profilePicture: users.profilePicture,
+          membershipTier: users.membershipTier,
+          role: users.role
+        }
+      })
       .from(comments)
+      .innerJoin(users, eq(comments.userId, users.id))
       .where(and(
         eq(comments.articleId, articleId),
         isNull(comments.parentId) // Get only top-level comments
       ))
       .orderBy(desc(comments.createdAt));
+
+    // Fetch replies for each comment
+    const commentsWithReplies = [];
+    for (const comment of commentsWithUsers) {
+      const replies = await this.getCommentRepliesWithUsers(comment.id);
+      commentsWithReplies.push({
+        ...comment,
+        replies
+      });
+    }
+
+    return commentsWithReplies;
   }
 
   async getCommentById(id: number): Promise<Comment | undefined> {
@@ -1009,6 +1040,32 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(comments)
+      .where(eq(comments.parentId, commentId))
+      .orderBy(desc(comments.createdAt));
+  }
+
+  async getCommentRepliesWithUsers(commentId: number): Promise<any[]> {
+    return await db
+      .select({
+        id: comments.id,
+        content: comments.content,
+        articleId: comments.articleId,
+        authorId: comments.userId,
+        parentId: comments.parentId,
+        upvotes: comments.upvotes,
+        downvotes: comments.downvotes,
+        createdAt: comments.createdAt,
+        updatedAt: comments.updatedAt,
+        author: {
+          id: users.id,
+          username: users.username,
+          profilePicture: users.profilePicture,
+          membershipTier: users.membershipTier,
+          role: users.role
+        }
+      })
+      .from(comments)
+      .innerJoin(users, eq(comments.userId, users.id))
       .where(eq(comments.parentId, commentId))
       .orderBy(desc(comments.createdAt));
   }

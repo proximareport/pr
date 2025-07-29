@@ -13,7 +13,7 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Profile from "@/pages/Profile";
 import EditProfile from "@/pages/EditProfile";
-import Launches from "@/pages/Launches";
+
 import MissionControl from "@/pages/MissionControl";
 import Astronomy from "@/pages/Astronomy";
 import Jobs from "@/pages/Jobs";
@@ -84,7 +84,7 @@ function Router() {
       <Route path="/profile/settings" component={Profile} />
       <Route path="/profile/:username?" component={Profile} />
       <Route path="/edit-profile" component={EditProfile} />
-      <Route path="/launches" component={Launches} />
+      
       <Route path="/missioncontrol" component={MissionControl} />
       <Route path="/jobs" component={Jobs} />
       <Route path="/astronomy" component={Astronomy} />

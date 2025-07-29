@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { RoleBadges } from "@/components/ui/role-badge";
 import { Link } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 import { ArrowUpIcon, ArrowDownIcon, ReplyIcon } from "lucide-react";
@@ -19,6 +20,7 @@ interface Comment {
     username: string;
     profilePicture?: string;
     membershipTier: string;
+    role?: string;
   };
   createdAt: string;
   updatedAt: string;
@@ -179,6 +181,8 @@ function CommentSection({ articleId, comments = [], refetchComments }: CommentSe
   const renderComment = (comment: Comment, depth = 0) => {
     const isPro = comment.author.membershipTier === "pro";
     const isSupporter = comment.author.membershipTier === "supporter";
+    const isAdmin = comment.author.role === "admin";
+    const isStaff = comment.author.role === "admin" || comment.author.role === "editor" || comment.author.role === "author";
     const maxDepth = 5; // Max nesting level
     const isMaxDepth = depth >= maxDepth;
 
@@ -187,10 +191,14 @@ function CommentSection({ articleId, comments = [], refetchComments }: CommentSe
         {/* Comment */}
         <div
           className={`${
-            isPro
+            isAdmin
+              ? "bg-red-900/10 border border-red-700/30"
+              : isPro
               ? "bg-purple-900/10 border border-purple-700/30"
               : isSupporter
               ? "bg-purple-900/5 border border-purple-700/20"
+              : isStaff
+              ? "bg-blue-900/5 border border-blue-700/20"
               : "bg-[#14141E] border border-white/10"
           } rounded-lg p-4`}
         >
@@ -199,7 +207,13 @@ function CommentSection({ articleId, comments = [], refetchComments }: CommentSe
               <div className="relative">
                 <div
                   className={`w-10 h-10 rounded-full overflow-hidden ${
-                    isPro || isSupporter ? "border-2 border-purple-500 membership-badge" : "border border-white/20"
+                    isAdmin 
+                      ? "border-2 border-red-500" 
+                      : isPro || isSupporter 
+                      ? "border-2 border-purple-500 membership-badge" 
+                      : isStaff
+                      ? "border-2 border-blue-500"
+                      : "border border-white/20"
                   }`}
                 >
                   <Avatar>
@@ -209,22 +223,17 @@ function CommentSection({ articleId, comments = [], refetchComments }: CommentSe
                     </AvatarFallback>
                   </Avatar>
                 </div>
-                {isPro && (
-                  <div className="absolute -bottom-1 -right-1 bg-purple-500 text-xs text-white rounded-full w-5 h-5 flex items-center justify-center">
-                    <span className="text-[10px]">PRO</span>
-                  </div>
-                )}
               </div>
             </div>
             <div className="flex-1">
-              <div className="flex items-center mb-1">
-                <span className="font-medium text-white mr-2">{comment.author.username}</span>
-                {isPro && (
-                  <Badge className="bg-purple-500 text-white border-none text-xs">PRO</Badge>
-                )}
-                {isSupporter && (
-                  <Badge className="bg-purple-700/70 text-white border-none text-xs">SUPPORTER</Badge>
-                )}
+              <div className="flex items-center mb-1 gap-2">
+                <span className="font-medium text-white">{comment.author.username}</span>
+                <RoleBadges 
+                  role={comment.author.role} 
+                  membershipTier={comment.author.membershipTier}
+                  size="sm"
+                  showAll={true}
+                />
               </div>
               <p className="text-white/90 text-sm mb-2">{comment.content}</p>
               <div className="flex items-center text-sm text-white/60">

@@ -45,7 +45,7 @@ import UserManagement from './UserManagement';
 import MediaLibraryTab from './MediaLibraryTab';
 import AdvertisementTab from './AdvertisementTab';
 import EmergencyBannerTab from './EmergencyBannerTab';
-import TaxonomyTab from './TaxonomyTab';
+
 import SiteSettingsForm from '@/components/admin/SiteSettingsForm';
 
 interface Article {
@@ -557,15 +557,7 @@ function AdminDashboard() {
               </div>
             </TabsTrigger>
             
-            <TabsTrigger 
-              value="taxonomy" 
-              className="text-gray-400 hover:text-gray-200 data-[state=active]:text-blue-400 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
-            >
-              <div className="flex items-center gap-2">
-                <TagIcon className="h-4 w-4" />
-                <span>Taxonomy</span>
-              </div>
-            </TabsTrigger>
+
             
             <TabsTrigger 
               value="settings" 
@@ -887,15 +879,7 @@ function AdminDashboard() {
                     </div>
                   </Button>
                   
-                  <Button
-                    className="flex flex-col items-center justify-center p-0 h-auto bg-purple-700 hover:bg-purple-800 shadow-sm transition-all rounded-lg overflow-hidden border-0"
-                    onClick={() => navigate('/admin/categories-tags')}
-                  >
-                    <div className="w-full flex flex-col items-center py-5">
-                      <TagIcon className="h-8 w-8 mb-3" />
-                      <span className="font-medium">Tags & Categories</span>
-                    </div>
-                  </Button>
+
                   
                   <Button
                     className="flex flex-col items-center justify-center p-0 h-auto bg-amber-700 hover:bg-amber-800 shadow-sm transition-all rounded-lg overflow-hidden border-0"
@@ -968,12 +952,7 @@ function AdminDashboard() {
                   >
                     Content Status
                   </TabsTrigger>
-                  <TabsTrigger 
-                    value="categories" 
-                    className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
-                  >
-                    Tags & Categories
-                  </TabsTrigger>
+
                 </TabsList>
               </div>
               <TabsContent value="published">
@@ -1030,15 +1009,7 @@ function AdminDashboard() {
                 </div>
               </TabsContent>
               
-              <TabsContent value="categories">
-                <div className="mt-4">
-                  <iframe 
-                    src="/admin/categories-tags" 
-                    className="w-full h-[calc(100vh-300px)] min-h-[600px] border-0 rounded-lg overflow-hidden"
-                    title="Categories and Tags Management"
-                  />
-                </div>
-              </TabsContent>
+
             </Tabs>
             
             <Card>
@@ -1056,14 +1027,7 @@ function AdminDashboard() {
                     <FileTextIcon className="h-5 w-5 mb-2" />
                     <span>New Article</span>
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="h-auto py-4 flex flex-col items-center justify-center"
-                    onClick={() => navigate('/admin/categories-tags')}
-                  >
-                    <TagIcon className="h-5 w-5 mb-2" />
-                    <span>Tags & Categories</span>
-                  </Button>
+
                   <Button
                     variant="outline"
                     className="h-auto py-4 flex flex-col items-center justify-center"
@@ -1208,9 +1172,7 @@ function AdminDashboard() {
           <MediaLibraryTab />
         </TabsContent>
         
-        <TabsContent value="taxonomy" className="mt-6">
-          <TaxonomyTab />
-        </TabsContent>
+
         
         <TabsContent value="settings" className="mt-6">
           <Tabs 

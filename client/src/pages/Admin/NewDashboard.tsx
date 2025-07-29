@@ -44,6 +44,7 @@ import JobListingsTab from './JobListingsTab';
 import EmergencyBannerTab from './EmergencyBannerTab';
 import TaxonomyTab from './TaxonomyTab';
 import SiteSettingsForm from '@/components/admin/SiteSettingsForm';
+import TeamManagement from './TeamManagement';
 
 
 // Types
@@ -279,6 +280,10 @@ function NewAdminDashboard() {
             <TabsTrigger value="jobs" className="data-[state=active]:bg-blue-600">
               <BriefcaseIcon className="h-4 w-4 mr-2" />
               Job Listings
+            </TabsTrigger>
+            <TabsTrigger value="team" className="data-[state=active]:bg-blue-600">
+              <UsersIcon className="h-4 w-4 mr-2" />
+              Team Management
             </TabsTrigger>
             <TabsTrigger value="emergency" className="data-[state=active]:bg-blue-600">
               <AlertOctagonIcon className="h-4 w-4 mr-2" />
@@ -664,6 +669,11 @@ function NewAdminDashboard() {
           {/* Job Listings */}
           <TabsContent value="jobs" className="mt-6">
             <JobListingsTab />
+          </TabsContent>
+          
+          {/* Team Management */}
+          <TabsContent value="team" className="mt-6">
+            <TeamManagement />
           </TabsContent>
           
           {/* Emergency Banner */}
