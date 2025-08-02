@@ -1,0 +1,26 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://proximareport.com/sitemap.xml
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /api/
+Disallow: /_next/
+Disallow: /private/
+
+# Allow important pages
+Allow: /about
+Allow: /contact
+Allow: /subscribe
+Allow: /jobs
+Allow: /astronomy
+Allow: /gallery
+Allow: /pricing
+Allow: /privacy
+Allow: /terms
+Allow: /cookies
+
+# Crawl delay for respectful crawling
+Crawl-delay: 1 

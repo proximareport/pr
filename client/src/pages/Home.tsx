@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, ImageIcon, ExternalLink } from "lucide-react";
 import type { GhostPost } from '../../../server/ghostService';
 import NewsletterSubscription from "@/components/NewsletterSubscription";
+import SEO from "@/components/SEO";
 
 function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -129,7 +130,51 @@ function Home() {
   }
 
   return (
-    <div className="bg-[#0D0D17] min-h-screen">
+    <>
+      <SEO 
+        title="Latest Space & STEM News | Proxima Report"
+        description="Stay updated with the latest space exploration news, NASA missions, SpaceX launches, astronomy discoveries, and STEM education. Real-time coverage of space technology and scientific breakthroughs."
+        keywords="space news, latest space missions, NASA news, SpaceX launches, astronomy discoveries, STEM education, space technology, rocket launches, space exploration, science news, space science, exoplanets, Mars missions, lunar exploration"
+        url="https://proximareport.com"
+        type="website"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          "name": "Latest Space & STEM News",
+          "description": "Stay updated with the latest space exploration news, NASA missions, SpaceX launches, astronomy discoveries, and STEM education.",
+          "url": "https://proximareport.com",
+          "mainEntity": {
+            "@type": "ItemList",
+            "name": "Latest Space News Articles",
+            "description": "Collection of the latest space exploration and STEM news articles",
+            "numberOfItems": allPosts.length,
+            "itemListElement": allPosts.slice(0, 10).map((post, index) => ({
+              "@type": "ListItem",
+              "position": index + 1,
+              "item": {
+                "@type": "Article",
+                "headline": post.title,
+                "description": post.excerpt,
+                "url": `https://proximareport.com/article/${post.slug}`,
+                "author": {
+                  "@type": "Person",
+                  "name": post.authors?.[0]?.name || post.primary_author?.name || "Proxima Report"
+                },
+                "datePublished": post.published_at,
+                "publisher": {
+                  "@type": "Organization",
+                  "name": "Proxima Report",
+                  "logo": {
+                    "@type": "ImageObject",
+                    "url": "https://proximareport.com/logo.png"
+                  }
+                }
+              }
+            }))
+          }
+        }}
+      />
+      <div className="bg-[#0D0D17] min-h-screen">
       <div className="container mx-auto px-3 md:px-4 py-4 md:py-8">
         {/* Featured Article */}
         {featuredPost && (
@@ -342,6 +387,7 @@ function Home() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

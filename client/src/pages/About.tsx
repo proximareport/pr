@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 
 import { useQuery } from '@tanstack/react-query';
+import SEO from '@/components/SEO';
 
 // Types
 interface TeamMember {
@@ -82,7 +83,40 @@ export default function About() {
   const founders = teamMembers?.filter(member => member.is_founder).sort((a, b) => a.display_order - b.display_order) || [];
   const regularTeam = teamMembers?.filter(member => !member.is_founder).sort((a, b) => a.display_order - b.display_order) || [];
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/40 to-black relative overflow-hidden">
+    <>
+      <SEO 
+        title="About Proxima Report - Our Mission in Space & STEM News"
+        description="Learn about Proxima Report's mission to make space exploration data accessible and inspiring. Meet our team of space enthusiasts, scientists, and communicators dedicated to bringing the universe closer to you."
+        keywords="about proxima report, space news team, STEM education mission, space exploration platform, astronomy news team, space technology journalists, NASA coverage team, SpaceX news reporters, space science communicators"
+        url="https://proximareport.com/about"
+        type="website"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "AboutPage",
+          "name": "About Proxima Report",
+          "description": "Learn about Proxima Report's mission to make space exploration data accessible and inspiring.",
+          "url": "https://proximareport.com/about",
+          "mainEntity": {
+            "@type": "Organization",
+            "name": "Proxima Report",
+            "description": "Premier space and STEM news platform covering space exploration, astronomy, and technological breakthroughs",
+            "foundingDate": "2023",
+            "url": "https://proximareport.com",
+            "sameAs": [
+              "https://twitter.com/proximareport",
+              "https://linkedin.com/company/proximareport",
+              "https://instagram.com/proximareport",
+              "https://youtube.com/@proximareport"
+            ],
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "contactType": "customer service",
+              "email": "hello@proximareport.com"
+            }
+          }
+        }}
+      />
+      <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/40 to-black relative overflow-hidden">
       {/* Background effects */}
       <div className="absolute inset-0">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-purple-900/10 via-violet-900/10 to-purple-800/10"></div>
@@ -486,5 +520,6 @@ export default function About() {
         </div>
       </div>
     </div>
+    </>
   );
 } 
