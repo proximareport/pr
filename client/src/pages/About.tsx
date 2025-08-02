@@ -12,7 +12,10 @@ import {
   LinkedinIcon,
   TwitterIcon,
   MailIcon,
-  ShoppingCartIcon
+  ShoppingCartIcon,
+  InstagramIcon,
+  YoutubeIcon,
+  FacebookIcon
 } from 'lucide-react';
 
 import { useQuery } from '@tanstack/react-query';
@@ -33,10 +36,10 @@ interface TeamMember {
 }
 
 const stats = [
-  { icon: <UsersIcon className="h-6 w-6" />, value: "50K+", label: "Active Users" },
-  { icon: <GlobeIcon className="h-6 w-6" />, value: "195", label: "Countries Reached" },
+  { icon: <UsersIcon className="h-6 w-6" />, value: "10K+", label: "Active Users" },
+  { icon: <GlobeIcon className="h-6 w-6" />, value: "100+", label: "Countries Reached" },
   { icon: <StarIcon className="h-6 w-6" />, value: "99.9%", label: "Uptime" },
-  { icon: <RocketIcon className="h-6 w-6" />, value: "1000+", label: "Launches Tracked" }
+  { icon: <RocketIcon className="h-6 w-6" />, value: "200+", label: "Launches Tracked" }
 ];
 
 const values = [
@@ -139,15 +142,102 @@ export default function About() {
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl font-bold text-white mb-6">Our Mission</h2>
             <p className="text-lg text-gray-300 leading-relaxed mb-6">
-              At Proxima Report, we believe that space exploration should be accessible to everyone. 
-              Our platform aggregates real-time data from space agencies, research institutions, and 
-              astronomical databases to create a comprehensive, user-friendly experience that brings 
-              the wonders of the universe to your fingertips.
+              Proxima Report, founded in 2023, is a global space and STEM news platform committed to covering humanity's leaps into the cosmos.
             </p>
-            <p className="text-lg text-gray-300 leading-relaxed">
-              Whether you're a space enthusiast, researcher, educator, or simply curious about the cosmos, 
-              we provide the tools and information you need to stay connected with humanity's greatest adventure.
+            <p className="text-lg text-gray-300 leading-relaxed mb-6">
+              While many focus solely on Eastern or Western spaceflight, we aim to bridge the divide, offering in-depth coverage of astronomical discoveries, planetary science missions, and cutting-edge rocket technology. Wherever progress happens, from launchpads to observatories, Proxima Report is there!
             </p>
+            <p className="text-lg text-purple-400 font-semibold italic">
+              Ad Astra Per Scientia - To the Stars, Through Knowledge.
+            </p>
+          </div>
+        </div>
+
+        
+
+        {/* Social Media Section */}
+        <div className="bg-gray-900/60 backdrop-blur-sm rounded-xl p-8 border border-purple-900/30 mb-16">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-3xl font-bold text-white mb-6">Connect With Us</h2>
+            <p className="text-lg text-gray-300 leading-relaxed mb-8">
+              Stay updated with the latest space news, launches, and discoveries. Follow us across all platforms for real-time updates and exclusive content.
+            </p>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <a 
+                href="https://twitter.com/proximareport" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="group bg-gray-800/60 hover:bg-blue-600/20 backdrop-blur-sm rounded-lg p-6 border border-gray-700/50 hover:border-blue-500/50 transition-all duration-300 text-center"
+              >
+                <div className="flex justify-center mb-3">
+                  <TwitterIcon className="h-8 w-8 text-blue-400 group-hover:text-blue-300 transition-colors" />
+                </div>
+                <h3 className="text-white font-semibold mb-2">Twitter</h3>
+                <p className="text-gray-400 text-sm">Real-time updates</p>
+              </a>
+
+              <a 
+                href="https://linkedin.com/company/proximareport" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="group bg-gray-800/60 hover:bg-blue-600/20 backdrop-blur-sm rounded-lg p-6 border border-gray-700/50 hover:border-blue-500/50 transition-all duration-300 text-center"
+              >
+                <div className="flex justify-center mb-3">
+                  <LinkedinIcon className="h-8 w-8 text-blue-400 group-hover:text-blue-300 transition-colors" />
+                </div>
+                <h3 className="text-white font-semibold mb-2">LinkedIn</h3>
+                <p className="text-gray-400 text-sm">Professional network</p>
+              </a>
+
+              <a 
+                href="https://instagram.com/proximareport" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="group bg-gray-800/60 hover:bg-pink-600/20 backdrop-blur-sm rounded-lg p-6 border border-gray-700/50 hover:border-pink-500/50 transition-all duration-300 text-center"
+              >
+                <div className="flex justify-center mb-3">
+                  <InstagramIcon className="h-8 w-8 text-pink-400 group-hover:text-pink-300 transition-colors" />
+                </div>
+                <h3 className="text-white font-semibold mb-2">Instagram</h3>
+                <p className="text-gray-400 text-sm">Visual stories</p>
+              </a>
+
+              <a 
+                href="https://youtube.com/@proximareport" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="group bg-gray-800/60 hover:bg-red-600/20 backdrop-blur-sm rounded-lg p-6 border border-gray-700/50 hover:border-red-500/50 transition-all duration-300 text-center"
+              >
+                <div className="flex justify-center mb-3">
+                  <YoutubeIcon className="h-8 w-8 text-red-400 group-hover:text-red-300 transition-colors" />
+                </div>
+                <h3 className="text-white font-semibold mb-2">YouTube</h3>
+                <p className="text-gray-400 text-sm">Video content</p>
+              </a>
+            </div>
+
+            <div className="mt-8 pt-8 border-t border-gray-700/50">
+              <div className="flex justify-center items-center gap-6">
+                <a 
+                  href="mailto:hello@proximareport.com" 
+                  className="flex items-center gap-2 text-gray-300 hover:text-purple-400 transition-colors"
+                >
+                  <MailIcon className="h-5 w-5" />
+                  <span>hello@proximareport.com</span>
+                </a>
+                <span className="text-gray-500">|</span>
+                <a 
+                  href="https://store.proximareport.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-gray-300 hover:text-purple-400 transition-colors"
+                >
+                  <ShoppingCartIcon className="h-5 w-5" />
+                  <span>Visit Our Store</span>
+                </a>
+              </div>
+            </div>
           </div>
         </div>
 

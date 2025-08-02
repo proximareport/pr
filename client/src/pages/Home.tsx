@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, ImageIcon, ExternalLink } from "lucide-react";
 import type { GhostPost } from '../../../server/ghostService';
+import NewsletterSubscription from "@/components/NewsletterSubscription";
 
 function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -333,6 +334,11 @@ function Home() {
               </CardContent>
             </Card>
           )}
+        </div>
+
+        {/* Newsletter Subscription Section */}
+        <div className="mt-12">
+          <NewsletterSubscription />
         </div>
       </div>
     </div>

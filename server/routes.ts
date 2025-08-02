@@ -684,23 +684,261 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Newsletter Routes
   // ---------------------------------------------------------------------------
   
+  // Test environment variables
+  app.get("/api/newsletter/env-test", async (req: Request, res: Response) => {
+    res.json({
+      GHOST_ADMIN_API_URL: process.env.GHOST_ADMIN_API_URL,
+      hasKey: !!process.env.GHOST_ADMIN_API_KEY,
+      keyLength: process.env.GHOST_ADMIN_API_KEY?.length,
+      keyStart: process.env.GHOST_ADMIN_API_KEY?.substring(0, 20)
+    });
+  });
+
+  // Test Ghost API connection
+  app.get("/api/newsletter/test", async (req: Request, res: Response) => {
+    try {
+      const GHOST_ADMIN_API_URL = process.env.GHOST_ADMIN_API_URL;
+      const GHOST_ADMIN_API_KEY = process.env.GHOST_ADMIN_API_KEY;
+      const GHOST_URL = process.env.GHOST_URL;
+      const GHOST_CONTENT_API_KEY = process.env.GHOST_CONTENT_API_KEY;
+
+      if (!GHOST_ADMIN_API_URL || !GHOST_ADMIN_API_KEY) {
+        return res.status(500).json({ 
+          error: "Missing Ghost API configuration",
+          hasUrl: !!GHOST_ADMIN_API_URL,
+          hasAdminKey: !!GHOST_ADMIN_API_KEY,
+          urlValue: GHOST_ADMIN_API_URL,
+          keyLength: GHOST_ADMIN_API_KEY?.length
+        });
+      }
+
+      console.log('Environment variables check:', {
+        GHOST_ADMIN_API_URL,
+        GHOST_URL,
+        hasAdminKey: !!GHOST_ADMIN_API_KEY,
+        hasContentKey: !!GHOST_CONTENT_API_KEY,
+        keyLength: GHOST_ADMIN_API_KEY?.length,
+        keyStart: GHOST_ADMIN_API_KEY?.substring(0, 10)
+      });
+
+      // First test the Content API to see if basic connection works
+      let contentApiTest = null;
+      if (GHOST_URL && GHOST_CONTENT_API_KEY) {
+        try {
+          console.log('Testing Content API first...');
+          const contentResponse = await axios.get(`${GHOST_URL}/ghost/api/v3/content/posts/?key=${GHOST_CONTENT_API_KEY}&limit=1`);
+          contentApiTest = {
+            success: true,
+            status: contentResponse.status,
+            postCount: contentResponse.data?.posts?.length || 0
+          };
+          console.log('Content API test successful:', contentApiTest);
+        } catch (error) {
+          contentApiTest = {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          };
+          console.log('Content API test failed:', contentApiTest);
+        }
+      }
+
+      // Now test the Admin API with different endpoints
+      const possibleEndpoints = [
+        'members/',
+        'members',
+        'posts/',
+        'posts',
+        'settings/',
+        'settings'
+      ];
+      
+      let workingEndpoint = null;
+      let adminResponse = null;
+      
+      for (const endpoint of possibleEndpoints) {
+        const testUrl = `${GHOST_ADMIN_API_URL}${endpoint}`;
+        console.log(`Testing Admin API endpoint: ${testUrl}`);
+        
+        try {
+          const response = await axios.get(testUrl, {
+            headers: {
+              'Authorization': `Ghost ${GHOST_ADMIN_API_KEY}`,
+              'Content-Type': 'application/json',
+              'Accept-Version': 'v5.0'
+            },
+            validateStatus: function (status) {
+              return status < 500; // Accept all status codes less than 500
+            }
+          });
+          
+          console.log(`Endpoint ${endpoint} returned status: ${response.status}`);
+          
+          if (response.status === 200) {
+            workingEndpoint = endpoint;
+            adminResponse = response;
+            break;
+          }
+        } catch (error) {
+          console.log(`Endpoint ${endpoint} failed:`, error instanceof Error ? error.message : 'Unknown error');
+        }
+      }
+      
+      if (!workingEndpoint || !adminResponse) {
+        throw new Error('No working Admin API endpoints found');
+      }
+      
+      console.log(`Using working endpoint: ${workingEndpoint}`);
+
+      console.log('Ghost API test response:', {
+        status: adminResponse.status,
+        statusText: adminResponse.statusText,
+        headers: adminResponse.headers,
+        data: typeof adminResponse.data === 'string' ? adminResponse.data.substring(0, 200) + '...' : adminResponse.data
+      });
+
+      if (adminResponse.status === 200) {
+        res.json({
+          success: true,
+          status: adminResponse.status,
+          workingEndpoint: workingEndpoint,
+          memberCount: adminResponse.data?.members?.length || 0,
+          contentApiTest: contentApiTest
+        });
+      } else {
+        console.error('Ghost API test returned error status:', adminResponse.status);
+        console.error('Response data:', adminResponse.data);
+        res.status(500).json({
+          error: 'Ghost API test failed',
+          status: adminResponse.status,
+          statusText: adminResponse.statusText,
+          data: adminResponse.data,
+          contentApiTest: contentApiTest
+        });
+      }
+    } catch (error) {
+      console.error('Ghost API test error:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Ghost API error details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          url: error.config?.url,
+          headers: error.config?.headers,
+          data: error.response?.data
+        });
+        
+        res.status(500).json({
+          error: 'Ghost API test failed',
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          url: error.config?.url,
+          data: error.response?.data
+        });
+      } else {
+        res.status(500).json({
+          error: 'Ghost API test failed',
+          message: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    }
+  });
+
   // Subscribe to newsletter endpoint
   app.post("/api/newsletter/subscribe", async (req: Request, res: Response) => {
     try {
       const { email } = req.body;
       
-      if (!email || typeof email !== 'string') {
+      if (!email || !email.includes('@')) {
         return res.status(400).json({ message: "Valid email is required" });
       }
-      
-      // Get user ID if logged in
-      const userId = req.session?.userId;
-      
-      const result = await subscribeToNewsletter(email, userId);
-      res.json(result);
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: "Please enter a valid email address" });
+      }
+
+      // Get Ghost configuration
+      const GHOST_ADMIN_API_URL = process.env.GHOST_ADMIN_API_URL;
+      const GHOST_ADMIN_API_KEY = process.env.GHOST_ADMIN_API_KEY;
+
+      if (!GHOST_ADMIN_API_URL || !GHOST_ADMIN_API_KEY) {
+        console.error('Missing Ghost API configuration for newsletter subscription');
+        return res.status(500).json({ message: "Newsletter service is not configured" });
+      }
+
+      console.log('Ghost API configuration:', {
+        url: GHOST_ADMIN_API_URL,
+        hasAdminKey: !!GHOST_ADMIN_API_KEY,
+        keyLength: GHOST_ADMIN_API_KEY?.length
+      });
+
+      // Create member in Ghost using Admin API
+      const memberData = {
+        members: [{
+          email: email,
+          status: 'subscribed'
+        }]
+      };
+
+      const response = await axios.post(
+        `${GHOST_ADMIN_API_URL}members/`,
+        memberData,
+        {
+          headers: {
+            'Authorization': `Ghost ${GHOST_ADMIN_API_KEY}`,
+            'Content-Type': 'application/json',
+            'Accept-Version': 'v5.0'
+          }
+        }
+      );
+
+      console.log('Ghost API response:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+        data: typeof response.data === 'string' ? response.data.substring(0, 200) + '...' : response.data
+      });
+
+      if (response.status === 201 || response.status === 200) {
+        console.log('Successfully subscribed email to newsletter:', email);
+        res.status(200).json({ 
+          message: "Successfully subscribed to newsletter",
+          email: email
+        });
+      } else {
+        console.error('Ghost API returned error status:', response.status);
+        console.error('Response data:', response.data);
+        throw new Error(`Ghost API returned status ${response.status}: ${response.statusText}`);
+      }
+
     } catch (error) {
-      console.error("Newsletter subscription error:", error);
-      res.status(500).json({ message: "Error processing subscription request" });
+      console.error('Newsletter subscription error:', error);
+      
+      if (axios.isAxiosError(error)) {
+        // Handle specific Ghost API errors
+        if (error.response?.status === 422) {
+          // Member already exists
+          return res.status(200).json({ 
+            message: "You're already subscribed to our newsletter!",
+            email: req.body.email
+          });
+        }
+        
+        if (error.response?.status === 401) {
+          console.error('Ghost API authentication failed');
+          return res.status(500).json({ message: "Newsletter service configuration error" });
+        }
+        
+        console.error('Ghost API error details:', {
+          status: error.response?.status,
+          data: error.response?.data
+        });
+      }
+      
+      res.status(500).json({ 
+        message: "Failed to subscribe to newsletter. Please try again later.",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
   

@@ -6,6 +6,7 @@ import ArticleContent from "@/components/article/ArticleContent";
 import TableOfContents from "@/components/article/TableOfContents";
 import CommentSection from "@/components/article/CommentSection";
 import Advertisement from "@/components/Advertisement";
+import NewsletterSubscription from "@/components/NewsletterSubscription";
 import { ChevronLeft, Clock, User, Calendar, Eye, Share2, Bookmark } from "lucide-react";
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
@@ -358,6 +359,11 @@ function Article() {
                   refetchComments={() => {}} 
                 />
               </div>
+            </div>
+
+            {/* Newsletter Subscription */}
+            <div className="mt-8 md:mt-12">
+              <NewsletterSubscription variant="article" />
             </div>
           </div>
           
