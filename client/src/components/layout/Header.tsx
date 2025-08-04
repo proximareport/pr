@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MenuIcon, LogOutIcon, UserIcon, SettingsIcon, ShieldIcon, LineChartIcon, Search, ChevronDownIcon, ShoppingCartIcon, ExternalLinkIcon, BriefcaseIcon, MegaphoneIcon } from "lucide-react";
+import { MenuIcon, LogOutIcon, UserIcon, SettingsIcon, ShieldIcon, LineChartIcon, Search, ChevronDownIcon, ShoppingCartIcon, ExternalLinkIcon, BriefcaseIcon, MegaphoneIcon, RocketIcon } from "lucide-react";
 import { SearchPopup } from "@/components/search/SearchPopup";
 
 // Import logo images
@@ -27,6 +27,7 @@ function Header() {
     { name: "Jobs", href: "/jobs", icon: <BriefcaseIcon className="h-4 w-4" /> },
     { name: "Advertise", href: "/advertise", icon: <MegaphoneIcon className="h-4 w-4" /> },
     { name: "Pricing", href: "/pricing", icon: <ShoppingCartIcon className="h-4 w-4" /> },
+    { name: "ProxiHub", href: "/proxihub", icon: <RocketIcon className="h-4 w-4" /> },
   ];
 
   const isActive = (path: string) => location === path;

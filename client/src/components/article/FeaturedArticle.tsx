@@ -51,10 +51,16 @@ function FeaturedArticle({ article }: FeaturedArticleProps) {
   
   return (
     <div 
-      className="parallax-header relative h-[50vh] md:h-[60vh]" 
-      style={{ backgroundImage: `url(${article.feature_image})` }}
+      className="relative h-[50vh] md:h-[60vh] overflow-hidden rounded-lg border border-white/10"
+      style={{ 
+        backgroundImage: `url(${article.feature_image})`,
+        backgroundPosition: 'center 20%',
+        backgroundRepeat: 'no-repeat',
+        backgroundSize: 'cover',
+        backgroundColor: '#0D0D17'
+      }}
     >
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D17] via-[#0D0D17]/80 to-transparent"></div>
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D17] via-[#0D0D17]/70 to-transparent"></div>
       <div className="container mx-auto px-4 md:px-6 h-full flex flex-col justify-end pb-8 md:pb-12 relative z-10">
         <div className="max-w-4xl">
           <Link href={`/article/${article.slug}`}>

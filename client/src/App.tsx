@@ -22,6 +22,18 @@ import Subscribe from "@/pages/Subscribe";
 import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
 import Pricing from "@/pages/Pricing";
 import TagView from "@/pages/TagView";
+import ProxiHub from "@/pages/ProxiHub";
+import WordGenerator from "@/pages/tools/WordGenerator";
+import DistanceCalculator from "@/pages/tools/DistanceCalculator";
+import FactGenerator from "@/pages/tools/FactGenerator";
+import ColorPalette from "@/pages/tools/ColorPalette";
+import PlanetGenerator from "@/pages/tools/PlanetGenerator";
+import MissionGenerator from "@/pages/tools/MissionGenerator";
+import QuizGenerator from "@/pages/tools/QuizGenerator";
+import Launches from "@/pages/Launches";
+import Benefits from "@/pages/Benefits";
+import Gift from "@/pages/Gift";
+import Careers from "@/pages/Careers";
 // SearchResults page removed as it's now integrated into the search bar
 import NewsletterVerify from "@/pages/NewsletterVerify";
 import NewsletterUnsubscribe from "@/pages/NewsletterUnsubscribe";
@@ -92,6 +104,18 @@ function Router() {
       <Route path="/subscribe" component={Subscribe} />
       <Route path="/subscription/success" component={SubscriptionSuccess} />
       <Route path="/pricing" component={Pricing} />
+      <Route path="/proxihub" component={ProxiHub} />
+      <Route path="/tools/word-generator" component={WordGenerator} />
+      <Route path="/tools/distance-calculator" component={DistanceCalculator} />
+      <Route path="/tools/fact-generator" component={FactGenerator} />
+      <Route path="/tools/color-palette" component={ColorPalette} />
+      <Route path="/tools/planet-generator" component={PlanetGenerator} />
+      <Route path="/tools/mission-generator" component={MissionGenerator} />
+      <Route path="/tools/quiz-generator" component={QuizGenerator} />
+      <Route path="/launches" component={Launches} />
+      <Route path="/benefits" component={Benefits} />
+      <Route path="/gift" component={Gift} />
+      <Route path="/careers" component={Careers} />
       <Route path="/tag/:tagName" component={TagView} />
       {/* Search page removed - now directly integrated into the dropdown */}
       <Route path="/newsletter/verify" component={NewsletterVerify} />
