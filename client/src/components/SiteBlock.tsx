@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { LockIcon, EyeIcon, EyeOffIcon, AlertTriangleIcon } from 'lucide-react';
+import { LockIcon, EyeIcon, EyeOffIcon, AlertTriangleIcon, MailIcon } from 'lucide-react';
 import { useLocation } from 'wouter';
 
 interface SiteBlockProps {
@@ -41,18 +41,14 @@ export default function SiteBlock({ siteBlock }: SiteBlockProps) {
     setError('');
 
     try {
-      const success = await login(email, password);
-      if (success) {
-        toast({
-          title: "Login successful",
-          description: "Welcome back!",
-        });
-        navigate('/admin');
-      } else {
-        setError('Invalid credentials. Please try again.');
-      }
+      await login({ email, password });
+      toast({
+        title: "Login successful",
+        description: "Welcome back!",
+      });
+      navigate('/admin');
     } catch (err) {
-      setError('An error occurred during login. Please try again.');
+      setError('Invalid credentials. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -129,18 +125,31 @@ export default function SiteBlock({ siteBlock }: SiteBlockProps) {
                   )}
 
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-                      Email
+                    <Label htmlFor="email" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                      <MailIcon className="h-4 w-4" />
+                      Email Address
                     </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Enter your email"
-                      required
-                      className="w-full"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="your.email@example.com"
+                        required
+                        className={`w-full ${email.includes('@') ? 'border-green-500' : ''}`}
+                        autoComplete="email"
+                      />
+                      {email.includes('@') && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 flex items-center gap-1">
+                      <MailIcon className="h-3 w-3" />
+                      Enter your full email address including the @ symbol
+                    </p>
                   </div>
 
                   <div className="space-y-2">
