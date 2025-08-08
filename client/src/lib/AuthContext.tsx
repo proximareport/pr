@@ -33,6 +33,7 @@ interface AuthContextType {
   register: (userData: { username: string; email: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (data: Partial<User>) => Promise<void>;
+  refetch: () => Promise<any>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -207,6 +208,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         register,
         logout,
         updateUser,
+        refetch,
       }}
     >
       {children}

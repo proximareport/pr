@@ -255,7 +255,7 @@ import { apiRequest } from "@/lib/queryClient";
 
 function MainApp() {
   const { settings } = useSiteSettings();
-  const { isAdmin } = useAuth();
+  const { isAdmin, user, isLoading: authLoading } = useAuth();
   const [location] = useLocation();
   
   // Fetch site block status
@@ -279,21 +279,27 @@ function MainApp() {
   const isAuthPage = location === '/login' || location === '/register';
 
   
-  // Site block logic
-  const showSiteBlock = siteBlock?.isEnabled && !isAdmin && !isAdminPage;
+  // Site block logic - don't show if user is authenticated as admin or on admin pages
+  const isSiteBlockPreviewPage = location === '/site-block-preview';
+  const showSiteBlock = siteBlock?.isEnabled && !isAdmin && !isAdminPage && !authLoading && !isSiteBlockPreviewPage;
   
   // For debugging
       console.log("MainApp render check:", {
       path: location,
       isAdmin,
+      user: user?.username,
+      userRole: user?.role,
       isAdminPage,
       isAuthPage,
       showSiteBlock,
-      siteBlockEnabled: siteBlock?.isEnabled
+      siteBlockEnabled: siteBlock?.isEnabled,
+      authLoading,
+      siteBlockLoading,
+      finalDecision: showSiteBlock && siteBlock && !isAdmin ? 'SHOW_SITE_BLOCK' : 'SHOW_NORMAL_SITE'
     });
   
-  // Show loading while fetching site block status
-  if (siteBlockLoading) {
+  // Show loading while fetching site block status or auth status
+  if (siteBlockLoading || authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
@@ -301,8 +307,8 @@ function MainApp() {
     );
   }
   
-  // Show site block if enabled (takes precedence over maintenance mode)
-  if (showSiteBlock && siteBlock) {
+  // Show site block if enabled and user is not admin
+  if (showSiteBlock && siteBlock && !isAdmin) {
     return <SiteBlock siteBlock={siteBlock} />;
   }
   

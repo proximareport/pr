@@ -31,7 +31,7 @@ export default function SiteBlock({ siteBlock }: SiteBlockProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const { login } = useAuth();
+  const { login, refetch } = useAuth();
   const { toast } = useToast();
   const [, navigate] = useLocation();
 
@@ -42,11 +42,19 @@ export default function SiteBlock({ siteBlock }: SiteBlockProps) {
 
     try {
       await login({ email, password });
+      
+      // Force refresh auth status to ensure isAdmin is updated
+      await refetch();
+      
       toast({
         title: "Login successful",
         description: "Welcome back!",
       });
-      navigate('/admin');
+      
+      // Small delay to ensure state is updated before navigation
+      setTimeout(() => {
+        navigate('/admin');
+      }, 100);
     } catch (err) {
       setError('Invalid credentials. Please try again.');
     } finally {
