@@ -97,17 +97,7 @@ declare module 'express-serve-static-core' {
 }
 
 // Configure session middleware
-// Note: For production, you'd use a more robust session store
-const sessionConfig = {
-  secret: process.env.SESSION_SECRET || 'proxima_report_secret_key_for_development_only',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-    sameSite: 'lax' as const // Helps with CSRF protection
-  }
-};
+
 
 declare module 'express-session' {
   interface SessionData {
@@ -230,8 +220,6 @@ const requireEditor = async (req: Request, res: Response, next: NextFunction) =>
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Use session middleware
-  app.use(session(sessionConfig));
   
   // Debug endpoint to check environment variables
   app.get("/api/debug/env", (req: Request, res: Response) => {
@@ -1071,14 +1059,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API endpoint for checking login status
 
   
+  // Debug endpoint to check session
+  app.get("/api/session-debug", (req: Request, res: Response) => {
+    res.json({
+      sessionID: req.sessionID,
+      userId: req.session.userId,
+      isAdmin: req.session.isAdmin,
+      sessionExists: !!req.session,
+      cookies: req.headers.cookie
+    });
+  });
+
   app.get("/api/me", (req: Request, res: Response) => {
+    console.log("API /me called - Session data:", {
+      userId: req.session.userId,
+      isAdmin: req.session.isAdmin,
+      sessionID: req.sessionID
+    });
+    
     if (req.session.userId) {
       storage.getUser(req.session.userId)
         .then(user => {
           if (user) {
+            console.log("User found:", { id: user.id, username: user.username, role: user.role });
             res.json(user);
           } else {
             // User doesn't exist anymore but has a session
+            console.log("User not found in database but has session");
             req.session.destroy(() => {});
             res.status(401).json({ message: "Not authenticated" });
           }
@@ -1088,6 +1095,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           res.status(500).json({ message: "Server error" });
         });
     } else {
+      console.log("No session userId found");
       res.status(401).json({ message: "Not authenticated" });
     }
   });
@@ -1176,14 +1184,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid credentials" });
       }
       
-      // Set session
-      req.session.userId = user.id;
-      req.session.isAdmin = user.role === 'admin';
-      
-      // Update last login time
-      await storage.updateUser(user.id, { lastLoginAt: new Date() });
-      
-      res.json(user);
+      // Regenerate session to prevent session fixation
+      req.session.regenerate((err) => {
+        if (err) {
+          console.error("Session regeneration error:", err);
+          return res.status(500).json({ message: "Error regenerating session" });
+        }
+        
+        // Set session data
+        req.session.userId = user.id;
+        req.session.isAdmin = user.role === 'admin';
+        
+        // Save session explicitly
+        req.session.save((err) => {
+          if (err) {
+            console.error("Session save error:", err);
+            return res.status(500).json({ message: "Error saving session" });
+          }
+          
+          console.log("Login successful - Session regenerated and saved:", {
+            userId: req.session.userId,
+            isAdmin: req.session.isAdmin,
+            userRole: user.role,
+            sessionID: req.sessionID
+          });
+          
+          // Update last login time
+          storage.updateUser(user.id, { lastLoginAt: new Date() });
+          
+          res.json(user);
+        });
+      });
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({ message: "Error during login" });
