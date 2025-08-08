@@ -32,7 +32,7 @@ import { Separator } from "@/components/ui/separator";
 import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
 import { ChromePicker } from "react-color";
-import { ShieldIcon, CrownIcon, UserIcon, BookmarkIcon, MessageSquareIcon } from "lucide-react";
+import { ShieldIcon, CrownIcon, UserIcon, BookmarkIcon, MessageSquareIcon, ClockIcon } from "lucide-react";
 
 interface ProfileProps {
   username?: string;
@@ -435,8 +435,9 @@ const UserProfile = ({ username, isEditable = false }: ProfileProps) => {
           </CardContent>
           <CardFooter className="flex justify-between border-t border-white/10 pt-4">
             {user?.membershipTier === "free" && (
-              <Button variant="outline" asChild>
-                <Link href="/subscribe">Upgrade for More Options</Link>
+              <Button variant="outline" disabled className="cursor-not-allowed">
+                <ClockIcon className="h-4 w-4 mr-2" />
+                Coming Soon
               </Button>
             )}
             <Button 
@@ -532,8 +533,9 @@ const UserProfile = ({ username, isEditable = false }: ProfileProps) => {
               </div>
               
               {user?.membershipTier === "free" ? (
-                <Button asChild className="bg-purple-800 hover:bg-purple-700">
-                  <Link href="/subscribe">Upgrade Now</Link>
+                <Button className="bg-gray-600 hover:bg-gray-700 cursor-not-allowed" disabled>
+                  <ClockIcon className="h-4 w-4 mr-2" />
+                  Coming Soon
                 </Button>
               ) : (
                 <Button asChild variant="outline">

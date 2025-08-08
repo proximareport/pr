@@ -2,7 +2,7 @@ import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckIcon, StarIcon, RocketIcon, UsersIcon, ShieldIcon, ZapIcon, GlobeIcon, BookOpenIcon, VideoIcon, GiftIcon } from "lucide-react";
+import { CheckIcon, StarIcon, RocketIcon, UsersIcon, ShieldIcon, ZapIcon, GlobeIcon, BookOpenIcon, VideoIcon, GiftIcon, ClockIcon } from "lucide-react";
 import { Link } from "wouter";
 
 interface Benefit {
@@ -147,10 +147,9 @@ function Benefits() {
                       Current Plan
                     </Button>
                   ) : (
-                    <Button asChild className={`w-full bg-gradient-to-r ${getTierGradient(benefit.tier)} hover:opacity-90`}>
-                      <Link href="/subscribe">
-                        {benefit.tier === "supporter" ? "Upgrade to Supporter" : "Upgrade to Pro"}
-                      </Link>
+                    <Button className={`w-full bg-gray-600 hover:bg-gray-700 cursor-not-allowed`} disabled>
+                      <ClockIcon className="h-4 w-4 mr-2" />
+                      Coming Soon
                     </Button>
                   )}
                 </div>
@@ -219,11 +218,9 @@ function Benefits() {
                 Start your cosmic journey today.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button asChild size="lg" className="bg-gradient-to-r from-purple-600 to-violet-700 hover:from-purple-700 hover:to-violet-800">
-                  <Link href="/subscribe">
-                    <StarIcon className="h-5 w-5 mr-2" />
-                    Become a Supporter
-                  </Link>
+                <Button size="lg" className="bg-gray-600 hover:bg-gray-700 cursor-not-allowed" disabled>
+                  <ClockIcon className="h-5 w-5 mr-2" />
+                  Coming Soon
                 </Button>
                 <Button asChild size="lg" variant="outline" className="border-purple-500 text-purple-400 hover:bg-purple-500/10">
                   <Link href="/pricing">

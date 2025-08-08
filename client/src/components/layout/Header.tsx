@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MenuIcon, LogOutIcon, UserIcon, SettingsIcon, ShieldIcon, LineChartIcon, Search, ChevronDownIcon, ShoppingCartIcon, ExternalLinkIcon, BriefcaseIcon, MegaphoneIcon, RocketIcon, ActivityIcon } from "lucide-react";
+import { MenuIcon, LogOutIcon, UserIcon, SettingsIcon, ShieldIcon, LineChartIcon, Search, ChevronDownIcon, ShoppingCartIcon, ExternalLinkIcon, BriefcaseIcon, MegaphoneIcon, RocketIcon, ActivityIcon, ClockIcon } from "lucide-react";
 import { SearchPopup } from "@/components/search/SearchPopup";
 
 // Import logo images
@@ -286,8 +286,9 @@ function Header() {
                       )}
                       
                       {user && user.membershipTier === "free" && (
-                        <Button asChild variant="outline" className="w-full">
-                          <Link href="/subscribe">Upgrade Membership</Link>
+                        <Button variant="outline" className="w-full" disabled>
+                          <ClockIcon className="h-4 w-4 mr-2" />
+                          Coming Soon
                         </Button>
                       )}
                     </div>

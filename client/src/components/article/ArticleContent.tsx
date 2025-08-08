@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { LockIcon, Share2Icon, BookmarkIcon, EyeIcon } from "lucide-react";
+import { LockIcon, Share2Icon, BookmarkIcon, EyeIcon, ClockIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { formatDistance } from "date-fns";
@@ -258,10 +258,11 @@ function ArticleContent({ content }: ArticleContentProps) {
                 This content is available to Supporter and Pro subscribers.
               </p>
               <Button
-                className="bg-purple-800 hover:bg-purple-700"
-                asChild
+                className="bg-gray-600 hover:bg-gray-700 cursor-not-allowed"
+                disabled
               >
-                <Link href="/subscribe">Upgrade to Pro</Link>
+                <ClockIcon className="h-4 w-4 mr-2" />
+                Coming Soon
               </Button>
             </div>
           </div>

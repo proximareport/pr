@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { MapPinIcon, MailIcon, PhoneIcon, ArrowRightIcon, ExternalLinkIcon } from "lucide-react";
+import { MapPinIcon, MailIcon, PhoneIcon, ArrowRightIcon, ExternalLinkIcon, ClockIcon } from "lucide-react";
 import { FaTwitter, FaFacebook, FaInstagram, FaYoutube, FaLinkedin, FaDiscord } from "react-icons/fa";
 import { useState } from "react";
 
@@ -137,19 +137,26 @@ function Footer() {
                   </h3>
                   <ul className="space-y-3">
                     {[
-                      { href: "/subscribe", label: "Join Now" },
-                      { href: "/pricing", label: "Pricing" },
-                      { href: "/benefits", label: "Benefits" },
-                      { href: "/gift", label: "Gift Membership" },
-                    ].map(({ href, label }) => (
+                      { href: "/subscribe", label: "Join Now", disabled: true },
+                      { href: "/pricing", label: "Pricing", disabled: false },
+                      { href: "/benefits", label: "Benefits", disabled: false },
+                      { href: "/gift", label: "Gift Membership", disabled: true },
+                    ].map(({ href, label, disabled }) => (
                       <li key={label}>
-                        <Link 
-                          href={href} 
-                          className="group flex items-center text-gray-400 hover:text-purple-400 transition-all duration-300"
-                        >
-                          <span className="group-hover:translate-x-1 transition-transform duration-300">{label}</span>
-                          <ArrowRightIcon className="h-3 w-3 ml-1 opacity-0 group-hover:opacity-100 transition-all duration-300" />
-                        </Link>
+                        {disabled ? (
+                          <span className="group flex items-center text-gray-600 transition-all duration-300 cursor-not-allowed">
+                            <span className="group-hover:translate-x-1 transition-transform duration-300">{label}</span>
+                            <ClockIcon className="h-3 w-3 ml-1 opacity-50" />
+                          </span>
+                        ) : (
+                          <Link 
+                            href={href} 
+                            className="group flex items-center text-gray-400 hover:text-purple-400 transition-all duration-300"
+                          >
+                            <span className="group-hover:translate-x-1 transition-transform duration-300">{label}</span>
+                            <ArrowRightIcon className="h-3 w-3 ml-1 opacity-0 group-hover:opacity-100 transition-all duration-300" />
+                          </Link>
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -247,7 +254,7 @@ function Footer() {
             </div>
             
             <div className="flex items-center space-x-4 text-sm text-gray-500">
-              <span>Made with ❤️ for space enthusiasts</span>
+              <span>Site Version 2.0</span>
               <a 
                 href="/rss.xml" 
                 target="_blank" 
