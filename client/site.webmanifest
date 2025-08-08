@@ -1,0 +1,88 @@
+{
+  "name": "Proxima Report - Premier Space & STEM News Platform",
+  "short_name": "Proxima Report",
+  "description": "Your premier destination for space exploration and scientific discovery. Get the latest news on space missions, astronomy, rocket launches, NASA, SpaceX, and cutting-edge space technology.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#14141E",
+  "theme_color": "#7c3aed",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en-US",
+  "categories": ["news", "education", "science", "technology"],
+  "icons": [
+    {
+      "src": "/src/assets/images/proxima-logo-desktop.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/src/assets/images/proxima-logo-desktop.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/src/assets/images/favicon.ico",
+      "sizes": "16x16 32x32",
+      "type": "image/x-icon"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/src/assets/images/proxima-logo-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Proxima Report Homepage"
+    },
+    {
+      "src": "/src/assets/images/proxima-logo-mobile.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Proxima Report Mobile View"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Latest News",
+      "short_name": "News",
+      "description": "View the latest space and STEM news",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/src/assets/images/proxima-logo-desktop.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "ProxiHub Tools",
+      "short_name": "Tools",
+      "description": "Access space and STEM tools",
+      "url": "/proxihub",
+      "icons": [
+        {
+          "src": "/src/assets/images/proxima-logo-desktop.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Astronomy Portal",
+      "short_name": "Astronomy",
+      "description": "Explore astronomy resources",
+      "url": "/astronomy",
+      "icons": [
+        {
+          "src": "/src/assets/images/proxima-logo-desktop.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+} 

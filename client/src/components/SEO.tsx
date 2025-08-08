@@ -7,7 +7,7 @@ interface SEOProps {
   keywords?: string;
   image?: string;
   url?: string;
-  type?: 'website' | 'article' | 'profile';
+  type?: 'website' | 'article' | 'profile' | 'tool' | 'service';
   publishedTime?: string;
   modifiedTime?: string;
   author?: string;
@@ -16,12 +16,16 @@ interface SEOProps {
   structuredData?: object;
   noindex?: boolean;
   canonical?: string;
+  aiOptimized?: boolean;
+  contentType?: string;
+  topic?: string;
+  expertise?: string;
 }
 
 const SEO: React.FC<SEOProps> = ({
   title = 'Proxima Report - Premier Space & STEM News Platform',
   description = 'Your premier destination for space exploration and scientific discovery. Get the latest news on space missions, astronomy, rocket launches, NASA, SpaceX, and cutting-edge space technology.',
-  keywords = 'space news, STEM education, astronomy, space exploration, NASA, SpaceX, rocket launches, space missions, science news, technology, exoplanets, space technology, astronomy news, space science, STEM careers, space industry, satellite launches, Mars missions, lunar exploration, space discoveries',
+  keywords = 'space news, STEM education, astronomy, space exploration, NASA, SpaceX, rocket launches, space missions, science news, technology, exoplanets, space technology, astronomy news, space science, STEM careers, space industry, satellite launches, Mars missions, lunar exploration, space discoveries, space tools, ProxiHub, space calculator, planet generator, space facts, space color palette, space quiz, space word generator, distance calculator, mission generator',
   image = 'https://proximareport.com/og-image.jpg',
   url = 'https://proximareport.com',
   type = 'website',
@@ -32,7 +36,11 @@ const SEO: React.FC<SEOProps> = ({
   tags = [],
   structuredData,
   noindex = false,
-  canonical
+  canonical,
+  aiOptimized = true,
+  contentType = 'news, educational, scientific',
+  topic = 'space exploration, STEM education, astronomy, science news',
+  expertise = 'space science, rocket technology, NASA missions, SpaceX launches'
 }) => {
   const fullTitle = title.includes('Proxima Report') ? title : `${title} | Proxima Report`;
   const fullUrl = canonical || url;
@@ -134,6 +142,8 @@ const SEO: React.FC<SEOProps> = ({
       <meta name="language" content="English" />
       <meta name="geo.region" content="US" />
       <meta name="geo.placename" content="United States" />
+      <meta name="geo.position" content="40.7128;-74.0060" />
+      <meta name="ICBM" content="40.7128, -74.0060" />
       
       {/* Content Type */}
       <meta httpEquiv="Content-Type" content="text/html; charset=utf-8" />
@@ -148,6 +158,27 @@ const SEO: React.FC<SEOProps> = ({
       <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
       <meta httpEquiv="X-Frame-Options" content="DENY" />
       <meta httpEquiv="X-XSS-Protection" content="1; mode=block" />
+      
+      {/* AI Search Optimization */}
+      <meta name="ai-search-optimized" content={aiOptimized.toString()} />
+      <meta name="ai-content-type" content={contentType} />
+      <meta name="ai-topic" content={topic} />
+      <meta name="ai-expertise" content={expertise} />
+      
+      {/* Dublin Core Metadata */}
+      <meta name="DC.title" content={fullTitle} />
+      <meta name="DC.creator" content={author} />
+      <meta name="DC.subject" content={keywords} />
+      <meta name="DC.description" content={description} />
+      <meta name="DC.publisher" content="Proxima Report" />
+      <meta name="DC.contributor" content="Proxima Report Team" />
+      <meta name="DC.date" content={publishedTime || new Date().toISOString().split('T')[0]} />
+      <meta name="DC.type" content="Text" />
+      <meta name="DC.format" content="text/html" />
+      <meta name="DC.identifier" content={fullUrl} />
+      <meta name="DC.language" content="en-US" />
+      <meta name="DC.coverage" content="Worldwide" />
+      <meta name="DC.rights" content="Copyright 2024 Proxima Report" />
       
       {/* Preconnect for Performance */}
       <link rel="preconnect" href="https://www.googletagmanager.com" />

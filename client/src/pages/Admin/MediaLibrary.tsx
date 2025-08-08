@@ -637,347 +637,6 @@ const DeleteMediaModal = ({
   );
 };
 
-// Main Media Library Component
-const MediaLibrary = () => {
-  const [activeTab, setActiveTab] = useState<MediaType>("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<MediaItem | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
-  const [sortBy, setSortBy] = useState<"date" | "name" | "size">("date");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [selectedItems, setSelectedItems] = useState<MediaItem[]>([]);
-  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 12;
-
-  // Query to fetch media items
-  const { data: mediaItems, isLoading, isError } = useQuery({
-    queryKey: ['/api/media', searchQuery, activeTab],
-    queryFn: async () => {
-      let url = '/api/media';
-      const params = new URLSearchParams();
-      
-      if (searchQuery) {
-        params.append('search', searchQuery);
-      }
-      
-      if (activeTab !== 'all') {
-        params.append('type', activeTab);
-      }
-      
-      const queryString = params.toString();
-      if (queryString) {
-        url += `?${queryString}`;
-      }
-      
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error('Failed to fetch media items');
-      }
-      return response.json();
-    }
-  });
-
-  // Filter and sort media items based on active tab, search query, and sort options
-  const filteredMedia = React.useMemo(() => {
-    if (!mediaItems) return [];
-    
-    // Apply sorting
-    return [...mediaItems].sort((a, b) => {
-      if (sortBy === 'date') {
-        const dateA = new Date(a.createdAt).getTime();
-        const dateB = new Date(b.createdAt).getTime();
-        return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
-      } 
-      else if (sortBy === 'name') {
-        return sortOrder === 'asc' 
-          ? a.fileName.localeCompare(b.fileName) 
-          : b.fileName.localeCompare(a.fileName);
-      } 
-      else if (sortBy === 'size') {
-        return sortOrder === 'asc' 
-          ? a.fileSize - b.fileSize 
-          : b.fileSize - a.fileSize;
-      }
-      return 0;
-    });
-  }, [mediaItems, sortBy, sortOrder]);
-  
-  // Paginate the results
-  const paginatedMedia = React.useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return filteredMedia.slice(startIndex, endIndex);
-  }, [filteredMedia, currentPage, itemsPerPage]);
-  
-  // Calculate total pages
-  const totalPages = React.useMemo(() => {
-    return Math.ceil(filteredMedia.length / itemsPerPage);
-  }, [filteredMedia.length, itemsPerPage]);
-
-  const handleEditItem = (item: MediaItem) => {
-    setSelectedItem(item);
-    setIsEditModalOpen(true);
-  };
-
-  const handleDeleteItem = (item: MediaItem) => {
-    setSelectedItem(item);
-    setIsDeleteModalOpen(true);
-  };
-  
-  const handlePreviewItem = (item: MediaItem) => {
-    setSelectedItem(item);
-    setIsPreviewModalOpen(true);
-  };
-  
-  const handleSelectItem = (item: MediaItem, selected: boolean) => {
-    if (selected) {
-      setSelectedItems(prev => [...prev, item]);
-    } else {
-      setSelectedItems(prev => prev.filter(i => i.id !== item.id));
-    }
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    // The query will be fetched automatically due to the searchQuery dependency
-  };
-
-  const clearSearch = () => {
-    setSearchQuery("");
-  };
-  
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  return (
-    <div>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Media Library</h1>
-          <p className="text-gray-500">
-            Manage your uploaded media files
-          </p>
-        </div>
-          <Button
-            onClick={() => setIsUploadModalOpen(true)}
-            className="mt-4 md:mt-0"
-          >
-            <Upload className="mr-2 h-4 w-4" /> Upload Media
-          </Button>
-        </div>
-
-        <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0 mb-6">
-          <div className="w-full md:w-1/2">
-            <form onSubmit={handleSearch} className="flex space-x-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-                <Input
-                  type="search"
-                  placeholder="Search media files..."
-                  className="pl-8"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={clearSearch}
-                    className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-500 hover:text-gray-900"
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
-              <Button type="submit">Search</Button>
-            </form>
-          </div>
-          <div className="w-full md:w-1/2">
-            <Tabs defaultValue="all" value={activeTab} onValueChange={(value) => setActiveTab(value as MediaType)}>
-              <TabsList className="w-full">
-                <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
-                <TabsTrigger value="image" className="flex-1">Images</TabsTrigger>
-                <TabsTrigger value="video" className="flex-1">Videos</TabsTrigger>
-                <TabsTrigger value="document" className="flex-1">Documents</TabsTrigger>
-                <TabsTrigger value="audio" className="flex-1">Audio</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-        </div>
-        
-        <div className="flex flex-col md:flex-row justify-between items-center mb-6">
-          <div className="flex items-center space-x-4 mb-4 md:mb-0">
-            <div className="flex items-center">
-              <label htmlFor="sort-by" className="mr-2 text-sm font-medium">Sort by:</label>
-              <Select value={sortBy} onValueChange={(value) => setSortBy(value as "date" | "name" | "size")}>
-                <SelectTrigger id="sort-by" className="w-[120px]">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="date">Date</SelectItem>
-                  <SelectItem value="name">Name</SelectItem>
-                  <SelectItem value="size">Size</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex items-center ml-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-                className="flex items-center"
-              >
-                {sortOrder === "asc" ? <ArrowUpDown className="h-4 w-4 mr-1" /> : <ArrowDownUp className="h-4 w-4 mr-1" />}
-                {sortOrder === "asc" ? "Ascending" : "Descending"}
-              </Button>
-            </div>
-          </div>
-          
-          {selectedItems.length > 0 && (
-            <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium">{selectedItems.length} selected</span>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setSelectedItems([])}
-              >
-                Clear selection
-              </Button>
-              <Button 
-                variant="destructive" 
-                size="sm"
-                onClick={() => setIsBulkDeleteModalOpen(true)}
-              >
-                Delete selected
-              </Button>
-            </div>
-          )}
-        </div>
-
-        <Separator className="my-6" />
-
-        {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {[...Array(8)].map((_, index) => (
-              <div key={index} className="space-y-2">
-                <Skeleton className="h-40 w-full" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-              </div>
-            ))}
-          </div>
-        ) : isError ? (
-          <div className="text-center py-12">
-            <p className="text-red-500">Failed to load media items. Please try again.</p>
-            <Button
-              variant="outline"
-              onClick={() => window.location.reload()}
-              className="mt-4"
-            >
-              Reload
-            </Button>
-          </div>
-        ) : filteredMedia.length === 0 ? (
-          <div className="text-center py-12 border rounded-lg">
-            <div className="mx-auto h-12 w-12 text-gray-400">
-              <Image className="h-12 w-12" />
-            </div>
-            <h3 className="mt-4 text-lg font-medium">No media found</h3>
-            <p className="mt-2 text-sm text-gray-500">
-              {searchQuery
-                ? `No results for "${searchQuery}". Try a different search.`
-                : "Upload your first media file to get started."}
-            </p>
-            <Button
-              onClick={() => setIsUploadModalOpen(true)}
-              className="mt-6"
-            >
-              <Upload className="mr-2 h-4 w-4" /> Upload Media
-            </Button>
-          </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {paginatedMedia.map((item) => (
-                <MediaItemCard
-                  key={item.id}
-                  item={item}
-                  onEdit={handleEditItem}
-                  onDelete={handleDeleteItem}
-                  onPreview={handlePreviewItem}
-                  isSelected={selectedItems.some(i => i.id === item.id)}
-                  onSelect={handleSelectItem}
-                />
-              ))}
-            </div>
-            
-            {totalPages > 1 && (
-              <div className="flex justify-center mt-8">
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                  >
-                    Previous
-                  </Button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <Button
-                      key={page}
-                      variant={currentPage === page ? "default" : "outline"}
-                      onClick={() => handlePageChange(page)}
-                    >
-                      {page}
-                    </Button>
-                  ))}
-                  <Button
-                    variant="outline"
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* Modals */}
-      <UploadModal
-        isOpen={isUploadModalOpen}
-        onClose={() => setIsUploadModalOpen(false)}
-      />
-      <EditMediaModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        mediaItem={selectedItem}
-      />
-      <DeleteMediaModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        mediaItem={selectedItem}
-      />
-      <PreviewMediaModal
-        isOpen={isPreviewModalOpen}
-        onClose={() => setIsPreviewModalOpen(false)}
-        mediaItem={selectedItem}
-      />
-      <BulkDeleteMediaModal
-        isOpen={isBulkDeleteModalOpen}
-        onClose={() => setIsBulkDeleteModalOpen(false)}
-        items={selectedItems}
-      />
-    </div>
-  );
-};
-
 // Preview Media Modal Component
 const PreviewMediaModal = ({
   isOpen,
@@ -1183,4 +842,347 @@ const BulkDeleteMediaModal = ({
   );
 };
 
-export default MediaLibrary;
+// Main Media Library Component
+const MediaLibrary = () => {
+  const [activeTab, setActiveTab] = useState<MediaType>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<MediaItem | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<"date" | "name" | "size">("date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [selectedItems, setSelectedItems] = useState<MediaItem[]>([]);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
+
+  // Query to fetch media items
+  const { data: mediaItems, isLoading, isError } = useQuery({
+    queryKey: ['/api/media', searchQuery, activeTab],
+    queryFn: async () => {
+      let url = '/api/media';
+      const params = new URLSearchParams();
+      
+      if (searchQuery) {
+        params.append('search', searchQuery);
+      }
+      
+      if (activeTab !== 'all') {
+        params.append('type', activeTab);
+      }
+      
+      const queryString = params.toString();
+      if (queryString) {
+        url += `?${queryString}`;
+      }
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to fetch media items');
+      }
+      return response.json();
+    }
+  });
+
+  // Filter and sort media items based on active tab, search query, and sort options
+  const filteredMedia = React.useMemo(() => {
+    if (!mediaItems) return [];
+    
+    // Apply sorting
+    return [...mediaItems].sort((a, b) => {
+      if (sortBy === 'date') {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+      } 
+      else if (sortBy === 'name') {
+        return sortOrder === 'asc' 
+          ? a.fileName.localeCompare(b.fileName) 
+          : b.fileName.localeCompare(a.fileName);
+      } 
+      else if (sortBy === 'size') {
+        return sortOrder === 'asc' 
+          ? a.fileSize - b.fileSize 
+          : b.fileSize - a.fileSize;
+      }
+      return 0;
+    });
+  }, [mediaItems, sortBy, sortOrder]);
+  
+  // Paginate the results
+  const paginatedMedia = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredMedia.slice(startIndex, endIndex);
+  }, [filteredMedia, currentPage, itemsPerPage]);
+  
+  // Calculate total pages
+  const totalPages = React.useMemo(() => {
+    return Math.ceil(filteredMedia.length / itemsPerPage);
+  }, [filteredMedia.length, itemsPerPage]);
+
+  const handleEditItem = (item: MediaItem) => {
+    setSelectedItem(item);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDeleteItem = (item: MediaItem) => {
+    setSelectedItem(item);
+    setIsDeleteModalOpen(true);
+  };
+  
+  const handlePreviewItem = (item: MediaItem) => {
+    setSelectedItem(item);
+    setIsPreviewModalOpen(true);
+  };
+  
+  const handleSelectItem = (item: MediaItem, selected: boolean) => {
+    if (selected) {
+      setSelectedItems(prev => [...prev, item]);
+    } else {
+      setSelectedItems(prev => prev.filter(i => i.id !== item.id));
+    }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    // The query will be fetched automatically due to the searchQuery dependency
+  };
+
+  const clearSearch = () => {
+    setSearchQuery("");
+  };
+  
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  return (
+    <div>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Media Library</h1>
+          <p className="text-gray-500">
+            Manage your uploaded media files
+          </p>
+        </div>
+        <Button
+          onClick={() => setIsUploadModalOpen(true)}
+          className="mt-4 md:mt-0"
+        >
+          <Upload className="mr-2 h-4 w-4" /> Upload Media
+        </Button>
+      </div>
+
+        <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0 mb-6">
+          <div className="w-full md:w-1/2">
+            <form onSubmit={handleSearch} className="flex space-x-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                <Input
+                  type="search"
+                  placeholder="Search media files..."
+                  className="pl-8"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={clearSearch}
+                    className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-500 hover:text-gray-900"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+              <Button type="submit">Search</Button>
+            </form>
+          </div>
+          <div className="w-full md:w-1/2">
+            <Tabs defaultValue="all" value={activeTab} onValueChange={(value) => setActiveTab(value as MediaType)}>
+              <TabsList className="w-full">
+                <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
+                <TabsTrigger value="image" className="flex-1">Images</TabsTrigger>
+                <TabsTrigger value="video" className="flex-1">Videos</TabsTrigger>
+                <TabsTrigger value="document" className="flex-1">Documents</TabsTrigger>
+                <TabsTrigger value="audio" className="flex-1">Audio</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+        </div>
+        
+        <div className="flex flex-col md:flex-row justify-between items-center mb-6">
+          <div className="flex items-center space-x-4 mb-4 md:mb-0">
+            <div className="flex items-center">
+              <label htmlFor="sort-by" className="mr-2 text-sm font-medium">Sort by:</label>
+              <Select value={sortBy} onValueChange={(value) => setSortBy(value as "date" | "name" | "size")}>
+                <SelectTrigger id="sort-by" className="w-[120px]">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date">Date</SelectItem>
+                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="size">Size</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex items-center ml-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                className="flex items-center"
+              >
+                {sortOrder === "asc" ? <ArrowUpDown className="h-4 w-4 mr-1" /> : <ArrowDownUp className="h-4 w-4 mr-1" />}
+                {sortOrder === "asc" ? "Ascending" : "Descending"}
+              </Button>
+            </div>
+          </div>
+          
+          {selectedItems.length > 0 && (
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium">{selectedItems.length} selected</span>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setSelectedItems([])}
+              >
+                Clear selection
+              </Button>
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={() => setIsBulkDeleteModalOpen(true)}
+              >
+                Delete selected
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <Separator className="my-6" />
+
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {[...Array(8)].map((_, index) => (
+              <div key={index} className="space-y-2">
+                <Skeleton className="h-40 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+            ))}
+          </div>
+        ) : isError ? (
+          <div className="text-center py-12">
+            <p className="text-red-500">Failed to load media items. Please try again.</p>
+            <Button
+              variant="outline"
+              onClick={() => window.location.reload()}
+              className="mt-4"
+            >
+              Reload
+            </Button>
+          </div>
+        ) : filteredMedia.length === 0 ? (
+          <div className="text-center py-12 border rounded-lg">
+            <div className="mx-auto h-12 w-12 text-gray-400">
+              <Image className="h-12 w-12" />
+            </div>
+            <h3 className="mt-4 text-lg font-medium">No media found</h3>
+            <p className="mt-2 text-sm text-gray-500">
+              {searchQuery
+                ? `No results for "${searchQuery}". Try a different search.`
+                : "Upload your first media file to get started."}
+            </p>
+            <Button
+              onClick={() => setIsUploadModalOpen(true)}
+              className="mt-6"
+            >
+              <Upload className="mr-2 h-4 w-4" /> Upload Media
+            </Button>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {paginatedMedia.map((item) => (
+                <MediaItemCard
+                  key={item.id}
+                  item={item}
+                  onEdit={handleEditItem}
+                  onDelete={handleDeleteItem}
+                  onPreview={handlePreviewItem}
+                  isSelected={selectedItems.some(i => i.id === item.id)}
+                  onSelect={handleSelectItem}
+                />
+              ))}
+            </div>
+            
+            {totalPages > 1 && (
+              <div className="flex justify-center mt-8">
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <Button
+                      key={page}
+                      variant={currentPage === page ? "default" : "outline"}
+                      onClick={() => handlePageChange(page)}
+                    >
+                      {page}
+                    </Button>
+                  ))}
+                  <Button
+                    variant="outline"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Modals */}
+      <>
+        <UploadModal
+          isOpen={isUploadModalOpen}
+          onClose={() => setIsUploadModalOpen(false)}
+        />
+        <EditMediaModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          mediaItem={selectedItem}
+        />
+        <DeleteMediaModal
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          mediaItem={selectedItem}
+        />
+        <PreviewMediaModal
+          isOpen={isPreviewModalOpen}
+          onClose={() => setIsPreviewModalOpen(false)}
+          mediaItem={selectedItem}
+        />
+        <BulkDeleteMediaModal
+          isOpen={isBulkDeleteModalOpen}
+          onClose={() => setIsBulkDeleteModalOpen(false)}
+          items={selectedItems}
+        />
+      </>
+    </div>
+  );
+};
+
+export default MediaLibrary; 

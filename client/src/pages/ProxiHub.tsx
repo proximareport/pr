@@ -96,6 +96,22 @@ function ProxiHub() {
       category: "Education",
       badge: "New"
     },
+    {
+      name: "Delta-V Calculator",
+      description: "Calculate delta-v requirements for space missions and orbital transfers",
+      icon: <CalculatorIcon className="h-6 w-6" />,
+      href: "/tools/delta-v-calculator",
+      category: "Calculators",
+      badge: "Beta Experimental"
+    },
+    {
+      name: "Astrophysics Playground",
+      description: "Interactive simulations and experiments for astrophysics concepts",
+      icon: <AtomIcon className="h-6 w-6" />,
+      href: "/tools/astrophysics-playground",
+      category: "Education",
+      badge: "Beta Experimental"
+    },
     
     // Astronomy & Observation Tools
     {
@@ -303,27 +319,26 @@ function ProxiHub() {
             ))}
           </div>
 
-          {/* Coming Soon Section */}
+          {/* ProxiHub Version Info */}
           <div className="mt-16">
             <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border-purple-500/20 backdrop-blur-sm">
               <CardContent className="pt-8 pb-8">
                 <div className="text-center">
                   <h3 className="text-2xl font-semibold text-purple-300 mb-4">
-                    🚀 More Tools Coming Soon
+                    📊 ProxiHub Version Info
                   </h3>
                   <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
-                    We're constantly adding new tools and features to ProxiHub. 
-                    Have a suggestion for a tool you'd like to see? Let us know!
+                    Current version and development status of ProxiHub tools and features.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <Badge variant="outline" className="bg-purple-500/20 text-purple-300 border-purple-500/30 px-4 py-2">
-                      AI Space Assistant
+                    <Badge variant="outline" className="bg-green-500/20 text-green-300 border-green-500/30 px-4 py-2">
+                      Version 1.2.0
                     </Badge>
                     <Badge variant="outline" className="bg-blue-500/20 text-blue-300 border-blue-500/30 px-4 py-2">
-                      3D Solar System
+                      Stable Release
                     </Badge>
-                    <Badge variant="outline" className="bg-pink-500/20 text-pink-300 border-pink-500/30 px-4 py-2">
-                      Mission Simulator
+                    <Badge variant="outline" className="bg-orange-500/20 text-orange-300 border-orange-500/30 px-4 py-2">
+                      Beta Features Available
                     </Badge>
                   </div>
                 </div>

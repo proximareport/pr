@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import SatelliteVisualizer from '../components/SatelliteVisualizer';
 import { 
   useUpcomingLaunches, 
   usePreviousLaunches,
@@ -47,13 +48,84 @@ import {
   CloudIcon,
   WavesIcon,
   ExternalLinkIcon,
-  ShoppingCartIcon
+  ShoppingCartIcon,
+  UsersIcon,
+  GlobeIcon,
+  SatelliteIcon,
+  ZapIcon,
+  AlertTriangleIcon,
+  TrendingUpIcon,
+  BarChart3Icon,
+  WifiIcon,
+  SignalIcon,
+  CompassIcon,
+  StarIcon,
+  Globe2Icon,
+  AtomIcon,
+  MicroscopeIcon,
+  BookOpenIcon,
+  LightbulbIcon,
+  SettingsIcon,
+  RefreshCwIcon,
+  MaximizeIcon,
+  MinimizeIcon,
+  CalendarIcon
 } from 'lucide-react';
 
 // Type definitions
 interface Location {
   lat: number;
   lon: number;
+}
+
+interface SpaceStation {
+  name: string;
+  country: string;
+  launchDate: string;
+  crew: number;
+  status: 'active' | 'decommissioned' | 'planned';
+  orbit: string;
+}
+
+interface SpaceMission {
+  name: string;
+  agency: string;
+  status: 'active' | 'completed' | 'planned' | 'failed';
+  destination: string;
+  launchDate: string;
+  duration: string;
+  crew: number;
+}
+
+interface SpaceEvent {
+  title: string;
+  date: string;
+  type: 'launch' | 'landing' | 'spacewalk' | 'docking' | 'scientific';
+  description: string;
+  location: string;
+}
+
+interface SystemStatus {
+  system: string;
+  status: 'operational' | 'degraded' | 'down' | 'maintenance';
+  uptime: string;
+  lastUpdate: string;
+}
+
+interface CalendarEvent {
+  id: string;
+  title: string;
+  date: string;
+  time?: string;
+  type: 'launch' | 'landing' | 'spacewalk' | 'docking' | 'scientific' | 'astronomical' | 'conference' | 'anniversary';
+  category: 'space' | 'astronomy' | 'education' | 'commercial';
+  description: string;
+  location: string;
+  agency?: string;
+  mission?: string;
+  priority: 'high' | 'medium' | 'low';
+  isRecurring?: boolean;
+  recurrence?: 'daily' | 'weekly' | 'monthly' | 'yearly';
 }
 
 // Component definitions
@@ -140,6 +212,260 @@ export default function MissionControl() {
   const { data: hubbleImages, isLoading: hubbleImagesLoading, error: hubbleImagesError } = useHubbleImages();
   const { data: exoplanets, isLoading: exoplanetsLoading, error: exoplanetsError } = useExoplanets();
 
+  // Additional state for new features
+  const [selectedView, setSelectedView] = useState<'dashboard' | 'missions' | 'stations' | 'events' | 'systems' | 'calendar' | 'orbits'>('dashboard');
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [refreshInterval, setRefreshInterval] = useState(30000); // 30 seconds
+
+  // Simulated data for new features
+  const spaceStations: SpaceStation[] = [
+    {
+      name: "International Space Station",
+      country: "International",
+      launchDate: "1998-11-20",
+      crew: 7,
+      status: "active",
+      orbit: "408 km LEO"
+    },
+    {
+      name: "Tiangong Space Station",
+      country: "China",
+      launchDate: "2021-04-29",
+      crew: 3,
+      status: "active",
+      orbit: "400 km LEO"
+    },
+    {
+      name: "Mir",
+      country: "Soviet Union/Russia",
+      launchDate: "1986-02-19",
+      crew: 0,
+      status: "decommissioned",
+      orbit: "Deorbited 2001"
+    }
+  ];
+
+  const activeMissions: SpaceMission[] = [
+    {
+      name: "Artemis II",
+      agency: "NASA",
+      status: "planned",
+      destination: "Moon",
+      launchDate: "2025-09",
+      duration: "10 days",
+      crew: 4
+    },
+    {
+      name: "Crew Dragon Endurance",
+      agency: "SpaceX",
+      status: "active",
+      destination: "ISS",
+      launchDate: "2024-08-26",
+      duration: "6 months",
+      crew: 4
+    },
+    {
+      name: "Shenzhou-18",
+      agency: "CNSA",
+      status: "active",
+      destination: "Tiangong",
+      launchDate: "2024-10-26",
+      duration: "6 months",
+      crew: 3
+    }
+  ];
+
+  const upcomingEvents: SpaceEvent[] = [
+    {
+      title: "SpaceX Starship Test Flight",
+      date: "2024-12-15",
+      type: "launch",
+      description: "Orbital test flight of Starship prototype",
+      location: "Starbase, Texas"
+    },
+    {
+      title: "ISS Spacewalk EVA-89",
+      date: "2024-12-18",
+      type: "spacewalk",
+      description: "Installation of new solar arrays",
+      location: "International Space Station"
+    },
+    {
+      title: "Jupiter Icy Moons Explorer Arrival",
+      date: "2031-07",
+      type: "scientific",
+      description: "JUICE spacecraft arrives at Jupiter system",
+      location: "Jupiter Orbit"
+    }
+  ];
+
+  const systemStatuses: SystemStatus[] = [
+    {
+      system: "Ground Control",
+      status: "operational",
+      uptime: "99.9%",
+      lastUpdate: "2 min ago"
+    },
+    {
+      system: "Satellite Network",
+      status: "operational",
+      uptime: "99.7%",
+      lastUpdate: "1 min ago"
+    },
+    {
+      system: "Deep Space Network",
+      status: "operational",
+      uptime: "99.5%",
+      lastUpdate: "5 min ago"
+    },
+    {
+      system: "Mission Control",
+      status: "operational",
+      uptime: "100%",
+      lastUpdate: "30 sec ago"
+    }
+  ];
+
+  // Space Calendar Data
+  const calendarEvents: CalendarEvent[] = [
+    {
+      id: "1",
+      title: "Artemis II Launch",
+      date: "2025-09-15",
+      time: "14:30 UTC",
+      type: "launch",
+      category: "space",
+      description: "NASA's Artemis II mission will send astronauts around the Moon",
+      location: "Kennedy Space Center, Florida",
+      agency: "NASA",
+      mission: "Artemis II",
+      priority: "high"
+    },
+    {
+      id: "2",
+      title: "Perseid Meteor Shower Peak",
+      date: "2024-08-12",
+      time: "22:00 UTC",
+      type: "astronomical",
+      category: "astronomy",
+      description: "Annual meteor shower with up to 100 meteors per hour",
+      location: "Worldwide",
+      priority: "medium"
+    },
+    {
+      id: "3",
+      title: "International Space Station Spacewalk",
+      date: "2024-08-20",
+      time: "12:00 UTC",
+      type: "spacewalk",
+      category: "space",
+      description: "EVA to install new solar arrays",
+      location: "ISS",
+      agency: "NASA",
+      priority: "medium"
+    },
+    {
+      id: "4",
+      title: "SpaceX Starship Test Flight",
+      date: "2024-08-25",
+      time: "15:00 UTC",
+      type: "launch",
+      category: "commercial",
+      description: "Test flight of SpaceX's Starship vehicle",
+      location: "Starbase, Texas",
+      agency: "SpaceX",
+      priority: "high"
+    },
+    {
+      id: "5",
+      title: "International Astronautical Congress",
+      date: "2024-10-02",
+      type: "conference",
+      category: "education",
+      description: "Annual space industry conference",
+      location: "Milan, Italy",
+      priority: "medium"
+    },
+    {
+      id: "6",
+      title: "Sputnik Launch Anniversary",
+      date: "2024-10-04",
+      type: "anniversary",
+      category: "space",
+      description: "67th anniversary of the first artificial satellite",
+      location: "Worldwide",
+      priority: "low",
+      isRecurring: true,
+      recurrence: "yearly"
+    },
+    {
+      id: "7",
+      title: "Blue Origin New Shepard Launch",
+      date: "2024-08-18",
+      time: "13:00 UTC",
+      type: "launch",
+      category: "commercial",
+      description: "Suborbital flight with research payloads",
+      location: "West Texas",
+      agency: "Blue Origin",
+      priority: "medium"
+    },
+    {
+      id: "8",
+      title: "Jupiter Opposition",
+      date: "2024-09-26",
+      type: "astronomical",
+      category: "astronomy",
+      description: "Jupiter at its closest approach to Earth",
+      location: "Worldwide",
+      priority: "medium"
+    },
+    {
+      id: "9",
+      title: "Space Station Docking",
+      date: "2024-08-22",
+      time: "10:30 UTC",
+      type: "docking",
+      category: "space",
+      description: "Crew Dragon docking with ISS",
+      location: "ISS",
+      agency: "SpaceX",
+      priority: "medium"
+    },
+    {
+      id: "10",
+      title: "Mars Sample Return Mission Launch",
+      date: "2026-07-01",
+      type: "launch",
+      category: "space",
+      description: "Mission to return samples from Mars",
+      location: "Kennedy Space Center, Florida",
+      agency: "NASA/ESA",
+      priority: "high"
+    }
+  ];
+
+  // Additional simulated data
+  const peopleInSpace = 10;
+  const activeSatellites = 4852;
+  const spaceDebris = 12800;
+  const totalLaunches = 156;
+  const successfulLaunches = 142;
+  const launchSuccessRate = ((successfulLaunches / totalLaunches) * 100).toFixed(1);
+
+  // Auto-refresh functionality
+  useEffect(() => {
+    if (!autoRefresh) return;
+
+    const interval = setInterval(() => {
+      // This would trigger a refresh of the data
+      // For now, we'll just log that a refresh would happen
+      console.log('Auto-refreshing Mission Control data...');
+    }, refreshInterval);
+
+    return () => clearInterval(interval);
+  }, [autoRefresh, refreshInterval]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/40 to-black relative overflow-hidden">
       {/* Background effects */}
@@ -191,9 +517,59 @@ export default function MissionControl() {
         </div>
       </div>
 
-      {/* Main Content - Compact Grid */}
+      {/* Navigation Tabs */}
+      <div className="relative z-10 bg-gray-900/50 backdrop-blur-sm border-b border-purple-900/20">
+        <div className="max-w-7xl mx-auto px-4 py-1">
+          <div className="flex items-center justify-between">
+            <div className="flex space-x-1">
+              {[
+                { id: 'dashboard', label: 'Dashboard', icon: <BarChart3Icon className="h-3 w-3" /> },
+                { id: 'missions', label: 'Missions', icon: <RocketIcon className="h-3 w-3" /> },
+                { id: 'stations', label: 'Stations', icon: <SatelliteIcon className="h-3 w-3" /> },
+                { id: 'events', label: 'Events', icon: <CalendarIcon className="h-3 w-3" /> },
+                { id: 'calendar', label: 'Calendar', icon: <CalendarIcon className="h-3 w-3" /> },
+                { id: 'orbits', label: 'Orbits', icon: <Globe2Icon className="h-3 w-3" /> },
+                { id: 'systems', label: 'Systems', icon: <SettingsIcon className="h-3 w-3" /> }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setSelectedView(tab.id as any)}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                    selectedView === tab.id
+                      ? 'bg-purple-600/20 text-purple-300 border border-purple-500/30'
+                      : 'text-gray-400 hover:text-gray-300 hover:bg-gray-800/30'
+                  }`}
+                >
+                  {tab.icon}
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-all duration-200 ${
+                  autoRefresh 
+                    ? 'bg-green-600/20 text-green-300 border border-green-500/30' 
+                    : 'bg-gray-800/30 text-gray-400 border border-gray-700/30'
+                }`}
+              >
+                <RefreshCwIcon className={`h-3 w-3 ${autoRefresh ? 'animate-spin' : ''}`} />
+                Auto
+              </button>
+              <button className="flex items-center gap-1 px-2 py-1 bg-gray-800/30 text-gray-400 border border-gray-700/30 rounded text-xs hover:bg-gray-700/30 transition-all duration-200">
+                <MaximizeIcon className="h-3 w-3" />
+                Full
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content - Conditional Views */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-3">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+        {selectedView === 'dashboard' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           
           {/* Next Launches */}
           {upcomingLaunchesLoading ? (
@@ -567,7 +943,465 @@ export default function MissionControl() {
               <div className="text-center py-2 text-gray-400 text-xs">No data available</div>
             </CompactCard>
           )}
+
+          {/* People in Space */}
+          <CompactCard 
+            title="People in Space" 
+            icon={<UsersIcon className="h-4 w-4 text-blue-400" />}
+            colorClass="blue"
+          >
+            <div className="text-center">
+              <div className="text-2xl text-blue-300 font-bold">{peopleInSpace}</div>
+              <div className="text-xs text-gray-300">Currently in Space</div>
+              <div className="text-xs text-gray-400 mt-1">ISS: 7 | Tiangong: 3</div>
+            </div>
+          </CompactCard>
+
+          {/* Active Satellites */}
+          <CompactCard 
+            title="Active Satellites" 
+            icon={<SatelliteIcon className="h-4 w-4 text-green-400" />}
+            colorClass="green"
+          >
+            <div className="text-center">
+              <div className="text-2xl text-green-300 font-bold">{activeSatellites.toLocaleString()}</div>
+              <div className="text-xs text-gray-300">Currently Orbiting</div>
+              <div className="text-xs text-gray-400 mt-1">+12 this month</div>
+            </div>
+          </CompactCard>
+
+          {/* Space Debris */}
+          <CompactCard 
+            title="Space Debris" 
+            icon={<AlertTriangleIcon className="h-4 w-4 text-orange-400" />}
+            colorClass="orange"
+          >
+            <div className="text-center">
+              <div className="text-2xl text-orange-300 font-bold">{spaceDebris.toLocaleString()}</div>
+              <div className="text-xs text-gray-300">Tracked Objects</div>
+              <div className="text-xs text-gray-400 mt-1">{'>'}10cm in size</div>
+            </div>
+          </CompactCard>
+
+          {/* Launch Statistics */}
+          <CompactCard 
+            title="Launch Statistics" 
+            icon={<TrendingUpIcon className="h-4 w-4 text-purple-400" />}
+            colorClass="purple"
+          >
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-400">Total Launches</span>
+                <span className="text-xs text-white font-medium">{totalLaunches}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-400">Successful</span>
+                <span className="text-xs text-green-300 font-medium">{successfulLaunches}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-400">Success Rate</span>
+                <span className="text-xs text-purple-300 font-medium">{launchSuccessRate}%</span>
+              </div>
+            </div>
+          </CompactCard>
+
+          {/* Global Space Agencies */}
+          <CompactCard 
+            title="Space Agencies" 
+            icon={<GlobeIcon className="h-4 w-4 text-indigo-400" />}
+            colorClass="indigo"
+          >
+            <div className="space-y-1">
+              <div className="flex justify-between items-center bg-gray-800/30 rounded p-1 border border-gray-700/30">
+                <span className="text-xs text-gray-300">NASA</span>
+                <span className="text-xs text-indigo-300">USA</span>
+              </div>
+              <div className="flex justify-between items-center bg-gray-800/30 rounded p-1 border border-gray-700/30">
+                <span className="text-xs text-gray-300">Roscosmos</span>
+                <span className="text-xs text-indigo-300">Russia</span>
+              </div>
+              <div className="flex justify-between items-center bg-gray-800/30 rounded p-1 border border-gray-700/30">
+                <span className="text-xs text-gray-300">CNSA</span>
+                <span className="text-xs text-indigo-300">China</span>
+              </div>
+              <div className="flex justify-between items-center bg-gray-800/30 rounded p-1 border border-gray-700/30">
+                <span className="text-xs text-gray-300">ESA</span>
+                <span className="text-xs text-indigo-300">Europe</span>
+              </div>
+            </div>
+          </CompactCard>
+
+          {/* Research & Development */}
+          <CompactCard 
+            title="R&D Projects" 
+            icon={<MicroscopeIcon className="h-4 w-4 text-cyan-400" />}
+            colorClass="cyan"
+          >
+            <div className="space-y-1">
+              <div className="bg-cyan-950/30 rounded p-1 border border-cyan-800/50">
+                <div className="text-xs text-cyan-300 font-medium">Fusion Propulsion</div>
+                <div className="text-xs text-gray-400">Phase 2 Testing</div>
+              </div>
+              <div className="bg-cyan-950/30 rounded p-1 border border-cyan-800/50">
+                <div className="text-xs text-cyan-300 font-medium">Space Mining</div>
+                <div className="text-xs text-gray-400">Asteroid Survey</div>
+              </div>
+              <div className="bg-cyan-950/30 rounded p-1 border border-cyan-800/50">
+                <div className="text-xs text-cyan-300 font-medium">Mars Habitat</div>
+                <div className="text-xs text-gray-400">Prototype Design</div>
+              </div>
+            </div>
+          </CompactCard>
         </div>
+        )}
+
+        {/* Missions View */}
+        {selectedView === 'missions' && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {activeMissions.map((mission, index) => (
+                <CompactCard
+                  key={index}
+                  title={mission.name}
+                  icon={<RocketIcon className="h-4 w-4 text-blue-400" />}
+                  colorClass={mission.status === 'active' ? 'green' : mission.status === 'planned' ? 'blue' : 'orange'}
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-400">{mission.agency}</span>
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        mission.status === 'active' ? 'bg-green-950/50 text-green-300' :
+                        mission.status === 'planned' ? 'bg-blue-950/50 text-blue-300' :
+                        mission.status === 'completed' ? 'bg-gray-950/50 text-gray-300' :
+                        'bg-red-950/50 text-red-300'
+                      }`}>
+                        {mission.status}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-300">
+                      <div>Destination: {mission.destination}</div>
+                      <div>Launch: {mission.launchDate}</div>
+                      <div>Duration: {mission.duration}</div>
+                      <div>Crew: {mission.crew} astronauts</div>
+                    </div>
+                  </div>
+                </CompactCard>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Space Stations View */}
+        {selectedView === 'stations' && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {spaceStations.map((station, index) => (
+                <CompactCard
+                  key={index}
+                  title={station.name}
+                  icon={<SatelliteIcon className="h-4 w-4 text-purple-400" />}
+                  colorClass={station.status === 'active' ? 'green' : 'purple'}
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-400">{station.country}</span>
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        station.status === 'active' ? 'bg-green-950/50 text-green-300' :
+                        'bg-gray-950/50 text-gray-300'
+                      }`}>
+                        {station.status}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-300">
+                      <div>Launch: {station.launchDate}</div>
+                      <div>Orbit: {station.orbit}</div>
+                      <div>Crew: {station.crew} astronauts</div>
+                    </div>
+                  </div>
+                </CompactCard>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Events View */}
+        {selectedView === 'events' && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {upcomingEvents.map((event, index) => (
+                <CompactCard
+                  key={index}
+                  title={event.title}
+                  icon={<CalendarIcon className="h-4 w-4 text-orange-400" />}
+                  colorClass="orange"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-400">{event.date}</span>
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        event.type === 'launch' ? 'bg-blue-950/50 text-blue-300' :
+                        event.type === 'spacewalk' ? 'bg-purple-950/50 text-purple-300' :
+                        event.type === 'scientific' ? 'bg-green-950/50 text-green-300' :
+                        'bg-gray-950/50 text-gray-300'
+                      }`}>
+                        {event.type}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-300">
+                      <div>{event.description}</div>
+                      <div className="text-gray-400">📍 {event.location}</div>
+                    </div>
+                  </div>
+                </CompactCard>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Calendar View */}
+        {selectedView === 'calendar' && (
+          <div className="space-y-4">
+            {/* Calendar Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-bold text-white">Space Calendar</h2>
+                <p className="text-gray-400 text-sm">Upcoming space events, launches, and astronomical phenomena</p>
+              </div>
+              <div className="flex space-x-2">
+                <button className="px-3 py-1.5 bg-purple-600/20 text-purple-300 border border-purple-500/30 rounded text-xs hover:bg-purple-600/30 transition-all">
+                  <CalendarIcon className="h-3 w-3 inline mr-1" />
+                  Add Event
+                </button>
+                <button className="px-3 py-1.5 bg-gray-800/30 text-gray-300 border border-gray-700/30 rounded text-xs hover:bg-gray-700/30 transition-all">
+                  <ExternalLinkIcon className="h-3 w-3 inline mr-1" />
+                  Export
+                </button>
+              </div>
+            </div>
+
+            {/* Calendar Filters */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              <button className="px-3 py-1.5 bg-purple-600/20 text-purple-300 border border-purple-500/30 rounded text-xs">
+                All Events
+              </button>
+              <button className="px-3 py-1.5 bg-gray-800/30 text-gray-400 border border-gray-700/30 rounded text-xs hover:bg-gray-700/30">
+                Launches
+              </button>
+              <button className="px-3 py-1.5 bg-gray-800/30 text-gray-400 border border-gray-700/30 rounded text-xs hover:bg-gray-700/30">
+                Astronomical
+              </button>
+              <button className="px-3 py-1.5 bg-gray-800/30 text-gray-400 border border-gray-700/30 rounded text-xs hover:bg-gray-700/30">
+                Conferences
+              </button>
+              <button className="px-3 py-1.5 bg-gray-800/30 text-gray-400 border border-gray-700/30 rounded text-xs hover:bg-gray-700/30">
+                High Priority
+              </button>
+            </div>
+
+            {/* Calendar Events Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {calendarEvents.map((event) => (
+                <CompactCard
+                  key={event.id}
+                  title={event.title}
+                  icon={
+                    event.type === 'launch' ? <RocketIcon className="h-4 w-4 text-green-400" /> :
+                    event.type === 'astronomical' ? <StarIcon className="h-4 w-4 text-blue-400" /> :
+                    event.type === 'spacewalk' ? <UsersIcon className="h-4 w-4 text-orange-400" /> :
+                    event.type === 'conference' ? <BookOpenIcon className="h-4 w-4 text-purple-400" /> :
+                    event.type === 'anniversary' ? <CalendarIcon className="h-4 w-4 text-cyan-400" /> :
+                    <CalendarIcon className="h-4 w-4 text-gray-400" />
+                  }
+                  colorClass={
+                    event.priority === 'high' ? 'red' :
+                    event.priority === 'medium' ? 'orange' : 'blue'
+                  }
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-300">
+                        {new Date(event.date).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </span>
+                      {event.time && (
+                        <span className="text-xs text-gray-400">{event.time}</span>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        event.category === 'space' ? 'bg-blue-950/50 text-blue-300' :
+                        event.category === 'astronomy' ? 'bg-purple-950/50 text-purple-300' :
+                        event.category === 'education' ? 'bg-green-950/50 text-green-300' :
+                        'bg-orange-950/50 text-orange-300'
+                      }`}>
+                        {event.category}
+                      </span>
+                      {event.isRecurring && (
+                        <span className="text-xs text-cyan-400">🔄 {event.recurrence}</span>
+                      )}
+                    </div>
+
+                    <div className="text-xs text-gray-300">
+                      <div className="mb-1">{event.description}</div>
+                      <div className="text-gray-400">📍 {event.location}</div>
+                      {event.agency && (
+                        <div className="text-gray-400">🏛️ {event.agency}</div>
+                      )}
+                    </div>
+                  </div>
+                </CompactCard>
+              ))}
+            </div>
+
+            {/* Calendar Statistics */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mt-6">
+              <CompactCard
+                title="Total Events"
+                icon={<CalendarIcon className="h-4 w-4 text-blue-400" />}
+                colorClass="blue"
+              >
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-300">{calendarEvents.length}</div>
+                  <div className="text-xs text-gray-400">This month</div>
+                </div>
+              </CompactCard>
+              
+              <CompactCard
+                title="High Priority"
+                icon={<AlertTriangleIcon className="h-4 w-4 text-red-400" />}
+                colorClass="red"
+              >
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-red-300">
+                    {calendarEvents.filter(e => e.priority === 'high').length}
+                  </div>
+                  <div className="text-xs text-gray-400">Critical events</div>
+                </div>
+              </CompactCard>
+              
+              <CompactCard
+                title="Launches"
+                icon={<RocketIcon className="h-4 w-4 text-green-400" />}
+                colorClass="green"
+              >
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-300">
+                    {calendarEvents.filter(e => e.type === 'launch').length}
+                  </div>
+                  <div className="text-xs text-gray-400">Scheduled</div>
+                </div>
+              </CompactCard>
+              
+              <CompactCard
+                title="Astronomical"
+                icon={<StarIcon className="h-4 w-4 text-purple-400" />}
+                colorClass="purple"
+              >
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-300">
+                    {calendarEvents.filter(e => e.type === 'astronomical').length}
+                  </div>
+                  <div className="text-xs text-gray-400">Celestial events</div>
+                </div>
+              </CompactCard>
+            </div>
+          </div>
+        )}
+
+        {/* Orbits View */}
+        {selectedView === 'orbits' && (
+          <div className="h-[calc(100vh-200px)]">
+            <SatelliteVisualizer />
+          </div>
+        )}
+
+        {/* Systems View */}
+        {selectedView === 'systems' && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {systemStatuses.map((system, index) => (
+                <CompactCard
+                  key={index}
+                  title={system.system}
+                  icon={<SettingsIcon className="h-4 w-4 text-cyan-400" />}
+                  colorClass={system.status === 'operational' ? 'green' : 'red'}
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        system.status === 'operational' ? 'bg-green-950/50 text-green-300' :
+                        system.status === 'degraded' ? 'bg-yellow-950/50 text-yellow-300' :
+                        system.status === 'maintenance' ? 'bg-blue-950/50 text-blue-300' :
+                        'bg-red-950/50 text-red-300'
+                      }`}>
+                        {system.status}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-300">
+                      <div>Uptime: {system.uptime}</div>
+                      <div>Last Update: {system.lastUpdate}</div>
+                    </div>
+                  </div>
+                </CompactCard>
+              ))}
+            </div>
+            
+            {/* Additional System Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              <CompactCard
+                title="Network Status"
+                icon={<WifiIcon className="h-4 w-4 text-green-400" />}
+                colorClass="green"
+              >
+                <div className="text-center">
+                  <div className="text-lg text-green-300">🟢</div>
+                  <div className="text-xs text-gray-300">All Systems Operational</div>
+                  <div className="text-xs text-gray-400">99.9% Uptime</div>
+                </div>
+              </CompactCard>
+              
+              <CompactCard
+                title="Data Throughput"
+                icon={<TrendingUpIcon className="h-4 w-4 text-blue-400" />}
+                colorClass="blue"
+              >
+                <div className="text-center">
+                  <div className="text-lg text-blue-300">📊</div>
+                  <div className="text-xs text-gray-300">2.4 TB/day</div>
+                  <div className="text-xs text-gray-400">+12% from last week</div>
+                </div>
+              </CompactCard>
+              
+              <CompactCard
+                title="Active Connections"
+                icon={<SignalIcon className="h-4 w-4 text-purple-400" />}
+                colorClass="purple"
+              >
+                <div className="text-center">
+                  <div className="text-lg text-purple-300">📡</div>
+                  <div className="text-xs text-gray-300">1,247 Active</div>
+                  <div className="text-xs text-gray-400">Global Network</div>
+                </div>
+              </CompactCard>
+              
+              <CompactCard
+                title="Security Status"
+                icon={<ShieldIcon className="h-4 w-4 text-green-400" />}
+                colorClass="green"
+              >
+                <div className="text-center">
+                  <div className="text-lg text-green-300">🛡️</div>
+                  <div className="text-xs text-gray-300">All Clear</div>
+                  <div className="text-xs text-gray-400">No threats detected</div>
+                </div>
+              </CompactCard>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

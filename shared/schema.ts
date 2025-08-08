@@ -264,6 +264,27 @@ export const siteSettings = pgTable("site_settings", {
   updatedBy: integer("updated_by").references(() => users.id),
 });
 
+// Site Block/Cover System
+export const siteBlocks = pgTable("site_blocks", {
+  id: serial("id").primaryKey(),
+  isEnabled: boolean("is_enabled").default(false).notNull(),
+  title: text("title").default("Site Temporarily Unavailable").notNull(),
+  subtitle: text("subtitle").default("We are currently performing maintenance or updates.").notNull(),
+  message: text("message").default("Our team is working to bring the site back online as quickly as possible. Thank you for your patience.").notNull(),
+  backgroundImageUrl: text("background_image_url"),
+  logoUrl: text("logo_url"),
+  primaryColor: text("primary_color").default("#4f46e5"),
+  secondaryColor: text("secondary_color").default("#0f172a"),
+  showLoginForm: boolean("show_login_form").default(true).notNull(),
+  loginFormTitle: text("login_form_title").default("Admin Access"),
+  loginFormSubtitle: text("login_form_subtitle").default("Enter your credentials to access the site"),
+  customCss: text("custom_css"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdBy: integer("created_by").references(() => users.id),
+  updatedBy: integer("updated_by").references(() => users.id),
+});
+
 // Relations
 // API Keys for external applications
 export const apiKeys = pgTable("api_keys", {
@@ -441,6 +462,17 @@ export const siteSettingsRelations = relations(siteSettings, ({ one }) => ({
   }),
 }));
 
+export const siteBlocksRelations = relations(siteBlocks, ({ one }) => ({
+  createdByUser: one(users, {
+    fields: [siteBlocks.createdBy],
+    references: [users.id],
+  }),
+  updatedByUser: one(users, {
+    fields: [siteBlocks.updatedBy],
+    references: [users.id],
+  }),
+}));
+
 export const newsletterSubscriptionsRelations = relations(newsletterSubscriptions, ({ one }) => ({
   user: one(users, {
     fields: [newsletterSubscriptions.userId],
@@ -609,6 +641,18 @@ export const insertArticleTaxonomySchema = createInsertSchema(articleTaxonomy).o
   createdAt: true,
 });
 
+export const insertSiteBlockSchema = createInsertSchema(siteBlocks).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateSiteBlockSchema = createInsertSchema(siteBlocks).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type Article = typeof articles.$inferSelect;
@@ -623,6 +667,7 @@ export type ApiKey = typeof apiKeys.$inferSelect;
 export type ArticleAuthor = typeof articleAuthors.$inferSelect;
 export type MediaLibraryItem = typeof mediaLibrary.$inferSelect;
 export type SiteSettings = typeof siteSettings.$inferSelect;
+export type SiteBlock = typeof siteBlocks.$inferSelect;
 export type NewsletterSubscription = typeof newsletterSubscriptions.$inferSelect;
 export type SearchHistory = typeof searchHistory.$inferSelect;
 export type NewsletterSentHistory = typeof newsletterSentHistory.$inferSelect;
@@ -641,3 +686,5 @@ export type InsertMediaLibraryItem = z.infer<typeof insertMediaLibrarySchema>;
 export type UpdateSiteSettings = z.infer<typeof updateSiteSettingsSchema>;
 export type InsertTaxonomy = z.infer<typeof insertTaxonomySchema>;
 export type InsertArticleTaxonomy = z.infer<typeof insertArticleTaxonomySchema>;
+export type InsertSiteBlock = z.infer<typeof insertSiteBlockSchema>;
+export type UpdateSiteBlock = z.infer<typeof updateSiteBlockSchema>;

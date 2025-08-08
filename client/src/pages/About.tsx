@@ -1,6 +1,5 @@
 import React from 'react';
 import { 
-  RocketIcon, 
   UsersIcon, 
   StarIcon, 
   GlobeIcon, 
@@ -17,6 +16,9 @@ import {
   YoutubeIcon,
   FacebookIcon
 } from 'lucide-react';
+
+// Import logo image
+import mobileLogo from "../assets/images/proxima-logo-mobile.png";
 
 import { useQuery } from '@tanstack/react-query';
 import SEO from '@/components/SEO';
@@ -40,7 +42,7 @@ const stats = [
   { icon: <UsersIcon className="h-6 w-6" />, value: "10K+", label: "Active Users" },
   { icon: <GlobeIcon className="h-6 w-6" />, value: "100+", label: "Countries Reached" },
   { icon: <StarIcon className="h-6 w-6" />, value: "99.9%", label: "Uptime" },
-  { icon: <RocketIcon className="h-6 w-6" />, value: "200+", label: "Launches Tracked" }
+  { icon: <img src={mobileLogo} alt="Proxima Report" className="h-6 w-6 object-contain" />, value: "200+", label: "Launches Tracked" }
 ];
 
 const values = [
@@ -125,52 +127,6 @@ export default function About() {
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Hero Section */}
-        <div className="text-center mb-16">
-          <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-r from-purple-500 to-violet-700 flex items-center justify-center shadow-lg shadow-purple-500/25">
-              <RocketIcon className="h-8 w-8 text-white" />
-            </div>
-          </div>
-          <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
-            About <span className="text-purple-400">Proxima Report</span>
-          </h1>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-8">
-            We're on a mission to make space exploration data accessible, beautiful, and inspiring for everyone. 
-            From rocket launches to distant exoplanets, we bring the universe closer to you.
-          </p>
-          
-          {/* Store CTA */}
-          <div className="flex justify-center gap-4 mb-12">
-            <a 
-              href="https://store.proximareport.com" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-violet-700 hover:from-purple-700 hover:to-violet-800 text-white px-6 py-3 rounded-lg transition-all duration-300 shadow-lg shadow-purple-500/25 font-medium"
-            >
-              <ShoppingCartIcon className="h-5 w-5" />
-              Visit Our Store
-              <ExternalLinkIcon className="h-4 w-4" />
-            </a>
-            <button className="border border-purple-600 text-purple-400 hover:bg-purple-600 hover:text-white px-6 py-3 rounded-lg transition-all duration-300">
-              Learn More
-            </button>
-          </div>
-        </div>
-
-        {/* Stats Section */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
-          {stats.map((stat, index) => (
-            <div key={index} className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-purple-900/30 text-center">
-              <div className="flex justify-center text-purple-400 mb-3">
-                {stat.icon}
-              </div>
-              <div className="text-2xl font-bold text-white mb-1">{stat.value}</div>
-              <div className="text-gray-400 text-sm">{stat.label}</div>
-            </div>
-          ))}
-        </div>
-
         {/* Mission Statement */}
         <div className="bg-gray-900/60 backdrop-blur-sm rounded-xl p-8 border border-purple-900/30 mb-16">
           <div className="max-w-4xl mx-auto text-center">
@@ -187,109 +143,22 @@ export default function About() {
           </div>
         </div>
 
-        
-
-        {/* Social Media Section */}
-        <div className="bg-gray-900/60 backdrop-blur-sm rounded-xl p-8 border border-purple-900/30 mb-16">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl font-bold text-white mb-6">Connect With Us</h2>
-            <p className="text-lg text-gray-300 leading-relaxed mb-8">
-              Stay updated with the latest space news, launches, and discoveries. Follow us across all platforms for real-time updates and exclusive content.
-            </p>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <a 
-                href="https://twitter.com/proximareport" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="group bg-gray-800/60 hover:bg-blue-600/20 backdrop-blur-sm rounded-lg p-6 border border-gray-700/50 hover:border-blue-500/50 transition-all duration-300 text-center"
-              >
-                <div className="flex justify-center mb-3">
-                  <TwitterIcon className="h-8 w-8 text-blue-400 group-hover:text-blue-300 transition-colors" />
-                </div>
-                <h3 className="text-white font-semibold mb-2">Twitter</h3>
-                <p className="text-gray-400 text-sm">Real-time updates</p>
-              </a>
-
-              <a 
-                href="https://linkedin.com/company/proximareport" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="group bg-gray-800/60 hover:bg-blue-600/20 backdrop-blur-sm rounded-lg p-6 border border-gray-700/50 hover:border-blue-500/50 transition-all duration-300 text-center"
-              >
-                <div className="flex justify-center mb-3">
-                  <LinkedinIcon className="h-8 w-8 text-blue-400 group-hover:text-blue-300 transition-colors" />
-                </div>
-                <h3 className="text-white font-semibold mb-2">LinkedIn</h3>
-                <p className="text-gray-400 text-sm">Professional network</p>
-              </a>
-
-              <a 
-                href="https://instagram.com/proximareport" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="group bg-gray-800/60 hover:bg-pink-600/20 backdrop-blur-sm rounded-lg p-6 border border-gray-700/50 hover:border-pink-500/50 transition-all duration-300 text-center"
-              >
-                <div className="flex justify-center mb-3">
-                  <InstagramIcon className="h-8 w-8 text-pink-400 group-hover:text-pink-300 transition-colors" />
-                </div>
-                <h3 className="text-white font-semibold mb-2">Instagram</h3>
-                <p className="text-gray-400 text-sm">Visual stories</p>
-              </a>
-
-              <a 
-                href="https://youtube.com/@proximareport" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="group bg-gray-800/60 hover:bg-red-600/20 backdrop-blur-sm rounded-lg p-6 border border-gray-700/50 hover:border-red-500/50 transition-all duration-300 text-center"
-              >
-                <div className="flex justify-center mb-3">
-                  <YoutubeIcon className="h-8 w-8 text-red-400 group-hover:text-red-300 transition-colors" />
-                </div>
-                <h3 className="text-white font-semibold mb-2">YouTube</h3>
-                <p className="text-gray-400 text-sm">Video content</p>
-              </a>
-            </div>
-
-            <div className="mt-8 pt-8 border-t border-gray-700/50">
-              <div className="flex justify-center items-center gap-6">
-                <a 
-                  href="mailto:hello@proximareport.com" 
-                  className="flex items-center gap-2 text-gray-300 hover:text-purple-400 transition-colors"
-                >
-                  <MailIcon className="h-5 w-5" />
-                  <span>hello@proximareport.com</span>
-                </a>
-                <span className="text-gray-500">|</span>
-                <a 
-                  href="https://store.proximareport.com" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-gray-300 hover:text-purple-400 transition-colors"
-                >
-                  <ShoppingCartIcon className="h-5 w-5" />
-                  <span>Visit Our Store</span>
-                </a>
+        {/* Stats Section */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
+          {stats.map((stat, index) => (
+            <div key={index} className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-purple-900/30 text-center">
+              <div className="flex justify-center text-purple-400 mb-3">
+                {stat.icon}
               </div>
+              <div className="text-2xl font-bold text-white mb-1">{stat.value}</div>
+              <div className="text-gray-400 text-sm">{stat.label}</div>
             </div>
-          </div>
+          ))}
         </div>
 
-        {/* Values Section */}
-        <div className="mb-16">
-          <h2 className="text-3xl font-bold text-white text-center mb-12">Our Values</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {values.map((value, index) => (
-              <div key={index} className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-purple-900/30 text-center">
-                <div className="flex justify-center mb-4">
-                  {value.icon}
-                </div>
-                <h3 className="text-xl font-semibold text-white mb-3">{value.title}</h3>
-                <p className="text-gray-400 text-sm">{value.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+
+
+
 
         {/* Founders Section */}
         <div className="mb-16">
@@ -487,6 +356,108 @@ export default function About() {
                   Advanced analytics and visualization tools help you understand 
                   complex space data and discover meaningful patterns.
                 </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Values Section */}
+        <div className="mb-16">
+          <h2 className="text-3xl font-bold text-white text-center mb-12">Our Values</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {values.map((value, index) => (
+              <div key={index} className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-purple-900/30 text-center">
+                <div className="flex justify-center mb-4">
+                  {value.icon}
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-3">{value.title}</h3>
+                <p className="text-gray-400 text-sm">{value.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Social Media Section */}
+        <div className="bg-gray-900/60 backdrop-blur-sm rounded-xl p-8 border border-purple-900/30 mb-16">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-3xl font-bold text-white mb-6">Connect With Us</h2>
+            <p className="text-lg text-gray-300 leading-relaxed mb-8">
+              Stay updated with the latest space news, launches, and discoveries. Follow us across all platforms for real-time updates and exclusive content.
+            </p>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <a 
+                href="https://twitter.com/proximareport" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="group bg-gray-800/60 hover:bg-blue-600/20 backdrop-blur-sm rounded-lg p-6 border border-gray-700/50 hover:border-blue-500/50 transition-all duration-300 text-center"
+              >
+                <div className="flex justify-center mb-3">
+                  <TwitterIcon className="h-8 w-8 text-blue-400 group-hover:text-blue-300 transition-colors" />
+                </div>
+                <h3 className="text-white font-semibold mb-2">Twitter</h3>
+                <p className="text-gray-400 text-sm">Real-time updates</p>
+              </a>
+
+              <a 
+                href="https://linkedin.com/company/proximareport" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="group bg-gray-800/60 hover:bg-blue-600/20 backdrop-blur-sm rounded-lg p-6 border border-gray-700/50 hover:border-blue-500/50 transition-all duration-300 text-center"
+              >
+                <div className="flex justify-center mb-3">
+                  <LinkedinIcon className="h-8 w-8 text-blue-400 group-hover:text-blue-300 transition-colors" />
+                </div>
+                <h3 className="text-white font-semibold mb-2">LinkedIn</h3>
+                <p className="text-gray-400 text-sm">Professional network</p>
+              </a>
+
+              <a 
+                href="https://instagram.com/proximareport" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="group bg-gray-800/60 hover:bg-pink-600/20 backdrop-blur-sm rounded-lg p-6 border border-gray-700/50 hover:border-pink-500/50 transition-all duration-300 text-center"
+              >
+                <div className="flex justify-center mb-3">
+                  <InstagramIcon className="h-8 w-8 text-pink-400 group-hover:text-pink-300 transition-colors" />
+                </div>
+                <h3 className="text-white font-semibold mb-2">Instagram</h3>
+                <p className="text-gray-400 text-sm">Visual stories</p>
+              </a>
+
+              <a 
+                href="https://youtube.com/@proximareport" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="group bg-gray-800/60 hover:bg-red-600/20 backdrop-blur-sm rounded-lg p-6 border border-gray-700/50 hover:border-red-500/50 transition-all duration-300 text-center"
+              >
+                <div className="flex justify-center mb-3">
+                  <YoutubeIcon className="h-8 w-8 text-red-400 group-hover:text-red-300 transition-colors" />
+                </div>
+                <h3 className="text-white font-semibold mb-2">YouTube</h3>
+                <p className="text-gray-400 text-sm">Video content</p>
+              </a>
+            </div>
+
+            <div className="mt-8 pt-8 border-t border-gray-700/50">
+              <div className="flex justify-center items-center gap-6">
+                <a 
+                  href="mailto:hello@proximareport.com" 
+                  className="flex items-center gap-2 text-gray-300 hover:text-purple-400 transition-colors"
+                >
+                  <MailIcon className="h-5 w-5" />
+                  <span>hello@proximareport.com</span>
+                </a>
+                <span className="text-gray-500">|</span>
+                <a 
+                  href="https://store.proximareport.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-gray-300 hover:text-purple-400 transition-colors"
+                >
+                  <ShoppingCartIcon className="h-5 w-5" />
+                  <span>Visit Our Store</span>
+                </a>
               </div>
             </div>
           </div>

@@ -1,7 +1,10 @@
 import { Link } from "wouter";
-import { RocketIcon, MapPinIcon, MailIcon, PhoneIcon, ArrowRightIcon, ExternalLinkIcon } from "lucide-react";
+import { MapPinIcon, MailIcon, PhoneIcon, ArrowRightIcon, ExternalLinkIcon } from "lucide-react";
 import { FaTwitter, FaFacebook, FaInstagram, FaYoutube, FaLinkedin, FaDiscord } from "react-icons/fa";
 import { useState } from "react";
+
+// Import logo image
+import mobileLogo from "../../assets/images/proxima-logo-mobile.png";
 
 function Footer() {
   const currentYear = new Date().getFullYear();
@@ -40,8 +43,12 @@ function Footer() {
               <div className="space-y-6">
                 <div className="flex items-center space-x-3">
                   <div className="relative">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-violet-700 flex items-center justify-center shadow-lg shadow-purple-500/25">
-                      <RocketIcon className="h-8 w-8 text-white transform -rotate-45" />
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-violet-700 flex items-center justify-center shadow-lg shadow-purple-500/25 overflow-hidden">
+                      <img 
+                        src={mobileLogo} 
+                        alt="Proxima Report" 
+                        className="h-8 w-8 object-contain" 
+                      />
                     </div>
                     <div className="absolute -inset-1 bg-gradient-to-br from-purple-500 to-violet-700 rounded-2xl opacity-30 blur-sm"></div>
                   </div>
@@ -61,7 +68,7 @@ function Footer() {
                 <div className="space-y-3">
                   <div className="flex items-center space-x-3 text-gray-400">
                     <MapPinIcon className="h-4 w-4 text-purple-400" />
-                    <span className="text-sm">Global Space Community</span>
+                    <span className="text-sm">Space</span>
                   </div>
                   <div className="flex items-center space-x-3 text-gray-400">
                     <MailIcon className="h-4 w-4 text-purple-400" />
@@ -99,7 +106,6 @@ function Footer() {
                 {/* Explore Section */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-white flex items-center space-x-2">
-                    <RocketIcon className="h-5 w-5 text-purple-400" />
                     <span>Explore</span>
                   </h3>
                   <ul className="space-y-3">

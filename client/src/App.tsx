@@ -30,6 +30,8 @@ import ColorPalette from "@/pages/tools/ColorPalette";
 import PlanetGenerator from "@/pages/tools/PlanetGenerator";
 import MissionGenerator from "@/pages/tools/MissionGenerator";
 import QuizGenerator from "@/pages/tools/QuizGenerator";
+import DeltaVCalculator from "@/pages/tools/DeltaVCalculator";
+import AstrophysicsPlayground from "@/pages/tools/AstrophysicsPlayground";
 import Launches from "@/pages/Launches";
 import Benefits from "@/pages/Benefits";
 import Gift from "@/pages/Gift";
@@ -37,7 +39,8 @@ import Careers from "@/pages/Careers";
 // SearchResults page removed as it's now integrated into the search bar
 import NewsletterVerify from "@/pages/NewsletterVerify";
 import NewsletterUnsubscribe from "@/pages/NewsletterUnsubscribe";
-import MaintenanceMode from "@/components/MaintenanceMode";
+
+import SiteBlock from "@/components/SiteBlock";
 import AdminDashboard from "@/pages/Admin/NewDashboard";
 import { useAuth, AuthProvider } from "@/lib/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -112,6 +115,8 @@ function Router() {
       <Route path="/tools/planet-generator" component={PlanetGenerator} />
       <Route path="/tools/mission-generator" component={MissionGenerator} />
       <Route path="/tools/quiz-generator" component={QuizGenerator} />
+      <Route path="/tools/delta-v-calculator" component={DeltaVCalculator} />
+      <Route path="/tools/astrophysics-playground" component={AstrophysicsPlayground} />
       <Route path="/launches" component={Launches} />
       <Route path="/benefits" component={Benefits} />
       <Route path="/gift" component={Gift} />
@@ -120,6 +125,16 @@ function Router() {
       {/* Search page removed - now directly integrated into the dropdown */}
       <Route path="/newsletter/verify" component={NewsletterVerify} />
       <Route path="/newsletter/unsubscribe" component={NewsletterUnsubscribe} />
+      
+      {/* Site Block Preview */}
+      <Route path="/site-block-preview" component={() => {
+        const SiteBlockPreviewPage = React.lazy(() => import('./pages/SiteBlockPreview'));
+        return (
+          <React.Suspense fallback={<div className="flex justify-center p-12"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
+            <SiteBlockPreviewPage />
+          </React.Suspense>
+        );
+      }} />
       
       {/* Main Admin Dashboard */}
       <Route path="/admin" component={AdminDashboard} />
@@ -235,18 +250,26 @@ function Router() {
 }
 
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 function MainApp() {
-  const { isMaintenanceMode, settings } = useSiteSettings();
+  const { settings } = useSiteSettings();
   const { isAdmin } = useAuth();
   const [location] = useLocation();
   
-  // For debugging
-  console.log("Maintenance check:", { 
-    isMaintenanceMode, 
-    isAdmin, 
-    maintenanceEnabled: settings?.maintenanceMode 
+  // Fetch site block status
+  const { data: siteBlock, isLoading: siteBlockLoading } = useQuery({
+    queryKey: ['site-block'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/site-block');
+      return response.json();
+    },
+    staleTime: 30000, // Cache for 30 seconds
   });
+  
+  // For debugging
+  
   
   // Don't show maintenance mode for:
   // 1. Admin users (they can see everything)
@@ -254,21 +277,36 @@ function MainApp() {
   // 3. Login/auth pages (so people can still log in)
   const isAdminPage = location.startsWith('/admin');
   const isAuthPage = location === '/login' || location === '/register';
-  const showMaintenanceMode = isMaintenanceMode && !isAdmin && !isAdminPage && !isAuthPage;
+
+  
+  // Site block logic
+  const showSiteBlock = siteBlock?.isEnabled && !isAdmin && !isAdminPage;
   
   // For debugging
-  console.log("MainApp render check:", {
-    path: location,
-    isMaintenanceMode,
-    isAdmin,
-    isAdminPage,
-    isAuthPage,
-    showMaintenanceMode
-  });
+      console.log("MainApp render check:", {
+      path: location,
+      isAdmin,
+      isAdminPage,
+      isAuthPage,
+      showSiteBlock,
+      siteBlockEnabled: siteBlock?.isEnabled
+    });
   
-  if (showMaintenanceMode) {
-    return <MaintenanceMode />;
+  // Show loading while fetching site block status
+  if (siteBlockLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+      </div>
+    );
   }
+  
+  // Show site block if enabled (takes precedence over maintenance mode)
+  if (showSiteBlock && siteBlock) {
+    return <SiteBlock siteBlock={siteBlock} />;
+  }
+  
+
   
   return (
     <div className="min-h-screen flex flex-col">

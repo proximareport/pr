@@ -9,6 +9,8 @@ Disallow: /admin/
 Disallow: /api/
 Disallow: /_next/
 Disallow: /private/
+Disallow: /profile/
+Disallow: /advertiser-dashboard/
 
 # Allow important pages
 Allow: /about
@@ -18,9 +20,31 @@ Allow: /jobs
 Allow: /astronomy
 Allow: /gallery
 Allow: /pricing
+Allow: /missioncontrol
+Allow: /proxihub
+Allow: /tools/
+Allow: /launches
+Allow: /benefits
+Allow: /gift
+Allow: /careers
 Allow: /privacy
 Allow: /terms
 Allow: /cookies
+Allow: /login
+Allow: /register
 
 # Crawl delay for respectful crawling
-Crawl-delay: 1 
+Crawl-delay: 1
+
+# Additional directives for better SEO
+# Allow Googlebot to access all content
+User-agent: Googlebot
+Allow: /
+
+# Allow Bingbot
+User-agent: Bingbot
+Allow: /
+
+# Allow all major search engines
+User-agent: *
+Allow: / 

@@ -18,13 +18,19 @@ import {
   updateSiteSettingsSchema,
   insertTaxonomySchema,
   insertArticleTaxonomySchema,
+  insertSiteBlockSchema,
+  updateSiteBlockSchema,
   type User,
   type MediaLibraryItem,
   type SiteSettings,
   type UpdateSiteSettings,
   type TaxonomyItem,
   type ArticleTaxonomy,
-  advertisements
+  type SiteBlock,
+  type InsertSiteBlock,
+  type UpdateSiteBlock,
+  advertisements,
+  siteBlocks
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -5048,6 +5054,86 @@ google.com, pub-XXXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
     } catch (error) {
       console.error('❌ Migration failed:', error);
       res.status(500).json({ success: false, message: "Migration failed", error: error.message });
+    }
+  });
+
+  // Site Block API Routes
+  app.get("/api/site-block", async (req: Request, res: Response) => {
+    try {
+      const [siteBlock] = await db.select().from(siteBlocks).limit(1);
+      
+      if (!siteBlock) {
+        // Create default site block if none exists
+        const defaultSiteBlock = {
+          isEnabled: false,
+          title: "Site Temporarily Unavailable",
+          subtitle: "We are currently performing maintenance or updates.",
+          message: "Our team is working to bring the site back online as quickly as possible. Thank you for your patience.",
+          primaryColor: "#4f46e5",
+          secondaryColor: "#0f172a",
+          showLoginForm: true,
+          loginFormTitle: "Admin Access",
+          loginFormSubtitle: "Enter your credentials to access the site"
+        };
+        
+        const [newSiteBlock] = await db.insert(siteBlocks).values(defaultSiteBlock).returning();
+        res.json(newSiteBlock);
+      } else {
+        res.json(siteBlock);
+      }
+    } catch (error) {
+      console.error("Error fetching site block:", error);
+      res.status(500).json({ error: "Failed to fetch site block settings" });
+    }
+  });
+
+  app.put("/api/site-block", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      const updateData = updateSiteBlockSchema.parse(req.body);
+      
+      const [siteBlock] = await db.select().from(siteBlocks).limit(1);
+      
+      if (siteBlock) {
+        const [updatedSiteBlock] = await db
+          .update(siteBlocks)
+          .set({ ...updateData, updatedBy: userId, updatedAt: new Date() })
+          .where(eq(siteBlocks.id, siteBlock.id))
+          .returning();
+        
+        res.json(updatedSiteBlock);
+      } else {
+        // Create new site block if none exists
+        const [newSiteBlock] = await db
+          .insert(siteBlocks)
+          .values({ ...updateData, createdBy: userId, updatedBy: userId })
+          .returning();
+        
+        res.json(newSiteBlock);
+      }
+    } catch (error) {
+      console.error("Error updating site block:", error);
+      if (error instanceof ZodError) {
+        res.status(400).json({ error: "Invalid data", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to update site block settings" });
+      }
+    }
+  });
+
+  app.get("/api/site-block/preview", async (req: Request, res: Response) => {
+    try {
+      const [siteBlock] = await db.select().from(siteBlocks).limit(1);
+      
+      if (!siteBlock) {
+        return res.status(404).json({ error: "Site block not found" });
+      }
+
+      // Return the site block data for preview
+      res.json(siteBlock);
+    } catch (error) {
+      console.error("Error fetching site block preview:", error);
+      res.status(500).json({ error: "Failed to fetch site block preview" });
     }
   });
 

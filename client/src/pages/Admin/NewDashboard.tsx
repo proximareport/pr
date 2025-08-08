@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation, Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -33,7 +33,8 @@ import {
   Layers,
   Compass,
   Clock,
-  FileText
+  FileText,
+  ShieldIcon
 } from 'lucide-react';
 
 // Import all tab components
@@ -45,6 +46,7 @@ import EmergencyBannerTab from './EmergencyBannerTab';
 import TaxonomyTab from './TaxonomyTab';
 import SiteSettingsForm from '@/components/admin/SiteSettingsForm';
 import TeamManagement from './TeamManagement';
+import SiteBlockTab from './SiteBlockTab';
 
 
 // Types
@@ -66,45 +68,24 @@ interface Article {
 
 function NewAdminDashboard() {
   const { user, isAdmin } = useAuth();
-  const [location, navigate] = useLocation();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // Parse URL query parameters for tab selection
-  const urlParams = new URLSearchParams(window.location.search);
-  const tabFromUrl = urlParams.get('tab');
-  
-  // Get saved tab from localStorage or use URL parameter
+  // Get saved tab from localStorage
   const getSavedTab = () => {
     const savedTab = localStorage.getItem('adminActiveTab');
-    return tabFromUrl || savedTab || "dashboard";
+    return savedTab || "dashboard";
   };
   
   // Active tab state
   const [activeTab, setActiveTab] = useState<string>(getSavedTab());
   
-  // Effect to handle URL parameter changes
-  useEffect(() => {
-    // Update active tab state when URL parameters change
-    const urlParams = new URLSearchParams(window.location.search);
-    const tabFromUrl = urlParams.get('tab');
-    
-    if (tabFromUrl) {
-      setActiveTab(tabFromUrl);
-      localStorage.setItem('adminActiveTab', tabFromUrl);
-    }
-  }, [location]); // dependency on location to detect URL changes
-  
-  // Function to set active tab and update URL
+  // Function to set active tab
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     // Save to localStorage for persistence
     localStorage.setItem('adminActiveTab', value);
-    
-    // Update URL when tab changes without forcing a page reload
-    const newUrl = new URL(window.location.href);
-    newUrl.searchParams.set('tab', value);
-    window.history.pushState({tab: value}, '', newUrl.toString());
   };
   
   // Fetch data for dashboard
@@ -247,7 +228,7 @@ function NewAdminDashboard() {
           onValueChange={handleTabChange}
           className="w-full"
         >
-          <TabsList className="bg-gray-900 p-1 w-full flex flex-wrap justify-start overflow-x-auto hide-scrollbar">
+          <TabsList className="bg-gray-900 p-1 w-full flex flex-wrap justify-start gap-1">
             <TabsTrigger value="dashboard" className="data-[state=active]:bg-blue-600">
               <BarChart3Icon className="h-4 w-4 mr-2" />
               Dashboard
@@ -288,6 +269,10 @@ function NewAdminDashboard() {
             <TabsTrigger value="emergency" className="data-[state=active]:bg-blue-600">
               <AlertOctagonIcon className="h-4 w-4 mr-2" />
               Emergency Banner
+            </TabsTrigger>
+            <TabsTrigger value="siteblock" className="data-[state=active]:bg-blue-600">
+              <ShieldIcon className="h-4 w-4 mr-2" />
+              Site Block
             </TabsTrigger>
             <TabsTrigger value="settings" className="data-[state=active]:bg-blue-600">
               <Settings className="h-4 w-4 mr-2" />
@@ -679,6 +664,11 @@ function NewAdminDashboard() {
           {/* Emergency Banner */}
           <TabsContent value="emergency" className="mt-6">
             <EmergencyBannerTab />
+          </TabsContent>
+          
+          {/* Site Block */}
+          <TabsContent value="siteblock" className="mt-6">
+            <SiteBlockTab />
           </TabsContent>
           
           {/* Site Settings */}

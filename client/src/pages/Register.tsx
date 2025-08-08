@@ -5,7 +5,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { RocketIcon, Loader2, EyeIcon, EyeOffIcon, UserIcon, MailIcon, LockIcon, CheckIcon } from "lucide-react";
+import { Loader2, EyeIcon, EyeOffIcon, UserIcon, MailIcon, LockIcon, CheckIcon } from "lucide-react";
+
+// Import logo image
+import mobileLogo from "../assets/images/proxima-logo-mobile.png";
 import { apiRequest } from "@/lib/queryClient";
 import ModernButton from "@/components/ui/modern-button";
 
@@ -129,8 +132,12 @@ function Register() {
           <CardHeader className="relative space-y-1 text-center pt-8 pb-2">
             <div className="flex justify-center mb-6">
               <div className="relative">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500 to-violet-700 flex items-center justify-center shadow-lg shadow-purple-500/25">
-                  <RocketIcon className="h-10 w-10 text-white transform -rotate-45" />
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500 to-violet-700 flex items-center justify-center shadow-lg shadow-purple-500/25 overflow-hidden">
+                  <img 
+                    src={mobileLogo} 
+                    alt="Proxima Report" 
+                    className="h-10 w-10 object-contain" 
+                  />
                 </div>
                 <div className="absolute -inset-1 bg-gradient-to-br from-purple-500 to-violet-700 rounded-2xl opacity-30 blur-sm"></div>
                 <div className="absolute inset-0 w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500 to-violet-700 opacity-20 animate-ping"></div>
@@ -286,7 +293,6 @@ function Register() {
                   </>
                 ) : (
                   <>
-                    <RocketIcon className="h-5 w-5 transform -rotate-45" />
                     <span>Create Account</span>
                   </>
                 )}
