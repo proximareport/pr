@@ -155,7 +155,7 @@ function Home() {
                 "@type": "Article",
                 "headline": post.title,
                 "description": post.excerpt,
-                "url": `https://proximareport.com/article/${post.slug}`,
+                "url": `https://proximareport.com/articles/${post.slug}`,
                 "author": {
                   "@type": "Person",
                   "name": post.authors?.[0]?.name || post.primary_author?.name || "Proxima Report"
@@ -341,7 +341,7 @@ function Home() {
                           {slug && (
                             <div 
                               className="absolute inset-0 cursor-pointer"
-                              onClick={() => window.open(`/article/${slug}`, '_blank')}
+                              onClick={() => window.open(`/articles/${slug}`, '_blank')}
                             />
                           )}
                         </>

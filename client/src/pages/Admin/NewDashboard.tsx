@@ -454,7 +454,7 @@ function NewAdminDashboard() {
                           </div>
                           <div className="flex gap-2">
                             <Button asChild size="sm" variant="outline" className="h-8 p-0 px-2 rounded-md bg-transparent border-gray-700 text-gray-300 hover:text-white hover:bg-gray-700 hover:border-gray-600">
-                              <Link href={`/article/${article.slug}`}>
+                              <Link href={`/articles/${article.slug}`}>
                                 View
                               </Link>
                             </Button>

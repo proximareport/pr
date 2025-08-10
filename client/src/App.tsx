@@ -80,7 +80,7 @@ function Router() {
       {/* Public routes */}
       <Route path="/" component={Home} />
       {/* Special route for "all" category that redirects to home */}
-      <Route path="/article/all" component={() => {
+      <Route path="/articles/all" component={() => {
         const [, navigate] = useLocation();
         
         React.useEffect(() => {
@@ -94,7 +94,7 @@ function Router() {
           </div>
         </div>;
       }} />
-      <Route path="/article/:slug" component={Article} />
+      <Route path="/articles/:slug" component={Article} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/profile/settings" component={Profile} />

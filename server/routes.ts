@@ -3196,7 +3196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         sitemap += `
   <url>
-    <loc>${baseUrl}/article/${article.slug}</loc>
+    <loc>${baseUrl}/articles/${article.slug}</loc>
     <lastmod>${new Date(lastmod).toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>`;
@@ -3398,7 +3398,7 @@ Disallow: /advertiser-dashboard
 
 # Allow important public pages
 Allow: /
-Allow: /article/
+        Allow: /articles/
 Allow: /category/
 Allow: /tag/
 Allow: /launches
@@ -3531,7 +3531,7 @@ google.com, pub-XXXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
       // Add articles to RSS feed
       articles.forEach(article => {
         const pubDate = new Date(article.publishedAt || article.createdAt).toUTCString();
-        const link = `${baseUrl}/article/${article.slug}`;
+        const link = `${baseUrl}/articles/${article.slug}`;
         
         // Create article excerpt/description
         let description = '';
@@ -3643,8 +3643,8 @@ google.com, pub-XXXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
           }
 
           const item = {
-            id: `${baseUrl}/article/${article.slug}`,
-            url: `${baseUrl}/article/${article.slug}`,
+                      id: `${baseUrl}/articles/${article.slug}`,
+          url: `${baseUrl}/articles/${article.slug}`,
             title: article.title,
             content_html: article.content ? article.content.toString() : description,
             content_text: description,

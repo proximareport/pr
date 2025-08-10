@@ -97,7 +97,7 @@ export function SearchBar({ inHeader = false, placeholder = "Search articles..."
 
   // Navigate to article page when clicking a result
   const navigateToArticle = (slug: string) => {
-    setLocation(`/article/${slug}`);
+    setLocation(`/articles/${slug}`);
     setOpen(false);
   };
   

@@ -246,7 +246,7 @@ function AdminDashboard() {
                 <TableCell className="text-right">
                   <div className="flex justify-end space-x-1">
                     <Button asChild size="sm" variant="outline" className="h-8 w-8 p-0 rounded-full bg-transparent border-gray-700 text-gray-400 hover:text-gray-100 hover:bg-gray-800 hover:border-gray-600">
-                      <Link href={`/article/${article.slug}`} title="View Article">
+                      <Link href={`/articles/${article.slug}`} title="View Article">
                         <Eye className="h-4 w-4" />
                       </Link>
                     </Button>

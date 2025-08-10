@@ -63,10 +63,10 @@ function FeaturedArticle({ article }: FeaturedArticleProps) {
       <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D17] via-[#0D0D17]/70 to-transparent"></div>
       <div className="container mx-auto px-4 md:px-6 h-full flex flex-col justify-end pb-8 md:pb-12 relative z-10">
         <div className="max-w-4xl">
-          <Link href={`/article/${article.slug}`}>
-            <h1 className="font-space text-2xl md:text-3xl lg:text-4xl font-bold text-white leading-tight mb-3 md:mb-4 hover:text-purple-300 transition-colors duration-300">
+          <Link href={`/articles/${article.slug}`}>
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-4 hover:text-purple-400 transition-colors duration-300">
               {article.title}
-            </h1>
+            </h2>
           </Link>
           
           <p className="text-white/90 text-sm md:text-base lg:text-lg mb-4 md:mb-6 line-clamp-3 md:line-clamp-none">
