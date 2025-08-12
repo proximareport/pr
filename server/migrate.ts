@@ -102,6 +102,7 @@ async function main() {
       id SERIAL PRIMARY KEY,
       content TEXT NOT NULL,
       article_id INTEGER REFERENCES articles(id) ON DELETE CASCADE,
+      ghost_post_id TEXT,
       user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
       parent_id INTEGER REFERENCES comments(id) ON DELETE CASCADE,
       upvotes INTEGER DEFAULT 0,
@@ -109,6 +110,46 @@ async function main() {
       created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     )
+  `);
+  
+  // Add ghost_post_id column to existing comments table if it doesn't exist
+  await db.execute(sql`
+    DO $$ 
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'comments' AND column_name = 'ghost_post_id'
+      ) THEN
+        ALTER TABLE comments ADD COLUMN ghost_post_id TEXT;
+      END IF;
+    END $$;
+  `);
+  
+  // Make article_id nullable for Ghost post support
+  await db.execute(sql`
+    DO $$ 
+    BEGIN
+      IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'comments' AND column_name = 'article_id' 
+        AND is_nullable = 'NO'
+      ) THEN
+        ALTER TABLE comments ALTER COLUMN article_id DROP NOT NULL;
+      END IF;
+    END $$;
+  `);
+  
+  // Create index for ghost_post_id if it doesn't exist
+  await db.execute(sql`
+    DO $$ 
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_indexes 
+        WHERE indexname = 'idx_comments_ghost_post_id'
+      ) THEN
+        CREATE INDEX idx_comments_ghost_post_id ON comments(ghost_post_id);
+      END IF;
+    END $$;
   `);
   
   // Create votes table
@@ -120,6 +161,30 @@ async function main() {
       created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (user_id, comment_id)
     )
+  `);
+
+  // Create saved_articles table
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS saved_articles (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      ghost_post_id TEXT,
+      article_id INTEGER REFERENCES articles(id) ON DELETE CASCADE,
+      saved_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Create indexes for saved_articles table
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS idx_saved_articles_user_id ON saved_articles(user_id)
+  `);
+  
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS idx_saved_articles_ghost_post_id ON saved_articles(ghost_post_id)
+  `);
+  
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS idx_saved_articles_article_id ON saved_articles(article_id)
   `);
   
   // Create astronomy_photos table
@@ -236,7 +301,69 @@ async function runRoleMigration() {
   }
 }
 
+async function runCommentsMigration() {
+  console.log('Running comments migration for Ghost post support...');
+  
+  try {
+    // Add ghost_post_id column to existing comments table if it doesn't exist
+    await db.execute(sql`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'comments' AND column_name = 'ghost_post_id'
+        ) THEN
+          ALTER TABLE comments ADD COLUMN ghost_post_id TEXT;
+          RAISE NOTICE 'Added ghost_post_id column';
+        ELSE
+          RAISE NOTICE 'ghost_post_id column already exists';
+        END IF;
+      END $$;
+    `);
+    console.log('✅ Added ghost_post_id column');
+
+    // Make article_id nullable for Ghost post support
+    await db.execute(sql`
+      DO $$ 
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'comments' AND column_name = 'article_id' 
+          AND is_nullable = 'NO'
+        ) THEN
+          ALTER TABLE comments ALTER COLUMN article_id DROP NOT NULL;
+          RAISE NOTICE 'Made article_id nullable';
+        ELSE
+          RAISE NOTICE 'article_id is already nullable';
+        END IF;
+      END $$;
+    `);
+    console.log('✅ Made article_id nullable');
+
+    // Create index for ghost_post_id if it doesn't exist
+    await db.execute(sql`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_indexes 
+          WHERE indexname = 'idx_comments_ghost_post_id'
+        ) THEN
+          CREATE INDEX idx_comments_ghost_post_id ON comments(ghost_post_id);
+          RAISE NOTICE 'Created ghost_post_id index';
+        ELSE
+          RAISE NOTICE 'ghost_post_id index already exists';
+        END IF;
+      END $$;
+    `);
+    console.log('✅ Created ghost_post_id index');
+
+    console.log('🎉 Comments migration completed successfully!');
+  } catch (error) {
+    console.error('❌ Comments migration failed:', error);
+  }
+}
+
 // Run if this file is executed directly
 if (require.main === module) {
-  runRoleMigration().then(() => process.exit(0));
+  runCommentsMigration().then(() => runRoleMigration()).then(() => process.exit(0));
 }

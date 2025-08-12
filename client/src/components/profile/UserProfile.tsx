@@ -56,7 +56,45 @@ const UserProfile = ({ username, isEditable = false }: ProfileProps) => {
   // Pro user customizations
   const [customBgColor, setCustomBgColor] = useState("");
   const [isAnimatedBg, setIsAnimatedBg] = useState(false);
+
+  // User activity data
+  const [savedArticles, setSavedArticles] = useState<any[]>([]);
+  const [userComments, setUserComments] = useState<any[]>([]);
+  const [loadingSaved, setLoadingSaved] = useState(false);
+  const [loadingComments, setLoadingComments] = useState(false);
   
+  // Fetch user's saved articles
+  const fetchSavedArticles = async (userId: number) => {
+    try {
+      setLoadingSaved(true);
+      const response = await fetch(`/api/users/${userId}/saved-articles`);
+      if (response.ok) {
+        const data = await response.json();
+        setSavedArticles(data);
+      }
+    } catch (error) {
+      console.error("Error fetching saved articles:", error);
+    } finally {
+      setLoadingSaved(false);
+    }
+  };
+
+  // Fetch user's comments
+  const fetchUserComments = async (userId: number) => {
+    try {
+      setLoadingComments(true);
+      const response = await fetch(`/api/users/${userId}/comments`);
+      if (response.ok) {
+        const data = await response.json();
+        setUserComments(data);
+      }
+    } catch (error) {
+      console.error("Error fetching user comments:", error);
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
   // Fetch user data
   useEffect(() => {
     const fetchUser = async () => {
@@ -99,6 +137,10 @@ const UserProfile = ({ username, isEditable = false }: ProfileProps) => {
               }
               setIsAnimatedBg(userData.profileCustomization.animatedBackground || false);
             }
+
+            // Fetch user's activity data
+            fetchSavedArticles(userData.id);
+            fetchUserComments(userData.id);
           }
         } else if (currentUser) {
           // Use current logged in user
@@ -120,6 +162,10 @@ const UserProfile = ({ username, isEditable = false }: ProfileProps) => {
             }
             setIsAnimatedBg(currentUser.profileCustomization.animatedBackground || false);
           }
+
+          // Fetch user's activity data
+          fetchSavedArticles(currentUser.id);
+          fetchUserComments(currentUser.id);
         }
       } catch (error) {
         console.error("Profile fetch error:", error);
@@ -478,14 +524,50 @@ const UserProfile = ({ username, isEditable = false }: ProfileProps) => {
                 <CardTitle className="font-space">Saved Articles</CardTitle>
               </CardHeader>
               <CardContent>
-                {/* Saved articles would be fetched and shown here */}
-                <div className="text-center py-12 text-white/60">
-                  <BookmarkIcon className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                  <p>No saved articles</p>
-                  <Button asChild variant="outline" className="mt-4">
-                    <Link href="/">Browse Articles</Link>
-                  </Button>
-                </div>
+                {loadingSaved ? (
+                  <div className="text-center py-12 text-white/60">
+                    <div className="animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                    <p>Loading saved articles...</p>
+                  </div>
+                ) : savedArticles.length > 0 ? (
+                  <div className="space-y-4">
+                    {savedArticles.map((saved, index) => (
+                      <div key={index} className="p-4 bg-[#1A1A27] rounded-lg border border-white/10">
+                        <div className="flex items-center gap-3">
+                          {saved.article?.featuredImage && (
+                            <img 
+                              src={saved.article.featuredImage} 
+                              alt={saved.article.title}
+                              className="w-16 h-16 object-cover rounded-lg"
+                            />
+                          )}
+                          <div className="flex-1">
+                            <h3 className="font-medium text-white mb-1">
+                              {saved.article?.title || 'Ghost Article'}
+                            </h3>
+                            <p className="text-sm text-white/60 mb-2">
+                              Saved {new Date(saved.savedAt).toLocaleDateString()}
+                            </p>
+                            <Link 
+                              to={`/article/${saved.ghostPostId}`}
+                              className="text-sm text-purple-400 hover:text-purple-300 transition-colors"
+                            >
+                              Read Article →
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-white/60">
+                    <BookmarkIcon className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                    <p>No saved articles</p>
+                    <Button asChild variant="outline" className="mt-4">
+                      <Link href="/">Browse Articles</Link>
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -496,11 +578,40 @@ const UserProfile = ({ username, isEditable = false }: ProfileProps) => {
                 <CardTitle className="font-space">Recent Comments</CardTitle>
               </CardHeader>
               <CardContent>
-                {/* User comments would be fetched and shown here */}
-                <div className="text-center py-12 text-white/60">
-                  <MessageSquareIcon className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                  <p>No comments yet</p>
-                </div>
+                {loadingComments ? (
+                  <div className="text-center py-12 text-white/60">
+                    <div className="animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                    <p>Loading comments...</p>
+                  </div>
+                ) : userComments.length > 0 ? (
+                  <div className="space-y-4">
+                    {userComments.map((comment, index) => (
+                      <div key={index} className="p-4 bg-[#1A1A27] rounded-lg border border-white/10">
+                        <div className="mb-3">
+                          <p className="text-white/90 text-sm mb-2">{comment.content}</p>
+                          <div className="flex items-center gap-4 text-xs text-white/60">
+                            <span>{new Date(comment.createdAt).toLocaleDateString()}</span>
+                            <span>↑ {comment.upvotes}</span>
+                            <span>↓ {comment.downvotes}</span>
+                          </div>
+                        </div>
+                        <div className="pt-3 border-t border-white/10">
+                          <Link 
+                            to={`/article/${comment.ghostPostId}`}
+                            className="text-sm text-purple-400 hover:text-purple-300 transition-colors"
+                          >
+                            View Article →
+                          </Link>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-white/60">
+                    <MessageSquareIcon className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                    <p>No comments yet</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

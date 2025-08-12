@@ -128,7 +128,8 @@ export const comments = pgTable("comments", {
   id: serial("id").primaryKey(),
   content: text("content").notNull(),
   userId: integer("user_id").notNull().references(() => users.id),
-  articleId: integer("article_id").notNull().references(() => articles.id),
+  articleId: integer("article_id").references(() => articles.id), // Made optional for Ghost posts
+  ghostPostId: text("ghost_post_id"), // Added for Ghost post references
   parentId: integer("parent_id").references(() => comments.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -146,6 +147,20 @@ export const votes = pgTable("votes", {
 }, (table) => {
   return {
     userCommentIdx: uniqueIndex("user_comment_idx").on(table.userId, table.commentId),
+  };
+});
+
+// Saved Articles (for user bookmarking)
+export const savedArticles = pgTable("saved_articles", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  ghostPostId: text("ghost_post_id"), // For Ghost CMS articles
+  articleId: integer("article_id").references(() => articles.id, { onDelete: "cascade" }), // For local articles
+  savedAt: timestamp("saved_at").defaultNow().notNull(),
+}, (table) => {
+  return {
+    userGhostPostIdx: uniqueIndex("user_ghost_post_idx").on(table.userId, table.ghostPostId),
+    userArticleIdx: uniqueIndex("user_article_idx").on(table.userId, table.articleId),
   };
 });
 

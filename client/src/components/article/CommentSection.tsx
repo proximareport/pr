@@ -31,7 +31,7 @@ interface Comment {
 }
 
 interface CommentSectionProps {
-  articleId: number;
+  articleId: string;
   comments: Comment[];
   refetchComments: () => void;
 }
@@ -45,6 +45,7 @@ function CommentSection({ articleId, comments = [], refetchComments }: CommentSe
   const [replyText, setReplyText] = useState("");
   const [userVotes, setUserVotes] = useState<Record<number, "up" | "down" | null>>({});
   const [loadingVotes, setLoadingVotes] = useState<Record<number, boolean>>({});
+  const [deletingComment, setDeletingComment] = useState<number | null>(null);
 
   // Ensure comments is always an array
   const safeComments = Array.isArray(comments) ? comments : [];
@@ -53,6 +54,36 @@ function CommentSection({ articleId, comments = [], refetchComments }: CommentSe
   const sortedComments = [...safeComments].sort((a, b) => {
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
+
+  // Delete a comment
+  const handleDeleteComment = async (commentId: number) => {
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "You must be logged in to delete comments.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setDeletingComment(commentId);
+    try {
+      await apiRequest("DELETE", `/api/comments/${commentId}`);
+      refetchComments();
+      toast({
+        title: "Comment Deleted",
+        description: "Your comment has been deleted successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete comment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingComment(null);
+    }
+  };
 
   // Submit a new comment
   const handleSubmitComment = async () => {
@@ -78,7 +109,7 @@ function CommentSection({ articleId, comments = [], refetchComments }: CommentSe
     try {
       await apiRequest("POST", "/api/comments", {
         content: commentText,
-        articleId,
+        ghostPostId: articleId,
         parentId: null,
       });
       setCommentText("");
@@ -122,7 +153,7 @@ function CommentSection({ articleId, comments = [], refetchComments }: CommentSe
     try {
       await apiRequest("POST", "/api/comments", {
         content: replyText,
-        articleId,
+        ghostPostId: articleId,
         parentId,
       });
       setReplyText("");
@@ -204,9 +235,9 @@ function CommentSection({ articleId, comments = [], refetchComments }: CommentSe
         >
           <div className="flex items-start">
             <div className="mr-3">
-              <div className="relative">
+              <Link to={`/profile/${comment.author.username}`}>
                 <div
-                  className={`w-10 h-10 rounded-full overflow-hidden ${
+                  className={`w-10 h-10 rounded-full overflow-hidden cursor-pointer hover:scale-105 transition-transform ${
                     isAdmin 
                       ? "border-2 border-red-500" 
                       : isPro || isSupporter 
@@ -223,11 +254,16 @@ function CommentSection({ articleId, comments = [], refetchComments }: CommentSe
                     </AvatarFallback>
                   </Avatar>
                 </div>
-              </div>
+              </Link>
             </div>
             <div className="flex-1">
               <div className="flex items-center mb-1 gap-2">
-                <span className="font-medium text-white">{comment.author.username}</span>
+                <Link 
+                  to={`/profile/${comment.author.username}`}
+                  className="font-medium text-white hover:text-purple-400 transition-colors cursor-pointer hover:underline"
+                >
+                  {comment.author.username}
+                </Link>
                 <RoleBadges 
                   role={comment.author.role} 
                   membershipTier={comment.author.membershipTier}
@@ -246,6 +282,26 @@ function CommentSection({ articleId, comments = [], refetchComments }: CommentSe
                 >
                   <ReplyIcon className="h-4 w-4 mr-1" /> Reply
                 </Button>
+                
+                {/* Delete button - only show for comment author or admins */}
+                {(user?.id === comment.authorId || user?.role === 'admin') && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 text-white/60 hover:text-red-500"
+                    onClick={() => handleDeleteComment(comment.id)}
+                    disabled={deletingComment === comment.id}
+                  >
+                    {deletingComment === comment.id ? (
+                      <div className="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
+                    ) : (
+                      <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    )}
+                    {deletingComment === comment.id ? "Deleting..." : "Delete"}
+                  </Button>
+                )}
                 <div className="flex items-center mx-4">
                   <Button
                     variant="ghost"

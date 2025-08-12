@@ -200,7 +200,10 @@ function NewAdminDashboard() {
 
   const { data: jobs = [], isLoading: jobsLoading } = useQuery({
     queryKey: ['/api/admin/job-listings'],
-    queryFn: () => apiRequest('GET', '/api/admin/job-listings?includeUnapproved=true'),
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/admin/job-listings?includeUnapproved=true');
+      return await response.json();
+    },
     retry: false,
     enabled: !!isAdmin
   });

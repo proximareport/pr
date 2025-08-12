@@ -49,6 +49,23 @@ function Article() {
     },
     enabled: !!slug
   });
+
+  // Fetch comments for the article
+  const { data: comments = [], refetch: refetchComments } = useQuery({
+    queryKey: ['article-comments', article?.id],
+    queryFn: async () => {
+      if (!article?.id) return [];
+      
+      try {
+        const response = await axios.get(`/api/ghost/posts/${article.id}/comments`);
+        return response.data;
+      } catch (error) {
+        console.error('Error fetching comments:', error);
+        return [];
+      }
+    },
+    enabled: !!article?.id
+  });
   
   // Extract headings from article content for TOC
   useEffect(() => {
@@ -80,6 +97,28 @@ function Article() {
       analyticsTracker.trackArticleView(article.slug, article.title);
     }
   }, [article?.title, article?.slug]);
+
+  // Check if article is already saved by the user
+  useEffect(() => {
+    const checkIfSaved = async () => {
+      if (!user || !article?.id) return;
+      
+      try {
+        const response = await fetch(`/api/articles/${article.id}/saved`, {
+          credentials: 'include',
+        });
+        
+        if (response.ok) {
+          const { isSaved } = await response.json();
+          setIsBookmarked(isSaved);
+        }
+      } catch (error) {
+        console.error('Error checking if article is saved:', error);
+      }
+    };
+
+    checkIfSaved();
+  }, [user, article?.id]);
   
   // Set up intersection observer for headings
   useEffect(() => {
@@ -131,14 +170,54 @@ function Article() {
     }
   };
 
-  const handleBookmark = () => {
-    setIsBookmarked(!isBookmarked);
-    toast({
-      title: isBookmarked ? "Bookmark removed" : "Article bookmarked!",
-      description: isBookmarked 
-        ? "Article removed from your bookmarks." 
-        : "Article added to your bookmarks.",
-    });
+  const handleBookmark = async () => {
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "You must be logged in to save articles.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!article?.id) {
+      toast({
+        title: "Error",
+        description: "Article not found.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const action = isBookmarked ? 'unsave' : 'save';
+      const response = await fetch(`/api/articles/${article.id}/save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action }),
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        setIsBookmarked(!isBookmarked);
+        toast({
+          title: isBookmarked ? "Bookmark removed" : "Article bookmarked!",
+          description: isBookmarked 
+            ? "Article removed from your bookmarks." 
+            : "Article added to your bookmarks.",
+        });
+      } else {
+        throw new Error('Failed to save/unsave article');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save/unsave article. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleLike = () => {
@@ -491,9 +570,9 @@ function Article() {
                   </div>
                 </div>
                 <CommentSection 
-                  articleId={parseInt(article.id)} 
-                  comments={[]} 
-                  refetchComments={() => {}} 
+                  articleId={article.id} 
+                  comments={comments} 
+                  refetchComments={refetchComments} 
                 />
               </div>
 

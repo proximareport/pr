@@ -1448,6 +1448,158 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
+  // Get comments for a Ghost post by ID
+  app.get("/api/ghost/posts/:id/comments", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      console.log("Fetching comments for Ghost post ID:", id);
+      
+      if (!id) {
+        return res.status(400).json({ message: "Ghost post ID is required" });
+      }
+      
+      // Get comments by Ghost post ID
+      const comments = await storage.getCommentsByGhostPost(id);
+      console.log("Found comments:", comments.length);
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      res.status(500).json({ message: "Error fetching comments" });
+    }
+  });
+
+  // Get user's comments
+  app.get("/api/users/:userId/comments", async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.params;
+      const page = req.query.page ? parseInt(req.query.page as string) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      
+      if (!userId) {
+        return res.status(400).json({ message: "User ID is required" });
+      }
+      
+      const comments = await storage.getUserComments(parseInt(userId), page, limit);
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching user comments:", error);
+      res.status(500).json({ message: "Error fetching user comments" });
+    }
+  });
+
+  // Save/unsave an article
+  app.post("/api/articles/:ghostPostId/save", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { ghostPostId } = req.params;
+      const { action } = req.body; // 'save' or 'unsave'
+      
+      if (!ghostPostId) {
+        return res.status(400).json({ message: "Ghost post ID is required" });
+      }
+      
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
+      if (action === 'save') {
+        await storage.saveArticle(req.session.userId, ghostPostId);
+        res.json({ message: "Article saved successfully" });
+      } else if (action === 'unsave') {
+        await storage.unsaveArticle(req.session.userId, ghostPostId);
+        res.json({ message: "Article unsaved successfully" });
+      } else {
+        res.status(400).json({ message: "Invalid action. Use 'save' or 'unsave'" });
+      }
+    } catch (error) {
+      console.error("Error saving/unsaving article:", error);
+      res.status(500).json({ message: "Error saving/unsaving article" });
+    }
+  });
+
+  // Get user's saved articles
+  app.get("/api/users/:userId/saved-articles", async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.params;
+      const page = req.query.page ? parseInt(req.query.page as string) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      
+      if (!userId) {
+        return res.status(400).json({ message: "User ID is required" });
+      }
+      
+      const savedArticles = await storage.getUserSavedArticles(parseInt(userId), page, limit);
+      res.json(savedArticles);
+    } catch (error) {
+      console.error("Error fetching saved articles:", error);
+      res.status(500).json({ message: "Error fetching saved articles" });
+    }
+  });
+
+  // Check if article is saved by user
+  app.get("/api/articles/:ghostPostId/saved", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { ghostPostId } = req.params;
+      
+      if (!ghostPostId) {
+        return res.status(400).json({ message: "Ghost post ID is required" });
+      }
+      
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
+      const isSaved = await storage.isArticleSaved(req.session.userId, ghostPostId);
+      res.json({ isSaved });
+    } catch (error) {
+      console.error("Error checking if article is saved:", error);
+      res.status(500).json({ message: "Error checking article save status" });
+    }
+  });
+
+  // Create a new comment
+  app.post("/api/comments", requireAuth, async (req: Request, res: Response) => {
+    try {
+      console.log("Creating comment with data:", req.body);
+      const { content, ghostPostId, parentId } = req.body;
+      
+      if (!content || !ghostPostId) {
+        console.log("Missing required fields:", { content: !!content, ghostPostId: !!ghostPostId });
+        return res.status(400).json({ message: "Comment content and Ghost post ID are required" });
+      }
+      
+      if (!req.session.userId) {
+        console.log("User not authenticated, session:", req.session);
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
+      console.log("User authenticated, userId:", req.session.userId);
+      
+      // Create comment data
+      const commentData = {
+        content,
+        userId: req.session.userId,
+        articleId: null, // No local article reference
+        ghostPostId, // Reference to Ghost post
+        parentId: parentId ? parseInt(parentId) : null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        upvotes: 0,
+        downvotes: 0
+      };
+      
+      console.log("Comment data to insert:", commentData);
+      
+      // Create the comment
+      const newComment = await storage.createComment(commentData);
+      
+      console.log("Comment created successfully:", newComment);
+      res.status(201).json(newComment);
+    } catch (error) {
+      console.error("Error creating comment:", error);
+      res.status(500).json({ message: "Error creating comment" });
+    }
+  });
+
   // Delete comment
   app.delete("/api/comments/:id", requireAuth, async (req: Request, res: Response) => {
     try {
@@ -1903,12 +2055,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ----------------------------------------------------
   app.get("/api/job-listings", async (req: Request, res: Response) => {
     try {
-      const page = req.query.page ? parseInt(req.query.page as string) : 1;
-      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
-      
-      const jobs = await storage.getJobListings(page, limit);
-      
-      res.json(jobs);
+      // Public endpoint should return approved and active (non-expired) jobs only
+      const jobs = await storage.getJobListings(true);
+      const activeJobs = Array.isArray(jobs)
+        ? jobs.filter((job: any) => !job.expiresAt || new Date(job.expiresAt) > new Date())
+        : [];
+      res.json(activeJobs);
     } catch (error) {
       console.error("Error fetching job listings:", error);
       res.status(500).json({ message: "Error fetching job listings" });
@@ -2056,8 +2208,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/job-listings", requireAdmin, async (req: Request, res: Response) => {
     try {
       const includeUnapproved = req.query.includeUnapproved === 'true';
-      const jobs = await storage.getJobListings(!includeUnapproved);
-      res.json(jobs);
+      let jobs;
+      if (includeUnapproved) {
+        // Include both approved and unapproved
+        const approved = await storage.getJobListings(true);
+        const unapproved = await storage.getJobListings(false);
+        jobs = [...approved, ...unapproved];
+      } else {
+        // Default to only approved for admin view
+        jobs = await storage.getJobListings(true);
+      }
+      res.json(Array.isArray(jobs) ? jobs : []);
     } catch (error) {
       console.error("Error fetching admin job listings:", error);
       res.status(500).json({ message: "Error fetching job listings" });

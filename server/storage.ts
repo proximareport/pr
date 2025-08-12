@@ -1009,6 +1009,49 @@ export class DatabaseStorage implements IStorage {
     return commentsWithReplies;
   }
 
+  async getCommentsByGhostPost(ghostPostId: string): Promise<any[]> {
+    // Fetch comments with user information including role
+    const commentsWithUsers = await db
+      .select({
+        id: comments.id,
+        content: comments.content,
+        articleId: comments.articleId,
+        ghostPostId: comments.ghostPostId,
+        authorId: comments.userId,
+        parentId: comments.parentId,
+        upvotes: comments.upvotes,
+        downvotes: comments.downvotes,
+        createdAt: comments.createdAt,
+        updatedAt: comments.updatedAt,
+        author: {
+          id: users.id,
+          username: users.username,
+          profilePicture: users.profilePicture,
+          membershipTier: users.membershipTier,
+          role: users.role
+        }
+      })
+      .from(comments)
+      .innerJoin(users, eq(comments.userId, users.id))
+      .where(and(
+        eq(comments.ghostPostId, ghostPostId),
+        isNull(comments.parentId) // Get only top-level comments
+      ))
+      .orderBy(desc(comments.createdAt));
+
+    // Fetch replies for each comment
+    const commentsWithReplies = [];
+    for (const comment of commentsWithUsers) {
+      const replies = await this.getCommentRepliesWithUsers(comment.id);
+      commentsWithReplies.push({
+        ...comment,
+        replies
+      });
+    }
+
+    return commentsWithReplies;
+  }
+
   async getCommentById(id: number): Promise<Comment | undefined> {
     const [comment] = await db.select().from(comments).where(eq(comments.id, id));
     return comment;
@@ -1068,6 +1111,99 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(users, eq(comments.userId, users.id))
       .where(eq(comments.parentId, commentId))
       .orderBy(desc(comments.createdAt));
+  }
+
+  // Get user's comments with pagination
+  async getUserComments(userId: number, page: number = 1, limit: number = 10): Promise<any[]> {
+    const offset = (page - 1) * limit;
+    
+    return await db
+      .select({
+        id: comments.id,
+        content: comments.content,
+        ghostPostId: comments.ghostPostId,
+        articleId: comments.articleId,
+        parentId: comments.parentId,
+        upvotes: comments.upvotes,
+        downvotes: comments.downvotes,
+        createdAt: comments.createdAt,
+        updatedAt: comments.updatedAt,
+        article: {
+          title: sql`COALESCE(articles.title, 'Ghost Article')`,
+          slug: sql`COALESCE(articles.slug, '')`
+        }
+      })
+      .from(comments)
+      .leftJoin(articles, eq(comments.articleId, articles.id))
+      .where(eq(comments.userId, userId))
+      .orderBy(desc(comments.createdAt))
+      .limit(limit)
+      .offset(offset);
+  }
+
+  // Save an article for a user
+  async saveArticle(userId: number, ghostPostId: string): Promise<void> {
+    // Check if already saved
+    const existing = await db
+      .select()
+      .from(savedArticles)
+      .where(and(
+        eq(savedArticles.userId, userId),
+        eq(savedArticles.ghostPostId, ghostPostId)
+      ));
+    
+    if (existing.length === 0) {
+      await db.insert(savedArticles).values({
+        userId,
+        ghostPostId,
+        savedAt: new Date()
+      });
+    }
+  }
+
+  // Unsave an article for a user
+  async unsaveArticle(userId: number, ghostPostId: string): Promise<void> {
+    await db
+      .delete(savedArticles)
+      .where(and(
+        eq(savedArticles.userId, userId),
+        eq(savedArticles.ghostPostId, ghostPostId)
+      ));
+  }
+
+  // Check if article is saved by user
+  async isArticleSaved(userId: number, ghostPostId: string): Promise<boolean> {
+    const result = await db
+      .select()
+      .from(savedArticles)
+      .where(and(
+        eq(savedArticles.userId, userId),
+        eq(savedArticles.ghostPostId, ghostPostId)
+      ));
+    
+    return result.length > 0;
+  }
+
+  // Get user's saved articles with pagination
+  async getUserSavedArticles(userId: number, page: number = 1, limit: number = 10): Promise<any[]> {
+    const offset = (page - 1) * limit;
+    
+    return await db
+      .select({
+        ghostPostId: savedArticles.ghostPostId,
+        savedAt: savedArticles.savedAt,
+        article: {
+          title: sql`COALESCE(articles.title, 'Ghost Article')`,
+          slug: sql`COALESCE(articles.slug, '')`,
+          featuredImage: sql`COALESCE(articles.featured_image, '')`
+        }
+      })
+      .from(savedArticles)
+      .leftJoin(articles, eq(savedArticles.articleId, articles.id))
+      .where(eq(savedArticles.userId, userId))
+      .orderBy(desc(savedArticles.savedAt))
+      .limit(limit)
+      .offset(offset);
   }
 
   // Vote operations

@@ -182,16 +182,22 @@ export default function Jobs() {
                     <Calendar className="h-4 w-4 mr-1" />
                     <span>Posted {formatDistance(new Date(job.createdAt), new Date(), { addSuffix: true })}</span>
                   </div>
-                  {job.applicationUrl && !isJobExpired(job.expiresAt) && (
-                    <Button 
-                      asChild 
-                      size="sm" 
-                      className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                    >
-                      <a href={job.applicationUrl} target="_blank" rel="noopener noreferrer">
-                        Apply <ExternalLink className="h-3 w-3 ml-1" />
-                      </a>
-                    </Button>
+                  {!isJobExpired(job.expiresAt) && (
+                    job.applicationUrl ? (
+                      <Button 
+                        asChild 
+                        size="sm" 
+                        className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                      >
+                        <a href={job.applicationUrl} target="_blank" rel="noopener noreferrer">
+                          Apply <ExternalLink className="h-3 w-3 ml-1" />
+                        </a>
+                      </Button>
+                    ) : (
+                      <Button asChild size="sm" variant="outline" className="border-slate-600 text-slate-200">
+                        <Link href="/careers">Apply</Link>
+                      </Button>
+                    )
                   )}
                 </CardFooter>
               </Card>
