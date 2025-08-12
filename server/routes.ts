@@ -3195,7 +3195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Enhanced XML Sitemap for SEO and Google Ads compliance
   app.get("/sitemap.xml", async (req: Request, res: Response) => {
     try {
-      const baseUrl = process.env.SITE_URL || `https://${req.get('host') || 'proximareport.com'}`;
+      const baseUrl = 'https://proximareport.com';
       const currentDate = new Date().toISOString();
       
       let articles = [];
@@ -3622,7 +3622,7 @@ google.com, pub-XXXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
   // RSS Feed for articles
   app.get("/rss.xml", async (req: Request, res: Response) => {
     try {
-      const baseUrl = process.env.SITE_URL || `https://${req.get('host') || 'proximareport.com'}`;
+      const baseUrl = 'https://proximareport.com';
       const currentDate = new Date().toISOString();
       
       let articles = [];
@@ -3760,7 +3760,7 @@ google.com, pub-XXXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
   // JSON Feed (modern alternative to RSS)
   app.get("/feed.json", async (req: Request, res: Response) => {
     try {
-      const baseUrl = process.env.SITE_URL || `https://${req.get('host') || 'proximareport.com'}`;
+      const baseUrl = 'https://proximareport.com';
       
       let articles = [];
       
