@@ -49,6 +49,7 @@ import { StardateDisplay } from "@/components/theme/StardateDisplay";
 import AnimatedBackground from "@/components/ui/animated-background";
 import Gallery from './pages/Gallery';
 import { GoogleAdsProvider, CookieConsentBanner } from '@/components/GoogleAdsProvider';
+import { analyticsTracker } from "@/lib/analytics";
 
 // Import theme styles
 import '@/styles/themes.css';

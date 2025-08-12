@@ -39,10 +39,7 @@ import {
   Settings,
   ClockIcon
 } from 'lucide-react';
-import DraftManagement from './DraftManagement';
-import PublishedContent from './PublishedContent';
 import UserManagement from './UserManagement';
-import MediaLibraryTab from './MediaLibraryTab';
 import AdvertisementTab from './AdvertisementTab';
 import EmergencyBannerTab from './EmergencyBannerTab';
 
@@ -548,18 +545,6 @@ function AdminDashboard() {
             </TabsTrigger>
             
             <TabsTrigger 
-              value="media" 
-              className="text-gray-400 hover:text-gray-200 data-[state=active]:text-blue-400 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
-            >
-              <div className="flex items-center gap-2">
-                <ImageIcon className="h-4 w-4" />
-                <span>Media</span>
-              </div>
-            </TabsTrigger>
-            
-
-            
-            <TabsTrigger 
               value="settings" 
               className="text-gray-400 hover:text-gray-200 data-[state=active]:text-blue-400 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none px-1 pb-3"
             >
@@ -957,12 +942,14 @@ function AdminDashboard() {
               </div>
               <TabsContent value="published">
                 <div className="mt-4">
-                  <PublishedContent />
+                  {/* PublishedContent component was removed, so this will be empty or a placeholder */}
+                  <p>Published Content Management</p>
                 </div>
               </TabsContent>
               <TabsContent value="drafts">
                 <div className="mt-4">
-                  <DraftManagement />
+                  {/* DraftManagement component was removed, so this will be empty or a placeholder */}
+                  <p>Draft Management</p>
                 </div>
               </TabsContent>
               <TabsContent value="status">
@@ -1167,12 +1154,6 @@ function AdminDashboard() {
             <AdvertisementTab />
           </div>
         </TabsContent>
-        
-        <TabsContent value="media" className="mt-6">
-          <MediaLibraryTab />
-        </TabsContent>
-        
-
         
         <TabsContent value="settings" className="mt-6">
           <Tabs 

@@ -17,6 +17,7 @@ import type { GhostPost } from '../../../server/ghostService';
 import { ModernButton } from "@/components/ui/modern-button";
 import { shareArticle } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { analyticsTracker } from "@/lib/analytics";
 
 interface ArticleParams {
   slug: string;
@@ -71,6 +72,13 @@ function Article() {
       setHeadings([]);
     }
   }, [article]);
+
+  // Track article view for analytics
+  useEffect(() => {
+    if (article?.title && article?.slug) {
+      analyticsTracker.trackArticleView(article.slug, article.title);
+    }
+  }, [article?.title, article?.slug]);
   
   // Set up intersection observer for headings
   useEffect(() => {
@@ -415,23 +423,7 @@ function Article() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-purple-900/20 group-hover:from-black/70 group-hover:to-purple-900/30 transition-all duration-700"></div>
                     <div className="absolute inset-0 border-2 border-purple-500/30 rounded-3xl group-hover:border-purple-400/50 transition-all duration-700"></div>
                     
-                    {/* Enhanced overlay with article stats */}
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <div className="bg-black/60 backdrop-blur-md rounded-2xl p-4 border border-white/10">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-white/80 text-sm gap-3 sm:gap-4">
-                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-                            <span className="flex items-center gap-2">
-                              <Eye className="w-4 h-4 text-purple-400" />
-                              Featured
-                            </span>
-                          </div>
-                          <span className="flex items-center gap-2">
-                            <Zap className="w-4 h-4 text-yellow-400" />
-                            Latest updates
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+
                   </div>
                 )}
               </div>

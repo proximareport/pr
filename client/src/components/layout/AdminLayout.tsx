@@ -105,9 +105,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     },
     { label: 'Content Management', icon: <BookOpenCheck className="h-5 w-5" />, path: '/admin?tab=content' },
     { label: 'Draft Management', icon: <FileText className="h-5 w-5" />, path: '/admin?tab=content&subtab=drafts' },
-    { label: 'Media Library', icon: <Image className="h-5 w-5 text-purple-600" />, path: '/admin?tab=media' },
     { label: 'Users', icon: <Users className="h-5 w-5" />, path: '/admin?tab=users' },
-    { label: 'Tags & Categories', icon: <Tag className="h-5 w-5" />, path: '/admin?tab=content&subtab=categories' },
     { label: 'API Keys', icon: <Settings className="h-5 w-5" />, path: '/admin?tab=settings&subtab=api' },
     { label: 'Settings', icon: <Settings className="h-5 w-5" />, path: '/admin?tab=settings' },
   ];

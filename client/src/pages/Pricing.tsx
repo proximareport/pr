@@ -12,7 +12,8 @@ import {
   TrendingUpIcon,
   Users,
   Heart,
-  Sparkles
+  Sparkles,
+  X
 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -81,7 +82,8 @@ const TIER_CONFIG = {
     description: "Perfect for casual space enthusiasts",
     icon: StarIcon,
     color: "from-gray-600 to-gray-800",
-    highlight: false
+    highlight: false,
+    yearlyDiscount: 0
   },
   supporter: {
     name: "Supporter",
@@ -214,11 +216,18 @@ function GiftMembershipForm({ tier }: { tier: 'supporter' | 'pro' }) {
 function Pricing() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [showGiftForm, setShowGiftForm] = useState<'supporter' | 'pro' | null>(null);
+  const [showComingSoonPopup, setShowComingSoonPopup] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const [, navigate] = useLocation();
 
   const handleSubscribe = async (tier: 'supporter' | 'pro') => {
+    // Show coming soon popup instead of proceeding with subscription
+    setShowComingSoonPopup(true);
+    return;
+    
+    // Original subscription logic commented out
+    /*
     if (!user) {
       navigate(`/login?redirect=${encodeURIComponent('/pricing')}`);
       return;
@@ -262,6 +271,16 @@ function Pricing() {
         variant: "destructive"
       });
     }
+    */
+  };
+
+  const handleGiftClick = (tier: 'supporter' | 'pro') => {
+    // Show coming soon popup instead of gift form
+    setShowComingSoonPopup(true);
+    return;
+    
+    // Original gift form logic commented out
+    // setShowGiftForm(showGiftForm === tier ? null : tier);
   };
 
   const getPrice = (tier: keyof typeof TIER_CONFIG) => {
@@ -287,6 +306,56 @@ function Pricing() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/40 to-black relative overflow-hidden">
+      {/* Coming Soon Popup */}
+      {showComingSoonPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setShowComingSoonPopup(false)}></div>
+          <div className="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 max-w-md w-full border border-purple-500/30 shadow-2xl">
+            <button
+              onClick={() => setShowComingSoonPopup(false)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all duration-300"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            
+            <div className="text-center space-y-6">
+              <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto">
+                <RocketIcon className="w-10 h-10 text-white" />
+              </div>
+              
+              <div>
+                <h3 className="text-2xl font-bold text-white mb-2">Plans Coming Soon!</h3>
+                <p className="text-white/70 text-lg">
+                  We're working hard to bring you amazing premium features. Stay tuned for updates!
+                </p>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 text-white/80">
+                  <CheckIcon className="w-5 h-5 text-green-400" />
+                  <span>Premium content access</span>
+                </div>
+                <div className="flex items-center gap-3 text-white/80">
+                  <CheckIcon className="w-5 h-5 text-green-400" />
+                  <span>Ad-free experience</span>
+                </div>
+                <div className="flex items-center gap-3 text-white/80">
+                  <CheckIcon className="w-5 h-5 text-green-400" />
+                  <span>Exclusive themes</span>
+                </div>
+              </div>
+              
+              <Button
+                onClick={() => setShowComingSoonPopup(false)}
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+              >
+                Got it!
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Geometric ambient effects */}
       <div className="absolute inset-0">
         <div className="absolute top-20 left-10 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
@@ -304,6 +373,14 @@ function Pricing() {
           <p className="text-lg md:text-xl text-white/70 mb-8 max-w-2xl mx-auto">
             Join thousands of space enthusiasts with premium access to the universe's latest discoveries
           </p>
+          
+          {/* Coming Soon Notice */}
+          <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-2xl p-4 mb-8 max-w-2xl mx-auto">
+            <div className="flex items-center gap-3 justify-center">
+              <ZapIcon className="w-5 h-5 text-yellow-400" />
+              <span className="text-white font-medium">Premium plans launching soon! Stay tuned for updates.</span>
+            </div>
+          </div>
           
           {/* Billing Toggle */}
           <div className="flex items-center justify-center gap-4 mb-8">
@@ -415,13 +492,13 @@ function Pricing() {
                       >
                         {user?.membershipTier === tierKey ? 'Current Plan' : 
                          user?.membershipTier === 'pro' && tierKey === 'supporter' ? 'Lower Tier' :
-                         'Get Started'}
+                         'Coming Soon'}
                       </Button>
                       
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setShowGiftForm(showGiftForm === tierKey ? null : tierKey)}
+                        onClick={() => handleGiftClick(tierKey)}
                         className="w-full border-purple-500/50 text-purple-400 hover:bg-purple-500/20"
                       >
                         <GiftIcon className="w-4 h-4 mr-2" />
@@ -435,8 +512,8 @@ function Pricing() {
           })}
         </div>
 
-        {/* Gift Membership Form */}
-        {showGiftForm && (
+        {/* Gift Membership Form - Hidden when coming soon popup is active */}
+        {showGiftForm && !showComingSoonPopup && (
           <div className="max-w-2xl mx-auto mb-12">
             <Card className="bg-white/10 backdrop-blur-sm border border-purple-500/30">
               <CardHeader>
@@ -464,44 +541,44 @@ function Pricing() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="bg-white/5 backdrop-blur-sm border border-white/20">
               <CardHeader>
-                <CardTitle className="text-lg text-white">Can I change my plan later?</CardTitle>
+                <CardTitle className="text-lg text-white">When will premium plans be available?</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-white/80">
-                  Yes! You can upgrade or downgrade your plan at any time. Changes take effect at your next billing cycle.
+                  We're working hard to launch our premium plans soon! Sign up for our newsletter to be notified when they're ready.
                 </p>
               </CardContent>
             </Card>
             
             <Card className="bg-white/5 backdrop-blur-sm border border-white/20">
               <CardHeader>
-                <CardTitle className="text-lg text-white">How do gift memberships work?</CardTitle>
+                <CardTitle className="text-lg text-white">What features will premium plans include?</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-white/80">
-                  Gift recipients receive an email with instructions to claim their membership. They can create an account or apply it to an existing one.
+                  Premium plans will include ad-free experience, exclusive content, premium themes, priority support, and early access to new features.
                 </p>
               </CardContent>
             </Card>
             
             <Card className="bg-white/5 backdrop-blur-sm border border-white/20">
               <CardHeader>
-                <CardTitle className="text-lg text-white">What payment methods do you accept?</CardTitle>
+                <CardTitle className="text-lg text-white">Will there be different pricing tiers?</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-white/80">
-                  We accept all major credit cards, PayPal, and other payment methods through our secure Stripe integration.
+                  Yes! We're planning multiple tiers to suit different needs and budgets, from basic supporter plans to comprehensive pro packages.
                 </p>
               </CardContent>
             </Card>
             
             <Card className="bg-white/5 backdrop-blur-sm border border-white/20">
               <CardHeader>
-                <CardTitle className="text-lg text-white">Can I cancel anytime?</CardTitle>
+                <CardTitle className="text-lg text-white">Can I get early access?</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-white/80">
-                  Absolutely! You can cancel your subscription at any time. You'll continue to have access until the end of your current billing period.
+                  Stay tuned to our newsletter and social media for announcements about early access opportunities and beta testing programs.
                 </p>
               </CardContent>
             </Card>
