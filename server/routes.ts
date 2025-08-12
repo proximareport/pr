@@ -3628,10 +3628,11 @@ google.com, pub-XXXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
       let articles = [];
       
       try {
-        // Get latest 50 published articles for RSS feed
-        articles = await storage.getArticles(50, 0, false);
-      } catch (dbError) {
-        console.error("Database error in RSS generation:", dbError);
+        // Get latest 50 published articles from Ghost CMS for RSS feed
+        const ghostPosts = await getPosts(1, 50);
+        articles = ghostPosts.posts || [];
+      } catch (ghostError) {
+        console.error("Ghost API error in RSS generation:", ghostError);
         // Use empty array for fallback
         articles = [];
       }
@@ -3689,20 +3690,20 @@ google.com, pub-XXXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
       <height>144</height>
     </image>`;
 
-      // Add articles to RSS feed
+              // Add articles to RSS feed
       articles.forEach(article => {
-        const pubDate = new Date(article.publishedAt || article.createdAt).toUTCString();
-        const link = `${baseUrl}/articles/${article.slug}`;
+        const pubDate = new Date(article.published_at || article.created_at).toUTCString();
+        const link = `${baseUrl}/article/${article.slug}`;
         
         // Create article excerpt/description
         let description = '';
         if (article.excerpt) {
           description = stripHtml(article.excerpt);
-        } else if (article.summary) {
-          description = stripHtml(article.summary);
-        } else if (article.content) {
+        } else if (article.custom_excerpt) {
+          description = stripHtml(article.custom_excerpt);
+        } else if (article.html) {
           // Extract first 200 characters from content
-          const contentText = stripHtml(article.content.toString());
+          const contentText = stripHtml(article.html.toString());
           description = contentText.substring(0, 200) + (contentText.length > 200 ? '...' : '');
         }
 
@@ -3713,22 +3714,22 @@ google.com, pub-XXXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
       <description>${escapeXml(description)}</description>
       <pubDate>${pubDate}</pubDate>
       <guid isPermaLink="true">${link}</guid>
-      <dc:creator>${escapeXml(article.primaryAuthor || 'Proxima Report')}</dc:creator>
-      <category>${escapeXml(article.category || 'Space News')}</category>`;
+      <dc:creator>${escapeXml(article.primary_author?.name || 'Proxima Report')}</dc:creator>
+      <category>${escapeXml(article.primary_tag?.name || 'Space News')}</category>`;
       
       // Add content:encoded for full article content (if available)
-      if (article.content) {
+      if (article.html) {
         rss += `
-      <content:encoded><![CDATA[${article.content.toString()}]]></content:encoded>`;
+      <content:encoded><![CDATA[${article.html.toString()}]]></content:encoded>`;
       }
       
       // Add featured image if available
-      if (article.featuredImage) {
+      if (article.feature_image) {
         rss += `
-      <media:content url="${article.featuredImage}" type="image/jpeg">
+      <media:content url="${article.feature_image}" type="image/jpeg">
         <media:description>${escapeXml(article.title)}</media:description>
       </media:content>
-      <enclosure url="${article.featuredImage}" type="image/jpeg" length="0"/>`;
+      <enclosure url="${article.feature_image}" type="image/jpeg" length="0"/>`;
       }
       
       // Add tags if available
@@ -3764,10 +3765,11 @@ google.com, pub-XXXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
       let articles = [];
       
       try {
-        // Get latest 50 published articles for JSON feed
-        articles = await storage.getArticles(50, 0, false);
-      } catch (dbError) {
-        console.error("Database error in JSON feed generation:", dbError);
+        // Get latest 50 published articles from Ghost CMS for JSON feed
+        const ghostPosts = await getPosts(1, 50);
+        articles = ghostPosts.posts || [];
+      } catch (ghostError) {
+        console.error("Ghost API error in JSON feed generation:", ghostError);
         articles = [];
       }
 
@@ -3796,46 +3798,32 @@ google.com, pub-XXXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
           let description = '';
           if (article.excerpt) {
             description = stripHtml(article.excerpt);
-          } else if (article.summary) {
-            description = stripHtml(article.summary);
-          } else if (article.content) {
-            const contentText = stripHtml(article.content.toString());
+          } else if (article.custom_excerpt) {
+            description = stripHtml(article.custom_excerpt);
+          } else if (article.html) {
+            const contentText = stripHtml(article.html.toString());
             description = contentText.substring(0, 200) + (contentText.length > 200 ? '...' : '');
           }
 
-          const item = {
-                      id: `${baseUrl}/articles/${article.slug}`,
-          url: `${baseUrl}/articles/${article.slug}`,
+          return {
+            id: article.slug,
+            url: `${baseUrl}/article/${article.slug}`,
             title: article.title,
-            content_html: article.content ? article.content.toString() : description,
-            content_text: description,
+            content_html: article.html,
+            content_text: stripHtml(article.html || ''),
             summary: description,
-            date_published: new Date(article.publishedAt || article.createdAt).toISOString(),
-            date_modified: new Date(article.updatedAt || article.publishedAt || article.createdAt).toISOString(),
-            authors: [
+            image: article.feature_image,
+            date_published: article.published_at || article.created_at,
+            date_modified: article.updated_at || article.published_at || article.created_at,
+            authors: article.primary_author ? [
               {
-                name: article.primaryAuthor || 'Proxima Report'
+                name: article.primary_author.name,
+                url: `${baseUrl}/author/${article.primary_author.slug}`
               }
-            ],
-            tags: []
+            ] : [],
+            tags: article.tags ? article.tags.map(tag => tag.name || tag) : [],
+            category: article.primary_tag?.name || 'Space News'
           };
-
-          // Add featured image
-          if (article.featuredImage) {
-            item.image = article.featuredImage;
-          }
-
-          // Add tags
-          if (article.tags && Array.isArray(article.tags)) {
-            item.tags = article.tags.map(tag => tag.name || tag);
-          }
-
-          // Add category as tag
-          if (article.category) {
-            item.tags.push(article.category);
-          }
-
-          return item;
         })
       };
       
