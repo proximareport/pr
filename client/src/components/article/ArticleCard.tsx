@@ -1,8 +1,8 @@
-import { Link } from "wouter";
+import React, { useState } from 'react';
+import { Link } from 'wouter';
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Clock, Eye, TrendingUp, Calendar, User, ArrowRight, Bookmark, Share2, Heart } from "lucide-react";
-import { useState } from "react";
 
 interface Author {
   id: number;

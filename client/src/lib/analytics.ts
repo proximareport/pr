@@ -25,12 +25,56 @@ interface ArticleView {
   timeOnPage: number;
 }
 
+interface ToolUsage {
+  toolName: string;
+  toolCategory: string;
+  timestamp: number;
+  sessionId: string;
+  usageDuration: number;
+  isExternal: boolean;
+}
+
+interface ToolGroupAnalytics {
+  category: string;
+  totalUsage: number;
+  uniqueUsers: number;
+  avgUsageTime: number;
+  topTools: Array<{
+    name: string;
+    usageCount: number;
+    avgTime: number;
+  }>;
+  lastUpdated: number;
+}
+
+interface GalleryAnalytics {
+  totalPageViews: number;
+  totalImageViews: number;
+  uniqueVisitors: number;
+  avgTimeOnPage: number;
+  lastUpdated: number;
+}
+
+interface MissionControlAnalytics {
+  totalPageViews: number;
+  satelliteTracking: number;
+  launchViews: number;
+  avgSessionTime: number;
+  lastUpdated: number;
+}
+
 class AnalyticsTracker {
   private static instance: AnalyticsTracker;
   private sessionId: string;
   private sessionStartTime: number;
   private currentPage: string = '';
   private pageStartTime: number = 0;
+  private currentTool: string = '';
+  private toolStartTime: number = 0;
+  private currentGalleryItem: string = '';
+  private galleryStartTime: number = 0;
+  private currentMissionControlFeature: string = '';
+  private missionControlStartTime: number = 0;
 
   private constructor() {
     this.sessionId = this.generateSessionId();
@@ -61,12 +105,30 @@ class AnalyticsTracker {
     // Track before unload to save session data
     window.addEventListener('beforeunload', () => {
       this.saveSessionData();
+      if (this.currentTool) {
+        this.trackToolUsage(this.currentTool, '', 0, false);
+      }
+      if (this.currentGalleryItem) {
+        this.stopGalleryTracking();
+      }
+      if (this.currentMissionControlFeature) {
+        this.stopMissionControlTracking();
+      }
     });
 
     // Track visibility changes for session duration
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
         this.saveSessionData();
+        if (this.currentTool) {
+          this.trackToolUsage(this.currentTool, '', 0, false);
+        }
+        if (this.currentGalleryItem) {
+          this.stopGalleryTracking();
+        }
+        if (this.currentMissionControlFeature) {
+          this.stopMissionControlTracking();
+        }
       } else {
         this.sessionStartTime = Date.now();
       }
@@ -99,59 +161,123 @@ class AnalyticsTracker {
       sessionId: this.sessionId
     };
 
-    // Save to localStorage
     this.savePageView(pageView);
-    
-    // Update session data
     this.updateSessionData(path);
   }
 
   public trackArticleView(slug: string, title: string): void {
     const now = Date.now();
-    const timeOnPage = this.pageStartTime > 0 ? now - this.pageStartTime : 0;
-
+    
     const articleView: ArticleView = {
       slug,
       title,
       timestamp: now,
       sessionId: this.sessionId,
-      timeOnPage
+      timeOnPage: 0
     };
 
     this.saveArticleView(articleView);
   }
 
+  public trackToolUsage(toolName: string, category: string, usageDuration: number = 0, isExternal: boolean = false): void {
+    const now = Date.now();
+    
+    // If we have a current tool, save its usage data
+    if (this.currentTool && this.toolStartTime > 0) {
+      const duration = now - this.toolStartTime;
+      this.saveToolUsage(this.currentTool, category, duration, isExternal);
+    }
+
+    // Start tracking new tool
+    this.currentTool = toolName;
+    this.toolStartTime = now;
+
+    // Create tool usage record
+    const toolUsage: ToolUsage = {
+      toolName,
+      toolCategory: category,
+      timestamp: now,
+      sessionId: this.sessionId,
+      usageDuration: 0,
+      isExternal
+    };
+
+    this.saveToolUsage(toolUsage.toolName, toolUsage.toolCategory, toolUsage.usageDuration, toolUsage.isExternal);
+  }
+
+  public stopToolTracking(): void {
+    if (this.currentTool && this.toolStartTime > 0) {
+      const duration = Date.now() - this.toolStartTime;
+      this.saveToolUsage(this.currentTool, '', duration, false);
+      this.currentTool = '';
+      this.toolStartTime = 0;
+    }
+  }
+
+  public trackGalleryItem(imageId: string): void {
+    if (this.currentGalleryItem && this.currentGalleryItem !== imageId) {
+      this.stopGalleryTracking();
+    }
+    
+    if (!this.currentGalleryItem) {
+      this.currentGalleryItem = imageId;
+      this.galleryStartTime = Date.now();
+    }
+  }
+
+  public stopGalleryTracking(): void {
+    if (this.currentGalleryItem && this.galleryStartTime > 0) {
+      const duration = Date.now() - this.galleryStartTime;
+      this.saveGalleryItemView(this.currentGalleryItem, duration);
+      this.currentGalleryItem = '';
+      this.galleryStartTime = 0;
+    }
+  }
+
+  public trackMissionControlFeature(feature: string): void {
+    if (this.currentMissionControlFeature && this.currentMissionControlFeature !== feature) {
+      this.stopMissionControlTracking();
+    }
+    
+    if (!this.currentMissionControlFeature) {
+      this.currentMissionControlFeature = feature;
+      this.missionControlStartTime = Date.now();
+    }
+  }
+
+  public stopMissionControlTracking(): void {
+    if (this.currentMissionControlFeature && this.missionControlStartTime > 0) {
+      const duration = Date.now() - this.missionControlStartTime;
+      this.saveMissionControlFeatureUsage(this.currentMissionControlFeature, duration);
+      this.currentMissionControlFeature = '';
+      this.missionControlStartTime = 0;
+    }
+  }
+
   private savePageView(pageView: PageView): void {
     try {
       const pageViews = JSON.parse(localStorage.getItem('pageViews') || '{}');
-      const date = new Date(pageView.timestamp).toDateString();
       
-      if (!pageViews[date]) {
-        pageViews[date] = {};
+      if (!pageViews[pageView.path]) {
+        pageViews[pageView.path] = {
+          totalViews: 0,
+          uniqueSessions: new Set(),
+          lastViewed: 0
+        };
       }
       
-      if (!pageViews[date][pageView.path]) {
-        pageViews[date][pageView.path] = 0;
-      }
+      pageViews[pageView.path].totalViews++;
+      pageViews[pageView.path].uniqueSessions.add(pageView.sessionId);
+      pageViews[pageView.path].lastViewed = pageView.timestamp;
       
-      pageViews[date][pageView.path]++;
-      
-      // Also track total views by path
-      const totalViews = JSON.parse(localStorage.getItem('totalPageViews') || '{}');
-      totalViews[pageView.path] = (totalViews[pageView.path] || 0) + 1;
+      // Convert Set to Array for localStorage
+      pageViews[pageView.path].uniqueSessions = Array.from(pageViews[pageView.path].uniqueSessions);
       
       localStorage.setItem('pageViews', JSON.stringify(pageViews));
-      localStorage.setItem('totalPageViews', JSON.stringify(totalViews));
       
-      // Save detailed page view
+      // Also save detailed view for analytics
       const detailedViews = JSON.parse(localStorage.getItem('detailedPageViews') || '[]');
       detailedViews.push(pageView);
-      
-      // Keep only last 1000 page views to prevent localStorage bloat
-      if (detailedViews.length > 1000) {
-        detailedViews.splice(0, detailedViews.length - 1000);
-      }
-      
       localStorage.setItem('detailedPageViews', JSON.stringify(detailedViews));
     } catch (error) {
       console.error('Error saving page view:', error);
@@ -163,24 +289,129 @@ class AnalyticsTracker {
       const articleViews = JSON.parse(localStorage.getItem('articleViews') || '{}');
       
       if (!articleViews[articleView.slug]) {
-        articleViews[articleView.slug] = 0;
+        articleViews[articleView.slug] = {
+          totalViews: 0,
+          uniqueSessions: new Set(),
+          totalTimeOnPage: 0,
+          avgTimeOnPage: 0
+        };
       }
       
-      articleViews[articleView.slug]++;
+      articleViews[articleView.slug].totalViews++;
+      articleViews[articleView.slug].uniqueSessions.add(articleView.sessionId);
+      
+      // Convert Set to Array for localStorage
+      articleViews[articleView.slug].uniqueSessions = Array.from(articleViews[articleView.slug].uniqueSessions);
       
       localStorage.setItem('articleViews', JSON.stringify(articleViews));
       
-      // Save detailed article view
+      // Also save detailed view for analytics
       const detailedArticleViews = JSON.parse(localStorage.getItem('detailedArticleViews') || '[]');
       detailedArticleViews.push(articleView);
-      
-      if (detailedArticleViews.length > 500) {
-        detailedArticleViews.splice(0, detailedArticleViews.length - 500);
-      }
-      
       localStorage.setItem('detailedArticleViews', JSON.stringify(detailedArticleViews));
     } catch (error) {
       console.error('Error saving article view:', error);
+    }
+  }
+
+  private saveToolUsage(toolName: string, category: string, usageDuration: number, isExternal: boolean): void {
+    try {
+      const toolUsage = JSON.parse(localStorage.getItem('toolUsage') || '{}');
+      
+      if (!toolUsage[toolName]) {
+        toolUsage[toolName] = {
+          totalUsage: 0,
+          uniqueSessions: new Set(),
+          totalUsageTime: 0,
+          avgUsageTime: 0,
+          category: category,
+          isExternal: isExternal,
+          lastUsed: 0
+        };
+      }
+      
+      toolUsage[toolName].totalUsage++;
+      toolUsage[toolName].uniqueSessions.add(this.sessionId);
+      toolUsage[toolName].totalUsageTime += usageDuration;
+      toolUsage[toolName].avgUsageTime = toolUsage[toolName].totalUsageTime / toolUsage[toolName].totalUsage;
+      toolUsage[toolName].lastUsed = Date.now();
+      
+      // Convert Set to Array for localStorage
+      toolUsage[toolName].uniqueSessions = Array.from(toolUsage[toolName].uniqueSessions);
+      
+      localStorage.setItem('toolUsage', JSON.stringify(toolUsage));
+      
+      // Also save detailed usage for analytics
+      const detailedToolUsage = JSON.parse(localStorage.getItem('detailedToolUsage') || '[]');
+      detailedToolUsage.push({
+        toolName,
+        toolCategory: category,
+        timestamp: Date.now(),
+        sessionId: this.sessionId,
+        usageDuration,
+        isExternal
+      });
+      localStorage.setItem('detailedToolUsage', JSON.stringify(detailedToolUsage));
+    } catch (error) {
+      console.error('Error saving tool usage:', error);
+    }
+  }
+
+  private saveGalleryItemView(imageId: string, duration: number): void {
+    try {
+      const galleryData = JSON.parse(localStorage.getItem('galleryData') || '{}');
+      
+      if (!galleryData[imageId]) {
+        galleryData[imageId] = {
+          totalViews: 0,
+          uniqueSessions: new Set(),
+          totalTime: 0,
+          avgTime: 0,
+          lastViewed: 0
+        };
+      }
+      
+      galleryData[imageId].totalViews++;
+      galleryData[imageId].uniqueSessions.add(this.sessionId);
+      galleryData[imageId].totalTime += duration;
+      galleryData[imageId].avgTime = galleryData[imageId].totalTime / galleryData[imageId].totalViews;
+      galleryData[imageId].lastViewed = Date.now();
+      
+      // Convert Set to Array for localStorage
+      galleryData[imageId].uniqueSessions = Array.from(galleryData[imageId].uniqueSessions);
+      
+      localStorage.setItem('galleryData', JSON.stringify(galleryData));
+    } catch (error) {
+      console.error('Error saving gallery item view:', error);
+    }
+  }
+
+  private saveMissionControlFeatureUsage(feature: string, duration: number): void {
+    try {
+      const missionControlData = JSON.parse(localStorage.getItem('missionControlData') || '{}');
+      
+      if (!missionControlData[feature]) {
+        missionControlData[feature] = {
+          totalUsage: 0,
+          uniqueSessions: new Set(),
+          totalTime: 0,
+          avgTime: 0,
+          lastUsed: 0
+        };
+      }
+      
+      missionControlData[feature].totalUsage++;
+      missionControlData[feature].uniqueSessions.add(this.sessionId);
+      missionControlData[feature].totalTime += duration;
+      missionControlData[feature].avgTime = missionControlData[feature].totalTime / missionControlData[feature].totalUsage;
+      missionControlData[feature].lastUsed = Date.now();
+      
+      // Convert Set to Array for localStorage
+      missionControlData[feature].uniqueSessions = Array.from(missionControlData[feature].uniqueSessions);
+      
+      localStorage.setItem('missionControlData', JSON.stringify(missionControlData));
+    } catch (error) {
+      console.error('Error saving mission control feature usage:', error);
     }
   }
 
@@ -254,12 +485,36 @@ class AnalyticsTracker {
       const userSessions = JSON.parse(localStorage.getItem('userSessions') || '{}');
       const articleViews = JSON.parse(localStorage.getItem('articleViews') || '{}');
       const pageData = JSON.parse(localStorage.getItem('pageData') || '{}');
+      const toolUsage = JSON.parse(localStorage.getItem('toolUsage') || '{}');
+      const galleryData = JSON.parse(localStorage.getItem('galleryData') || '{}');
+      const missionControlData = JSON.parse(localStorage.getItem('missionControlData') || '{}');
+      
+      // Calculate gallery analytics
+      const galleryAnalytics: GalleryAnalytics = {
+        totalPageViews: pageViews['/gallery']?.totalViews || 0,
+        totalImageViews: Object.values(galleryData).reduce((sum: number, item: any) => sum + (item.totalViews || 0), 0),
+        uniqueVisitors: Object.values(galleryData).reduce((sum: number, item: any) => sum + (item.uniqueSessions?.length || 0), 0),
+        avgTimeOnPage: pageData['/gallery']?.avgTime || 0,
+        lastUpdated: Date.now()
+      };
+
+      // Calculate mission control analytics
+      const missionControlAnalytics: MissionControlAnalytics = {
+        totalPageViews: pageViews['/mission-control']?.totalViews || 0,
+        satelliteTracking: missionControlData['satellite_tracking']?.totalUsage || 0,
+        launchViews: missionControlData['launch_data']?.totalUsage || 0,
+        avgSessionTime: pageData['/mission-control']?.avgTime || 0,
+        lastUpdated: Date.now()
+      };
       
       return {
         pageViews,
         userSessions,
         articleViews,
-        pageData
+        pageData,
+        toolUsage,
+        gallery: galleryAnalytics,
+        missionControl: missionControlAnalytics
       };
     } catch (error) {
       console.error('Error getting analytics data:', error);
@@ -267,8 +522,70 @@ class AnalyticsTracker {
         pageViews: {},
         userSessions: {},
         articleViews: {},
-        pageData: {}
+        pageData: {},
+        toolUsage: {},
+        gallery: {
+          totalPageViews: 0,
+          totalImageViews: 0,
+          uniqueVisitors: 0,
+          avgTimeOnPage: 0,
+          lastUpdated: Date.now()
+        },
+        missionControl: {
+          totalPageViews: 0,
+          satelliteTracking: 0,
+          launchViews: 0,
+          avgSessionTime: 0,
+          lastUpdated: Date.now()
+        }
       };
+    }
+  }
+
+  public getToolGroupAnalytics(): ToolGroupAnalytics[] {
+    try {
+      const toolUsage = JSON.parse(localStorage.getItem('toolUsage') || '{}');
+      const groupAnalytics: Record<string, ToolGroupAnalytics> = {};
+      
+      Object.entries(toolUsage).forEach(([toolName, tool]: [string, any]) => {
+        const category = tool.category || 'Uncategorized';
+        
+        if (!groupAnalytics[category]) {
+          groupAnalytics[category] = {
+            category,
+            totalUsage: 0,
+            uniqueUsers: 0,
+            avgUsageTime: 0,
+            topTools: [],
+            lastUpdated: 0
+          };
+        }
+        
+        groupAnalytics[category].totalUsage += tool.totalUsage;
+        groupAnalytics[category].uniqueUsers += tool.uniqueSessions.length;
+        groupAnalytics[category].avgUsageTime += tool.totalUsageTime;
+        groupAnalytics[category].lastUpdated = Math.max(groupAnalytics[category].lastUpdated, tool.lastUsed);
+        
+        groupAnalytics[category].topTools.push({
+          name: toolName,
+          usageCount: tool.totalUsage,
+          avgTime: tool.avgUsageTime
+        });
+      });
+      
+      // Calculate averages and sort top tools
+      Object.values(groupAnalytics).forEach(group => {
+        if (group.totalUsage > 0) {
+          group.avgUsageTime = group.avgUsageTime / group.totalUsage;
+        }
+        group.topTools.sort((a, b) => b.usageCount - a.usageCount);
+        group.topTools = group.topTools.slice(0, 5); // Top 5 tools per group
+      });
+      
+      return Object.values(groupAnalytics).sort((a, b) => b.totalUsage - a.totalUsage);
+    } catch (error) {
+      console.error('Error getting tool group analytics:', error);
+      return [];
     }
   }
 
@@ -285,6 +602,10 @@ class AnalyticsTracker {
       const detailedArticleViews = JSON.parse(localStorage.getItem('detailedArticleViews') || '[]');
       const filteredArticleViews = detailedArticleViews.filter((view: ArticleView) => view.timestamp > thirtyDaysAgo);
       localStorage.setItem('detailedArticleViews', JSON.stringify(filteredArticleViews));
+      
+      const detailedToolUsage = JSON.parse(localStorage.getItem('detailedToolUsage') || '[]');
+      const filteredToolUsage = detailedToolUsage.filter((usage: ToolUsage) => usage.timestamp > thirtyDaysAgo);
+      localStorage.setItem('detailedToolUsage', JSON.stringify(filteredToolUsage));
       
       // Clear old sessions
       const sessions = JSON.parse(localStorage.getItem('userSessions') || '{}');
@@ -307,7 +628,7 @@ class AnalyticsTracker {
 export const analyticsTracker = AnalyticsTracker.getInstance();
 
 // Export types for use in other components
-export type { PageView, UserSession, ArticleView };
+export type { PageView, UserSession, ArticleView, ToolUsage, ToolGroupAnalytics, GalleryAnalytics, MissionControlAnalytics };
 
 // Auto-clean old data every day
 setInterval(() => {

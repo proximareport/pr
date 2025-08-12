@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import SatelliteVisualizer from '../components/SatelliteVisualizer';
+import { analyticsTracker } from '@/lib/analytics';
 import { 
   useUpcomingLaunches, 
   usePreviousLaunches,
@@ -198,19 +199,31 @@ export default function MissionControl() {
     }
   }, []);
 
+  // Track Mission Control page view for analytics
+  useEffect(() => {
+    analyticsTracker.trackPageView('/mission-control');
+  }, []);
+
   // API hooks
   const { data: upcomingLaunches, isLoading: upcomingLaunchesLoading, error: upcomingLaunchesError } = useUpcomingLaunches();
-  const { data: nearEarthObjects, isLoading: nearEarthObjectsLoading, error: nearEarthObjectsError } = useNearEarthObjects();
-  const { data: issPassPredictions, isLoading: issPassLoading, error: issPassError } = useISSPassPredictions(userLocation?.lat, userLocation?.lon);
+  const { data: previousLaunches, isLoading: previousLaunchesLoading, error: previousLaunchesError } = usePreviousLaunches();
+  const { data: issLocation, isLoading: issLocationLoading, error: issLocationError } = useISSLocation();
+  const { data: peopleInSpace, isLoading: peopleInSpaceLoading, error: peopleInSpaceError } = usePeopleInSpace();
+  const { data: spaceEvents, isLoading: spaceEventsLoading, error: spaceEventsError } = useSpaceEvents();
+  const { data: spaceNews, isLoading: spaceNewsLoading, error: spaceNewsError } = useSpaceNews();
+  const { data: nasaAPOD, isLoading: nasaAPODLoading, error: nasaAPODError } = useNASAAPOD();
+  const { data: spaceXCompany, isLoading: spaceXCompanyLoading, error: spaceXCompanyError } = useSpaceXCompany();
+  const { data: spaceAgencies, isLoading: spaceAgenciesLoading, error: spaceAgenciesError } = useSpaceAgencies();
   const { data: marsWeather, isLoading: marsWeatherLoading, error: marsWeatherError } = useMarsWeather();
-  const { data: earthquakeData, isLoading: earthquakeDataLoading, error: earthquakeDataError } = useEarthquakeData();
-  const { data: solarActivity, isLoading: solarActivityLoading, error: solarActivityError } = useSolarActivity();
-  const { data: advancedSpaceWeather, isLoading: advancedSpaceWeatherLoading, error: advancedSpaceWeatherError } = useAdvancedSpaceWeather();
   const { data: moonPhase, isLoading: moonPhaseLoading, error: moonPhaseError } = useMoonPhase();
-  const { data: satelliteTracking, isLoading: satelliteTrackingLoading, error: satelliteTrackingError } = useSatelliteTracking();
-  const { data: nasaApod, isLoading: nasaApodLoading, error: nasaApodError } = useNASAAPOD();
-  const { data: hubbleImages, isLoading: hubbleImagesLoading, error: hubbleImagesError } = useHubbleImages();
+  const { data: issPassPredictions, isLoading: issPassLoading, error: issPassError } = useISSPassPredictions(userLocation);
+  const { data: satellites, isLoading: satellitesLoading, error: satellitesError } = useSatelliteTracking();
   const { data: exoplanets, isLoading: exoplanetsLoading, error: exoplanetsError } = useExoplanets();
+  const { data: solarActivity, isLoading: solarActivityLoading, error: solarActivityError } = useSolarActivity();
+  const { data: hubbleImages, isLoading: hubbleImagesLoading, error: hubbleImagesError } = useHubbleImages();
+  const { data: earthquakeData, isLoading: earthquakeDataLoading, error: earthquakeDataError } = useEarthquakeData();
+  const { data: advancedSpaceWeather, isLoading: advancedSpaceWeatherLoading, error: advancedSpaceWeatherError } = useAdvancedSpaceWeather();
+  const { data: nearEarthObjects, isLoading: nearEarthObjectsLoading, error: nearEarthObjectsError } = useNearEarthObjects();
 
   // Additional state for new features
   const [selectedView, setSelectedView] = useState<'dashboard' | 'missions' | 'stations' | 'events' | 'systems' | 'calendar' | 'orbits'>('dashboard');
@@ -446,7 +459,6 @@ export default function MissionControl() {
   ];
 
   // Additional simulated data
-  const peopleInSpace = 10;
   const activeSatellites = 4852;
   const spaceDebris = 12800;
   const totalLaunches = 156;
@@ -874,22 +886,22 @@ export default function MissionControl() {
           )}
 
           {/* NASA APOD */}
-          {nasaApodLoading ? (
+          {nasaAPODLoading ? (
             <LoadingCard title="Loading APOD..." />
-          ) : nasaApodError ? (
-            <ErrorCard title="NASA APOD" error={nasaApodError.message} />
-          ) : nasaApod ? (
+          ) : nasaAPODError ? (
+            <ErrorCard title="NASA APOD" error={nasaAPODError.message} />
+          ) : nasaAPOD ? (
             <div className="md:col-span-2 lg:col-span-2">
               <CompactCard 
                 title="Astronomy Picture of the Day" 
                 icon={<CameraIcon className="h-4 w-4 text-purple-400" />}
                 colorClass="purple"
               >
-                {nasaApod.media_type === 'image' && (
+                {nasaAPOD.media_type === 'image' && (
                   <div className="mb-2">
                     <img 
-                      src={nasaApod.url} 
-                      alt={nasaApod.title}
+                      src={nasaAPOD.url} 
+                      alt={nasaAPOD.title}
                       className="w-full h-32 object-cover rounded"
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = 'none';
@@ -897,10 +909,10 @@ export default function MissionControl() {
                     />
                   </div>
                 )}
-                <h4 className="text-white font-medium text-xs mb-1">{nasaApod.title}</h4>
-                <p className="text-gray-400 text-xs mb-1 line-clamp-2">{nasaApod.explanation}</p>
+                <h4 className="text-white font-medium text-xs mb-1">{nasaAPOD.title}</h4>
+                <p className="text-gray-400 text-xs mb-1 line-clamp-2">{nasaAPOD.explanation}</p>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-purple-300">{nasaApod.date}</span>
+                  <span className="text-purple-300">{nasaAPOD.date}</span>
                   <span className="text-gray-500">© NASA</span>
                 </div>
               </CompactCard>
@@ -951,7 +963,7 @@ export default function MissionControl() {
             colorClass="blue"
           >
             <div className="text-center">
-              <div className="text-2xl text-blue-300 font-bold">{peopleInSpace}</div>
+              <div className="text-2xl text-blue-300 font-bold">{peopleInSpace?.number || 0}</div>
               <div className="text-xs text-gray-300">Currently in Space</div>
               <div className="text-xs text-gray-400 mt-1">ISS: 7 | Tiangong: 3</div>
             </div>

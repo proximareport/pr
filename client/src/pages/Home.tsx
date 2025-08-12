@@ -1,87 +1,195 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
+import { Link } from 'wouter';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { 
+  Calendar, 
+  User, 
+  Clock, 
+  ArrowRight, 
+  TrendingUp, 
+  BookOpen, 
+  Users, 
+  Zap,
+  ImageIcon,
+  ExternalLink
+} from 'lucide-react';
+import { useGallery } from '@/services/galleryService';
 import ArticleCard from "@/components/article/ArticleCard";
 import FeaturedArticle from "@/components/article/FeaturedArticle";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ImageIcon, ExternalLink } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import type { GhostPost } from '../../../server/ghostService';
 import NewsletterSubscription from "@/components/NewsletterSubscription";
 import SEO from "@/components/SEO";
 
-function Home() {
+// Gallery Section Component
+const GallerySection: React.FC = () => {
+  const { data: galleryData, isLoading, error } = useGallery(1, 4);
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, index) => (
+          <div key={index} className="aspect-square bg-white/5 rounded-lg animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="bg-white/5 border-white/20">
+        <CardContent className="p-6 text-center">
+          <ImageIcon className="w-12 h-12 text-white/40 mx-auto mb-4" />
+          <p className="text-white/60 mb-4">Unable to load gallery at the moment</p>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => window.location.reload()}
+            className="border-purple-500/50 text-purple-400 hover:bg-purple-500/20"
+          >
+            Try Again
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!galleryData?.items || galleryData.items.length === 0) {
+    return (
+      <Card className="bg-white/5 border-white/20">
+        <CardContent className="p-6 text-center">
+          <ImageIcon className="w-12 h-12 text-white/40 mx-auto mb-4" />
+          <p className="text-white/60 mb-4">No featured images available at the moment</p>
+          <p className="text-white/40 text-sm">Check back later for stunning space imagery</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {galleryData.items.slice(0, 4).map((item, index) => {
+          const imageUrl = item.feature_image || (item.content_images?.[0]?.url);
+          const title = item.title || `Gallery Image ${index + 1}`;
+          
+          return (
+            <Card 
+              key={item.id} 
+              className="relative aspect-square overflow-hidden group cursor-pointer bg-white/5 border-white/20 hover:border-purple-500/50 transition-all duration-300"
+            >
+              {imageUrl ? (
+                <>
+                  <div className="relative w-full h-full">
+                    <img 
+                      src={imageUrl} 
+                      alt={title}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                      onError={(e) => {
+                        // Fallback for broken images
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                    <div className="hidden w-full h-full flex items-center justify-center bg-white/5">
+                      <ImageIcon className="w-12 h-12 text-white/40" />
+                    </div>
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <h4 className="text-white font-semibold text-sm mb-2 line-clamp-2">{title}</h4>
+                      <div className="flex items-center text-purple-400 text-xs">
+                        <ExternalLink className="w-3 h-3 mr-1" />
+                        View in Gallery
+                      </div>
+                    </div>
+                  </div>
+                  <Link href="/gallery">
+                    <div className="absolute inset-0 cursor-pointer" />
+                  </Link>
+                </>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-white/5">
+                  <ImageIcon className="w-12 h-12 text-white/40" />
+                  <span className="ml-2 text-white/60 text-sm">No image</span>
+                </div>
+              )}
+            </Card>
+          );
+        })}
+      </div>
+      
+      {/* View All Gallery Button */}
+      <div className="flex justify-center mt-6">
+        <Button 
+          asChild
+          variant="outline"
+          className="border-purple-500/50 text-purple-400 hover:bg-purple-500/20"
+        >
+          <Link href="/gallery">
+            View Full Gallery
+            <ExternalLink className="w-4 h-4 ml-2" />
+          </Link>
+        </Button>
+      </div>
+    </>
+  );
+};
+
+export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [allPosts, setAllPosts] = useState<GhostPost[]>([]);
-  const [hasMorePosts, setHasMorePosts] = useState(true);
+  const [featuredPost, setFeaturedPost] = useState<GhostPost | null>(null);
+  const [hasReadingTime, setHasReadingTime] = useState(false);
+  const [readingTimeValue, setReadingTimeValue] = useState(0);
 
-  // Fetch articles data with pagination
-  const { data: articlesData, isLoading: articlesLoading, error: articlesError, refetch: refetchArticles } = useQuery({
-    queryKey: ['ghost-posts', currentPage],
-    queryFn: async () => {
-      const response = await axios.get(`/api/ghost/posts?page=${currentPage}&limit=10`);
-      console.log('Home page ghost posts data:', {
-        page: currentPage,
-        postsCount: response.data.posts?.length || 0,
-        meta: response.data.meta,
-        firstPostData: response.data.posts?.[0] ? {
-          id: response.data.posts[0].id,
-          title: response.data.posts[0].title,
-          hasReadingTime: !!response.data.posts[0].reading_time,
-          readingTimeValue: response.data.posts[0].reading_time,
-          hasAuthors: !!response.data.posts[0].authors,
-          authorsLength: response.data.posts[0].authors?.length || 0,
-          authorsData: response.data.posts[0].authors?.map((a: any) => ({ id: a.id, name: a.name })) || []
-        } : null
-      });
-      return response.data;
-    }
-  });
-
-  // Fetch gallery data separately
-  const { data: galleryData, isLoading: galleryLoading, error: galleryError } = useQuery({
-    queryKey: ['gallery-data'],
+  // Fetch posts data
+  const { data: postsData, isLoading: postsLoading, error: postsError } = useQuery({
+    queryKey: ['posts-data'],
     queryFn: async () => {
       try {
-        const response = await axios.get('/api/gallery/featured');
-        console.log('Gallery API response:', response.data);
+        const response = await axios.get('/api/ghost/posts?limit=10');
+        console.log('Posts API response:', response.data);
         return response.data;
       } catch (error) {
-        console.error('Gallery fetch error:', error);
-        // Try alternative gallery endpoint
-        const alternativeResponse = await axios.get('/api/gallery?limit=4');
-        return alternativeResponse.data?.items || [];
+        console.error('Posts fetch error:', error);
+        return { posts: [] };
       }
-    }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Update posts when new data arrives
   useEffect(() => {
-    if (articlesData?.posts) {
+    if (postsData?.posts) {
       if (currentPage === 1) {
-        setAllPosts(articlesData.posts);
+        setAllPosts(postsData.posts);
       } else {
-        setAllPosts(prev => [...prev, ...articlesData.posts]);
+        setAllPosts(prev => [...prev, ...postsData.posts]);
       }
       
       // Check if there are more posts available
-      const hasMore = articlesData.meta?.pagination?.next !== null && 
-                     articlesData.meta?.pagination?.page < articlesData.meta?.pagination?.pages;
-      setHasMorePosts(hasMore);
+      const hasMore = postsData.meta?.pagination?.next !== null && 
+                     postsData.meta?.pagination?.page < postsData.meta?.pagination?.pages;
+      // setHasMorePosts(hasMore); // This line is removed as per the edit hint
     }
-  }, [articlesData, currentPage]);
+  }, [postsData, currentPage]);
 
-  const featuredPost = allPosts[0];
+  const featuredPostData = allPosts[0];
   const otherPosts = allPosts.slice(1);
 
   // Debug: Log the posts data to see what we're getting
   console.log('Home page posts data:', {
     totalPosts: allPosts.length,
     currentPage,
-    hasMorePosts,
+    // hasMorePosts, // This line is removed as per the edit hint
     firstPost: allPosts[0] ? {
       title: allPosts[0].title,
       hasReadingTime: !!allPosts[0].reading_time,
@@ -100,13 +208,13 @@ function Home() {
     ? otherPosts 
     : otherPosts.filter((post: GhostPost) => post.primary_tag?.name === selectedCategory);
 
-  const loadMorePosts = () => {
-    if (!articlesLoading && hasMorePosts) {
-      setCurrentPage(prev => prev + 1);
-    }
-  };
+  // const loadMorePosts = () => { // This function is removed as per the edit hint
+  //   if (!articlesLoading && hasMorePosts) {
+  //     setCurrentPage(prev => prev + 1);
+  //   }
+  // };
 
-  if (articlesLoading && currentPage === 1) {
+  if (postsLoading && currentPage === 1) {
     return (
       <div className="min-h-screen bg-[#0D0D17] flex items-center justify-center">
         <div className="text-center">
@@ -117,13 +225,13 @@ function Home() {
     );
   }
 
-  if (articlesError && currentPage === 1) {
+  if (postsError && currentPage === 1) {
     return (
       <div className="min-h-screen bg-[#0D0D17] flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-white mb-4">Unable to load articles</h1>
           <p className="text-white/70 mb-6">Please try again later</p>
-          <Button onClick={() => refetchArticles()}>Retry</Button>
+          <Button onClick={() => window.location.reload()}>Retry</Button>
         </div>
       </div>
     );
@@ -177,10 +285,10 @@ function Home() {
       <div className="bg-[#0D0D17] min-h-screen">
       <div className="container mx-auto px-3 md:px-4 py-4 md:py-8">
         {/* Featured Article */}
-        {featuredPost && (
+        {featuredPostData && (
           <div className="mb-8 md:mb-12">
             <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-white mb-4 md:mb-6 px-1">Featured Story</h2>
-            <FeaturedArticle article={featuredPost} />
+            <FeaturedArticle article={featuredPostData} />
           </div>
         )}
 
@@ -242,24 +350,7 @@ function Home() {
               </div>
               
               {/* Load More Button */}
-              {selectedCategory === 'all' && hasMorePosts && (
-                <div className="flex justify-center mt-8">
-                  <Button 
-                    onClick={loadMorePosts}
-                    disabled={articlesLoading}
-                    className="bg-purple-600 hover:bg-purple-700 px-8 py-2"
-                  >
-                    {articlesLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Loading...
-                      </>
-                    ) : (
-                      'Load More Articles'
-                    )}
-                  </Button>
-                </div>
-              )}
+              {/* This section is removed as per the edit hint */}
             </>
           ) : (
             <div className="text-center py-12">
@@ -275,110 +366,8 @@ function Home() {
             Featured Gallery
           </h3>
           
-          {galleryLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {[...Array(4)].map((_, index) => (
-                <div key={index} className="aspect-square bg-white/5 rounded-lg animate-pulse" />
-              ))}
-            </div>
-          ) : galleryError ? (
-            <Card className="bg-white/5 border-white/20">
-              <CardContent className="p-6 text-center">
-                <ImageIcon className="w-12 h-12 text-white/40 mx-auto mb-4" />
-                <p className="text-white/60 mb-4">Unable to load gallery at the moment</p>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => window.location.reload()}
-                  className="border-purple-500/50 text-purple-400 hover:bg-purple-500/20"
-                >
-                  Try Again
-                </Button>
-              </CardContent>
-            </Card>
-          ) : galleryData && galleryData.length > 0 ? (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {galleryData.slice(0, 4).map((item: any, index: number) => {
-                  // Handle both direct image URLs and post objects
-                  const imageUrl = typeof item === 'string' ? item : (item.feature_image || item.url);
-                  const title = typeof item === 'string' ? `Gallery Image ${index + 1}` : (item.title || `Image ${index + 1}`);
-                  const slug = typeof item === 'string' ? null : item.slug;
-                  
-                  return (
-                    <Card 
-                      key={index} 
-                      className="relative aspect-square overflow-hidden group cursor-pointer bg-white/5 border-white/20 hover:border-purple-500/50 transition-all duration-300"
-                    >
-                      {imageUrl ? (
-                        <>
-                          <div className="relative w-full h-full">
-                            <img 
-                              src={imageUrl} 
-                              alt={title}
-                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                              onError={(e) => {
-                                // Fallback for broken images
-                                e.currentTarget.style.display = 'none';
-                                e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                              }}
-                            />
-                            <div className="hidden w-full h-full flex items-center justify-center bg-white/5">
-                              <ImageIcon className="w-12 h-12 text-white/40" />
-                            </div>
-                          </div>
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <div className="absolute bottom-4 left-4 right-4">
-                              <h4 className="text-white font-semibold text-sm mb-2 line-clamp-2">{title}</h4>
-                              {slug && (
-                                <div className="flex items-center text-purple-400 text-xs">
-                                  <ExternalLink className="w-3 h-3 mr-1" />
-                                  View Article
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          {slug && (
-                            <div 
-                              className="absolute inset-0 cursor-pointer"
-                              onClick={() => window.open(`/articles/${slug}`, '_blank')}
-                            />
-                          )}
-                        </>
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-white/5">
-                          <ImageIcon className="w-12 h-12 text-white/40" />
-                          <span className="ml-2 text-white/60 text-sm">No image</span>
-                        </div>
-                      )}
-                    </Card>
-                  );
-                })}
-              </div>
-              
-              {/* View All Gallery Button */}
-              <div className="flex justify-center mt-6">
-                <Button 
-                  asChild
-                  variant="outline"
-                  className="border-purple-500/50 text-purple-400 hover:bg-purple-500/20"
-                >
-                  <a href="/gallery">
-                    View Full Gallery
-                    <ExternalLink className="w-4 h-4 ml-2" />
-                  </a>
-                </Button>
-              </div>
-            </>
-          ) : (
-            <Card className="bg-white/5 border-white/20">
-              <CardContent className="p-6 text-center">
-                <ImageIcon className="w-12 h-12 text-white/40 mx-auto mb-4" />
-                <p className="text-white/60 mb-4">No featured images available at the moment</p>
-                <p className="text-white/40 text-sm">Check back later for stunning space imagery</p>
-              </CardContent>
-            </Card>
-          )}
+          {/* Use the proper gallery service instead of the broken featured endpoint */}
+          <GallerySection />
         </div>
 
         {/* Newsletter Subscription Section */}
@@ -390,5 +379,3 @@ function Home() {
     </>
   );
 }
-
-export default Home;

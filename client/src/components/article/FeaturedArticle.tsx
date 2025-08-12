@@ -1,7 +1,9 @@
+import React from 'react';
 import { Link } from "wouter";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
+import { getReadingTimeDisplay } from '@/lib/utils';
 
 interface GhostPost {
   id: string;
@@ -100,7 +102,7 @@ function FeaturedArticle({ article }: FeaturedArticleProps) {
                       {article.authors.length > 2 && ` and ${article.authors.length - 2} more`}
                     </p>
                     <p className="text-white/70 text-xs md:text-sm">
-                      {article.reading_time || 5} min read
+                      {getReadingTimeDisplay(article)}
                     </p>
                   </div>
                 </>
@@ -125,7 +127,7 @@ function FeaturedArticle({ article }: FeaturedArticleProps) {
                       {article.authors?.[0]?.name || article.primary_author?.name || 'Anonymous'}
                     </p>
                     <p className="text-white/70 text-xs md:text-sm">
-                      {article.reading_time || 5} min read
+                      {getReadingTimeDisplay(article)}
                     </p>
                   </div>
                 </>

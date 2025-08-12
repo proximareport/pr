@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,9 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CalculatorIcon, RocketIcon, TargetIcon, InfoIcon, CopyIcon, RefreshCwIcon } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Info, Calculator, Rocket, Globe, Zap, AlertTriangle, BookOpen, Brain, RefreshCw, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
+import { analyticsTracker } from "@/lib/analytics";
 
 interface DeltaVResult {
   total: number;
@@ -438,6 +440,15 @@ function DeltaVCalculator() {
     return `${deltaV.toLocaleString()} m/s`;
   };
 
+  // Track tool usage for analytics
+  useEffect(() => {
+    analyticsTracker.trackToolUsage("Delta-V Calculator", "Calculators", 0, false);
+    
+    return () => {
+      analyticsTracker.stopToolTracking();
+    };
+  }, []);
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <SEO 
@@ -452,7 +463,7 @@ function DeltaVCalculator() {
       
       <div className="text-center mb-8">
         <div className="flex items-center justify-center mb-4">
-          <CalculatorIcon className="h-8 w-8 text-purple-400 mr-3" />
+          <Calculator className="h-8 w-8 text-purple-400 mr-3" />
           <h1 className="text-4xl font-bold text-white">Delta-V Calculator</h1>
           <Badge variant="secondary" className="ml-3 bg-orange-500/20 text-orange-300 border-orange-500/30">
             Beta Experimental
@@ -471,7 +482,7 @@ function DeltaVCalculator() {
            {/* Launch Type Info */}
            <div className="mb-4 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
              <div className="flex items-center gap-2 mb-2">
-               <InfoIcon className="h-5 w-5 text-blue-400" />
+               <Info className="h-5 w-5 text-blue-400" />
                <span className="text-blue-300 font-semibold">Launch Type Selection</span>
              </div>
              <div className="text-sm text-blue-200">
@@ -483,7 +494,7 @@ function DeltaVCalculator() {
            <Card className="bg-gray-900/50 border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center text-white">
-                <RocketIcon className="h-5 w-5 mr-2" />
+                <Rocket className="h-5 w-5 mr-2" />
                 Mission Parameters
               </CardTitle>
               <CardDescription className="text-gray-400">
@@ -679,12 +690,12 @@ function DeltaVCalculator() {
               >
                 {isCalculating ? (
                   <>
-                    <RefreshCwIcon className="h-4 w-4 mr-2 animate-spin" />
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                     Calculating...
                   </>
                 ) : (
                   <>
-                    <CalculatorIcon className="h-4 w-4 mr-2" />
+                    <Calculator className="h-4 w-4 mr-2" />
                     Calculate Delta-V
                   </>
                 )}
@@ -792,7 +803,7 @@ function DeltaVCalculator() {
                 <Card className="bg-gray-900/50 border-gray-700">
                   <CardHeader>
                     <CardTitle className="flex items-center text-white">
-                      <InfoIcon className="h-5 w-5 mr-2" />
+                      <Info className="h-5 w-5 mr-2" />
                       Mission Notes
                     </CardTitle>
                   </CardHeader>
@@ -816,7 +827,7 @@ function DeltaVCalculator() {
                   variant="outline"
                   className="flex-1"
                 >
-                  <CopyIcon className="h-4 w-4 mr-2" />
+                  <Copy className="h-4 w-4 mr-2" />
                   Copy Results
                 </Button>
                 <Button 
@@ -824,7 +835,7 @@ function DeltaVCalculator() {
                   variant="outline"
                   className="flex-1"
                 >
-                  <RefreshCwIcon className="h-4 w-4 mr-2" />
+                  <RefreshCw className="h-4 w-4 mr-2" />
                   New Calculation
                 </Button>
               </div>
@@ -833,7 +844,7 @@ function DeltaVCalculator() {
             <Card className="bg-gray-900/50 border-gray-700 h-full">
               <CardContent className="flex items-center justify-center h-64">
                 <div className="text-center text-gray-400">
-                  <TargetIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <Globe className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>Configure mission parameters and click "Calculate Delta-V" to see results</p>
                 </div>
               </CardContent>
@@ -932,7 +943,7 @@ function DeltaVCalculator() {
                     {/* Tsiolkovsky Rocket Equation */}
                     <div className="p-6 bg-gray-800/50 rounded-lg border border-gray-700">
                       <h4 className="text-white text-lg font-semibold mb-3 flex items-center">
-                        <CalculatorIcon className="h-5 w-5 mr-2 text-purple-400" />
+                        <Calculator className="h-5 w-5 mr-2 text-purple-400" />
                         Tsiolkovsky Rocket Equation
                       </h4>
                       <div className="text-center mb-4">
@@ -965,7 +976,7 @@ function DeltaVCalculator() {
                     {/* Specific Impulse */}
                     <div className="p-6 bg-gray-800/50 rounded-lg border border-gray-700">
                       <h4 className="text-white text-lg font-semibold mb-3 flex items-center">
-                        <RocketIcon className="h-5 w-5 mr-2 text-green-400" />
+                        <Rocket className="h-5 w-5 mr-2 text-green-400" />
                         Specific Impulse (ISP)
                       </h4>
                       <div className="text-center mb-4">
@@ -1000,7 +1011,7 @@ function DeltaVCalculator() {
                     {/* Hohmann Transfer */}
                     <div className="p-6 bg-gray-800/50 rounded-lg border border-gray-700">
                       <h4 className="text-white text-lg font-semibold mb-3 flex items-center">
-                        <TargetIcon className="h-5 w-5 mr-2 text-blue-400" />
+                        <Globe className="h-5 w-5 mr-2 text-blue-400" />
                         Hohmann Transfer Orbit
                       </h4>
                       <div className="text-center mb-4">
@@ -1040,7 +1051,7 @@ function DeltaVCalculator() {
                     {/* Atmospheric Drag */}
                     <div className="p-6 bg-gray-800/50 rounded-lg border border-gray-700">
                       <h4 className="text-white text-lg font-semibold mb-3 flex items-center">
-                        <InfoIcon className="h-5 w-5 mr-2 text-orange-400" />
+                        <Info className="h-5 w-5 mr-2 text-orange-400" />
                         Atmospheric Drag & Weather Factors
                       </h4>
                       <div className="text-center mb-4">
@@ -1076,7 +1087,7 @@ function DeltaVCalculator() {
                     {/* Mass Ratio */}
                     <div className="p-6 bg-gray-800/50 rounded-lg border border-gray-700">
                       <h4 className="text-white text-lg font-semibold mb-3 flex items-center">
-                        <RefreshCwIcon className="h-5 w-5 mr-2 text-cyan-400" />
+                        <RefreshCw className="h-5 w-5 mr-2 text-cyan-400" />
                         Mass Ratio & Staging
                       </h4>
                       <div className="text-center mb-4">
@@ -1124,7 +1135,7 @@ function DeltaVCalculator() {
                      {/* Launch Type Calculations */}
                      <div className="p-6 bg-gray-800/50 rounded-lg border border-gray-700">
                        <h4 className="text-white text-lg font-semibold mb-3 flex items-center">
-                         <RocketIcon className="h-5 w-5 mr-2 text-purple-400" />
+                         <Rocket className="h-5 w-5 mr-2 text-purple-400" />
                          Launch Type Calculations
                        </h4>
                        <div className="space-y-4">
@@ -1157,7 +1168,7 @@ function DeltaVCalculator() {
                      {/* Weather Factor Calculations */}
                      <div className="p-6 bg-gray-800/50 rounded-lg border border-gray-700">
                        <h4 className="text-white text-lg font-semibold mb-3 flex items-center">
-                         <InfoIcon className="h-5 w-5 mr-2 text-orange-400" />
+                         <Info className="h-5 w-5 mr-2 text-orange-400" />
                          Weather Factor Calculations
                        </h4>
                        <div className="space-y-4">
@@ -1190,7 +1201,7 @@ function DeltaVCalculator() {
                      {/* Orbital Transfer Calculations */}
                      <div className="p-6 bg-gray-800/50 rounded-lg border border-gray-700">
                        <h4 className="text-white text-lg font-semibold mb-3 flex items-center">
-                         <TargetIcon className="h-5 w-5 mr-2 text-blue-400" />
+                         <Globe className="h-5 w-5 mr-2 text-blue-400" />
                          Orbital Transfer Calculations
                        </h4>
                        <div className="space-y-4">
@@ -1226,7 +1237,7 @@ function DeltaVCalculator() {
                      {/* Mass Ratio and Staging */}
                      <div className="p-6 bg-gray-800/50 rounded-lg border border-gray-700">
                        <h4 className="text-white text-lg font-semibold mb-3 flex items-center">
-                         <RefreshCwIcon className="h-5 w-5 mr-2 text-cyan-400" />
+                         <RefreshCw className="h-5 w-5 mr-2 text-cyan-400" />
                          Mass Ratio and Staging Calculations
                        </h4>
                        <div className="space-y-4">
@@ -1259,7 +1270,7 @@ function DeltaVCalculator() {
                      {/* Propellant Efficiency */}
                      <div className="p-6 bg-gray-800/50 rounded-lg border border-gray-700">
                        <h4 className="text-white text-lg font-semibold mb-3 flex items-center">
-                         <CalculatorIcon className="h-5 w-5 mr-2 text-green-400" />
+                         <Calculator className="h-5 w-5 mr-2 text-green-400" />
                          Propellant Efficiency Calculations
                        </h4>
                        <div className="space-y-4">
@@ -1292,7 +1303,7 @@ function DeltaVCalculator() {
                      {/* Real-World Constraints */}
                      <div className="p-6 bg-gray-800/50 rounded-lg border border-gray-700">
                        <h4 className="text-white text-lg font-semibold mb-3 flex items-center">
-                         <InfoIcon className="h-5 w-5 mr-2 text-red-400" />
+                         <Info className="h-5 w-5 mr-2 text-red-400" />
                          Real-World Constraint Equations
                        </h4>
                        <div className="space-y-4">
@@ -1337,7 +1348,7 @@ function DeltaVCalculator() {
                     {/* Gravitational Losses */}
                     <div className="p-6 bg-gray-800/50 rounded-lg border border-gray-700">
                       <h4 className="text-white text-lg font-semibold mb-3 flex items-center">
-                        <RefreshCwIcon className="h-5 w-5 mr-2 text-red-400" />
+                        <RefreshCw className="h-5 w-5 mr-2 text-red-400" />
                         Gravitational Losses
                       </h4>
                       <div className="text-center mb-4">
@@ -1373,7 +1384,7 @@ function DeltaVCalculator() {
                     {/* Atmospheric Drag */}
                     <div className="p-6 bg-gray-800/50 rounded-lg border border-gray-700">
                       <h4 className="text-white text-lg font-semibold mb-3 flex items-center">
-                        <InfoIcon className="h-5 w-5 mr-2 text-yellow-400" />
+                        <Info className="h-5 w-5 mr-2 text-yellow-400" />
                         Atmospheric Drag
                       </h4>
                       <div className="text-center mb-4">
@@ -1409,7 +1420,7 @@ function DeltaVCalculator() {
                     {/* Engine Performance */}
                     <div className="p-6 bg-gray-800/50 rounded-lg border border-gray-700">
                       <h4 className="text-white text-lg font-semibold mb-3 flex items-center">
-                        <RocketIcon className="h-5 w-5 mr-2 text-green-400" />
+                        <Rocket className="h-5 w-5 mr-2 text-green-400" />
                         Engine Performance Factors
                       </h4>
                       <div className="text-center mb-4">
@@ -1445,7 +1456,7 @@ function DeltaVCalculator() {
                     {/* Mission Planning */}
                     <div className="p-6 bg-gray-800/50 rounded-lg border border-gray-700">
                       <h4 className="text-white text-lg font-semibold mb-3 flex items-center">
-                        <TargetIcon className="h-5 w-5 mr-2 text-blue-400" />
+                        <Globe className="h-5 w-5 mr-2 text-blue-400" />
                         Mission Planning Considerations
                       </h4>
                       <div className="text-center mb-4">

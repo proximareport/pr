@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { analyticsTracker } from '@/lib/analytics';
 
 import { 
   Search, 
@@ -48,6 +49,9 @@ const Gallery: React.FC = () => {
   };
 
   const openImageModal = (imageUrl: string, alt: string, caption: string, item: GalleryItem) => {
+    // Track image view for analytics
+    analyticsTracker.trackGalleryItem(`${item.id}_${imageUrl}`);
+    
     setSelectedImage({
       url: imageUrl,
       alt,
@@ -76,6 +80,11 @@ const Gallery: React.FC = () => {
       day: 'numeric'
     });
   };
+
+  // Track gallery page view for analytics
+  useEffect(() => {
+    analyticsTracker.trackPageView('/gallery');
+  }, []);
 
   if (isLoading) {
     return (

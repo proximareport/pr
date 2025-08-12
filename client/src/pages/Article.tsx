@@ -18,6 +18,7 @@ import { ModernButton } from "@/components/ui/modern-button";
 import { shareArticle } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { analyticsTracker } from "@/lib/analytics";
+import { getReadingTimeDisplay } from "@/lib/utils";
 
 interface ArticleParams {
   slug: string;
@@ -284,7 +285,7 @@ function Article() {
                   <div className="flex items-center gap-4 text-sm text-white/60">
                     <div className="flex items-center gap-2">
                       <BookOpen className="w-4 h-4 text-purple-400" />
-                      <span>{article.html ? Math.ceil(article.html.split(' ').length / 200) : 5} min read</span>
+                      <span>Article</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Eye className="w-4 h-4 text-purple-400" />
@@ -294,57 +295,57 @@ function Article() {
                 </div>
                 
                 {/* Enhanced metadata section - Better mobile layout */}
-                <div className="bg-gradient-to-r from-white/5 via-purple-500/5 to-white/5 backdrop-blur-xl rounded-3xl p-6 sm:p-8 lg:p-10 border border-white/10 shadow-2xl hover:shadow-purple-500/20 transition-all duration-500">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 items-center">
+                <div className="bg-gradient-to-r from-white/5 via-purple-500/5 to-white/5 backdrop-blur-xl rounded-2xl p-4 sm:p-5 lg:p-6 border border-white/10 shadow-xl hover:shadow-purple-500/20 transition-all duration-500">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6 items-center">
                     {/* Authors - Improved mobile layout */}
                     <div className="sm:col-span-2 lg:col-span-1">
                       {article.authors && article.authors.length > 1 ? (
-                        <div className="flex items-center gap-4 group">
-                          <div className="flex -space-x-3 flex-shrink-0">
+                        <div className="flex items-center gap-3 group">
+                          <div className="flex -space-x-2 flex-shrink-0">
                             {article.authors.slice(0, 3).map((author, index) => (
                               <div key={author.id} className="relative">
                                 <img 
                                   src={author.profile_image || '/default-avatar.png'} 
                                   alt={author.name || 'Author'} 
-                                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-purple-400/40 transition-all duration-500 group-hover:border-purple-400 group-hover:scale-110 shadow-lg"
+                                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-purple-400/40 transition-all duration-500 group-hover:border-purple-400 group-hover:scale-110 shadow-lg"
                                   style={{ zIndex: article.authors.length - index }}
                                 />
                                 <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 to-violet-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                               </div>
                             ))}
                             {article.authors.length > 3 && (
-                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-purple-400/40 bg-gradient-to-br from-purple-900/80 to-violet-900/80 flex items-center justify-center text-sm font-bold text-white shadow-lg">
+                              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-purple-400/40 bg-gradient-to-br from-purple-900/80 to-violet-900/80 flex items-center justify-center text-xs font-bold text-white shadow-lg">
                                 +{article.authors.length - 3}
                               </div>
                             )}
                           </div>
                           <div className="flex flex-col min-w-0">
-                            <span className="font-semibold text-white group-hover:text-purple-300 transition-colors duration-500 text-base lg:text-lg truncate">
+                            <span className="font-semibold text-white group-hover:text-purple-300 transition-colors duration-500 text-sm lg:text-base truncate">
                               {article.authors.slice(0, 2).map(author => author.name).join(', ')}
                               {article.authors.length > 2 && ` and ${article.authors.length - 2} more`}
                             </span>
-                            <span className="text-sm text-white/60 flex items-center gap-2">
-                              <Users className="w-4 h-4" />
+                            <span className="text-xs text-white/60 flex items-center gap-2">
+                              <Users className="w-3 h-3" />
                               Collaborative Authors
                             </span>
                           </div>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-4 group">
+                        <div className="flex items-center gap-3 group">
                           <div className="relative flex-shrink-0">
                             <img 
                               src={(article.authors?.[0]?.profile_image || article.primary_author?.profile_image) || '/default-avatar.png'} 
                               alt={(article.authors?.[0]?.name || article.primary_author?.name) || 'Author'} 
-                              className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-purple-400/40 transition-all duration-500 group-hover:border-purple-400 group-hover:scale-110 shadow-lg"
+                              className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-purple-400/40 transition-all duration-500 group-hover:border-purple-400 group-hover:scale-110 shadow-lg"
                             />
                             <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 to-violet-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                           </div>
                           <div className="flex flex-col min-w-0">
-                            <span className="font-semibold text-white group-hover:text-purple-300 transition-colors duration-500 text-base lg:text-lg truncate">
+                            <span className="font-semibold text-white group-hover:text-purple-300 transition-colors duration-500 text-sm lg:text-base truncate">
                               {(article.authors?.[0]?.name || article.primary_author?.name) || 'Unknown Author'}
                             </span>
-                            <span className="text-sm text-white/60 flex items-center gap-2">
-                              <User className="w-4 h-4" />
+                            <span className="text-xs text-white/60 flex items-center gap-2">
+                              <User className="w-3 h-3" />
                               Author
                             </span>
                           </div>
@@ -353,60 +354,60 @@ function Article() {
                     </div>
                     
                     {/* Date and Reading time - Better mobile layout */}
-                    <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 lg:gap-8">
-                      <div className="flex items-center gap-3 hover:text-purple-300 transition-colors duration-500 group">
-                        <div className="p-2 rounded-xl bg-purple-500/20 group-hover:bg-purple-500/30 transition-all duration-300">
-                          <Calendar className="w-5 h-5 text-purple-400" />
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 lg:gap-5">
+                      <div className="flex items-center gap-2 hover:text-purple-300 transition-colors duration-500 group">
+                        <div className="p-1.5 rounded-lg bg-purple-500/20 group-hover:bg-purple-500/30 transition-all duration-300">
+                          <Calendar className="w-4 h-4 text-purple-400" />
                         </div>
                         <div className="flex flex-col">
-                          <span className="font-semibold text-base lg:text-lg">{format(new Date(article.published_at), 'MMM d, yyyy')}</span>
-                          <span className="text-sm text-white/60">Published</span>
+                          <span className="font-semibold text-sm lg:text-base">{format(new Date(article.published_at), 'MMM d, yyyy')}</span>
+                          <span className="text-xs text-white/60">Published</span>
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-3 hover:text-purple-300 transition-colors duration-500 group">
-                        <div className="p-2 rounded-xl bg-purple-500/20 group-hover:bg-purple-500/30 transition-all duration-300">
-                          <Clock className="w-5 h-5 text-purple-400" />
+                      <div className="flex items-center gap-2 hover:text-purple-300 transition-colors duration-500 group">
+                        <div className="p-1.5 rounded-lg bg-purple-500/20 group-hover:bg-purple-500/30 transition-all duration-300">
+                          <Clock className="w-4 h-4 text-purple-400" />
                         </div>
                         <div className="flex flex-col">
-                          <span className="font-semibold text-base lg:text-lg">{article.reading_time || 5} min read</span>
-                          <span className="text-sm text-white/60">Reading time</span>
+                          <span className="font-semibold text-sm lg:text-base">{getReadingTimeDisplay(article)}</span>
+                          <span className="text-xs text-white/60">Reading time</span>
                         </div>
                       </div>
                     </div>
                     
                     {/* Action buttons - Better mobile layout */}
-                    <div className="flex items-center gap-3 justify-end">
+                    <div className="flex items-center gap-2 justify-end">
                       <button 
                         onClick={handleLike}
-                        className={`p-3 rounded-2xl transition-all duration-500 group ${
+                        className={`p-2 rounded-xl transition-all duration-500 group ${
                           isLiked 
                             ? 'bg-red-500/20 border border-red-400/40 text-red-400 hover:bg-red-500/30' 
                             : 'bg-purple-500/10 border border-purple-400/30 text-purple-400 hover:bg-purple-500/20'
                         }`}
                         aria-label={isLiked ? 'Unlike article' : 'Like article'}
                       >
-                        <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''} group-hover:scale-110 transition-transform duration-300`} />
+                        <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''} group-hover:scale-110 transition-transform duration-300`} />
                       </button>
                       
                       <button 
                         onClick={handleBookmark}
-                        className={`p-3 rounded-2xl transition-all duration-500 group ${
+                        className={`p-2 rounded-xl transition-all duration-500 group ${
                           isBookmarked 
                             ? 'bg-purple-500/20 border border-purple-400/40 text-purple-400 hover:bg-purple-500/30' 
                             : 'bg-purple-500/10 border border-purple-400/30 text-purple-400 hover:bg-purple-500/20'
                         }`}
                         aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark article'}
                       >
-                        <Bookmark className={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''} group-hover:scale-110 transition-transform duration-300`} />
+                        <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''} group-hover:scale-110 transition-transform duration-300`} />
                       </button>
                       
                       <button 
                         onClick={handleShare}
-                        className="p-3 rounded-2xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-400/30 hover:border-purple-400 text-purple-400 hover:text-purple-300 transition-all duration-500 group"
+                        className="p-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-400/30 hover:border-purple-400 text-purple-400 hover:text-purple-300 transition-all duration-500 group"
                         aria-label="Share article"
                       >
-                        <Share2 className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
+                        <Share2 className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
                       </button>
                     </div>
                   </div>

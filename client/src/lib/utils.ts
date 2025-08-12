@@ -9,6 +9,27 @@ export function cn(...inputs: ClassValue[]) {
 // Re-export shared utilities for easy access
 export { calculateReadingTime, formatReadingTime }
 
+/**
+ * Get consistent reading time display for articles
+ * @param article - Article object with reading_time or html content
+ * @returns Formatted reading time string
+ */
+export function getReadingTimeDisplay(article: { reading_time?: number; html?: string }): string {
+  // If reading_time is provided and valid, use it
+  if (article.reading_time && article.reading_time > 0) {
+    return `${article.reading_time} min read`;
+  }
+  
+  // Otherwise calculate from content
+  if (article.html) {
+    const calculatedTime = calculateReadingTime(article.html);
+    return `${calculatedTime} min read`;
+  }
+  
+  // Fallback to default
+  return '5 min read';
+}
+
 // Share article function with native sharing and clipboard fallback
 export async function shareArticle(title?: string, text?: string, url?: string) {
   const shareData = {
