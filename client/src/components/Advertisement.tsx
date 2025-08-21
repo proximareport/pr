@@ -1,244 +1,141 @@
-import React, { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
-import { useAuth } from '@/lib/AuthContext';
-import { GoogleAd, useGoogleAds } from './GoogleAdsProvider';
-
-interface AdData {
-  id: number;
-  title: string;
-  description?: string;
-  imageUrl: string | null;
-  linkUrl: string;
-  placement: string;
-  startDate: string;
-  endDate: string;
-  isApproved: boolean;
-  impressions: number;
-  clicks: number;
-  userId: number;
-  createdAt: string;
-  updatedAt: string;
-  isTest?: boolean;
-  adminNotes?: string;
-}
+import React from 'react';
+import { GoogleAd } from './GoogleAdsProvider';
 
 interface AdvertisementProps {
-  placement: string;
+  position: 'header' | 'sidebar' | 'content' | 'footer' | 'in-article' | 'between-articles';
   className?: string;
-  preferGoogle?: boolean; // Whether to prefer Google Ads over custom ads
-  googleAdSlot?: string; // Google Ad slot ID for this placement
+  style?: React.CSSProperties;
 }
 
-const Advertisement: React.FC<AdvertisementProps> = ({ 
-  placement, 
+export const Advertisement: React.FC<AdvertisementProps> = ({ 
+  position, 
   className = '', 
-  preferGoogle = false,
-  googleAdSlot 
+  style = {} 
 }) => {
-  const { data: ads, isLoading, error } = useQuery<AdData[]>({
-    queryKey: [`/api/advertisements/${placement}`],
-    staleTime: 60 * 1000, // 1 minute
-  });
-  
-  // Get auth context to check if user is admin
-  const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
-  
-  // Get Google Ads context
-  const { consentGiven, trackEvent } = useGoogleAds();
-  
-  // Helper function to get sizing classes
-  const getSizingClasses = () => {
-    if (placement.includes('article_') || placement === 'article') {
-      if (placement === 'article_sidebar') {
-        return 'max-w-[220px] mx-auto';
-      }
-      if (placement === 'article_middle') {
-        return 'max-w-[300px] mx-auto';
-      }
-    }
-    return '';
-  };
-  
-  // State to track the selected ad
-  const [selectedAd, setSelectedAd] = useState<AdData | null>(null);
-  const [eligibleAds, setEligibleAds] = useState<AdData[]>([]);
-  const [currentAdIndex, setCurrentAdIndex] = useState(0);
-  
-  // When ads are loaded, prepare the eligible ads list
-  useEffect(() => {
-    console.log(`Advertisement component - Placement: ${placement}`, { 
-      ads, 
-      isAdmin, 
-      user,
-      adsCount: ads?.length || 0
-    });
-    
-    if (ads && ads.length > 0) {
-      // Log each ad received from the server
-      ads.forEach(ad => {
-        console.log(`Ad received: ID=${ad.id}, title=${ad.title}, isTest=${ad.isTest}, isApproved=${ad.isApproved}`);
-      });
-      
-      // TEMPORARY CHANGE: Allow test ads to be visible to all users
-      // This is just for development/testing - in production we would filter them
-      // For now, we're showing all ads including test ads to everyone
-      console.log("IMPORTANT: Showing test ads to all users for testing purposes");
-      
-      // Save the full list of eligible ads
-      setEligibleAds(ads);
-      console.log(`Eligible ads after filtering: ${ads.length}`);
-      
-      // If we have eligible ads, select the first one initially
-      if (ads.length > 0) {
-        const selected = ads[0];
-        console.log(`Selected ad: ID=${selected.id}, title=${selected.title}`);
-        setSelectedAd(selected);
-        setCurrentAdIndex(0);
-      } else {
-        // No eligible ads available
-        console.log('No eligible ads available after filtering');
-        setSelectedAd(null);
-        setCurrentAdIndex(0);
-      }
-    } else {
-      console.log('No ads received from server');
-      setSelectedAd(null);
-      setEligibleAds([]);
-      setCurrentAdIndex(0);
-    }
-  }, [ads, isAdmin]);
-  
-  // Cycle through ads every 20 seconds if there are multiple ads
-  useEffect(() => {
-    if (eligibleAds.length <= 1) return;
-    
-    // Set up the interval to rotate ads
-    const rotationInterval = setInterval(() => {
-      setCurrentAdIndex(prevIndex => {
-        const nextIndex = (prevIndex + 1) % eligibleAds.length;
-        const nextAd = eligibleAds[nextIndex];
-        console.log(`Rotating to next ad: ID=${nextAd.id}, title=${nextAd.title}, index=${nextIndex}`);
-        setSelectedAd(nextAd);
-        return nextIndex;
-      });
-    }, 20000); // 20 seconds rotation
-    
-    return () => clearInterval(rotationInterval);
-  }, [eligibleAds]);
-
-
-
-  // Record impression when the ad is viewed
-  useEffect(() => {
-    if (selectedAd?.id) {
-      apiRequest('POST', `/api/advertisements/${selectedAd.id}/impression`, {})
-        .catch(err => console.error('Failed to record impression:', err));
-    }
-  }, [selectedAd?.id]);
-
-  const handleClick = async () => {
-    if (selectedAd?.id) {
-      try {
-        await apiRequest('POST', `/api/advertisements/${selectedAd.id}/click`, {});
-        trackEvent('ad_click', { ad_id: selectedAd.id, placement });
-      } catch (err) {
-        console.error('Failed to record click:', err);
-      }
+  // Define ad slots based on position
+  const getAdSlot = () => {
+    switch (position) {
+      case 'header':
+        return '1234567890'; // Replace with your actual ad slot ID
+      case 'sidebar':
+        return '1234567891'; // Replace with your actual ad slot ID
+      case 'content':
+        return '1234567892'; // Replace with your actual ad slot ID
+      case 'footer':
+        return '1234567893'; // Replace with your actual ad slot ID
+      case 'in-article':
+        return '1234567894'; // Replace with your actual ad slot ID
+      case 'between-articles':
+        return '1234567895'; // Replace with your actual ad slot ID
+      default:
+        return '1234567890';
     }
   };
 
-  // Debugging info for component rendering states
-  console.log('Advertisement render state:', { 
-    isLoading, 
-    hasError: !!error, 
-    hasSelectedAd: !!selectedAd,
-    selectedAdId: selectedAd?.id,
-    selectedAdTitle: selectedAd?.title,
-    placement
-  });
-
-  if (isLoading) {
-    return (
-      <div className={`bg-gray-100 animate-pulse rounded-md ${className}`} style={{ minHeight: '100px' }}>
-        <div className="p-2 text-sm text-gray-500">Loading ad...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    console.error('Advertisement error:', error);
-    return (
-      <div className={`bg-gray-100 rounded-md ${className}`} style={{ minHeight: '50px' }}>
-        <div className="p-2 text-xs text-gray-500">Ad error: {(error as any)?.message || 'Unknown error'}</div>
-      </div>
-    );
-  }
-
-  // If no custom ads and Google Ads is enabled, show Google Ad
-  if (!selectedAd) {
-    if (googleAdSlot && consentGiven) {
-      return (
-        <GoogleAd 
-          adSlot={googleAdSlot}
-          className={`${className} ${getSizingClasses()}`}
-          style={{ minHeight: '100px' }}
-        />
-      );
+  // Define ad format based on position
+  const getAdFormat = () => {
+    switch (position) {
+      case 'header':
+        return 'horizontal';
+      case 'sidebar':
+        return 'vertical';
+      case 'content':
+        return 'auto';
+      case 'footer':
+        return 'horizontal';
+      case 'in-article':
+        return 'auto';
+      case 'between-articles':
+        return 'auto';
+      default:
+        return 'auto';
     }
-    
-    return (
-      <div className={`bg-gray-100 rounded-md ${className}`} style={{ minHeight: '50px' }}>
-        <div className="p-2 text-xs text-gray-500">No advertisements available</div>
-      </div>
-    );
-  }
+  };
 
-  // Determine if this is a test ad
-  const isTestAd = selectedAd.isTest === true || 
-                  (selectedAd.adminNotes && selectedAd.adminNotes.toLowerCase().includes('test'));
-  
-  // Get size classes based on placement
-  const sizeClasses = getSizingClasses();
-  
+  // Define responsive behavior based on position
+  const getResponsiveSettings = () => {
+    switch (position) {
+      case 'header':
+        return { responsive: true, fullWidthResponsive: true };
+      case 'sidebar':
+        return { responsive: false, fullWidthResponsive: false };
+      case 'content':
+        return { responsive: true, fullWidthResponsive: true };
+      case 'footer':
+        return { responsive: true, fullWidthResponsive: true };
+      case 'in-article':
+        return { responsive: true, fullWidthResponsive: true };
+      case 'between-articles':
+        return { responsive: true, fullWidthResponsive: true };
+      default:
+        return { responsive: true, fullWidthResponsive: true };
+    }
+  };
+
+  const adSlot = getAdSlot();
+  const adFormat = getAdFormat();
+  const { responsive, fullWidthResponsive } = getResponsiveSettings();
+
+  // Add position-specific styling
+  const positionStyles: React.CSSProperties = {
+    ...style,
+    ...(position === 'sidebar' && {
+      minHeight: '250px',
+      width: '100%',
+      maxWidth: '300px'
+    }),
+    ...(position === 'in-article' && {
+      margin: '2rem 0',
+      textAlign: 'center'
+    }),
+    ...(position === 'between-articles' && {
+      margin: '3rem 0',
+      textAlign: 'center'
+    })
+  };
+
   return (
-    <div className={`advertisement ${className} border ${isTestAd ? 'border-amber-400' : 'border-gray-200'} rounded-md overflow-hidden relative ${sizeClasses}`}>
-      {isTestAd && (
-        <div className="absolute top-0 right-0 bg-amber-400 text-xs px-2 py-1 z-10 text-black font-semibold">
-          Test Ad
-        </div>
-      )}
-      <a 
-        href={selectedAd.linkUrl} 
-        target="_blank" 
-        rel="noopener noreferrer sponsored" 
-        onClick={handleClick}
-        className="block relative"
-      >
-        {selectedAd.imageUrl ? (
-          <div className="relative overflow-hidden">
-            <img 
-              src={selectedAd.imageUrl} 
-              alt={selectedAd.title} 
-              className="w-full h-auto object-cover transition-transform hover:scale-105"
-            />
-            <span className="absolute top-0 right-0 bg-gray-200 text-xs px-2 py-1 rounded-bl-md text-gray-600">
-              {selectedAd.isTest ? 'Test Ad' : 'Ad'}
-            </span>
-          </div>
-        ) : (
-          <div className="p-4 text-center bg-gray-50">
-            <h4 className="font-medium text-gray-800">{selectedAd.title}</h4>
-            <p className="text-sm text-gray-600 mt-2">{selectedAd.description}</p>
-            <span className="absolute top-0 right-0 bg-gray-200 text-xs px-2 py-1 rounded-bl-md text-gray-600">
-              {selectedAd.isTest ? 'Test Ad' : 'Ad'}
-            </span>
-          </div>
-        )}
-      </a>
+    <div 
+      className={`advertisement advertisement-${position} ${className}`}
+      style={positionStyles}
+      data-ad-position={position}
+    >
+      <GoogleAd
+        adSlot={adSlot}
+        adFormat={adFormat}
+        responsive={responsive}
+        fullWidthResponsive={fullWidthResponsive}
+        style={positionStyles}
+        className={className}
+      />
     </div>
   );
 };
 
+// Specialized ad components for common use cases
+export const HeaderAd: React.FC<{ className?: string }> = ({ className }) => (
+  <Advertisement position="header" className={className} />
+);
+
+export const SidebarAd: React.FC<{ className?: string }> = ({ className }) => (
+  <Advertisement position="sidebar" className={className} />
+);
+
+export const ContentAd: React.FC<{ className?: string }> = ({ className }) => (
+  <Advertisement position="content" className={className} />
+);
+
+export const FooterAd: React.FC<{ className?: string }> = ({ className }) => (
+  <Advertisement position="footer" className={className} />
+);
+
+export const InArticleAd: React.FC<{ className?: string }> = ({ className }) => (
+  <Advertisement position="in-article" className={className} />
+);
+
+export const BetweenArticlesAd: React.FC<{ className?: string }> = ({ className }) => (
+  <Advertisement position="between-articles" className={className} />
+);
+
+// Default export for backward compatibility
 export default Advertisement;
