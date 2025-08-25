@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { analyticsTracker } from "@/lib/analytics";
 import { getReadingTimeDisplay } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { useGoogleAdSense } from "@/hooks/useGoogleAdSense";
 
 interface ArticleParams {
   slug: string;
@@ -98,6 +99,9 @@ function Article() {
       analyticsTracker.trackArticleView(article.slug, article.title);
     }
   }, [article?.title, article?.slug]);
+
+  // Load Google AdSense script
+  useGoogleAdSense();
 
   // Check if article is already saved by the user
   useEffect(() => {
@@ -507,15 +511,6 @@ function Article() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-purple-900/20 group-hover:from-black/70 group-hover:to-purple-900/30 transition-all duration-700"></div>
                     <div className="absolute inset-0 border-2 border-purple-500/30 rounded-3xl group-hover:border-purple-400/50 transition-all duration-700"></div>
-                    
-                    {/* Image Caption */}
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <div className="bg-black/60 backdrop-blur-sm rounded-lg p-3 border border-white/20">
-                        <p className="text-white/90 text-sm text-center">
-                          {article.excerpt || 'Featured image for this article'}
-                        </p>
-                      </div>
-                    </div>
                   </div>
                 )}
               </div>

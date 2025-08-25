@@ -26,6 +26,7 @@ import { Loader2 } from "lucide-react";
 import type { GhostPost } from '../../../server/ghostService';
 import NewsletterSubscription from "@/components/NewsletterSubscription";
 import SEO from "@/components/SEO";
+import { useGoogleAdSense } from "@/hooks/useGoogleAdSense";
 
 // Gallery Section Component
 const GallerySection: React.FC = () => {
@@ -151,6 +152,9 @@ export default function Home() {
   const [readingTimeValue, setReadingTimeValue] = useState(0);
   const [hasMorePosts, setHasMorePosts] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  // Load Google AdSense script
+  useGoogleAdSense();
 
   // Fetch posts data with pagination
   const { data: postsData, isLoading: postsLoading, error: postsError } = useQuery({

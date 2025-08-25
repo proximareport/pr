@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { MailIcon, PhoneIcon, MapPinIcon, ClockIcon, MessageSquareIcon, HeadphonesIcon } from 'lucide-react';
+import { useGoogleAdSense } from "@/hooks/useGoogleAdSense";
 
 const Contact: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -19,6 +20,9 @@ const Contact: React.FC = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+
+  // Load Google AdSense script
+  useGoogleAdSense();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({

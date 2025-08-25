@@ -16,12 +16,14 @@ import {
   YoutubeIcon,
   FacebookIcon
 } from 'lucide-react';
+import { useEffect } from 'react';
 
 // Import logo image
 import mobileLogo from "../assets/images/proxima-logo-mobile.png";
 
 import { useQuery } from '@tanstack/react-query';
 import SEO from '@/components/SEO';
+import { useGoogleAdSense } from "@/hooks/useGoogleAdSense";
 
 // Types
 interface TeamMember {
@@ -69,6 +71,9 @@ const values = [
 ];
 
 export default function About() {
+  // Load Google AdSense script
+  useGoogleAdSense();
+
   // Fetch team members from API
   const { data: teamMembers, isLoading, error } = useQuery<TeamMember[]>({
     queryKey: ['team-members'],
