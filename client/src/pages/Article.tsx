@@ -21,6 +21,7 @@ import { analyticsTracker } from "@/lib/analytics";
 import { getReadingTimeDisplay } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useGoogleAdSense } from "@/hooks/useGoogleAdSense";
+import { ArticleTopAd, ArticleBottomAd, InContentAd } from "@/components/AdPlacement";
 
 interface ArticleParams {
   slug: string;
@@ -513,6 +514,11 @@ function Article() {
                     <div className="absolute inset-0 border-2 border-purple-500/30 rounded-3xl group-hover:border-purple-400/50 transition-all duration-700"></div>
                   </div>
                 )}
+
+                {/* Article Top Advertisement */}
+                <div className="my-8">
+                  <ArticleTopAd className="w-full" />
+                </div>
               </div>
               
               {/* Article content - Enhanced with better typography */}
@@ -586,6 +592,11 @@ function Article() {
               {/* Enhanced Newsletter Subscription */}
               <div className="bg-gradient-to-r from-purple-500/20 via-violet-500/15 to-purple-500/20 backdrop-blur-xl rounded-3xl p-6 sm:p-8 lg:p-10 border border-purple-400/30 shadow-2xl hover:shadow-purple-500/30 transition-all duration-500">
                 <NewsletterSubscription variant="article" />
+              </div>
+
+              {/* Article Bottom Advertisement */}
+              <div className="my-8">
+                <ArticleBottomAd className="w-full" />
               </div>
             </div>
 

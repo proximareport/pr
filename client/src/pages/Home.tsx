@@ -27,6 +27,7 @@ import type { GhostPost } from '../../../server/ghostService';
 import NewsletterSubscription from "@/components/NewsletterSubscription";
 import SEO from "@/components/SEO";
 import { useGoogleAdSense } from "@/hooks/useGoogleAdSense";
+import { HomepageHeroAd, HomepageGridAd, InContentAd } from "@/components/AdPlacement";
 
 // Gallery Section Component
 const GallerySection: React.FC = () => {
@@ -317,6 +318,11 @@ export default function Home() {
           </div>
         )}
 
+        {/* Hero Advertisement */}
+        <div className="mb-8 md:mb-12">
+          <HomepageHeroAd className="w-full" />
+        </div>
+
         {/* Category Filter */}
         <div className="mb-6 md:mb-8 px-1">
           <h3 className="text-lg md:text-xl font-bold text-white mb-3 md:mb-4">Browse by Category</h3>
@@ -344,7 +350,43 @@ export default function Home() {
           {filteredPosts.length > 0 ? (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                {filteredPosts.map((post: GhostPost) => (
+                {filteredPosts.slice(0, 3).map((post: GhostPost) => (
+                  <ArticleCard
+                    key={post.id}
+                    article={{
+                      id: parseInt(post.id) || 0,
+                      title: post.title,
+                      slug: post.slug,
+                      summary: post.excerpt || '',
+                      featuredImage: post.feature_image || '',
+                      category: post.primary_tag?.name || 'Uncategorized',
+                      author: {
+                        id: parseInt((post.authors?.[0]?.id || post.primary_author?.id) || '0'),
+                        username: (post.authors?.[0]?.name || post.primary_author?.name) || 'Anonymous',
+                        profilePicture: (post.authors?.[0]?.profile_image || post.primary_author?.profile_image) || ''
+                      },
+                      publishedAt: post.published_at,
+                      readTime: post.reading_time || 5,
+                      tags: [],
+                      isBreaking: false,
+                      isCollaborative: post.authors && post.authors.length > 1,
+                      authors: post.authors ? post.authors.map((author: any) => ({
+                        id: parseInt(author.id || '0'),
+                        username: author.name || 'Unknown',
+                        profilePicture: author.profile_image || ''
+                      })) : []
+                    }}
+                  />
+                ))}
+              </div>
+
+              {/* In-Content Advertisement */}
+              <div className="my-8 md:my-12">
+                <InContentAd className="w-full" />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                {filteredPosts.slice(3).map((post: GhostPost) => (
                   <ArticleCard
                     key={post.id}
                     article={{
@@ -410,6 +452,11 @@ export default function Home() {
           
           {/* Use the proper gallery service instead of the broken featured endpoint */}
           <GallerySection />
+        </div>
+
+        {/* Grid Advertisement */}
+        <div className="mb-12 px-1">
+          <HomepageGridAd className="w-full" />
         </div>
 
         {/* Newsletter Subscription Section */}
