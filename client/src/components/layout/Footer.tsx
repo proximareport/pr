@@ -1,7 +1,8 @@
 import { Link } from "wouter";
-import { MapPinIcon, MailIcon, PhoneIcon, ArrowRightIcon, ExternalLinkIcon, ClockIcon } from "lucide-react";
+import { MapPinIcon, MailIcon, PhoneIcon, ArrowRightIcon, ExternalLinkIcon, ClockIcon, CookieIcon } from "lucide-react";
 import { FaTwitter, FaFacebook, FaInstagram, FaYoutube, FaLinkedin, FaDiscord } from "react-icons/fa";
 import { useState } from "react";
+import { useGoogleAds } from "../GoogleAdsProvider";
 
 // Import logo image
 import mobileLogo from "../../assets/images/proxima-logo-mobile.png";
@@ -10,6 +11,7 @@ function Footer() {
   const currentYear = new Date().getFullYear();
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { consentGiven, setConsentGiven } = useGoogleAds();
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,6 +22,12 @@ function Footer() {
       setEmail("");
       // Show success message
     }, 1000);
+  };
+
+  const handleAcceptCookies = () => {
+    setConsentGiven(true);
+    // Store in localStorage for persistence - use same key as GoogleAdsProvider
+    localStorage.setItem('ads-consent', 'true');
   };
   
   return (
@@ -266,6 +274,19 @@ function Footer() {
               </a>
             </div>
           </div>
+
+          {/* Cookie Consent Button */}
+          {!consentGiven && (
+            <div className="mt-6 flex justify-center">
+              <button
+                onClick={handleAcceptCookies}
+                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-violet-700 hover:from-purple-700 hover:to-violet-800 text-white font-medium rounded-xl transition-all duration-300 transform hover:scale-[1.02] border border-purple-500/30 hover:border-purple-400/50"
+              >
+                <CookieIcon className="h-4 w-4" />
+                <span>Accept Cookies</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </footer>

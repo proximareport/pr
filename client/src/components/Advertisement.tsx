@@ -1,5 +1,13 @@
 import React from 'react';
-import { SidebarAd } from './AdPlacement';
+import { 
+  SidebarAd, 
+  BannerAd, 
+  InContentAd, 
+  ArticleTopAd, 
+  ArticleBottomAd, 
+  HomepageHeroAd, 
+  HomepageGridAd 
+} from './AdPlacement';
 
 interface AdvertisementProps {
   placement?: string;
@@ -35,17 +43,17 @@ const Advertisement: React.FC<AdvertisementProps> = ({ placement = 'sidebar' }) 
     case 'sidebar':
       return <SidebarAd className="w-full" />;
     case 'banner':
-      return <SidebarAd className="w-full" />; // Fallback to sidebar for now
+      return <BannerAd className="w-full" />;
     case 'in-content':
-      return <SidebarAd className="w-full" />; // Fallback to sidebar for now
+      return <InContentAd className="w-full" />;
     case 'article-top':
-      return <SidebarAd className="w-full" />; // Fallback to sidebar for now
+      return <ArticleTopAd className="w-full" />;
     case 'article-bottom':
-      return <SidebarAd className="w-full" />; // Fallback to sidebar for now
+      return <ArticleBottomAd className="w-full" />;
     case 'homepage-hero':
-      return <SidebarAd className="w-full" />; // Fallback to sidebar for now
+      return <HomepageHeroAd className="w-full" />;
     case 'homepage-grid':
-      return <SidebarAd className="w-full" />; // Fallback to sidebar for now
+      return <HomepageGridAd className="w-full" />;
     default:
       return <SidebarAd className="w-full" />;
   }

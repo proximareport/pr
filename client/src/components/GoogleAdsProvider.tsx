@@ -35,8 +35,16 @@ export const GoogleAdsProvider: React.FC<GoogleAdsProviderProps> = ({ children }
   useEffect(() => {
     // Check for stored consent
     const storedConsent = localStorage.getItem('ads-consent');
+    console.log('GoogleAdsProvider: Stored consent:', storedConsent);
     if (storedConsent === 'true') {
       setConsentGiven(true);
+      console.log('GoogleAdsProvider: Consent restored from localStorage');
+    }
+
+    // Check if Google AdSense is already loaded from index.html
+    if (window.adsbygoogle) {
+      console.log('GoogleAdsProvider: Google AdSense already loaded from index.html');
+      setIsGoogleAdsLoaded(true);
     }
 
     // Check for ad blocker
@@ -44,10 +52,12 @@ export const GoogleAdsProvider: React.FC<GoogleAdsProviderProps> = ({ children }
   }, []);
 
   useEffect(() => {
+    console.log('GoogleAdsProvider: Consent changed to:', consentGiven);
     // Store consent preference
     localStorage.setItem('ads-consent', consentGiven.toString());
     
     if (consentGiven) {
+      console.log('GoogleAdsProvider: Loading Google services...');
       loadGoogleAds();
       loadGoogleAnalytics();
     }
@@ -70,15 +80,31 @@ export const GoogleAdsProvider: React.FC<GoogleAdsProviderProps> = ({ children }
   };
 
   const loadGoogleAds = () => {
-    if (window.adsbygoogle || isGoogleAdsLoaded) return;
+    console.log('loadGoogleAds called, checking conditions...');
+    console.log('window.adsbygoogle exists:', !!window.adsbygoogle);
+    console.log('isGoogleAdsLoaded:', isGoogleAdsLoaded);
+    
+    // Check if script is already loaded from index.html
+    if (window.adsbygoogle) {
+      console.log('Google AdSense script already exists, setting state to loaded');
+      setIsGoogleAdsLoaded(true);
+      return;
+    }
+    
+    if (isGoogleAdsLoaded) {
+      console.log('Google Ads already loaded, returning');
+      return;
+    }
 
     try {
+      console.log('Creating and loading Google AdSense script...');
       // Load Google AdSense script
       const script = document.createElement('script');
       script.async = true;
       script.crossOrigin = 'anonymous';
       script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${GOOGLE_ADSENSE_ID}`;
       script.onload = () => {
+        console.log('Google AdSense script loaded successfully');
         setIsGoogleAdsLoaded(true);
         console.log('Google AdSense loaded successfully');
       };
@@ -86,6 +112,7 @@ export const GoogleAdsProvider: React.FC<GoogleAdsProviderProps> = ({ children }
         console.error('Failed to load Google AdSense');
       };
       document.head.appendChild(script);
+      console.log('Google AdSense script added to document head');
     } catch (error) {
       console.error('Error loading Google AdSense:', error);
     }

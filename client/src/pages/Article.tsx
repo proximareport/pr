@@ -651,7 +651,13 @@ function Article() {
                   </div>
                   Sponsored Content
                 </h3>
-                <Advertisement placement="sidebar" />
+                {/* Temporarily removed sidebar ad due to dimension constraints */}
+                <div className="text-center py-8">
+                  <div className="p-2 rounded-xl bg-purple-500/20 w-12 h-12 mx-auto mb-3 flex items-center justify-center">
+                    <Share2 className="w-6 h-6 text-purple-400" />
+                  </div>
+                  <p className="text-white/60 text-sm">Advertisement space</p>
+                </div>
               </div>
               
               {/* Enhanced Related Articles */}

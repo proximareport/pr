@@ -7,15 +7,15 @@ interface AdPlacementProps {
   style?: React.CSSProperties;
 }
 
-// Ad slot IDs - You need to replace these with your actual ad slot IDs from Google AdSense
+// Ad slot IDs - Your actual ad slot IDs from Google AdSense
 const AD_SLOTS = {
-  'banner': '6196809818', // Your real banner ad slot ID
-  'sidebar': '1234567891', // Replace with your sidebar ad slot ID
-  'in-content': '1234567892', // Replace with your in-content ad slot ID
-  'article-top': '1234567893', // Replace with your article top ad slot ID
-  'article-bottom': '1234567894', // Replace with your article bottom ad slot ID
-  'homepage-hero': '6196809818', // Use the same slot for homepage hero (responsive)
-  'homepage-grid': '1234567896', // Replace with your homepage grid ad slot ID
+  'banner': '6196809818',
+  'sidebar': '6196809818',
+  'in-content': '8790618913',
+  'article-top': '8790618913',
+  'article-bottom': '8790618913',
+  'homepage-hero': '6196809818',
+  'homepage-grid': '1889350405',
 };
 
 export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', style = {} }) => {
@@ -25,23 +25,40 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
 
   useEffect(() => {
     if (isGoogleAdsLoaded && consentGiven && !adLoaded && !isAdBlocked) {
-      try {
-        // Push the ad to Google AdSense
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-        setAdLoaded(true);
-      } catch (error) {
-        console.error('Error loading ad:', error);
-        setAdError(true);
-      }
+      const timer = setTimeout(() => {
+        try {
+          // Check if ad already exists
+          const container = document.querySelector(`.ad-placement.ad-${type}`) as HTMLElement;
+          if (container) {
+            const existingAd = container.querySelector('.adsbygoogle');
+            if (existingAd) {
+              const hasGoogleAd = existingAd.querySelector('[id^="aswift_"], [id^="google_ads_"]');
+              if (hasGoogleAd) {
+                setAdLoaded(true);
+                return;
+              }
+            }
+          }
+          
+          // Load the ad
+          (window.adsbygoogle = window.adsbygoogle || []).push({});
+          setAdLoaded(true);
+          
+        } catch (error) {
+          setAdError(true);
+        }
+      }, 500);
+
+      return () => clearTimeout(timer);
     }
-  }, [isGoogleAdsLoaded, consentGiven, adLoaded, isAdBlocked]);
+  }, [isGoogleAdsLoaded, consentGiven, adLoaded, isAdBlocked, type]);
 
   // Don't show ads if ad blocker is detected
   if (isAdBlocked) {
     return (
-      <div className={`bg-gray-800 border border-gray-700 rounded-lg p-4 text-center ${className}`} style={style}>
-        <p className="text-gray-400 text-sm">
-          Please disable your ad blocker to support our content
+      <div className={`bg-red-800 border border-red-700 rounded-lg p-4 text-center ${className}`} style={style}>
+        <p className="text-red-200 text-sm">
+          Ad blocker detected - Please disable to support our content
         </p>
       </div>
     );
@@ -50,8 +67,8 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
   // Don't show ads if consent not given
   if (!consentGiven) {
     return (
-      <div className={`bg-gray-800 border border-gray-700 rounded-lg p-4 text-center ${className}`} style={style}>
-        <p className="text-gray-400 text-sm">
+      <div className={`bg-yellow-800 border border-yellow-700 rounded-lg p-4 text-center ${className}`} style={style}>
+        <p className="text-yellow-200 text-sm">
           Advertisement space - Please accept cookies to view ads
         </p>
       </div>
@@ -61,10 +78,19 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
   // Show error state if ad failed to load
   if (adError) {
     return (
-      <div className={`bg-gray-800 border border-gray-700 rounded-lg p-4 text-center ${className}`} style={style}>
-        <p className="text-gray-400 text-sm">
+      <div className={`bg-red-800 border border-red-700 rounded-lg p-4 text-center ${className}`} style={style}>
+        <p className="text-red-200 text-sm mb-2">
           Advertisement temporarily unavailable
         </p>
+        <button 
+          onClick={() => {
+            setAdError(false);
+            setAdLoaded(false);
+          }}
+          className="bg-red-700 hover:bg-red-600 text-white px-3 py-1 rounded text-xs"
+        >
+          Retry
+        </button>
       </div>
     );
   }
@@ -73,8 +99,13 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
   const adSlot = AD_SLOTS[type];
   
   if (!adSlot) {
-    console.error(`No ad slot configured for type: ${type}`);
-    return null;
+    return (
+      <div className={`bg-orange-800 border border-orange-700 rounded-lg p-4 text-center ${className}`} style={style}>
+        <p className="text-orange-200 text-sm">
+          No ad slot configured for {type}
+        </p>
+      </div>
+    );
   }
 
   // Different ad formats based on type
@@ -83,17 +114,17 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
       case 'banner':
         return 'auto';
       case 'sidebar':
-        return 'vertical';
+        return 'auto';
       case 'in-content':
-        return 'rectangle';
+        return 'fluid';
       case 'article-top':
-        return 'horizontal';
+        return 'fluid';
       case 'article-bottom':
-        return 'horizontal';
+        return 'fluid';
       case 'homepage-hero':
         return 'auto';
       case 'homepage-grid':
-        return 'rectangle';
+        return 'fluid';
       default:
         return 'auto';
     }
@@ -102,19 +133,47 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
   const adFormat = getAdFormat();
 
   return (
-    <div className={`ad-placement ad-${type} ${className}`} style={style}>
+    <div 
+      className={`ad-placement ad-${type} ${className} relative`} 
+      style={{
+        ...style,
+        width: '100%',
+        height: type === 'sidebar' ? '600px' : type === 'banner' ? '90px' : '250px',
+        minWidth: '300px',
+        minHeight: type === 'sidebar' ? '600px' : type === 'banner' ? '90px' : '250px',
+        maxWidth: '100%',
+        maxHeight: type === 'sidebar' ? '600px' : type === 'banner' ? '90px' : '250px',
+        display: 'block',
+        visibility: 'visible',
+        opacity: '1',
+        backgroundColor: '#f8f9fa',
+        border: '1px solid #e9ecef',
+        borderRadius: '8px',
+        overflow: 'visible',
+        position: 'relative',
+        zIndex: 1000
+      }}
+    >
       <ins
         className="adsbygoogle"
         style={{ 
           display: 'block', 
           textAlign: 'center',
-          minHeight: type === 'sidebar' ? '600px' : type === 'banner' ? '90px' : '250px'
+          width: '100%',
+          height: '100%',
+          minHeight: type === 'sidebar' ? '600px' : type === 'banner' ? '90px' : '250px',
+          backgroundColor: 'transparent'
         }}
         data-ad-client="ca-pub-9144996607586274"
         data-ad-slot={adSlot}
         data-ad-format={adFormat}
         data-full-width-responsive="true"
-        data-adtest="off"
+        {...(type === 'in-content' || type === 'article-top' || type === 'article-bottom' ? {
+          'data-ad-layout': 'in-article'
+        } : {})}
+        {...(type === 'homepage-grid' ? {
+          'data-ad-layout-key': '-71+eh+1g-3a+2i'
+        } : {})}
       />
     </div>
   );
