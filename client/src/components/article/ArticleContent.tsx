@@ -60,6 +60,22 @@ function ArticleContent({ content }: ArticleContentProps) {
 
   return (
     <div className="article-content prose prose-invert max-w-none">
+      {/* Opinion/Speculation Indicators */}
+      <div className="mb-8 p-4 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="p-2 bg-amber-500/20 rounded-lg">
+            <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-amber-100">Content Classification</h3>
+        </div>
+        <div className="space-y-2 text-sm text-amber-200/80">
+          <p>This article contains <strong>opinion and speculation</strong> based on current scientific understanding.</p>
+          <p>We are committed to clearly distinguishing between established facts and theoretical discussions.</p>
+        </div>
+      </div>
+      
       <div 
         className="prose-content"
         dangerouslySetInnerHTML={{ __html: content }}

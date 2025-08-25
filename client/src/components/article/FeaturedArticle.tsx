@@ -65,16 +65,23 @@ function FeaturedArticle({ article }: FeaturedArticleProps) {
       <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D17] via-[#0D0D17]/70 to-transparent"></div>
       <div className="container mx-auto px-4 md:px-6 h-full flex flex-col justify-end pb-8 md:pb-12 relative z-10">
         <div className="max-w-4xl">
+          {/* Category Badge */}
+          {article.primary_tag && (
+            <div className="mb-4">
+              <Badge className="bg-purple-600 hover:bg-purple-700 text-white border-0">
+                {article.primary_tag.name}
+              </Badge>
+            </div>
+          )}
+          
+          {/* Title - Only headline as text-on-image */}
           <Link href={`/articles/${article.slug}`}>
             <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-4 hover:text-purple-400 transition-colors duration-300">
               {article.title}
             </h2>
           </Link>
           
-          <p className="text-white/90 text-sm md:text-base lg:text-lg mb-4 md:mb-6 line-clamp-3 md:line-clamp-none">
-            {article.excerpt}
-          </p>
-          
+          {/* Author and metadata */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center">
               {article.authors && article.authors.length > 1 ? (
@@ -98,12 +105,18 @@ function FeaturedArticle({ article }: FeaturedArticleProps) {
                   </div>
                   <div className="ml-2 md:ml-3">
                     <p className="text-white font-medium text-sm md:text-base">
-                      {article.authors.slice(0, 2).map(author => author.name).join(', ')}
+                      {article.authors.slice(0, 2).map(author => (
+                        <Link key={author.id} href={`/profile/${author.id}`} className="hover:text-purple-300 transition-colors duration-300">
+                          {author.name}
+                        </Link>
+                      )).reduce((prev, curr, index) => [
+                        prev,
+                        index === 0 ? ', ' : ' and ',
+                        curr
+                      ])}
                       {article.authors.length > 2 && ` and ${article.authors.length - 2} more`}
                     </p>
-                    <p className="text-white/70 text-xs md:text-sm">
-                      {getReadingTimeDisplay(article)}
-                    </p>
+                    <p className="text-white/70 text-xs md:text-sm">{timeAgo}</p>
                   </div>
                 </>
               ) : (
@@ -111,38 +124,37 @@ function FeaturedArticle({ article }: FeaturedArticleProps) {
                   <div className="w-8 h-8 md:w-12 md:h-12 rounded-full overflow-hidden border-2 border-purple-500">
                     <Avatar className="h-8 w-8 md:h-12 md:w-12">
                       <AvatarImage 
-                        src={article.authors?.[0]?.profile_image || article.primary_author?.profile_image} 
-                        alt={article.authors?.[0]?.name || article.primary_author?.name} 
+                        src={(article.authors?.[0]?.profile_image || article.primary_author?.profile_image) || ''} 
+                        alt={(article.authors?.[0]?.name || article.primary_author?.name) || 'Author'} 
                       />
                       <AvatarFallback className="bg-purple-900 text-white text-xs md:text-sm">
-                        {(() => {
-                          const authorName = article.authors?.[0]?.name || article.primary_author?.name;
-                          return authorName ? authorName.substring(0, 2).toUpperCase() : 'AU';
-                        })()}
+                        {(article.authors?.[0]?.name || article.primary_author?.name) 
+                          ? (article.authors[0]?.name || article.primary_author?.name)?.substring(0, 2).toUpperCase() 
+                          : 'AU'}
                       </AvatarFallback>
                     </Avatar>
                   </div>
                   <div className="ml-2 md:ml-3">
-                    <p className="text-white font-medium text-sm md:text-base">
-                      {article.authors?.[0]?.name || article.primary_author?.name || 'Anonymous'}
-                    </p>
-                    <p className="text-white/70 text-xs md:text-sm">
-                      {getReadingTimeDisplay(article)}
-                    </p>
+                    <Link 
+                      href={`/profile/${(article.authors?.[0]?.id || article.primary_author?.id) || 'unknown'}`}
+                      className="hover:text-purple-300 transition-colors duration-300"
+                    >
+                      <p className="text-white font-medium text-sm md:text-base">
+                        {(article.authors?.[0]?.name || article.primary_author?.name) || 'Unknown Author'}
+                      </p>
+                    </Link>
+                    <p className="text-white/70 text-xs md:text-sm">{timeAgo}</p>
                   </div>
                 </>
               )}
             </div>
             
-            {/* Badge and Date moved here */}
-            <div className="flex flex-wrap items-center gap-2">
-              {article.primary_tag && (
-                <Badge className="bg-purple-800 text-white border-none text-xs md:text-sm">
-                  {article.primary_tag.name}
-                </Badge>
-              )}
-              <span className="text-white/80 text-xs md:text-sm">Posted {timeAgo}</span>
-            </div>
+            {/* Reading time */}
+            {article.reading_time && (
+              <div className="flex items-center gap-2 text-white/70">
+                <span className="text-xs md:text-sm">{getReadingTimeDisplay(article)}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

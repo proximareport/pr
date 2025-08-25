@@ -149,14 +149,16 @@ export default function Home() {
   const [featuredPost, setFeaturedPost] = useState<GhostPost | null>(null);
   const [hasReadingTime, setHasReadingTime] = useState(false);
   const [readingTimeValue, setReadingTimeValue] = useState(0);
+  const [hasMorePosts, setHasMorePosts] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  // Fetch posts data
+  // Fetch posts data with pagination
   const { data: postsData, isLoading: postsLoading, error: postsError } = useQuery({
-    queryKey: ['posts-data'],
+    queryKey: ['posts-data', currentPage],
     queryFn: async () => {
       try {
-        const response = await axios.get('/api/ghost/posts?limit=10');
-        console.log('Posts API response:', response.data);
+        const response = await axios.get(`/api/ghost/posts?limit=10&page=${currentPage}`);
+        console.log(`Posts API response for page ${currentPage}:`, response.data);
         return response.data;
       } catch (error) {
         console.error('Posts fetch error:', error);
@@ -172,13 +174,29 @@ export default function Home() {
       if (currentPage === 1) {
         setAllPosts(postsData.posts);
       } else {
-        setAllPosts(prev => [...prev, ...postsData.posts]);
+        // Only append new posts, avoid duplicates
+        setAllPosts(prev => {
+          const existingIds = new Set(prev.map(post => post.id));
+          const newPosts = postsData.posts.filter((post: GhostPost) => !existingIds.has(post.id));
+          return [...prev, ...newPosts];
+        });
       }
       
+      // Reset loading state
+      setIsLoadingMore(false);
+      
       // Check if there are more posts available
-      const hasMore = postsData.meta?.pagination?.next !== null && 
-                     postsData.meta?.pagination?.page < postsData.meta?.pagination?.pages;
-      // setHasMorePosts(hasMore); // This line is removed as per the edit hint
+      const pagination = postsData.meta?.pagination;
+      if (pagination) {
+        const hasMore = pagination.next !== null && 
+                       pagination.page < pagination.pages &&
+                       pagination.limit > 0;
+        setHasMorePosts(!!hasMore);
+      } else {
+        // Fallback: if no pagination data, assume there might be more posts
+        // This is a conservative approach for better UX
+        setHasMorePosts(postsData.posts.length >= 10);
+      }
     }
   }, [postsData, currentPage]);
 
@@ -189,7 +207,9 @@ export default function Home() {
   console.log('Home page posts data:', {
     totalPosts: allPosts.length,
     currentPage,
-    // hasMorePosts, // This line is removed as per the edit hint
+    hasMorePosts,
+    isLoadingMore,
+    paginationInfo: postsData?.meta?.pagination,
     firstPost: allPosts[0] ? {
       title: allPosts[0].title,
       hasReadingTime: !!allPosts[0].reading_time,
@@ -208,11 +228,12 @@ export default function Home() {
     ? otherPosts 
     : otherPosts.filter((post: GhostPost) => post.primary_tag?.name === selectedCategory);
 
-  // const loadMorePosts = () => { // This function is removed as per the edit hint
-  //   if (!articlesLoading && hasMorePosts) {
-  //     setCurrentPage(prev => prev + 1);
-  //   }
-  // };
+  const loadMorePosts = async () => {
+    if (!postsLoading && !isLoadingMore && hasMorePosts) {
+      setIsLoadingMore(true);
+      setCurrentPage(prev => prev + 1);
+    }
+  };
 
   if (postsLoading && currentPage === 1) {
     return (
@@ -350,7 +371,24 @@ export default function Home() {
               </div>
               
               {/* Load More Button */}
-              {/* This section is removed as per the edit hint */}
+              {hasMorePosts && (
+                <div className="flex justify-center mt-8">
+                  <Button
+                    onClick={loadMorePosts}
+                    disabled={isLoadingMore}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg transition-colors duration-300"
+                  >
+                    {isLoadingMore ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Loading More...
+                      </>
+                    ) : (
+                      'Load More Articles'
+                    )}
+                  </Button>
+                </div>
+              )}
             </>
           ) : (
             <div className="text-center py-12">

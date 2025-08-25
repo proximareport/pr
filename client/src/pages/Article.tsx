@@ -19,6 +19,7 @@ import { shareArticle } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { analyticsTracker } from "@/lib/analytics";
 import { getReadingTimeDisplay } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 interface ArticleParams {
   slug: string;
@@ -382,15 +383,17 @@ function Article() {
                         <div className="flex items-center gap-3 group">
                           <div className="flex -space-x-2 flex-shrink-0">
                             {article.authors.slice(0, 3).map((author, index) => (
-                              <div key={author.id} className="relative">
-                                <img 
-                                  src={author.profile_image || '/default-avatar.png'} 
-                                  alt={author.name || 'Author'} 
-                                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-purple-400/40 transition-all duration-500 group-hover:border-purple-400 group-hover:scale-110 shadow-lg"
-                                  style={{ zIndex: article.authors.length - index }}
-                                />
-                                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 to-violet-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                              </div>
+                              <Link key={author.id} href={`/profile/${author.id}`}>
+                                <div className="relative cursor-pointer">
+                                  <img 
+                                    src={author.profile_image || '/default-avatar.png'} 
+                                    alt={author.name || 'Author'} 
+                                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-purple-400/40 transition-all duration-500 group-hover:border-purple-400 group-hover:scale-110 shadow-lg hover:scale-110"
+                                    style={{ zIndex: article.authors.length - index }}
+                                  />
+                                  <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 to-violet-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                                </div>
+                              </Link>
                             ))}
                             {article.authors.length > 3 && (
                               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-purple-400/40 bg-gradient-to-br from-purple-900/80 to-violet-900/80 flex items-center justify-center text-xs font-bold text-white shadow-lg">
@@ -410,25 +413,27 @@ function Article() {
                           </div>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-3 group">
-                          <div className="relative flex-shrink-0">
-                            <img 
-                              src={(article.authors?.[0]?.profile_image || article.primary_author?.profile_image) || '/default-avatar.png'} 
-                              alt={(article.authors?.[0]?.name || article.primary_author?.name) || 'Author'} 
-                              className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-purple-400/40 transition-all duration-500 group-hover:border-purple-400 group-hover:scale-110 shadow-lg"
-                            />
-                            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 to-violet-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        <Link href={`/profile/${(article.authors?.[0]?.id || article.primary_author?.id) || 'unknown'}`}>
+                          <div className="flex items-center gap-3 group cursor-pointer">
+                            <div className="relative flex-shrink-0">
+                              <img 
+                                src={(article.authors?.[0]?.profile_image || article.primary_author?.profile_image) || '/default-avatar.png'} 
+                                alt={(article.authors?.[0]?.name || article.primary_author?.name) || 'Author'} 
+                                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-purple-400/40 transition-all duration-500 group-hover:border-purple-400 group-hover:scale-110 shadow-lg hover:scale-110"
+                              />
+                              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 to-violet-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="font-semibold text-white group-hover:text-purple-300 transition-colors duration-500 text-sm lg:text-base truncate">
+                                {(article.authors?.[0]?.name || article.primary_author?.name) || 'Unknown Author'}
+                              </span>
+                              <span className="text-xs text-white/60 flex items-center gap-2">
+                                <User className="w-3 h-3" />
+                                Author
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex flex-col min-w-0">
-                            <span className="font-semibold text-white group-hover:text-purple-300 transition-colors duration-500 text-sm lg:text-base truncate">
-                              {(article.authors?.[0]?.name || article.primary_author?.name) || 'Unknown Author'}
-                            </span>
-                            <span className="text-xs text-white/60 flex items-center gap-2">
-                              <User className="w-3 h-3" />
-                              Author
-                            </span>
-                          </div>
-                        </div>
+                        </Link>
                       )}
                     </div>
                     
@@ -503,7 +508,14 @@ function Article() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-purple-900/20 group-hover:from-black/70 group-hover:to-purple-900/30 transition-all duration-700"></div>
                     <div className="absolute inset-0 border-2 border-purple-500/30 rounded-3xl group-hover:border-purple-400/50 transition-all duration-700"></div>
                     
-
+                    {/* Image Caption */}
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <div className="bg-black/60 backdrop-blur-sm rounded-lg p-3 border border-white/20">
+                        <p className="text-white/90 text-sm text-center">
+                          {article.excerpt || 'Featured image for this article'}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -584,6 +596,24 @@ function Article() {
 
             {/* Right Sidebar - Table of Contents and Ads */}
             <div className="hidden lg:block lg:col-span-3 space-y-8">
+              {/* Tags Section */}
+              {article.primary_tag && (
+                <div className="bg-gradient-to-br from-white/5 via-purple-500/5 to-white/5 backdrop-blur-xl rounded-3xl p-6 border border-white/10 shadow-2xl hover:border-purple-400/30 transition-all duration-500">
+                  <h3 className="text-xl font-bold mb-6 text-white flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-purple-500/20">
+                      <Zap className="w-5 h-5 text-purple-400" />
+                    </div>
+                    Tags
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge className="bg-purple-600 hover:bg-purple-700 text-white border-0">
+                      {article.primary_tag.name}
+                    </Badge>
+                    {/* Add more tags here if available */}
+                  </div>
+                </div>
+              )}
+
               {/* Enhanced Table of Contents */}
               <div className="lg:sticky lg:top-8">
                 <div className="bg-gradient-to-br from-white/5 via-purple-500/5 to-white/5 backdrop-blur-xl rounded-3xl p-6 border border-white/10 shadow-2xl hover:border-purple-400/30 transition-all duration-500">
