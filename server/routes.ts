@@ -3589,30 +3589,7 @@ Crawl-delay: 1`;
 
   // Ads.txt for Google Ads and other advertising networks
   app.get("/ads.txt", (req: Request, res: Response) => {
-    const adsTxt = `# ads.txt file for Proxima Report
-# This file is used to authenticate authorized digital advertising sellers
-# Format: domain.com, publisher_id, relationship_type, certification_authority_id
-
-# Google AdSense
-google.com, pub-XXXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
-
-# Google Ad Manager (if using)
-# google.com, pub-XXXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
-
-# Other advertising networks can be added here
-# Example:
-# openx.com, 123456789, RESELLER, 6ac7d628ccd632a7
-# rubiconproject.com, 12345, RESELLER, 0bfd66d529a55807
-
-# Contact information
-# Contact: ads@proximareport.com
-
-# This file should be updated when:
-# 1. Adding new advertising partners
-# 2. Changing publisher IDs
-# 3. Modifying relationships with ad networks
-
-# Last updated: ${new Date().toISOString().split('T')[0]}`;
+    const adsTxt = `google.com, pub-9144996607586274, DIRECT, f08c47fec0942fa0`;
     
     res.set('Content-Type', 'text/plain');
     res.set('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
