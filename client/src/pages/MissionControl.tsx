@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import SatelliteVisualizer from '../components/SatelliteVisualizer';
 import { analyticsTracker } from '@/lib/analytics';
+import { BannerAd, InContentAd } from '@/components/AdPlacement';
 import { 
   useUpcomingLaunches, 
   usePreviousLaunches,
@@ -578,6 +579,13 @@ export default function MissionControl() {
         </div>
       </div>
 
+      {/* Small Top Ad - Less Intrusive */}
+      <div className="relative z-10 bg-gray-900/20 backdrop-blur-sm border-b border-purple-900/20">
+        <div className="max-w-4xl mx-auto px-4 py-2">
+          <InContentAd />
+        </div>
+      </div>
+
       {/* Main Content - Conditional Views */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-3">
         {selectedView === 'dashboard' && (
@@ -1066,6 +1074,11 @@ export default function MissionControl() {
           </CompactCard>
         </div>
         )}
+
+        {/* In-Content Ad */}
+        <div className="my-6">
+          <InContentAd />
+        </div>
 
         {/* Missions View */}
         {selectedView === 'missions' && (

@@ -146,17 +146,22 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
 
   // Different ad formats based on type and device
   const getAdFormat = () => {
-    // Mobile-optimized formats
+    // Device-specific ad formats
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isIOS = /iphone|ipad|ipod/.test(userAgent);
+    const isAndroid = /android/.test(userAgent);
+    
     if (isMobile) {
+      // Mobile-optimized formats with device-specific adjustments
       switch (type) {
         case 'banner':
-          return 'auto';
+          return isIOS ? 'auto' : 'fluid'; // iOS prefers auto, Android prefers fluid
         case 'sidebar':
           return 'auto';
         case 'in-content':
           return 'fluid';
         case 'article-top':
-          return 'fluid';
+          return isIOS ? 'fluid' : 'auto'; // iOS prefers fluid for better layout
         case 'article-bottom':
           return 'fluid';
         case 'homepage-hero':
@@ -191,26 +196,73 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
 
   const adFormat = getAdFormat();
 
-  // Get dimensions based on device and type
+  // Get dimensions based on device and type with better responsive handling
   const getAdDimensions = () => {
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isIOS = /iphone|ipad|ipod/.test(userAgent);
+    const isAndroid = /android/.test(userAgent);
+    const isTablet = /ipad|tablet/.test(userAgent) || (window.innerWidth > 768 && window.innerWidth <= 1024);
+    
     if (isMobile) {
-      switch (type) {
-        case 'banner':
-          return { width: '100%', height: '100px', minHeight: '100px' };
-        case 'sidebar':
-          return { width: '100%', height: '300px', minHeight: '300px' };
-        case 'in-content':
-          return { width: '100%', height: '250px', minHeight: '250px' };
-        case 'article-top':
-          return { width: '100%', height: '250px', minHeight: '250px' };
-        case 'article-bottom':
-          return { width: '100%', height: '250px', minHeight: '250px' };
-        case 'homepage-hero':
-          return { width: '100%', height: '200px', minHeight: '200px' };
-        case 'homepage-grid':
-          return { width: '100%', height: '200px', minHeight: '200px' };
-        default:
-          return { width: '100%', height: '250px', minHeight: '250px' };
+      // Device-specific mobile dimensions
+      if (isIOS) {
+        switch (type) {
+          case 'banner':
+            return { width: '100%', height: '90px', minHeight: '90px' };
+          case 'sidebar':
+            return { width: '100%', height: '280px', minHeight: '280px' };
+          case 'in-content':
+            return { width: '100%', height: '250px', minHeight: '250px' };
+          case 'article-top':
+            return { width: '100%', height: '250px', minHeight: '250px' };
+          case 'article-bottom':
+            return { width: '100%', height: '250px', minHeight: '250px' };
+          case 'homepage-hero':
+            return { width: '100%', height: '180px', minHeight: '180px' };
+          case 'homepage-grid':
+            return { width: '100%', height: '200px', minHeight: '200px' };
+          default:
+            return { width: '100%', height: '250px', minHeight: '250px' };
+        }
+      } else if (isAndroid) {
+        switch (type) {
+          case 'banner':
+            return { width: '100%', height: '100px', minHeight: '100px' };
+          case 'sidebar':
+            return { width: '100%', height: '300px', minHeight: '300px' };
+          case 'in-content':
+            return { width: '100%', height: '250px', minHeight: '250px' };
+          case 'article-top':
+            return { width: '100%', height: '250px', minHeight: '250px' };
+          case 'article-bottom':
+            return { width: '100%', height: '250px', minHeight: '250px' };
+          case 'homepage-hero':
+            return { width: '100%', height: '200px', minHeight: '200px' };
+          case 'homepage-grid':
+            return { width: '100%', height: '200px', minHeight: '200px' };
+          default:
+            return { width: '100%', height: '250px', minHeight: '250px' };
+        }
+      } else {
+        // Other mobile devices
+        switch (type) {
+          case 'banner':
+            return { width: '100%', height: '100px', minHeight: '100px' };
+          case 'sidebar':
+            return { width: '100%', height: '300px', minHeight: '300px' };
+          case 'in-content':
+            return { width: '100%', height: '250px', minHeight: '250px' };
+          case 'article-top':
+            return { width: '100%', height: '250px', minHeight: '250px' };
+          case 'article-bottom':
+            return { width: '100%', height: '250px', minHeight: '250px' };
+          case 'homepage-hero':
+            return { width: '100%', height: '200px', minHeight: '200px' };
+          case 'homepage-grid':
+            return { width: '100%', height: '200px', minHeight: '200px' };
+          default:
+            return { width: '100%', height: '250px', minHeight: '250px' };
+        }
       }
     }
     
@@ -290,7 +342,7 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
           height: '100%',
           minHeight: dimensions.minHeight,
           backgroundColor: 'transparent',
-          // Mobile-specific optimizations
+          // Device-specific optimizations
           ...(isMobile && {
             transform: 'translateZ(0)',
             WebkitTransform: 'translateZ(0)',
@@ -302,6 +354,7 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
         data-ad-slot={adSlot}
         data-ad-format={adFormat}
         data-full-width-responsive="true"
+        // Device-specific ad attributes
         {...(isMobile ? {
           'data-ad-layout': 'in-article',
           'data-ad-layout-key': '-71+eh+1g-3a+2i'
@@ -312,6 +365,10 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
         {...(type === 'homepage-grid' ? {
           'data-ad-layout-key': '-71+eh+1g-3a+2i'
         } : {})}
+        // Cross-platform compatibility attributes
+        data-adtest="off"
+        data-ad-region="true"
+        data-ad-loading-strategy="prefer-viewability"
       />
     </div>
   );

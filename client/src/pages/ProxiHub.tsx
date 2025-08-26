@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { BannerAd, InContentAd } from "@/components/AdPlacement";
 import { 
   RocketIcon, 
   TelescopeIcon, 
@@ -389,6 +390,13 @@ function ProxiHub() {
             </p>
           </div>
 
+          {/* Small Top Ad - Less Intrusive */}
+          <div className="mb-6">
+            <div className="max-w-2xl mx-auto">
+              <InContentAd />
+            </div>
+          </div>
+
           {/* Search and Filter Bar */}
           <div className="max-w-4xl mx-auto mb-8">
             <div className="flex flex-col md:flex-row gap-4">
@@ -606,6 +614,13 @@ function ProxiHub() {
                   </div>
                 </div>
               ))}
+
+              {/* In-Content Ad after first group */}
+              {filteredGroups.length > 0 && (
+                <div className="my-8">
+                  <InContentAd />
+                </div>
+              )}
             </div>
           )}
 

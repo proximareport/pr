@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { analyticsTracker } from '@/lib/analytics';
+import { BannerAd, InContentAd } from '@/components/AdPlacement';
 
 import { 
   Search, 
@@ -199,6 +200,13 @@ const Gallery: React.FC = () => {
         </div>
       </div>
 
+      {/* Small Top Ad - Less Intrusive */}
+      <div className="container mx-auto px-4 py-2">
+        <div className="max-w-2xl mx-auto">
+          <InContentAd />
+        </div>
+      </div>
+
       {/* Gallery Content */}
       <div className="container mx-auto px-4 py-8">
         {filteredItems.length === 0 ? (
@@ -231,7 +239,7 @@ const Gallery: React.FC = () => {
               ${viewMode === 'masonry' ? 'columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6' : ''}
               ${viewMode === 'list' ? 'space-y-6' : ''}
             `}>
-              {filteredItems.map((item) => {
+              {filteredItems.slice(0, 6).map((item) => {
                 const allImages = getAllImages(item);
                 
                 if (viewMode === 'list') {
@@ -373,6 +381,170 @@ const Gallery: React.FC = () => {
                   </Card>
                 );
               })}
+            </div>
+
+            {/* In-Feed Ad after first 6 items */}
+            <div className="my-8">
+              <div className="max-w-2xl mx-auto">
+                <InContentAd />
+              </div>
+            </div>
+
+            {/* Remaining Gallery Items */}
+            {filteredItems.length > 6 && (
+              <div className={`
+                ${viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' : ''}
+                ${viewMode === 'masonry' ? 'columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6' : ''}
+                ${viewMode === 'list' ? 'space-y-6' : ''}
+              `}>
+              {filteredItems.slice(6).map((item) => {
+                const allImages = getAllImages(item);
+                
+                if (viewMode === 'list') {
+                  return (
+                    <Card key={item.id} className="bg-gray-900/50 border-gray-700 p-6">
+                      <div className="flex gap-6">
+                        {item.feature_image && (
+                          <div className="flex-shrink-0">
+                            <img
+                              src={item.feature_image}
+                              alt={`Featured image for ${item.title}`}
+                              className="w-32 h-24 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => openImageModal(
+                                item.feature_image,
+                                `Featured image for ${item.title}`,
+                                '',
+                                item
+                              )}
+                            />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-xl font-semibold mb-2 text-white">{item.title}</h3>
+                          <p className="text-gray-400 text-sm mb-3 line-clamp-2">{item.excerpt}</p>
+                          
+                          <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-3">
+                            {item.published_at && (
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {formatDate(item.published_at)}
+                              </div>
+                            )}
+                            {item.primary_author && (
+                              <div className="flex items-center gap-1">
+                                <User className="h-3 w-3" />
+                                {item.primary_author.name}
+                              </div>
+                            )}
+                            {item.primary_tag && (
+                              <div className="flex items-center gap-1">
+                                <Tag className="h-3 w-3" />
+                                {item.primary_tag.name}
+                              </div>
+                            )}
+                            <div className="flex items-center gap-1">
+                              <ImageIcon className="h-3 w-3" />
+                              {item.total_images} image{item.total_images !== 1 ? 's' : ''}
+                            </div>
+                          </div>
+
+                          {allImages.length > 1 && (
+                            <div className="flex flex-wrap gap-2">
+                              {allImages.slice(1, 5).map((img, index) => (
+                                <img
+                                  key={index}
+                                  src={img.url}
+                                  alt={img.alt || ''}
+                                  className="w-12 h-12 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() => openImageModal(img.url, img.alt || '', img.caption || '', item)}
+                                />
+                              ))}
+                              {allImages.length > 5 && (
+                                <div className="w-12 h-12 bg-gray-800 rounded flex items-center justify-center text-xs">
+                                  +{allImages.length - 5}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                }
+
+                return (
+                  <Card key={item.id} className={`bg-gray-900/50 border-gray-700 overflow-hidden hover:border-purple-500/50 transition-all group ${viewMode === 'masonry' ? 'break-inside-avoid' : ''}`}>
+                    {item.feature_image && (
+                      <div className="relative">
+                        <img
+                          src={item.feature_image}
+                          alt={`Featured image for ${item.title}`}
+                          className="w-full h-48 object-cover cursor-pointer group-hover:scale-105 transition-transform duration-300"
+                          onClick={() => openImageModal(
+                            item.feature_image,
+                            `Featured image for ${item.title}`,
+                                '',
+                                item
+                              )}
+                            />
+                            {item.total_images > 1 && (
+                              <Badge className="absolute top-2 right-2 bg-black/80 text-white">
+                                <ImageIcon className="h-3 w-3 mr-1" />
+                                {item.total_images}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                        
+                        <div className="p-4">
+                          <h3 className="text-lg font-semibold mb-2 text-white line-clamp-2">{item.title}</h3>
+                          <p className="text-gray-400 text-sm mb-3 line-clamp-2">{item.excerpt}</p>
+                          
+                          <div className="flex flex-wrap gap-2 text-xs text-gray-500 mb-3">
+                            {item.published_at && (
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {formatDate(item.published_at)}
+                              </div>
+                            )}
+                            {item.primary_author && (
+                              <div className="flex items-center gap-1">
+                                <User className="h-3 w-3" />
+                                {item.primary_author.name}
+                              </div>
+                            )}
+                          </div>
+
+                          {item.primary_tag && (
+                            <Badge variant="outline" className="text-xs">
+                              {item.primary_tag.name}
+                            </Badge>
+                          )}
+
+                          {/* Additional Images Grid */}
+                          {item.content_images.length > 0 && (
+                            <div className="mt-3 grid grid-cols-3 gap-1">
+                              {item.content_images.slice(0, 3).map((img, index) => (
+                                <img
+                                  key={index}
+                                  src={img.url}
+                                  alt={img.alt || ''}
+                                  className="w-full h-16 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() => openImageModal(img.url, img.alt || '', img.caption || '', item)}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+
+            {/* In-Content Ad */}
+            <div className="my-8">
+              <InContentAd />
             </div>
 
             {/* Pagination */}

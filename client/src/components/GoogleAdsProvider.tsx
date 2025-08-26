@@ -48,20 +48,42 @@ export const GoogleAdsProvider: React.FC<GoogleAdsProviderProps> = ({ children }
       setIsGoogleAdsLoaded(true);
     }
 
-    // Detect mobile device
-    const checkMobile = () => {
-      const mobile = window.innerWidth <= 768 || 
-                    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    // Detect mobile device with more robust detection
+    const checkDevice = () => {
+      // More comprehensive device detection
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isIOS = /iphone|ipad|ipod/.test(userAgent);
+      const isAndroid = /android/.test(userAgent);
+      const isMobileBrowser = /mobile|tablet|ipad|android|blackberry|opera mini|iemobile/.test(userAgent);
+      const isSmallScreen = window.innerWidth <= 768;
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      const isTablet = /ipad|tablet/.test(userAgent) || (window.innerWidth > 768 && window.innerWidth <= 1024);
+      
+      // Consider device mobile if any of these conditions are true
+      const mobile = isIOS || isAndroid || isMobileBrowser || (isSmallScreen && isTouchDevice) || isTablet;
+      
       setIsMobile(mobile);
+      
+      // Log device info for debugging
+      console.log('GoogleAdsProvider Device detection:', {
+        userAgent: userAgent.substring(0, 100),
+        isIOS,
+        isAndroid,
+        isMobileBrowser,
+        isSmallScreen,
+        isTouchDevice,
+        isTablet,
+        finalResult: mobile
+      });
     };
     
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
 
     // Check for ad blocker
     checkAdBlocker();
 
-    return () => window.removeEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkDevice);
   }, []);
 
   useEffect(() => {
@@ -115,6 +137,7 @@ export const GoogleAdsProvider: React.FC<GoogleAdsProviderProps> = ({ children }
     console.log('loadGoogleAds called, checking conditions...');
     console.log('window.adsbygoogle exists:', !!window.adsbygoogle);
     console.log('isGoogleAdsLoaded:', isGoogleAdsLoaded);
+    console.log('Device type:', isMobile ? 'Mobile' : 'Desktop');
     
     // Check if script is already loaded from index.html
     if (window.adsbygoogle) {
@@ -130,11 +153,18 @@ export const GoogleAdsProvider: React.FC<GoogleAdsProviderProps> = ({ children }
 
     try {
       console.log('Creating and loading Google AdSense script...');
-      // Load Google AdSense script
+      // Load Google AdSense script with device-specific optimizations
       const script = document.createElement('script');
       script.async = true;
       script.crossOrigin = 'anonymous';
       script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${GOOGLE_ADSENSE_ID}`;
+      
+      // Device-specific loading optimizations
+      if (isMobile) {
+        script.setAttribute('data-ad-client', GOOGLE_ADSENSE_ID);
+        script.setAttribute('data-adtest', 'off');
+      }
+      
       script.onload = () => {
         console.log('Google AdSense script loaded successfully');
         setIsGoogleAdsLoaded(true);
