@@ -3,10 +3,15 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 interface GoogleAdsContextType {
   isGoogleAdsLoaded: boolean;
   refreshAds: () => void;
+  recoverFromAdErrors: () => void;
   trackEvent: (eventName: string, parameters?: Record<string, any>) => void;
   consentGiven: boolean;
   setConsentGiven: (consent: boolean) => void;
   isAdBlocked: boolean;
+  browserType: string;
+  isOpera: boolean;
+  isFirefox: boolean;
+  isMobile: boolean;
 }
 
 const GoogleAdsContext = createContext<GoogleAdsContextType | undefined>(undefined);
@@ -32,28 +37,27 @@ export const GoogleAdsProvider: React.FC<GoogleAdsProviderProps> = ({ children }
   const [consentGiven, setConsentGiven] = useState(false);
   const [isAdBlocked, setIsAdBlocked] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [browserType, setBrowserType] = useState('');
+  const [isOpera, setIsOpera] = useState(false);
+  const [isFirefox, setIsFirefox] = useState(false);
 
   useEffect(() => {
     // Check for stored consent
     const storedConsent = localStorage.getItem('ads-consent');
-    console.log('GoogleAdsProvider: Stored consent:', storedConsent);
     if (storedConsent === 'true') {
       setConsentGiven(true);
-      console.log('GoogleAdsProvider: Consent restored from localStorage');
     }
 
-    // Check if Google AdSense is already loaded from index.html
-    if (window.adsbygoogle) {
-      console.log('GoogleAdsProvider: Google AdSense already loaded from index.html');
-      setIsGoogleAdsLoaded(true);
-    }
-
-    // Detect mobile device with more robust detection
-    const checkDevice = () => {
-      // More comprehensive device detection
+    // Enhanced browser detection
+    const detectBrowser = () => {
       const userAgent = navigator.userAgent.toLowerCase();
       const isIOS = /iphone|ipad|ipod/.test(userAgent);
       const isAndroid = /android/.test(userAgent);
+      const isOperaBrowser = /opera|opr/.test(userAgent);
+      const isFirefoxBrowser = /firefox/.test(userAgent);
+      const isChrome = /chrome/.test(userAgent);
+      const isSafari = /safari/.test(userAgent) && !isChrome;
+      const isEdge = /edge/.test(userAgent);
       const isMobileBrowser = /mobile|tablet|ipad|android|blackberry|opera mini|iemobile/.test(userAgent);
       const isSmallScreen = window.innerWidth <= 768;
       const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
@@ -63,44 +67,64 @@ export const GoogleAdsProvider: React.FC<GoogleAdsProviderProps> = ({ children }
       const mobile = isIOS || isAndroid || isMobileBrowser || (isSmallScreen && isTouchDevice) || isTablet;
       
       setIsMobile(mobile);
+      setIsOpera(isOperaBrowser);
+      setIsFirefox(isFirefoxBrowser);
       
-      // Log device info for debugging
-      console.log('GoogleAdsProvider Device detection:', {
-        userAgent: userAgent.substring(0, 100),
-        isIOS,
-        isAndroid,
-        isMobileBrowser,
-        isSmallScreen,
-        isTouchDevice,
-        isTablet,
-        finalResult: mobile
-      });
+      // Set browser type for debugging
+      let browser = 'unknown';
+      if (isOperaBrowser) browser = 'opera';
+      else if (isFirefoxBrowser) browser = 'firefox';
+      else if (isChrome) browser = 'chrome';
+      else if (isSafari) browser = 'safari';
+      else if (isEdge) browser = 'edge';
+      
+      setBrowserType(browser);
     };
     
-    checkDevice();
-    window.addEventListener('resize', checkDevice);
+    detectBrowser();
+    window.addEventListener('resize', detectBrowser);
 
-    // Check for ad blocker
+    // Check if Google AdSense is already loaded from index.html
+    if (window.adsbygoogle) {
+      setIsGoogleAdsLoaded(true);
+    }
+
+    // Check for ad blocker with browser-specific logic
     checkAdBlocker();
 
-    return () => window.removeEventListener('resize', checkDevice);
+    return () => window.removeEventListener('resize', detectBrowser);
   }, []);
 
   useEffect(() => {
-    console.log('GoogleAdsProvider: Consent changed to:', consentGiven);
     // Store consent preference
     localStorage.setItem('ads-consent', consentGiven.toString());
     
     if (consentGiven) {
-      console.log('GoogleAdsProvider: Loading Google services...');
       loadGoogleAds();
       loadGoogleAnalytics();
     }
   }, [consentGiven]);
 
   const checkAdBlocker = () => {
-    // Mobile-optimized ad blocker detection
-    if (isMobile) {
+    // Browser-specific ad blocker detection
+    if (isOpera || isFirefox) {
+      // Opera and Firefox need more lenient detection
+      const testAd = document.createElement('div');
+      testAd.innerHTML = '&nbsp;';
+      testAd.className = 'adsbox';
+      testAd.style.position = 'absolute';
+      testAd.style.left = '-10000px';
+      testAd.style.width = '1px';
+      testAd.style.height = '1px';
+      testAd.style.visibility = 'hidden';
+      document.body.appendChild(testAd);
+      
+      setTimeout(() => {
+        const isBlocked = testAd.offsetHeight === 0 || testAd.offsetWidth === 0;
+        setIsAdBlocked(isBlocked);
+        document.body.removeChild(testAd);
+      }, 300); // Longer timeout for Opera/Firefox
+    } else if (isMobile) {
       // Mobile browsers handle ads differently, use a more lenient check
       const testAd = document.createElement('div');
       testAd.innerHTML = '&nbsp;';
@@ -134,47 +158,62 @@ export const GoogleAdsProvider: React.FC<GoogleAdsProviderProps> = ({ children }
   };
 
   const loadGoogleAds = () => {
-    console.log('loadGoogleAds called, checking conditions...');
-    console.log('window.adsbygoogle exists:', !!window.adsbygoogle);
-    console.log('isGoogleAdsLoaded:', isGoogleAdsLoaded);
-    console.log('Device type:', isMobile ? 'Mobile' : 'Desktop');
-    
     // Check if script is already loaded from index.html
     if (window.adsbygoogle) {
-      console.log('Google AdSense script already exists, setting state to loaded');
       setIsGoogleAdsLoaded(true);
       return;
     }
     
     if (isGoogleAdsLoaded) {
-      console.log('Google Ads already loaded, returning');
       return;
     }
 
     try {
-      console.log('Creating and loading Google AdSense script...');
-      // Load Google AdSense script with device-specific optimizations
+      // Load Google AdSense script with browser-specific optimizations
       const script = document.createElement('script');
       script.async = true;
       script.crossOrigin = 'anonymous';
       script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${GOOGLE_ADSENSE_ID}`;
       
-      // Device-specific loading optimizations
-      if (isMobile) {
+      // Browser-specific loading optimizations
+      if (isOpera) {
+        // Opera-specific optimizations
+        script.setAttribute('data-ad-client', GOOGLE_ADSENSE_ID);
+        script.setAttribute('data-adtest', 'off');
+        script.setAttribute('data-ad-region', 'true');
+      } else if (isFirefox) {
+        // Firefox-specific optimizations
+        script.setAttribute('data-ad-client', GOOGLE_ADSENSE_ID);
+        script.setAttribute('data-adtest', 'off');
+        script.setAttribute('data-ad-loading-strategy', 'prefer-viewability');
+      } else if (isMobile) {
         script.setAttribute('data-ad-client', GOOGLE_ADSENSE_ID);
         script.setAttribute('data-adtest', 'off');
       }
       
       script.onload = () => {
-        console.log('Google AdSense script loaded successfully');
         setIsGoogleAdsLoaded(true);
-        console.log('Google AdSense loaded successfully');
       };
       script.onerror = () => {
-        console.error('Failed to load Google AdSense');
+        // Retry loading for problematic browsers
+        if (isOpera || isFirefox) {
+          setTimeout(() => {
+            try {
+              const retryScript = document.createElement('script');
+              retryScript.async = true;
+              retryScript.crossOrigin = 'anonymous';
+              retryScript.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${GOOGLE_ADSENSE_ID}`;
+              retryScript.onload = () => {
+                setIsGoogleAdsLoaded(true);
+              };
+              document.head.appendChild(retryScript);
+            } catch (retryError) {
+              console.error(`Retry failed for ${browserType}:`, retryError);
+            }
+          }, 1000);
+        }
       };
       document.head.appendChild(script);
-      console.log('Google AdSense script added to document head');
     } catch (error) {
       console.error('Error loading Google AdSense:', error);
     }
@@ -211,8 +250,45 @@ export const GoogleAdsProvider: React.FC<GoogleAdsProviderProps> = ({ children }
     if (window.adsbygoogle && isGoogleAdsLoaded) {
       try {
         (window.adsbygoogle as any[]).push({});
+        
+        // Browser-specific refresh optimizations
+        if (isOpera) {
+          setTimeout(() => {
+            try {
+              (window.adsbygoogle as any[]).push({});
+            } catch (error) {
+              console.error('Opera ad refresh error:', error);
+            }
+          }, 1000);
+        } else if (isFirefox) {
+          setTimeout(() => {
+            try {
+              (window.adsbygoogle as any[]).push({});
+            } catch (error) {
+              console.error('Firefox ad refresh error:', error);
+            }
+          }, 500);
+        }
       } catch (error) {
         console.error('Error refreshing ads:', error);
+      }
+    }
+  };
+
+  // Global ad error recovery
+  const recoverFromAdErrors = () => {
+    // Check if ads are actually working
+    if (window.adsbygoogle) {
+      try {
+        // Force reload ads
+        (window.adsbygoogle as any[]).push({});
+      } catch (error) {
+        console.error('Ad recovery failed:', error);
+        
+        // For problematic browsers, try to reload the script
+        if (isOpera || isFirefox) {
+          loadGoogleAds();
+        }
       }
     }
   };
@@ -230,10 +306,15 @@ export const GoogleAdsProvider: React.FC<GoogleAdsProviderProps> = ({ children }
   const value: GoogleAdsContextType = {
     isGoogleAdsLoaded,
     refreshAds,
+    recoverFromAdErrors,
     trackEvent,
     consentGiven,
     setConsentGiven,
     isAdBlocked,
+    browserType,
+    isOpera,
+    isFirefox,
+    isMobile,
   };
 
   return (

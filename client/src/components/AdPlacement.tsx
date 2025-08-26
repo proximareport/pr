@@ -20,32 +20,34 @@ const AD_SLOTS = {
 };
 
 export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', style = {} }) => {
-  const { isGoogleAdsLoaded, consentGiven, isAdBlocked } = useGoogleAds();
+  const { isGoogleAdsLoaded, consentGiven, isAdBlocked, browserType, isOpera, isFirefox, isMobile } = useGoogleAds();
   const { user } = useAuth();
   const [adLoaded, setAdLoaded] = useState(false);
   const [adError, setAdError] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [adTimeout, setAdTimeout] = useState<NodeJS.Timeout | null>(null);
 
   // Check if user has Pro subscription (should block ads)
   const isProSubscriber = user?.membershipTier === 'pro';
 
-  // Detect mobile device
-  useEffect(() => {
-    const checkMobile = () => {
-      const mobile = window.innerWidth <= 768 || 
-                    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      setIsMobile(mobile);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  // Browser-specific ad loading timeout
+  const getAdTimeout = () => {
+    if (isOpera) return 8000; // Opera needs more time
+    if (isFirefox) return 6000; // Firefox needs moderate time
+    if (isMobile) return 5000; // Mobile browsers need more time
+    return 4000; // Desktop browsers
+  };
+
+  // Browser-specific retry logic
+  const maxRetries = isOpera ? 3 : isFirefox ? 2 : 1;
 
   useEffect(() => {
     if (isGoogleAdsLoaded && consentGiven && !adLoaded && !isAdBlocked && !isProSubscriber) {
-      // Faster loading for mobile, slightly longer for desktop
-      const delay = isMobile ? 200 : 300;
+      // Browser-specific loading delays
+      let delay = 300;
+      if (isOpera) delay = 500; // Opera needs more time to initialize
+      if (isFirefox) delay = 400; // Firefox needs moderate time
+      if (isMobile) delay = 200; // Mobile browsers are faster
       
       const timer = setTimeout(() => {
         try {
@@ -62,86 +64,131 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
             }
           }
           
-          // Load the ad
-          (window.adsbygoogle = window.adsbygoogle || []).push({});
-          setAdLoaded(true);
+          // Load the ad with browser-specific optimizations
+          loadAd();
           
         } catch (error) {
+          console.error(`Error loading ad for ${type}:`, error);
           setAdError(true);
         }
       }, delay);
 
       return () => clearTimeout(timer);
     }
-  }, [isGoogleAdsLoaded, consentGiven, adLoaded, isAdBlocked, isProSubscriber, type, isMobile]);
+  }, [isGoogleAdsLoaded, consentGiven, adLoaded, isAdBlocked, isProSubscriber, type, isOpera, isFirefox, isMobile]);
+
+  const loadAd = () => {
+    try {
+      // Clear any existing timeout
+      if (adTimeout) {
+        clearTimeout(adTimeout);
+      }
+
+      // Browser-specific ad loading
+      if (isOpera) {
+        // Opera-specific ad loading
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } else if (isFirefox) {
+        // Firefox-specific ad loading
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } else {
+        // Standard ad loading
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      }
+
+      // Monitor ad loading success
+      const checkAdSuccess = () => {
+        const container = document.querySelector(`.ad-placement.ad-${type}`) as HTMLElement;
+        if (container) {
+          const adElement = container.querySelector('.adsbygoogle');
+          if (adElement) {
+            // Check for various success indicators
+            const hasGoogleAd = adElement.querySelector('[id^="aswift_"], [id^="google_ads_"], [id^="div-gpt-ad"]');
+            const hasAdContent = adElement.innerHTML.length > 100; // Basic content check
+            const hasAdDimensions = (adElement as HTMLElement).offsetHeight > 50 && (adElement as HTMLElement).offsetWidth > 50;
+            
+            if (hasGoogleAd || (hasAdContent && hasAdDimensions)) {
+              setAdLoaded(true);
+              return true;
+            }
+          }
+        }
+        return false;
+      };
+
+      // Set timeout for ad loading with multiple checks
+      const timeout = setTimeout(() => {
+        if (!adLoaded && retryCount < maxRetries) {
+          // Check if ad actually loaded but we missed the signal
+          if (checkAdSuccess()) {
+            return;
+          }
+          
+          setRetryCount(prev => prev + 1);
+          setAdError(false);
+          loadAd(); // Retry loading
+        } else if (retryCount >= maxRetries) {
+          setAdError(true);
+        }
+      }, getAdTimeout());
+
+      setAdTimeout(timeout);
+
+      // Also check for success periodically
+      const successCheckInterval = setInterval(() => {
+        if (checkAdSuccess()) {
+          clearInterval(successCheckInterval);
+        }
+      }, 500);
+
+      // Clean up interval after timeout
+      setTimeout(() => clearInterval(successCheckInterval), getAdTimeout());
+      
+    } catch (error) {
+      console.error(`Error in loadAd for ${type}:`, error);
+      if (retryCount < maxRetries) {
+        setRetryCount(prev => prev + 1);
+        setTimeout(() => loadAd(), 1000); // Retry after 1 second
+      } else {
+        setAdError(true);
+      }
+    }
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (adTimeout) {
+        clearTimeout(adTimeout);
+      }
+    };
+  }, [adTimeout]);
+
+  // Don't show anything if user has Pro subscription
+  if (isProSubscriber) {
+    return null;
+  }
 
   // Don't show ads if ad blocker is detected
   if (isAdBlocked) {
-    return (
-      <div className={`bg-red-800 border border-red-700 rounded-lg p-4 text-center ${className}`} style={style}>
-        <p className="text-red-200 text-sm">
-          Ad blocker detected - Please disable to support our content
-        </p>
-      </div>
-    );
+    return null;
   }
 
   // Don't show ads if consent not given
   if (!consentGiven) {
-    return (
-      <div className={`bg-yellow-800 border border-yellow-700 rounded-lg p-4 text-center ${className}`} style={style}>
-        <p className="text-yellow-200 text-sm">
-          Advertisement space - Please accept cookies to view ads
-        </p>
-      </div>
-    );
-  }
-
-  // Don't show ads for Pro subscribers
-  if (isProSubscriber) {
-    return (
-      <div className={`bg-purple-800 border border-purple-700 rounded-lg p-4 text-center ${className}`} style={style}>
-        <div className="text-purple-200 text-sm mb-2">
-          🚀 Ad-Free Experience
-        </div>
-        <div className="text-purple-100 text-xs">
-          Pro subscribers enjoy an ad-free browsing experience
-        </div>
-      </div>
-    );
+    return null;
   }
 
   // Show error state if ad failed to load
   if (adError) {
-    return (
-      <div className={`bg-red-800 border border-red-700 rounded-lg p-4 text-center ${className}`} style={style}>
-        <p className="text-red-200 text-sm mb-2">
-          {isMobile ? 'Mobile ad temporarily unavailable' : 'Advertisement temporarily unavailable'}
-        </p>
-        <button 
-          onClick={() => {
-            setAdError(false);
-            setAdLoaded(false);
-          }}
-          className="bg-red-700 hover:bg-red-600 text-white px-3 py-1 rounded text-xs"
-        >
-          Retry
-        </button>
-      </div>
-    );
+    return null;
   }
 
   // Get ad slot ID for this type
   const adSlot = AD_SLOTS[type];
   
   if (!adSlot) {
-    return (
-      <div className={`bg-orange-800 border border-orange-700 rounded-lg p-4 text-center ${className}`} style={style}>
-        <p className="text-orange-200 text-sm">
-          {isMobile ? 'Mobile ad slot not configured' : 'No ad slot configured for'} {type}
-        </p>
-      </div>
-    );
+    return null;
   }
 
   // Different ad formats based on type and device
@@ -327,8 +374,21 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
           <div className="text-center">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
             <p className="text-gray-500 text-xs">
-              {isMobile ? 'Loading mobile ad...' : 'Loading advertisement...'}
+              {isOpera ? 'Loading ad for Opera...' :
+               isFirefox ? 'Loading ad for Firefox...' :
+               isMobile ? 'Loading mobile ad...' : 
+               'Loading advertisement...'}
             </p>
+            {retryCount > 0 && (
+              <p className="text-gray-400 text-xs mt-1">
+                Attempt {retryCount + 1} of {maxRetries + 1}
+              </p>
+            )}
+            {browserType && (
+              <p className="text-gray-400 text-xs mt-1">
+                Browser: {browserType.charAt(0).toUpperCase() + browserType.slice(1)}
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -354,6 +414,18 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
         data-ad-slot={adSlot}
         data-ad-format={adFormat}
         data-full-width-responsive="true"
+        // Browser-specific ad attributes
+        {...(isOpera ? {
+          'data-ad-layout': 'in-article',
+          'data-ad-layout-key': '-71+eh+1g-3a+2i',
+          'data-ad-region': 'true',
+          'data-ad-loading-strategy': 'prefer-viewability'
+        } : {})}
+        {...(isFirefox ? {
+          'data-ad-layout': 'in-article',
+          'data-ad-loading-strategy': 'prefer-viewability',
+          'data-ad-region': 'true'
+        } : {})}
         // Device-specific ad attributes
         {...(isMobile ? {
           'data-ad-layout': 'in-article',
