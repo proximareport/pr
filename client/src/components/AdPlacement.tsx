@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useGoogleAds } from './GoogleAdsProvider';
+import { useAuth } from '@/lib/AuthContext';
 
 interface AdPlacementProps {
   type: 'banner' | 'sidebar' | 'in-content' | 'article-top' | 'article-bottom' | 'homepage-hero' | 'homepage-grid';
@@ -20,11 +21,32 @@ const AD_SLOTS = {
 
 export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', style = {} }) => {
   const { isGoogleAdsLoaded, consentGiven, isAdBlocked } = useGoogleAds();
+  const { user } = useAuth();
   const [adLoaded, setAdLoaded] = useState(false);
   const [adError, setAdError] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check if user has Pro subscription (should block ads)
+  const isProSubscriber = user?.membershipTier === 'pro';
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth <= 768 || 
+                    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      setIsMobile(mobile);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
-    if (isGoogleAdsLoaded && consentGiven && !adLoaded && !isAdBlocked) {
+    if (isGoogleAdsLoaded && consentGiven && !adLoaded && !isAdBlocked && !isProSubscriber) {
+      // Faster loading for mobile, slightly longer for desktop
+      const delay = isMobile ? 200 : 300;
+      
       const timer = setTimeout(() => {
         try {
           // Check if ad already exists
@@ -47,11 +69,11 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
         } catch (error) {
           setAdError(true);
         }
-      }, 500);
+      }, delay);
 
       return () => clearTimeout(timer);
     }
-  }, [isGoogleAdsLoaded, consentGiven, adLoaded, isAdBlocked, type]);
+  }, [isGoogleAdsLoaded, consentGiven, adLoaded, isAdBlocked, isProSubscriber, type, isMobile]);
 
   // Don't show ads if ad blocker is detected
   if (isAdBlocked) {
@@ -75,12 +97,26 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
     );
   }
 
+  // Don't show ads for Pro subscribers
+  if (isProSubscriber) {
+    return (
+      <div className={`bg-purple-800 border border-purple-700 rounded-lg p-4 text-center ${className}`} style={style}>
+        <div className="text-purple-200 text-sm mb-2">
+          🚀 Ad-Free Experience
+        </div>
+        <div className="text-purple-100 text-xs">
+          Pro subscribers enjoy an ad-free browsing experience
+        </div>
+      </div>
+    );
+  }
+
   // Show error state if ad failed to load
   if (adError) {
     return (
       <div className={`bg-red-800 border border-red-700 rounded-lg p-4 text-center ${className}`} style={style}>
         <p className="text-red-200 text-sm mb-2">
-          Advertisement temporarily unavailable
+          {isMobile ? 'Mobile ad temporarily unavailable' : 'Advertisement temporarily unavailable'}
         </p>
         <button 
           onClick={() => {
@@ -102,14 +138,37 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
     return (
       <div className={`bg-orange-800 border border-orange-700 rounded-lg p-4 text-center ${className}`} style={style}>
         <p className="text-orange-200 text-sm">
-          No ad slot configured for {type}
+          {isMobile ? 'Mobile ad slot not configured' : 'No ad slot configured for'} {type}
         </p>
       </div>
     );
   }
 
-  // Different ad formats based on type
+  // Different ad formats based on type and device
   const getAdFormat = () => {
+    // Mobile-optimized formats
+    if (isMobile) {
+      switch (type) {
+        case 'banner':
+          return 'auto';
+        case 'sidebar':
+          return 'auto';
+        case 'in-content':
+          return 'fluid';
+        case 'article-top':
+          return 'fluid';
+        case 'article-bottom':
+          return 'fluid';
+        case 'homepage-hero':
+          return 'auto';
+        case 'homepage-grid':
+          return 'fluid';
+        default:
+          return 'auto';
+      }
+    }
+    
+    // Desktop formats
     switch (type) {
       case 'banner':
         return 'auto';
@@ -132,28 +191,96 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
 
   const adFormat = getAdFormat();
 
+  // Get dimensions based on device and type
+  const getAdDimensions = () => {
+    if (isMobile) {
+      switch (type) {
+        case 'banner':
+          return { width: '100%', height: '100px', minHeight: '100px' };
+        case 'sidebar':
+          return { width: '100%', height: '300px', minHeight: '300px' };
+        case 'in-content':
+          return { width: '100%', height: '250px', minHeight: '250px' };
+        case 'article-top':
+          return { width: '100%', height: '250px', minHeight: '250px' };
+        case 'article-bottom':
+          return { width: '100%', height: '250px', minHeight: '250px' };
+        case 'homepage-hero':
+          return { width: '100%', height: '200px', minHeight: '200px' };
+        case 'homepage-grid':
+          return { width: '100%', height: '200px', minHeight: '200px' };
+        default:
+          return { width: '100%', height: '250px', minHeight: '250px' };
+      }
+    }
+    
+    // Desktop dimensions
+    switch (type) {
+      case 'banner':
+        return { width: '100%', height: '90px', minHeight: '90px' };
+      case 'sidebar':
+        return { width: '100%', height: '600px', minHeight: '600px' };
+      case 'in-content':
+        return { width: '100%', height: '250px', minHeight: '250px' };
+      case 'article-top':
+        return { width: '100%', height: '250px', minHeight: '250px' };
+      case 'article-bottom':
+        return { width: '100%', height: '250px', minHeight: '250px' };
+      case 'homepage-hero':
+        return { width: '100%', height: '280px', minHeight: '280px' };
+      case 'homepage-grid':
+        return { width: '100%', height: '250px', minHeight: '250px' };
+      default:
+        return { width: '100%', height: '250px', minHeight: '250px' };
+    }
+  };
+
+  const dimensions = getAdDimensions();
+
   return (
     <div 
       className={`ad-placement ad-${type} ${className} relative`} 
       style={{
         ...style,
-        width: '100%',
-        height: type === 'sidebar' ? '600px' : type === 'banner' ? '90px' : '250px',
-        minWidth: '300px',
-        minHeight: type === 'sidebar' ? '600px' : type === 'banner' ? '90px' : '250px',
+        width: dimensions.width,
+        height: dimensions.height,
+        minWidth: isMobile ? '100%' : '300px',
+        minHeight: dimensions.minHeight,
         maxWidth: '100%',
-        maxHeight: type === 'sidebar' ? '600px' : type === 'banner' ? '90px' : '250px',
+        maxHeight: dimensions.height,
         display: 'block',
         visibility: 'visible',
         opacity: '1',
-        backgroundColor: '#f8f9fa',
-        border: '1px solid #e9ecef',
-        borderRadius: '8px',
+        backgroundColor: isMobile ? '#f0f0f0' : '#f8f9fa',
+        border: isMobile ? '1px solid #ddd' : '1px solid #e9ecef',
+        borderRadius: isMobile ? '12px' : '8px',
         overflow: 'visible',
         position: 'relative',
-        zIndex: 1000
+        zIndex: 1000,
+        // Mobile-specific optimizations
+        ...(isMobile && {
+          margin: '10px 0',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          // Ensure mobile ads are properly sized
+          transform: 'translateZ(0)', // Force hardware acceleration
+          WebkitTransform: 'translateZ(0)',
+          // Mobile-specific sizing
+          maxWidth: '100vw',
+          boxSizing: 'border-box'
+        })
       }}
     >
+      {!adLoaded && !adError && (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+            <p className="text-gray-500 text-xs">
+              {isMobile ? 'Loading mobile ad...' : 'Loading advertisement...'}
+            </p>
+          </div>
+        </div>
+      )}
+      
       <ins
         className="adsbygoogle"
         style={{ 
@@ -161,13 +288,24 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
           textAlign: 'center',
           width: '100%',
           height: '100%',
-          minHeight: type === 'sidebar' ? '600px' : type === 'banner' ? '90px' : '250px',
-          backgroundColor: 'transparent'
+          minHeight: dimensions.minHeight,
+          backgroundColor: 'transparent',
+          // Mobile-specific optimizations
+          ...(isMobile && {
+            transform: 'translateZ(0)',
+            WebkitTransform: 'translateZ(0)',
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden'
+          })
         }}
         data-ad-client="ca-pub-9144996607586274"
         data-ad-slot={adSlot}
         data-ad-format={adFormat}
         data-full-width-responsive="true"
+        {...(isMobile ? {
+          'data-ad-layout': 'in-article',
+          'data-ad-layout-key': '-71+eh+1g-3a+2i'
+        } : {})}
         {...(type === 'in-content' || type === 'article-top' || type === 'article-bottom' ? {
           'data-ad-layout': 'in-article'
         } : {})}

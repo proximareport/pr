@@ -31,6 +31,7 @@ export const GoogleAdsProvider: React.FC<GoogleAdsProviderProps> = ({ children }
   const [isGoogleAdsLoaded, setIsGoogleAdsLoaded] = useState(false);
   const [consentGiven, setConsentGiven] = useState(false);
   const [isAdBlocked, setIsAdBlocked] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     // Check for stored consent
@@ -47,8 +48,20 @@ export const GoogleAdsProvider: React.FC<GoogleAdsProviderProps> = ({ children }
       setIsGoogleAdsLoaded(true);
     }
 
+    // Detect mobile device
+    const checkMobile = () => {
+      const mobile = window.innerWidth <= 768 || 
+                    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      setIsMobile(mobile);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+
     // Check for ad blocker
     checkAdBlocker();
+
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   useEffect(() => {
@@ -64,19 +77,38 @@ export const GoogleAdsProvider: React.FC<GoogleAdsProviderProps> = ({ children }
   }, [consentGiven]);
 
   const checkAdBlocker = () => {
-    // Simple ad blocker detection
-    const testAd = document.createElement('div');
-    testAd.innerHTML = '&nbsp;';
-    testAd.className = 'adsbox';
-    testAd.style.position = 'absolute';
-    testAd.style.left = '-10000px';
-    document.body.appendChild(testAd);
-    
-    setTimeout(() => {
-      const isBlocked = testAd.offsetHeight === 0;
-      setIsAdBlocked(isBlocked);
-      document.body.removeChild(testAd);
-    }, 100);
+    // Mobile-optimized ad blocker detection
+    if (isMobile) {
+      // Mobile browsers handle ads differently, use a more lenient check
+      const testAd = document.createElement('div');
+      testAd.innerHTML = '&nbsp;';
+      testAd.className = 'adsbox';
+      testAd.style.position = 'absolute';
+      testAd.style.left = '-10000px';
+      testAd.style.width = '1px';
+      testAd.style.height = '1px';
+      document.body.appendChild(testAd);
+      
+      setTimeout(() => {
+        const isBlocked = testAd.offsetHeight === 0 || testAd.offsetWidth === 0;
+        setIsAdBlocked(isBlocked);
+        document.body.removeChild(testAd);
+      }, 200); // Longer timeout for mobile
+    } else {
+      // Desktop ad blocker detection
+      const testAd = document.createElement('div');
+      testAd.innerHTML = '&nbsp;';
+      testAd.className = 'adsbox';
+      testAd.style.position = 'absolute';
+      testAd.style.left = '-10000px';
+      document.body.appendChild(testAd);
+      
+      setTimeout(() => {
+        const isBlocked = testAd.offsetHeight === 0;
+        setIsAdBlocked(isBlocked);
+        document.body.removeChild(testAd);
+      }, 100);
+    }
   };
 
   const loadGoogleAds = () => {
