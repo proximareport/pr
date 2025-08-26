@@ -200,9 +200,9 @@ const Gallery: React.FC = () => {
         </div>
       </div>
 
-      {/* Small Top Ad - Less Intrusive */}
-      <div className="container mx-auto px-4 py-2">
-        <div className="max-w-2xl mx-auto">
+      {/* Tiny Top Ad - Minimal Size */}
+      <div className="container mx-auto px-4 py-0">
+        <div className="max-w-xs mx-auto">
           <InContentAd />
         </div>
       </div>
@@ -383,9 +383,9 @@ const Gallery: React.FC = () => {
               })}
             </div>
 
-            {/* In-Feed Ad after first 6 items */}
-            <div className="my-8">
-              <div className="max-w-2xl mx-auto">
+            {/* In-Feed Ad after first 6 items - Tiny */}
+            <div className="my-2">
+              <div className="max-w-xs mx-auto">
                 <InContentAd />
               </div>
             </div>
@@ -542,9 +542,11 @@ const Gallery: React.FC = () => {
                 </div>
               )}
 
-            {/* In-Content Ad */}
-            <div className="my-8">
-              <InContentAd />
+            {/* In-Content Ad - Tiny */}
+            <div className="my-2">
+              <div className="max-w-xs mx-auto">
+                <InContentAd />
+              </div>
             </div>
 
             {/* Pagination */}

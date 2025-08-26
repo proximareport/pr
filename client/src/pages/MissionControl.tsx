@@ -579,9 +579,9 @@ export default function MissionControl() {
         </div>
       </div>
 
-      {/* Small Top Ad - Less Intrusive */}
+      {/* Tiny Top Ad - Minimal Size */}
       <div className="relative z-10 bg-gray-900/20 backdrop-blur-sm border-b border-purple-900/20">
-        <div className="max-w-4xl mx-auto px-4 py-2">
+        <div className="max-w-sm mx-auto px-4 py-0">
           <InContentAd />
         </div>
       </div>
@@ -1075,9 +1075,11 @@ export default function MissionControl() {
         </div>
         )}
 
-        {/* In-Content Ad */}
-        <div className="my-6">
-          <InContentAd />
+        {/* In-Content Ad - Tiny */}
+        <div className="my-2">
+          <div className="max-w-xs mx-auto">
+            <InContentAd />
+          </div>
         </div>
 
         {/* Missions View */}
