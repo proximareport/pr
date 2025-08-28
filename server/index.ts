@@ -63,12 +63,12 @@ app.use((req, res, next) => {
   // Content Security Policy
   res.setHeader('Content-Security-Policy', 
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com https://cdn.jsdelivr.net; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com https://cdn.jsdelivr.net https://pagead2.googlesyndication.com https://www.google.com https://www.gstatic.com; " +
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
     "font-src 'self' https://fonts.gstatic.com; " +
-    "img-src 'self' data: https: blob:; " +
-    "connect-src 'self' https://api.stripe.com https://www.google-analytics.com https://analytics.google.com https://proxima-stem-space.ghost.io; " +
-    "frame-src 'self' https://js.stripe.com; " +
+    "img-src 'self' data: https: blob: https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://www.google.com; " +
+    "connect-src 'self' https://api.stripe.com https://www.google-analytics.com https://analytics.google.com https://proxima-stem-space.ghost.io https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net; " +
+    "frame-src 'self' https://js.stripe.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com; " +
     "object-src 'none'; " +
     "base-uri 'self'; " +
     "form-action 'self'; " +
