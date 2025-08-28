@@ -54,7 +54,7 @@ export interface IStorage {
   getUserByRole(role: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, data: Partial<User>): Promise<User | undefined>;
-  updateUserMembership(id: number, tier: 'free' | 'supporter' | 'pro'): Promise<User | undefined>;
+  updateUserMembership(id: number, tier: 'free' | 'tier1' | 'tier2' | 'tier3'): Promise<User | undefined>;
   updateUserStripeInfo(id: number, stripeData: { stripeCustomerId: string, stripeSubscriptionId: string }): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
   
@@ -242,7 +242,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async updateUserMembership(id: number, tier: 'free' | 'supporter' | 'pro'): Promise<User | undefined> {
+  async updateUserMembership(id: number, tier: 'free' | 'tier1' | 'tier2' | 'tier3'): Promise<User | undefined> {
     const [user] = await db
       .update(users)
       .set({ 

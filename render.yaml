@@ -2,29 +2,18 @@ services:
   - type: web
     name: proxima-stem-space
     env: node
-    plan: free
+    plan: starter
     buildCommand: npm install
     startCommand: node server/minimal-test.js
+    healthCheckPath: /api/health
+    autoDeploy: true
+    pullRequestPreviewsEnabled: false
     envVars:
       - key: NODE_ENV
         value: production
-      - key: GHOST_URL
-        value: https://proxima-stem-space.ghost.io
-      - key: GHOST_ADMIN_API_KEY
-        value: 1234567890abcdef1234567890abcdef12345678
-      - key: GHOST_CONTENT_API_KEY
-        value: 1234567890abcdef1234567890abcdef12345678
-      - key: JWT_SECRET
-        value: your-super-secret-jwt-key-change-this-in-production
-      - key: STRIPE_SECRET_KEY
-        value: sk_test_1234567890abcdef1234567890abcdef12345678
-      - key: STRIPE_WEBHOOK_SECRET
-        value: whsec_1234567890abcdef1234567890abcdef12345678
-      - key: DATABASE_URL
-        value: postgresql://neondb_owner:npg_sZcWROjl9i6C@ep-black-frog-a8nomna0-pooler.eastus2.azure.neon.tech/neondb?sslmode=require
-      - key: SESSION_SECRET
-        value: your-super-secret-session-key-change-this-in-production
-      - key: CLIENT_URL
-        value: https://pr-chgf.onrender.com
-      - key: VITE_API_BASE_URL
-        value: https://pr-chgf.onrender.com 
+      - key: FORCE_HTTPS
+        value: "true"
+      - key: SESSION_SECURE
+        value: "true"
+      - key: TRUST_PROXY
+        value: "true" 

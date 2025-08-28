@@ -9,35 +9,41 @@ import type { Request, Response } from "express";
 export let stripe: Stripe;
 try {
   stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
-    apiVersion: "2023-10-16",
+    apiVersion: "2025-05-28.basil",
   });
 } catch (error) {
   console.warn("Stripe initialization failed, payments will not work until a valid API key is provided");
   // @ts-ignore - Create a dummy stripe object to prevent crashes
   stripe = {
-    customers: { create: async () => ({}), retrieve: async () => ({}) },
-    checkout: { sessions: { create: async () => ({}) } },
-    webhooks: { constructEvent: () => ({}) },
-    subscriptions: { retrieve: async () => ({}), update: async () => ({}) },
+    customers: { 
+      create: async () => ({ id: 'dummy', object: 'customer' } as any), 
+      retrieve: async () => ({ id: 'dummy', object: 'customer' } as any) 
+    },
+    checkout: { sessions: { create: async () => ({ id: 'dummy', url: 'dummy' } as any) } },
+    webhooks: { constructEvent: () => ({ type: 'dummy' } as any) },
+    subscriptions: { retrieve: async () => ({ id: 'dummy' } as any), update: async () => ({ id: 'dummy' } as any) },
   };
 }
 
 // Price IDs for subscription tiers
 export const SUBSCRIPTION_PRICES = {
-  supporter: process.env.STRIPE_SUPPORTER_PRICE_ID || 'price_supporter',
-  pro: process.env.STRIPE_PRO_PRICE_ID || 'price_pro',
+  tier1: process.env.STRIPE_TIER1_PRICE_ID,
+  tier2: process.env.STRIPE_TIER2_PRICE_ID,
+  tier3: process.env.STRIPE_TIER3_PRICE_ID,
 };
 
 // Create a Stripe checkout session
 export async function createStripeCheckoutSession(user: User, priceId: string) {
   // Determine which subscription tier the user is purchasing
-  let tierName: 'supporter' | 'pro';
-  if (priceId === SUBSCRIPTION_PRICES.supporter) {
-    tierName = 'supporter';
-  } else if (priceId === SUBSCRIPTION_PRICES.pro) {
-    tierName = 'pro';
+  let tierName: 'tier1' | 'tier2' | 'tier3';
+  if (priceId === process.env.STRIPE_TIER1_PRICE_ID) {
+    tierName = 'tier1';
+  } else if (priceId === process.env.STRIPE_TIER2_PRICE_ID) {
+    tierName = 'tier2';
+  } else if (priceId === process.env.STRIPE_TIER3_PRICE_ID) {
+    tierName = 'tier3';
   } else {
-    throw new Error('Invalid price ID');
+    throw new Error(`Invalid price ID: ${priceId}. Valid options are: ${process.env.STRIPE_TIER1_PRICE_ID}, ${process.env.STRIPE_TIER2_PRICE_ID}, ${process.env.STRIPE_TIER3_PRICE_ID}`);
   }
 
   // Create or get Stripe customer
@@ -86,58 +92,44 @@ export async function handleStripeWebhook(req: Request, res: Response) {
     return res.status(400).send('Missing Stripe signature');
   }
 
-  let event: Stripe.Event;
-
   try {
-    event = stripe.webhooks.constructEvent(
+    const event = stripe.webhooks.constructEvent(
       req.body,
       sig,
       process.env.STRIPE_WEBHOOK_SECRET || ''
     );
+
+    console.log('Received webhook event:', event.type);
+
+    switch (event.type) {
+      case 'checkout.session.completed':
+        await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
+        break;
+      case 'customer.subscription.updated':
+        await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
+        break;
+      case 'customer.subscription.deleted':
+        await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
+        break;
+      case 'invoice.payment_failed':
+        await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
+        break;
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
+    }
+
+    res.json({ received: true });
   } catch (err) {
-    console.error('Webhook signature verification failed', err);
-    return res.status(400).send('Webhook signature verification failed');
+    console.error('Webhook error:', err);
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    res.status(400).send(`Webhook Error: ${errorMessage}`);
   }
-
-  // Handle different event types
-  switch (event.type) {
-    case 'checkout.session.completed':
-      const session = event.data.object as Stripe.Checkout.Session;
-      // Process the checkout session
-      await handleCheckoutSessionCompleted(session);
-      break;
-      
-    case 'customer.subscription.updated':
-      const subscription = event.data.object as Stripe.Subscription;
-      // Process subscription update
-      await handleSubscriptionUpdated(subscription);
-      break;
-      
-    case 'customer.subscription.deleted':
-      const deletedSubscription = event.data.object as Stripe.Subscription;
-      // Process subscription deletion
-      await handleSubscriptionDeleted(deletedSubscription);
-      break;
-      
-    case 'invoice.payment_failed':
-      const invoice = event.data.object as Stripe.Invoice;
-      // Handle failed payment
-      await handlePaymentFailed(invoice);
-      break;
-      
-    default:
-      console.log(`Unhandled event type: ${event.type}`);
-  }
-
-  res.json({ received: true });
 }
-
-// Helper functions for handling webhook events
 
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
   // Get the user ID from metadata
   const userId = session.metadata?.userId;
-  const tier = session.metadata?.tier as 'supporter' | 'pro';
+  const tier = session.metadata?.tier as 'tier1' | 'tier2' | 'tier3';
   
   if (!userId || !tier) {
     console.error('Missing userId or tier in session metadata');
@@ -155,9 +147,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   );
   
   // Update user with subscription ID and tier
-  await storage.updateUser(parseInt(userId), {
-    stripeSubscriptionId: subscription.id,
-  });
+  await storage.updateUser(parseInt(userId), { stripeSubscriptionId: subscription.id });
   
   // Update user membership tier
   await storage.updateUserMembership(parseInt(userId), tier);
@@ -183,12 +173,14 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     
     // Determine the tier from the price ID
     const priceId = subscription.items.data[0].price.id;
-    let tier: 'supporter' | 'pro' | 'free' = 'free';
+    let tier: 'tier1' | 'tier2' | 'tier3' | 'free' = 'free';
     
-    if (priceId === SUBSCRIPTION_PRICES.supporter) {
-      tier = 'supporter';
-    } else if (priceId === SUBSCRIPTION_PRICES.pro) {
-      tier = 'pro';
+    if (priceId.includes('tier1')) {
+      tier = 'tier1';
+    } else if (priceId.includes('tier2')) {
+      tier = 'tier2';
+    } else if (priceId.includes('tier3')) {
+      tier = 'tier3';
     }
     
     // Update the user's subscription status
@@ -218,47 +210,18 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
       return;
     }
     
-    // Update the user to free tier
+    // Update user membership to free
     await storage.updateUserMembership(parseInt(userIdFromCustomer), 'free');
-    
-    // Remove subscription ID from user
-    await storage.updateUser(parseInt(userIdFromCustomer), {
-      stripeSubscriptionId: null,
-    });
   }
 }
 
-async function handlePaymentFailed(invoice: Stripe.Invoice) {
-  // Get the subscription
-  const subscriptionId = invoice.subscription;
-  if (!subscriptionId) {
-    console.error('Missing subscription in invoice');
-    return;
-  }
+async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
+  // Handle failed payment - could downgrade user or send notification
+  console.log('Invoice payment failed:', invoice.id);
   
-  // Retrieve the subscription
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId as string);
-  
-  // Get the user ID from the subscription metadata
-  const userId = subscription.metadata?.userId;
-  
-  if (!userId) {
-    // Try to find user by customer ID
-    const customer = await stripe.customers.retrieve(subscription.customer as string);
-    if (customer.deleted) {
-      console.error('Customer deleted');
-      return;
-    }
-    
-    const userIdFromCustomer = customer.metadata?.userId;
-    if (!userIdFromCustomer) {
-      console.error('Could not find userId in customer metadata');
-      return;
-    }
-    
-    // If payment fails repeatedly, the subscription will be marked as unpaid
-    // and eventually canceled, which will trigger the subscription.deleted event
-    // We don't need to downgrade the user yet, as they may still pay the invoice
-    console.log(`Payment failed for user ${userIdFromCustomer} and subscription ${subscriptionId}`);
+  // If you need to access the subscription from the invoice
+  if (invoice.subscription && typeof invoice.subscription === 'string') {
+    const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
+    // Handle failed payment logic here
   }
 }

@@ -36,41 +36,67 @@ const FEATURES = {
     { feature: "Comment on articles", included: true },
     { feature: "Basic profile customization", included: true },
     { feature: "Newsletter subscription", included: true },
-    { feature: "Ad-free experience", included: false },
-    { feature: "Exclusive articles & content", included: false },
+    { feature: "Google ads experience", included: true },
     { feature: "Premium themes", included: false },
-    { feature: "Priority support", included: false },
-    { feature: "Early access to features", included: false }
+    { feature: "Advanced profile customization", included: false },
+    { feature: "Comment boosting", included: false },
+    { feature: "Proxihub & Mission Control access", included: false }
   ],
-  supporter: [
+  tier1: [
     { feature: "Access to all public articles", included: true },
     { feature: "Basic astronomy photo gallery", included: true },
     { feature: "Comment on articles", included: true },
     { feature: "Enhanced profile customization", included: true },
     { feature: "Newsletter subscription", included: true },
-    { feature: "Reduced ads experience", included: true },
-    { feature: "5 exclusive premium themes", included: true },
-    { feature: "Supporter badge & animated avatar", included: true },
-    { feature: "Access to exclusive supporter articles", included: true },
-    { feature: "Priority comment placement", included: true },
+    { feature: "No Google ads", included: true },
+    { feature: "Access to premium themes", included: true },
+    { feature: "More profile customization options", included: true },
+    { feature: "Tier 1 Supporter badge", included: true },
     { feature: "Complete ad-free experience", included: false },
-    { feature: "Full premium content library", included: false },
-    { feature: "Early access to features", included: false }
+    { feature: "Comment boosting on articles", included: false },
+    { feature: "Advanced Proxihub access", included: false },
+    { feature: "Mission Control pages access", included: false }
   ],
-  pro: [
+  tier2: [
     { feature: "Access to all public articles", included: true },
-    { feature: "Premium astronomy gallery & tools", included: true },
+    { feature: "Basic astronomy photo gallery", included: true },
     { feature: "Comment on articles", included: true },
-    { feature: "Complete profile customization", included: true },
+    { feature: "Enhanced profile customization", included: true },
     { feature: "Newsletter subscription", included: true },
-    { feature: "Complete ad-free experience", included: true },
-    { feature: "All premium themes & customization", included: true },
-    { feature: "Pro badge & premium animations", included: true },
-    { feature: "Full premium content library", included: true },
-    { feature: "Priority support & feedback", included: true },
-    { feature: "Early access to new features", included: true },
-    { feature: "Animated profile backgrounds", included: true },
-    { feature: "Priority content suggestions", included: true }
+    { feature: "No ads at all", included: true },
+    { feature: "Access to premium themes", included: true },
+    { feature: "More profile customization options", included: true },
+    { feature: "Tier 1 Supporter badge", included: true },
+    { feature: "Ability to boost comments on articles", included: true },
+    { feature: "Access to advanced Proxihub", included: true },
+    { feature: "Access to Mission Control pages", included: true },
+    { feature: "Early access to updates", included: true },
+    { feature: "Tier 2 Supporter badge", included: true },
+    { feature: "Custom art uploads", included: false },
+    { feature: "Exclusive supporter articles", included: false },
+    { feature: "Discord in-progress features access", included: false }
+  ],
+  tier3: [
+    { feature: "Access to all public articles", included: true },
+    { feature: "Basic astronomy photo gallery", included: true },
+    { feature: "Comment on articles", included: true },
+    { feature: "Enhanced profile customization", included: true },
+    { feature: "Newsletter subscription", included: true },
+    { feature: "No ads at all", included: true },
+    { feature: "Access to premium themes", included: true },
+    { feature: "More profile customization options", included: true },
+    { feature: "Tier 1 Supporter badge", included: true },
+    { feature: "Ability to boost comments on articles", included: true },
+    { feature: "Access to advanced Proxihub", included: true },
+    { feature: "Access to Mission Control pages", included: true },
+    { feature: "Early access to updates", included: true },
+    { feature: "Tier 2 Supporter badge", included: true },
+    { feature: "Top fan badges for comments", included: true },
+    { feature: "Ability to upload custom art/images directly to site", included: true },
+    { feature: "Exclusive supporter articles", included: true },
+    { feature: "Access to in-progress features section on Discord", included: true },
+    { feature: "Full access to Proxihub and Mission Control", included: true },
+    { feature: "Exclusive profile and site themes", included: true }
   ]
 };
 
@@ -85,22 +111,32 @@ const TIER_CONFIG = {
     highlight: false,
     yearlyDiscount: 0
   },
-  supporter: {
-    name: "Supporter",
+  tier1: {
+    name: "Tier 1 Supporter",
+    price: 2.99,
+    period: "/month",
+    description: "Enhanced experience with themes and customization",
+    icon: Heart,
+    color: "from-blue-600 to-cyan-600",
+    highlight: false,
+    yearlyDiscount: 20
+  },
+  tier2: {
+    name: "Tier 2 Supporter",
     price: 4.99,
     period: "/month",
-    description: "Support our mission and get premium perks",
-    icon: Heart,
+    description: "Advanced features with Proxihub and Mission Control",
+    icon: ZapIcon,
     color: "from-purple-600 to-pink-600",
     highlight: false,
     yearlyDiscount: 20
   },
-  pro: {
-    name: "Pro",
+  tier3: {
+    name: "Tier 3 Supporter",
     price: 9.99,
     period: "/month",
-    description: "Ultimate space news experience",
-    icon: RocketIcon,
+    description: "Ultimate supporter experience with exclusive access",
+    icon: CrownIcon,
     color: "from-purple-600 to-blue-600",
     highlight: true,
     yearlyDiscount: 25
@@ -108,7 +144,7 @@ const TIER_CONFIG = {
 };
 
 // Gift membership form component
-function GiftMembershipForm({ tier }: { tier: 'supporter' | 'pro' }) {
+function GiftMembershipForm({ tier }: { tier: 'tier1' | 'tier2' | 'tier3' }) {
   const [recipientEmail, setRecipientEmail] = useState('');
   const [recipientName, setRecipientName] = useState('');
   const [giftMessage, setGiftMessage] = useState('');
@@ -207,7 +243,7 @@ function GiftMembershipForm({ tier }: { tier: 'supporter' | 'pro' }) {
         disabled={isLoading}
         className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
       >
-        {isLoading ? "Processing..." : `Gift ${tier === 'pro' ? 'Pro' : 'Supporter'} Membership`}
+        {isLoading ? "Processing..." : `Gift ${tier === 'tier3' ? 'Tier 3' : tier === 'tier2' ? 'Tier 2' : 'Tier 1'} Membership`}
       </Button>
     </div>
   );
@@ -215,19 +251,12 @@ function GiftMembershipForm({ tier }: { tier: 'supporter' | 'pro' }) {
 
 function Pricing() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
-  const [showGiftForm, setShowGiftForm] = useState<'supporter' | 'pro' | null>(null);
-  const [showComingSoonPopup, setShowComingSoonPopup] = useState(false);
+  const [showGiftForm, setShowGiftForm] = useState<'tier1' | 'tier2' | 'tier3' | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
   const [, navigate] = useLocation();
 
-  const handleSubscribe = async (tier: 'supporter' | 'pro') => {
-    // Show coming soon popup instead of proceeding with subscription
-    setShowComingSoonPopup(true);
-    return;
-    
-    // Original subscription logic commented out
-    /*
+  const handleSubscribe = async (tier: 'tier1' | 'tier2' | 'tier3') => {
     if (!user) {
       navigate(`/login?redirect=${encodeURIComponent('/pricing')}`);
       return;
@@ -235,8 +264,9 @@ function Pricing() {
 
     // Check if user already has this tier or higher
     if (
-      (tier === 'supporter' && (user.membershipTier === 'supporter' || user.membershipTier === 'pro')) ||
-      (tier === 'pro' && user.membershipTier === 'pro')
+      (tier === 'tier1' && (user.membershipTier === 'tier1' || user.membershipTier === 'tier2' || user.membershipTier === 'tier3')) ||
+      (tier === 'tier2' && (user.membershipTier === 'tier2' || user.membershipTier === 'tier3')) ||
+      (tier === 'tier3' && user.membershipTier === 'tier3')
     ) {
       toast({
         title: "Already subscribed",
@@ -245,10 +275,17 @@ function Pricing() {
       return;
     }
 
+    let priceId: string | undefined;
     try {
-      const priceId = tier === 'pro' 
-        ? (billingCycle === 'yearly' ? 'price_pro_yearly' : 'price_pro_monthly')
-        : (billingCycle === 'yearly' ? 'price_supporter_yearly' : 'price_supporter_monthly');
+      priceId = tier === 'tier3' 
+        ? (billingCycle === 'yearly' ? import.meta.env.VITE_STRIPE_TIER3_YEARLY_PRICE_ID : import.meta.env.VITE_STRIPE_TIER3_PRICE_ID)
+        : tier === 'tier2' 
+          ? (billingCycle === 'yearly' ? import.meta.env.VITE_STRIPE_TIER2_YEARLY_PRICE_ID : import.meta.env.VITE_STRIPE_TIER2_PRICE_ID) 
+          : (billingCycle === 'yearly' ? import.meta.env.VITE_STRIPE_TIER1_YEARLY_PRICE_ID : import.meta.env.VITE_STRIPE_TIER1_PRICE_ID);
+
+      if (!priceId) {
+        throw new Error('Price ID not configured for this tier');
+      }
 
       const response = await apiRequest('POST', '/api/create-checkout-session', {
         priceId,
@@ -265,22 +302,24 @@ function Pricing() {
         throw new Error('Failed to create checkout session');
       }
     } catch (error) {
+      console.error('Subscription error details:', error);
+      console.error('Price ID being used:', priceId);
+      console.error('Environment variables:', {
+        VITE_STRIPE_TIER1_PRICE_ID: import.meta.env.VITE_STRIPE_TIER1_PRICE_ID,
+        VITE_STRIPE_TIER2_PRICE_ID: import.meta.env.VITE_STRIPE_TIER2_PRICE_ID,
+        VITE_STRIPE_TIER3_PRICE_ID: import.meta.env.VITE_STRIPE_TIER3_PRICE_ID
+      });
+      
       toast({
         title: "Error",
-        description: "Failed to start subscription process. Please try again.",
+        description: `Failed to start subscription process: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
     }
-    */
   };
 
-  const handleGiftClick = (tier: 'supporter' | 'pro') => {
-    // Show coming soon popup instead of gift form
-    setShowComingSoonPopup(true);
-    return;
-    
-    // Original gift form logic commented out
-    // setShowGiftForm(showGiftForm === tier ? null : tier);
+  const handleGiftClick = (tier: 'tier1' | 'tier2' | 'tier3') => {
+    setShowGiftForm(showGiftForm === tier ? null : tier);
   };
 
   const getPrice = (tier: keyof typeof TIER_CONFIG) => {
@@ -306,56 +345,6 @@ function Pricing() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/40 to-black relative overflow-hidden">
-      {/* Coming Soon Popup */}
-      {showComingSoonPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setShowComingSoonPopup(false)}></div>
-          <div className="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 max-w-md w-full border border-purple-500/30 shadow-2xl">
-            <button
-              onClick={() => setShowComingSoonPopup(false)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all duration-300"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            
-            <div className="text-center space-y-6">
-              <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto">
-                <RocketIcon className="w-10 h-10 text-white" />
-              </div>
-              
-              <div>
-                <h3 className="text-2xl font-bold text-white mb-2">Plans Coming Soon!</h3>
-                <p className="text-white/70 text-lg">
-                  We're working hard to bring you amazing premium features. Stay tuned for updates!
-                </p>
-              </div>
-              
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 text-white/80">
-                  <CheckIcon className="w-5 h-5 text-green-400" />
-                  <span>Premium content access</span>
-                </div>
-                <div className="flex items-center gap-3 text-white/80">
-                  <CheckIcon className="w-5 h-5 text-green-400" />
-                  <span>Ad-free experience</span>
-                </div>
-                <div className="flex items-center gap-3 text-white/80">
-                  <CheckIcon className="w-5 h-5 text-green-400" />
-                  <span>Exclusive themes</span>
-                </div>
-              </div>
-              
-              <Button
-                onClick={() => setShowComingSoonPopup(false)}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-              >
-                Got it!
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Geometric ambient effects */}
       <div className="absolute inset-0">
         <div className="absolute top-20 left-10 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
@@ -373,14 +362,6 @@ function Pricing() {
           <p className="text-lg md:text-xl text-white/70 mb-8 max-w-2xl mx-auto">
             Join thousands of space enthusiasts with premium access to the universe's latest discoveries
           </p>
-          
-          {/* Coming Soon Notice */}
-          <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-2xl p-4 mb-8 max-w-2xl mx-auto">
-            <div className="flex items-center gap-3 justify-center">
-              <ZapIcon className="w-5 h-5 text-yellow-400" />
-              <span className="text-white font-medium">Premium plans launching soon! Stay tuned for updates.</span>
-            </div>
-          </div>
           
           {/* Billing Toggle */}
           <div className="flex items-center justify-center gap-4 mb-8">
@@ -488,11 +469,13 @@ function Pricing() {
                             ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700' 
                             : 'bg-purple-600 hover:bg-purple-700'
                         }`}
-                        disabled={user?.membershipTier === tierKey || (user?.membershipTier === 'pro' && tierKey === 'supporter')}
+                        disabled={user?.membershipTier === tierKey || (user?.membershipTier === 'tier3' && tierKey === 'tier2') || (user?.membershipTier === 'tier2' && tierKey === 'tier1') || (user?.membershipTier === 'tier1' && tierKey === 'tier1')}
                       >
                         {user?.membershipTier === tierKey ? 'Current Plan' : 
-                         user?.membershipTier === 'pro' && tierKey === 'supporter' ? 'Lower Tier' :
-                         'Coming Soon'}
+                         user?.membershipTier === 'tier3' && tierKey === 'tier2' ? 'Lower Tier' :
+                         user?.membershipTier === 'tier2' && tierKey === 'tier1' ? 'Lower Tier' :
+                         user?.membershipTier === 'tier1' && tierKey === 'tier1' ? 'Lower Tier' :
+                         'Subscribe Now'}
                       </Button>
                       
                       <Button
@@ -512,14 +495,14 @@ function Pricing() {
           })}
         </div>
 
-        {/* Gift Membership Form - Hidden when coming soon popup is active */}
-        {showGiftForm && !showComingSoonPopup && (
+        {/* Gift Membership Form */}
+        {showGiftForm && (
           <div className="max-w-2xl mx-auto mb-12">
             <Card className="bg-white/10 backdrop-blur-sm border border-purple-500/30">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <GiftIcon className="w-5 h-5 text-purple-400" />
-                  Gift {showGiftForm === 'pro' ? 'Pro' : 'Supporter'} Membership
+                  Gift {showGiftForm === 'tier3' ? 'Tier 3' : showGiftForm === 'tier2' ? 'Tier 2' : 'Tier 1'} Membership
                 </CardTitle>
                 <CardDescription className="text-white/70">
                   Give someone special the gift of premium space news and content
@@ -541,44 +524,44 @@ function Pricing() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="bg-white/5 backdrop-blur-sm border border-white/20">
               <CardHeader>
-                <CardTitle className="text-lg text-white">When will premium plans be available?</CardTitle>
+                <CardTitle className="text-lg text-white">What's included in each plan?</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-white/80">
-                  We're working hard to launch our premium plans soon! Sign up for our newsletter to be notified when they're ready.
+                  Free plans include basic access and commenting. Supporter plans add premium themes and exclusive content. Pro plans include everything plus ad-free experience and priority features.
                 </p>
               </CardContent>
             </Card>
             
             <Card className="bg-white/5 backdrop-blur-sm border border-white/20">
               <CardHeader>
-                <CardTitle className="text-lg text-white">What features will premium plans include?</CardTitle>
+                <CardTitle className="text-lg text-white">Can I change my plan later?</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-white/80">
-                  Premium plans will include ad-free experience, exclusive content, premium themes, priority support, and early access to new features.
+                  Yes! You can upgrade or downgrade your plan at any time. Changes take effect at the start of your next billing cycle.
                 </p>
               </CardContent>
             </Card>
             
             <Card className="bg-white/5 backdrop-blur-sm border border-white/20">
               <CardHeader>
-                <CardTitle className="text-lg text-white">Will there be different pricing tiers?</CardTitle>
+                <CardTitle className="text-lg text-white">Is there a free trial?</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-white/80">
-                  Yes! We're planning multiple tiers to suit different needs and budgets, from basic supporter plans to comprehensive pro packages.
+                  We offer a 7-day free trial for all premium plans so you can experience the full benefits before committing.
                 </p>
               </CardContent>
             </Card>
             
             <Card className="bg-white/5 backdrop-blur-sm border border-white/20">
               <CardHeader>
-                <CardTitle className="text-lg text-white">Can I get early access?</CardTitle>
+                <CardTitle className="text-lg text-white">How do I cancel my subscription?</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-white/80">
-                  Stay tuned to our newsletter and social media for announcements about early access opportunities and beta testing programs.
+                  You can cancel anytime from your account settings. Your premium access will continue until the end of your current billing period.
                 </p>
               </CardContent>
             </Card>

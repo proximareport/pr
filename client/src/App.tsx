@@ -39,6 +39,7 @@ import Careers from "@/pages/Careers";
 // SearchResults page removed as it's now integrated into the search bar
 import NewsletterVerify from "@/pages/NewsletterVerify";
 import NewsletterUnsubscribe from "@/pages/NewsletterUnsubscribe";
+import SecurityPolicy from "@/pages/SecurityPolicy";
 
 import SiteBlock from "@/components/SiteBlock";
 import AdminDashboard from "@/pages/Admin/NewDashboard";
@@ -244,6 +245,8 @@ function Router() {
           </React.Suspense>
         );
       }} />
+      
+      <Route path="/security-policy" component={SecurityPolicy} />
       
       <Route component={NotFound} />
     </Switch>

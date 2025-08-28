@@ -5,7 +5,7 @@ import { z } from "zod";
 
 // Enums for role and membership tiers
 export const roleEnum = pgEnum("role", ["user", "author", "editor", "admin"]);
-export const membershipTierEnum = pgEnum("membership_tier", ["free", "supporter", "pro"]);
+export const membershipTierEnum = pgEnum("membership_tier", ["free", "tier1", "tier2", "tier3"]);
 export const mediaTypeEnum = pgEnum("media_type", ["image", "video", "document", "audio"]);
 export const emailFrequencyEnum = pgEnum("email_frequency", ["daily", "weekly", "monthly", "immediately"]);
 

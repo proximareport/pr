@@ -4711,10 +4711,16 @@ Crawl-delay: 1`;
         });
       }
       
-      // Validate price ID
-      if (!SUBSCRIPTION_PRICES.includes(priceId)) {
+      // Validate price ID format for new tier system
+      const validPriceIds = [
+        process.env.STRIPE_TIER1_PRICE_ID,
+        process.env.STRIPE_TIER2_PRICE_ID,
+        process.env.STRIPE_TIER3_PRICE_ID
+      ].filter(Boolean); // Remove any undefined values
+      
+      if (!validPriceIds.includes(priceId)) {
         return res.status(400).json({ 
-          message: `Invalid price ID. Valid options are: ${SUBSCRIPTION_PRICES.join(', ')}` 
+          message: `Invalid price ID. Valid options are: ${validPriceIds.join(', ')}` 
         });
       }
       
@@ -4726,14 +4732,8 @@ Crawl-delay: 1`;
         return res.status(404).json({ message: "User not found" });
       }
       
-      // Create checkout session
-      const session = await createStripeCheckoutSession({
-        userId,
-        email: user.email || undefined,
-        priceId,
-        successUrl,
-        cancelUrl
-      });
+      // Create checkout session using the updated function signature
+      const session = await createStripeCheckoutSession(user, priceId);
       
       res.json({ url: session.url });
     } catch (error) {
