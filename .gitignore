@@ -95,4 +95,4 @@ temp/
 
 server/public
 vite.config.ts.*
-*.tar.gz
+*.tar.gz.env
