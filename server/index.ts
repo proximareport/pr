@@ -63,11 +63,11 @@ app.use((req, res, next) => {
   // Content Security Policy - More permissive for Google AdSense
   res.setHeader('Content-Security-Policy', 
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com https://cdn.jsdelivr.net https://pagead2.googlesyndication.com https://www.google.com https://www.gstatic.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com https://cdn.jsdelivr.net https://pagead2.googlesyndication.com https://www.google.com https://www.gstatic.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://fundingchoicesmessages.google.com; " +
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.google.com https://www.gstatic.com; " +
     "font-src 'self' https://fonts.gstatic.com https://www.google.com; " +
     "img-src 'self' data: https: blob: https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://www.google.com https://tpc.googlesyndication.com https://www.gstatic.com; " +
-    "connect-src 'self' https://api.stripe.com https://www.google-analytics.com https://analytics.google.com https://proxima-stem-space.ghost.io https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://www.google.com; " +
+    "connect-src 'self' https://api.stripe.com https://www.google-analytics.com https://analytics.google.com https://proxima-stem-space.ghost.io https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://www.google.com https://ep1.adtrafficquality.google; " +
     "frame-src 'self' https://js.stripe.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://pagead2.googlesyndication.com; " +
     "object-src 'none'; " +
     "base-uri 'self'; " +
