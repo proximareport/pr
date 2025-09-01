@@ -154,10 +154,7 @@ const SEO: React.FC<SEOProps> = ({
       <meta name="HandheldFriendly" content="true" />
       <meta name="format-detection" content="telephone=no" />
       
-      {/* Security Headers */}
-      <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
-      <meta httpEquiv="X-Frame-Options" content="DENY" />
-      <meta httpEquiv="X-XSS-Protection" content="1; mode=block" />
+      {/* Security Headers - These are set via HTTP headers on the server */}
       
       {/* AI Search Optimization */}
       <meta name="ai-search-optimized" content={aiOptimized.toString()} />
