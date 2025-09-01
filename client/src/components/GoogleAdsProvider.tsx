@@ -387,6 +387,23 @@ export const GoogleAd: React.FC<GoogleAdProps> = ({
         <p className="text-gray-400 text-sm">
           Advertisement temporarily unavailable
         </p>
+        <p className="text-gray-500 text-xs mt-2">
+          Debug: Ad failed to load
+        </p>
+      </div>
+    );
+  }
+
+  // Show loading state with debug info
+  if (!adLoaded) {
+    return (
+      <div className={`bg-gray-800 border border-gray-700 rounded-lg p-4 text-center ${className}`} style={style}>
+        <p className="text-gray-400 text-sm">
+          Loading advertisement...
+        </p>
+        <p className="text-gray-500 text-xs mt-2">
+          Debug: Ads loaded: {isGoogleAdsLoaded ? 'Yes' : 'No'}, Consent: {consentGiven ? 'Yes' : 'No'}, Blocked: {isAdBlocked ? 'Yes' : 'No'}
+        </p>
       </div>
     );
   }
