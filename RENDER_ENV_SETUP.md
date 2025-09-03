@@ -30,6 +30,19 @@ JWT_SECRET=your-super-secure-jwt-secret-min-32-chars
 ```
 STRIPE_SECRET_KEY=sk_live_your-actual-stripe-secret-key
 STRIPE_WEBHOOK_SECRET=whsec_your-actual-webhook-secret
+STRIPE_TIER1_PRICE_ID=price_your-tier1-monthly-price-id
+STRIPE_TIER1_YEARLY_PRICE_ID=price_your-tier1-yearly-price-id
+STRIPE_TIER2_PRICE_ID=price_your-tier2-monthly-price-id
+STRIPE_TIER2_YEARLY_PRICE_ID=price_your-tier2-yearly-price-id
+STRIPE_TIER3_PRICE_ID=price_your-tier3-monthly-price-id
+STRIPE_TIER3_YEARLY_PRICE_ID=price_your-tier3-yearly-price-id
+VITE_STRIPE_PUBLISHABLE_KEY=pk_live_your-stripe-publishable-key
+VITE_STRIPE_TIER1_PRICE_ID=price_your-tier1-monthly-price-id
+VITE_STRIPE_TIER1_YEARLY_PRICE_ID=price_your-tier1-yearly-price-id
+VITE_STRIPE_TIER2_PRICE_ID=price_your-tier2-monthly-price-id
+VITE_STRIPE_TIER2_YEARLY_PRICE_ID=price_your-tier2-yearly-price-id
+VITE_STRIPE_TIER3_PRICE_ID=price_your-tier3-monthly-price-id
+VITE_STRIPE_TIER3_YEARLY_PRICE_ID=price_your-tier3-yearly-price-id
 ```
 
 ### URLs

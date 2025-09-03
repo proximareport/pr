@@ -3,25 +3,45 @@ import { storage } from "./storage";
 import type { User } from "@shared/schema";
 import type { Request, Response } from "express";
 
-// Initialize Stripe with a dummy key if no real key provided
-// This allows the server to start without a valid API key
-// In production, you should always use a valid API key
+// Initialize Stripe with proper error handling
 export let stripe: Stripe;
+export let stripeConfigured = false;
+
 try {
-  stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error("STRIPE_SECRET_KEY environment variable is not set");
+  }
+  
+  stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
     apiVersion: "2025-05-28.basil",
   });
+  
+  // Verify the API key by making a test call
+  stripe.customers.list({ limit: 1 }).then(() => {
+    stripeConfigured = true;
+    console.log("✅ Stripe initialized successfully");
+  }).catch((error) => {
+    console.error("❌ Stripe API key validation failed:", error.message);
+    stripeConfigured = false;
+  });
+  
 } catch (error) {
-  console.warn("Stripe initialization failed, payments will not work until a valid API key is provided");
+  console.error("❌ Stripe initialization failed:", error.message);
+  console.warn("⚠️  Payments will not work until a valid STRIPE_SECRET_KEY is provided");
+  
   // @ts-ignore - Create a dummy stripe object to prevent crashes
   stripe = {
     customers: { 
-      create: async () => ({ id: 'dummy', object: 'customer' } as any), 
-      retrieve: async () => ({ id: 'dummy', object: 'customer' } as any) 
+      create: async () => { throw new Error("Stripe not configured"); }, 
+      retrieve: async () => { throw new Error("Stripe not configured"); },
+      list: async () => { throw new Error("Stripe not configured"); }
     },
-    checkout: { sessions: { create: async () => ({ id: 'dummy', url: 'dummy' } as any) } },
-    webhooks: { constructEvent: () => ({ type: 'dummy' } as any) },
-    subscriptions: { retrieve: async () => ({ id: 'dummy' } as any), update: async () => ({ id: 'dummy' } as any) },
+    checkout: { sessions: { create: async () => { throw new Error("Stripe not configured"); } } },
+    webhooks: { constructEvent: () => { throw new Error("Stripe not configured"); } },
+    subscriptions: { 
+      retrieve: async () => { throw new Error("Stripe not configured"); }, 
+      update: async () => { throw new Error("Stripe not configured"); } 
+    },
   };
 }
 
@@ -32,8 +52,56 @@ export const SUBSCRIPTION_PRICES = {
   tier3: process.env.STRIPE_TIER3_PRICE_ID,
 };
 
+// Validate Stripe configuration
+export function validateStripeConfig(): { isValid: boolean; missingVars: string[] } {
+  const missingVars: string[] = [];
+  
+  if (!process.env.STRIPE_SECRET_KEY) {
+    missingVars.push('STRIPE_SECRET_KEY');
+  }
+  
+  if (!process.env.STRIPE_TIER1_PRICE_ID) {
+    missingVars.push('STRIPE_TIER1_PRICE_ID');
+  }
+  
+  if (!process.env.STRIPE_TIER1_YEARLY_PRICE_ID) {
+    missingVars.push('STRIPE_TIER1_YEARLY_PRICE_ID');
+  }
+  
+  if (!process.env.STRIPE_TIER2_PRICE_ID) {
+    missingVars.push('STRIPE_TIER2_PRICE_ID');
+  }
+  
+  if (!process.env.STRIPE_TIER2_YEARLY_PRICE_ID) {
+    missingVars.push('STRIPE_TIER2_YEARLY_PRICE_ID');
+  }
+  
+  if (!process.env.STRIPE_TIER3_PRICE_ID) {
+    missingVars.push('STRIPE_TIER3_PRICE_ID');
+  }
+  
+  if (!process.env.STRIPE_TIER3_YEARLY_PRICE_ID) {
+    missingVars.push('STRIPE_TIER3_YEARLY_PRICE_ID');
+  }
+  
+  return {
+    isValid: missingVars.length === 0,
+    missingVars
+  };
+}
+
 // Create a Stripe checkout session
 export async function createStripeCheckoutSession(user: User, priceId: string) {
+  // Validate Stripe configuration
+  const configValidation = validateStripeConfig();
+  if (!configValidation.isValid) {
+    throw new Error(`Stripe configuration incomplete. Missing: ${configValidation.missingVars.join(', ')}`);
+  }
+  
+  if (!stripeConfigured) {
+    throw new Error("Stripe is not properly configured. Please check your API key.");
+  }
+  
   // Determine which subscription tier the user is purchasing
   let tierName: 'tier1' | 'tier2' | 'tier3';
   if (priceId === process.env.STRIPE_TIER1_PRICE_ID) {

@@ -40,7 +40,7 @@ app.use(session({
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     httpOnly: true,
     sameSite: 'strict', // Stricter same-site policy
-    domain: process.env.NODE_ENV === 'production' ? '.pr-chgf.onrender.com' : undefined
+    domain: process.env.NODE_ENV === 'production' ? '.proximareport.com' : undefined
   },
   rolling: true, // Reset expiration on activity
   proxy: process.env.NODE_ENV === 'production' // Trust proxy in production

@@ -27,6 +27,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { apiRequest } from '@/lib/queryClient';
+import { useStripeConfig } from '@/hooks/useStripeConfig';
 
 // Comprehensive feature definitions
 const FEATURES = {
@@ -255,6 +256,7 @@ function Pricing() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  const { data: stripeConfig, isLoading: stripeConfigLoading, error: stripeConfigError } = useStripeConfig();
 
   const handleSubscribe = async (tier: 'tier1' | 'tier2' | 'tier3') => {
     if (!user) {
@@ -275,16 +277,22 @@ function Pricing() {
       return;
     }
 
+    if (!stripeConfig) {
+      toast({
+        title: "Configuration Error",
+        description: "Stripe configuration is not available. Please try again later.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     let priceId: string | undefined;
     try {
-      priceId = tier === 'tier3' 
-        ? (billingCycle === 'yearly' ? import.meta.env.VITE_STRIPE_TIER3_YEARLY_PRICE_ID : import.meta.env.VITE_STRIPE_TIER3_PRICE_ID)
-        : tier === 'tier2' 
-          ? (billingCycle === 'yearly' ? import.meta.env.VITE_STRIPE_TIER2_YEARLY_PRICE_ID : import.meta.env.VITE_STRIPE_TIER2_PRICE_ID) 
-          : (billingCycle === 'yearly' ? import.meta.env.VITE_STRIPE_TIER1_YEARLY_PRICE_ID : import.meta.env.VITE_STRIPE_TIER1_PRICE_ID);
+      const tierConfig = stripeConfig[tier];
+      priceId = billingCycle === 'yearly' ? tierConfig.yearly : tierConfig.monthly;
 
       if (!priceId) {
-        throw new Error('Price ID not configured for this tier');
+        throw new Error(`Price ID not configured for ${tier} ${billingCycle} subscription`);
       }
 
       const response = await apiRequest('POST', '/api/create-checkout-session', {
@@ -304,11 +312,7 @@ function Pricing() {
     } catch (error) {
       console.error('Subscription error details:', error);
       console.error('Price ID being used:', priceId);
-      console.error('Environment variables:', {
-        VITE_STRIPE_TIER1_PRICE_ID: import.meta.env.VITE_STRIPE_TIER1_PRICE_ID,
-        VITE_STRIPE_TIER2_PRICE_ID: import.meta.env.VITE_STRIPE_TIER2_PRICE_ID,
-        VITE_STRIPE_TIER3_PRICE_ID: import.meta.env.VITE_STRIPE_TIER3_PRICE_ID
-      });
+      console.error('Stripe config:', stripeConfig);
       
       toast({
         title: "Error",
@@ -342,6 +346,32 @@ function Pricing() {
       annual: billingCycle === 'yearly' ? `$${(monthlyPrice * 12).toFixed(0)}/year` : null
     };
   };
+
+  // Show loading state while Stripe config is loading
+  if (stripeConfigLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/40 to-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-white">Loading subscription options...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if Stripe config failed to load
+  if (stripeConfigError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/40 to-black flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400 mb-4">Failed to load subscription configuration</p>
+          <Button onClick={() => window.location.reload()}>
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/40 to-black relative overflow-hidden">

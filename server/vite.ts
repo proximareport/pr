@@ -40,7 +40,24 @@ export async function setupVite(app: Express, server: Server) {
     appType: "custom",
   });
 
-  app.use(vite.middlewares);
+  // Apply Vite middleware only to non-API routes
+  app.use((req, res, next) => {
+    // Skip API routes and other backend routes
+    if (req.path.startsWith('/api/') || 
+        req.path.startsWith('/test') || 
+        req.path.startsWith('/backend/') || 
+        req.path.startsWith('/v1/') ||
+        req.path === '/sitemap.xml' || 
+        req.path === '/robots.txt' || 
+        req.path === '/rss.xml' || 
+        req.path === '/ads.txt' || 
+        req.path === '/feed.json') {
+      return next();
+    }
+    // Apply Vite middleware to frontend routes
+    vite.middlewares(req, res, next);
+  });
+
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
 

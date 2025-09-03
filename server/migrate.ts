@@ -29,7 +29,7 @@ async function main() {
   
   await db.execute(sql`
     DO $$ BEGIN
-        CREATE TYPE membership_tier AS ENUM ('free', 'supporter', 'pro');
+        CREATE TYPE membership_tier AS ENUM ('free', 'tier1', 'tier2', 'tier3');
     EXCEPTION
         WHEN duplicate_object THEN null;
     END $$;
@@ -50,6 +50,120 @@ async function main() {
       created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     )
+  `);
+  
+  // Add subscription fields to users table
+  await db.execute(sql`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_status VARCHAR(50) DEFAULT 'inactive';
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_expires_at TIMESTAMP WITH TIME ZONE;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_cancel_at_period_end BOOLEAN DEFAULT false;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_trial_ends_at TIMESTAMP WITH TIME ZONE;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+  `);
+  
+  // Create user_subscriptions table
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS user_subscriptions (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      stripe_subscription_id VARCHAR(255) UNIQUE,
+      stripe_customer_id VARCHAR(255),
+      stripe_price_id VARCHAR(255),
+      status VARCHAR(50) NOT NULL DEFAULT 'inactive',
+      tier VARCHAR(50) NOT NULL DEFAULT 'free',
+      billing_cycle VARCHAR(20) NOT NULL DEFAULT 'monthly',
+      current_period_start TIMESTAMP WITH TIME ZONE,
+      current_period_end TIMESTAMP WITH TIME ZONE,
+      cancel_at_period_end BOOLEAN DEFAULT false,
+      canceled_at TIMESTAMP WITH TIME ZONE,
+      trial_start TIMESTAMP WITH TIME ZONE,
+      trial_end TIMESTAMP WITH TIME ZONE,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  
+  // Create subscription_features table
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS subscription_features (
+      id SERIAL PRIMARY KEY,
+      tier VARCHAR(50) NOT NULL UNIQUE,
+      name VARCHAR(100) NOT NULL,
+      description TEXT,
+      price_monthly INTEGER NOT NULL,
+      price_yearly INTEGER NOT NULL,
+      features JSONB NOT NULL DEFAULT '[]',
+      is_active BOOLEAN DEFAULT true,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  
+  // Create indexes for subscription tables
+  await db.execute(sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_user_subscriptions_user_id ON user_subscriptions(user_id);
+    CREATE INDEX IF NOT EXISTS idx_user_subscriptions_stripe_subscription ON user_subscriptions(stripe_subscription_id);
+    CREATE INDEX IF NOT EXISTS idx_user_subscriptions_status ON user_subscriptions(status);
+    CREATE INDEX IF NOT EXISTS idx_user_subscriptions_tier ON user_subscriptions(tier);
+  `);
+  
+  // Insert subscription tier features
+  await db.execute(sql`
+    INSERT INTO subscription_features (tier, name, description, price_monthly, price_yearly, features) VALUES
+    ('free', 'Free', 'Basic access to content and community features', 0, 0, '[
+      "Access to all public articles",
+      "Basic astronomy photo gallery", 
+      "Comment on articles",
+      "Basic profile customization",
+      "Newsletter subscription",
+      "Basic search functionality",
+      "Community forum access"
+    ]'),
+    ('tier1', 'Tier 1 Supporter', 'Enhanced features and exclusive content', 299, 2390, '[
+      "All Free features",
+      "Reduced ads experience",
+      "5 exclusive premium themes",
+      "Supporter badge & animated avatar",
+      "Access to exclusive supporter articles",
+      "Priority comment placement",
+      "Enhanced profile customization",
+      "Member-only community channels",
+      "Priority customer support",
+      "Digital member badge"
+    ]'),
+    ('tier2', 'Tier 2 Supporter', 'Advanced features with Proxihub and Mission Control', 499, 3990, '[
+      "All Tier 1 features",
+      "Advanced Proxihub access",
+      "Mission Control dashboard",
+      "Enhanced analytics",
+      "Priority content access",
+      "Advanced customization options",
+      "Premium support",
+      "Exclusive member events"
+    ]'),
+    ('tier3', 'Tier 3 Supporter', 'Ultimate space enthusiast experience', 999, 7990, '[
+      "All Tier 2 features",
+      "Complete ad-free experience",
+      "All premium themes & customization",
+      "Pro badge & premium animations",
+      "Full premium content library",
+      "Priority support & feedback",
+      "Early access to new features",
+      "Animated profile backgrounds",
+      "Live launch coverage",
+      "Exclusive interviews and Q&As",
+      "Advanced analytics and insights",
+      "Personalized content recommendations",
+      "Access to premium tools and calculators",
+      "Member-only events and webinars"
+    ]')
+    ON CONFLICT (tier) DO UPDATE SET
+      name = EXCLUDED.name,
+      description = EXCLUDED.description,
+      price_monthly = EXCLUDED.price_monthly,
+      price_yearly = EXCLUDED.price_yearly,
+      features = EXCLUDED.features,
+      updated_at = CURRENT_TIMESTAMP;
   `);
   
   // Create articles table

@@ -1070,6 +1070,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Debug endpoint to check Stripe configuration
+  app.get("/api/stripe-debug", (req: Request, res: Response) => {
+    const { validateStripeConfig, stripeConfigured } = require('./stripe');
+    const configValidation = validateStripeConfig();
+    
+    res.json({
+      stripeConfigured,
+      configValidation,
+      hasSecretKey: !!process.env.STRIPE_SECRET_KEY,
+      hasWebhookSecret: !!process.env.STRIPE_WEBHOOK_SECRET,
+      priceIds: {
+        tier1: {
+          monthly: !!process.env.STRIPE_TIER1_PRICE_ID,
+          yearly: !!process.env.STRIPE_TIER1_YEARLY_PRICE_ID
+        },
+        tier2: {
+          monthly: !!process.env.STRIPE_TIER2_PRICE_ID,
+          yearly: !!process.env.STRIPE_TIER2_YEARLY_PRICE_ID
+        },
+        tier3: {
+          monthly: !!process.env.STRIPE_TIER3_PRICE_ID,
+          yearly: !!process.env.STRIPE_TIER3_YEARLY_PRICE_ID
+        }
+      }
+    });
+  });
+
+  // Endpoint to get Stripe price IDs for frontend
+  app.get("/api/stripe/price-ids", (req: Request, res: Response) => {
+    res.json({
+      tier1: {
+        monthly: process.env.STRIPE_TIER1_PRICE_ID,
+        yearly: process.env.STRIPE_TIER1_YEARLY_PRICE_ID
+      },
+      tier2: {
+        monthly: process.env.STRIPE_TIER2_PRICE_ID,
+        yearly: process.env.STRIPE_TIER2_YEARLY_PRICE_ID
+      },
+      tier3: {
+        monthly: process.env.STRIPE_TIER3_PRICE_ID,
+        yearly: process.env.STRIPE_TIER3_YEARLY_PRICE_ID
+      },
+      publishableKey: process.env.VITE_STRIPE_PUBLISHABLE_KEY
+    });
+  });
+
   app.get("/api/me", (req: Request, res: Response) => {
     console.log("API /me called - Session data:", {
       userId: req.session.userId,
