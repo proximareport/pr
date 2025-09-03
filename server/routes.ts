@@ -1072,32 +1072,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Debug endpoint to check Stripe configuration
   app.get("/api/stripe-debug", (req: Request, res: Response) => {
-    // Import stripe module dynamically
-    import('./stripe').then(({ validateStripeConfig, stripeConfigured }) => {
-      const configValidation = validateStripeConfig();
-    
     res.json({
-      stripeConfigured,
-      configValidation,
-      hasSecretKey: !!process.env.STRIPE_SECRET_KEY,
-      hasWebhookSecret: !!process.env.STRIPE_WEBHOOK_SECRET,
-      priceIds: {
-        tier1: {
-          monthly: !!process.env.STRIPE_TIER1_PRICE_ID,
-          yearly: !!process.env.STRIPE_TIER1_YEARLY_PRICE_ID
-        },
-        tier2: {
-          monthly: !!process.env.STRIPE_TIER2_PRICE_ID,
-          yearly: !!process.env.STRIPE_TIER2_YEARLY_PRICE_ID
-        },
-        tier3: {
-          monthly: !!process.env.STRIPE_TIER3_PRICE_ID,
-          yearly: !!process.env.STRIPE_TIER3_YEARLY_PRICE_ID
-        }
-      }
-    });
-    }).catch((error) => {
-      res.status(500).json({ error: error.message });
+      // Check all environment variables that start with STRIPE
+      envVars: {
+        STRIPE_TIER1_PRICE_ID: process.env.STRIPE_TIER1_PRICE_ID,
+        STRIPE_TIER2_PRICE_ID: process.env.STRIPE_TIER2_PRICE_ID,
+        STRIPE_TIER3_PRICE_ID: process.env.STRIPE_TIER3_PRICE_ID,
+        STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY ? 'SET' : 'NOT SET',
+        STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET ? 'SET' : 'NOT SET'
+      },
+      // Check if any STRIPE_ variables exist
+      allStripeVars: Object.keys(process.env).filter(key => key.startsWith('STRIPE_')),
+      // Direct check
+      hasTier1: !!process.env.STRIPE_TIER1_PRICE_ID,
+      hasTier2: !!process.env.STRIPE_TIER2_PRICE_ID,
+      hasTier3: !!process.env.STRIPE_TIER3_PRICE_ID
     });
   });
 
