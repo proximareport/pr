@@ -251,7 +251,7 @@ function GiftMembershipForm({ tier }: { tier: 'tier1' | 'tier2' | 'tier3' }) {
 }
 
 function Pricing() {
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [billingCycle] = useState<'monthly' | 'yearly'>('monthly'); // Force monthly only for now
   const [showGiftForm, setShowGiftForm] = useState<'tier1' | 'tier2' | 'tier3' | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -395,21 +395,16 @@ function Pricing() {
           
           {/* Billing Toggle */}
           <div className="flex items-center justify-center gap-4 mb-8">
-            <span className={`text-sm ${billingCycle === 'monthly' ? 'text-white' : 'text-white/60'}`}>
+            <span className="text-sm text-white">
               Monthly
             </span>
             <Switch
-              checked={billingCycle === 'yearly'}
-              onCheckedChange={(checked) => setBillingCycle(checked ? 'yearly' : 'monthly')}
+              checked={false}
+              disabled={true}
             />
-            <span className={`text-sm ${billingCycle === 'yearly' ? 'text-white' : 'text-white/60'}`}>
-              Yearly
+            <span className="text-sm text-white/40">
+              Yearly (Coming Soon)
             </span>
-            {billingCycle === 'yearly' && (
-              <Badge className="bg-gradient-to-r from-green-600 to-emerald-600 text-white">
-                Save up to 25%
-              </Badge>
-            )}
           </div>
         </div>
 
