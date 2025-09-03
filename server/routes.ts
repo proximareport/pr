@@ -1072,8 +1072,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Debug endpoint to check Stripe configuration
   app.get("/api/stripe-debug", (req: Request, res: Response) => {
-    const { validateStripeConfig, stripeConfigured } = require('./stripe');
-    const configValidation = validateStripeConfig();
+    // Import stripe module dynamically
+    import('./stripe').then(({ validateStripeConfig, stripeConfigured }) => {
+      const configValidation = validateStripeConfig();
     
     res.json({
       stripeConfigured,
@@ -1094,6 +1095,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           yearly: !!process.env.STRIPE_TIER3_YEARLY_PRICE_ID
         }
       }
+    });
+    }).catch((error) => {
+      res.status(500).json({ error: error.message });
     });
   });
 
