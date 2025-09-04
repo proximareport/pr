@@ -98,10 +98,15 @@ export function validateStripeConfig(): { isValid: boolean; missingVars: string[
 // Create a Stripe checkout session
 export async function createStripeCheckoutSession(user: User, priceId: string) {
   console.log("Creating checkout session for user:", user?.username, "priceId:", priceId);
+  console.log("Stripe configured status:", stripeConfigured);
   
   // Initialize Stripe if not already done
   if (!stripeConfigured) {
+    console.log("Initializing Stripe...");
     initializeStripe();
+    console.log("Stripe initialization completed. Configured:", stripeConfigured);
+  } else {
+    console.log("Stripe already configured, skipping initialization");
   }
   
   // Validate Stripe configuration
