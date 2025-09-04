@@ -2,6 +2,13 @@
 if (process.env.NODE_ENV !== 'production') {
   require('dotenv/config');
 }
+
+// Debug: Check environment variables in production
+console.log("Environment check:", {
+  NODE_ENV: process.env.NODE_ENV,
+  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY ? 'SET' : 'NOT SET',
+  allEnvKeys: Object.keys(process.env).filter(k => k.includes('STRIPE'))
+});
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 // We now register newsletter routes directly in routes.ts
