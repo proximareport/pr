@@ -7,6 +7,13 @@ import type { Request, Response } from "express";
 export let stripe: Stripe;
 export let stripeConfigured = false;
 
+// Subscription price mapping
+export const SUBSCRIPTION_PRICES = {
+  supporter: process.env.STRIPE_TIER1_PRICE_ID || '',
+  pro: process.env.STRIPE_TIER2_PRICE_ID || '',
+  enterprise: process.env.STRIPE_TIER3_PRICE_ID || '',
+} as const;
+
 // Lazy initialization function
 function initializeStripe() {
   if (stripeConfigured) {
