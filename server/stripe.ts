@@ -34,7 +34,10 @@ function initializeStripe() {
       hasSpaces: key.includes(' '),
       hasNewlines: key.includes('\n'),
       firstChars: key.slice(0, 20), // First 20 characters
-      lastChars: key.slice(-20) // Last 20 characters
+      lastChars: key.slice(-20), // Last 20 characters
+      fullKey: key, // Show the full key for debugging
+      keyType: typeof key,
+      keyBytes: Buffer.from(key).length
     });
     
     // Debug: Check all environment variables
