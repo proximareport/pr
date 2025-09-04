@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { mapDatabaseTierToFrontend, isPaidTier } from '@/lib/tierMapping';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -481,9 +482,9 @@ function Pricing() {
                     <Button 
                       className="w-full" 
                       variant="outline"
-                      disabled={user?.membershipTier === 'free'}
+                                              disabled={!isPaidTier(user?.membershipTier || 'free')}
                     >
-                      {user?.membershipTier === 'free' ? 'Current Plan' : 'Get Started'}
+                      {!isPaidTier(user?.membershipTier || 'free') ? 'Current Plan' : 'Get Started'}
                     </Button>
                   ) : (
                     <>
@@ -494,13 +495,9 @@ function Pricing() {
                             ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700' 
                             : 'bg-purple-600 hover:bg-purple-700'
                         }`}
-                        disabled={user?.membershipTier === tierKey || (user?.membershipTier === 'tier3' && tierKey === 'tier2') || (user?.membershipTier === 'tier2' && tierKey === 'tier1') || (user?.membershipTier === 'tier1' && tierKey === 'tier1')}
+                        disabled={user?.membershipTier === tierKey}
                       >
-                        {user?.membershipTier === tierKey ? 'Current Plan' : 
-                         user?.membershipTier === 'tier3' && tierKey === 'tier2' ? 'Lower Tier' :
-                         user?.membershipTier === 'tier2' && tierKey === 'tier1' ? 'Lower Tier' :
-                         user?.membershipTier === 'tier1' && tierKey === 'tier1' ? 'Lower Tier' :
-                         'Subscribe Now'}
+                        {user?.membershipTier === tierKey ? 'Current Plan' : 'Subscribe Now'}
                       </Button>
                       
                       <Button

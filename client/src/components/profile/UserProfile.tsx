@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { mapDatabaseTierToFrontend, getTierDisplayName, getTierDescription, isPaidTier } from "@/lib/tierMapping";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -628,22 +629,14 @@ const UserProfile = ({ username, isEditable = false }: ProfileProps) => {
             <div className="flex items-center justify-between p-4 bg-[#1E1E2D] rounded-lg">
               <div>
                 <h3 className="font-space font-bold">
-                  {user?.membershipTier === "pro" 
-                    ? "Pro Subscription" 
-                    : user?.membershipTier === "supporter" 
-                      ? "Supporter Subscription" 
-                      : "Free Account"}
+                  {getTierDisplayName(user?.membershipTier || 'free')} Subscription
                 </h3>
                 <p className="text-sm text-white/70">
-                  {user?.membershipTier === "pro" 
-                    ? "Full access to all premium features" 
-                    : user?.membershipTier === "supporter" 
-                      ? "Enhanced features and customization" 
-                      : "Basic features and community access"}
+                  {getTierDescription(user?.membershipTier || 'free')}
                 </p>
               </div>
               
-              {user?.membershipTier === "free" ? (
+              {!isPaidTier(user?.membershipTier || 'free') ? (
                 <Button className="bg-gray-600 hover:bg-gray-700 cursor-not-allowed" disabled>
                   <ClockIcon className="h-4 w-4 mr-2" />
                   Coming Soon

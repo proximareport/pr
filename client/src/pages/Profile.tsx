@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ThemeSelector } from "@/components/theme/ThemeSelector";
 import { ClockIcon } from "lucide-react";
+import { mapDatabaseTierToFrontend, getTierDisplayName, getTierDescription, isPaidTier } from "@/lib/tierMapping";
 
 interface ProfileProps {
   params: {
@@ -282,22 +283,14 @@ function Profile({ params }: ProfileProps) {
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
                     <div>
                       <h3 className="font-space font-bold text-lg">
-                        {user?.membershipTier === "pro" 
-                          ? "Pro Plan" 
-                          : user?.membershipTier === "supporter" 
-                            ? "Supporter Plan" 
-                            : "Free Plan"}
+                        {getTierDisplayName(user?.membershipTier || 'free')} Plan
                       </h3>
                       <p className="text-sm text-white/70">
-                        {user?.membershipTier === "pro" 
-                          ? "$4/month" 
-                          : user?.membershipTier === "supporter" 
-                            ? "$2/month" 
-                            : "Free"}
+                        {getTierDescription(user?.membershipTier || 'free')}
                       </p>
                     </div>
                     
-                    {user?.membershipTier === "free" ? (
+                    {!isPaidTier(user?.membershipTier || 'free') ? (
                       <button className="mt-2 sm:mt-0 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md inline-block cursor-not-allowed" disabled>
                         <ClockIcon className="h-4 w-4 mr-2 inline" />
                         Coming Soon
@@ -309,7 +302,7 @@ function Profile({ params }: ProfileProps) {
                     )}
                   </div>
                   
-                  {user?.membershipTier !== "free" && (
+                  {isPaidTier(user?.membershipTier || 'free') && (
                     <>
                       <p className="text-sm text-white/70 mb-4">
                         Your subscription renews on the 1st of each month.

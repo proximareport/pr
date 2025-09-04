@@ -1,6 +1,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { CrownIcon, ShieldCheckIcon, PenToolIcon, UserIcon, StarIcon, SparklesIcon } from 'lucide-react';
+import { mapDatabaseTierToFrontend } from '@/lib/tierMapping';
 
 interface RoleBadgeProps {
   role?: string;
@@ -166,8 +167,11 @@ export function RoleBadges({
 
   // Show membership badge if not free (and showAll is true or no role badge)
   if (membershipTier && membershipTier !== 'free' && (showAll || badges.length === 0)) {
+    // Map database tier to frontend tier
+    const frontendTier = mapDatabaseTierToFrontend(membershipTier as any);
+    
     let membershipConfig;
-    switch (membershipTier) {
+    switch (frontendTier) {
       case 'pro':
         membershipConfig = {
           label: 'PRO',
@@ -180,6 +184,13 @@ export function RoleBadges({
           label: 'SUPPORTER',
           className: 'bg-purple-700/80 hover:bg-purple-600 text-white border-none',
           icon: StarIcon
+        };
+        break;
+      case 'enterprise':
+        membershipConfig = {
+          label: 'ENTERPRISE',
+          className: 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-none',
+          icon: SparklesIcon
         };
         break;
     }
