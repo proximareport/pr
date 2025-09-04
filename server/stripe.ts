@@ -19,8 +19,14 @@ try {
     startsWith: key.startsWith('sk_test_'),
     endsWith: key.slice(-10), // Last 10 characters
     hasSpaces: key.includes(' '),
-    hasNewlines: key.includes('\n')
+    hasNewlines: key.includes('\n'),
+    firstChars: key.slice(0, 20), // First 20 characters
+    lastChars: key.slice(-20) // Last 20 characters
   });
+  
+  // Also check if there are any other STRIPE_SECRET_KEY variables
+  console.log("All environment variables containing 'STRIPE_SECRET':", 
+    Object.keys(process.env).filter(k => k.includes('STRIPE_SECRET')));
   
   stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
     apiVersion: "2025-05-28.basil",
