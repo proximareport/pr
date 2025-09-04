@@ -24,6 +24,10 @@ try {
     lastChars: key.slice(-20) // Last 20 characters
   });
   
+  // Debug: Check all environment variables
+  console.log("All environment variables containing 'STRIPE':", 
+    Object.keys(process.env).filter(k => k.includes('STRIPE')).map(k => `${k}=${process.env[k] ? 'SET' : 'NOT SET'}`));
+  
   stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
     apiVersion: "2025-05-28.basil",
   });
