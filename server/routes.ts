@@ -4765,7 +4765,7 @@ Crawl-delay: 1`;
       
       // Get user information
       const userId = req.session.userId;
-      const user = await storage.getUserById(userId);
+      const user = await storage.getUser(userId);
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -4780,7 +4780,7 @@ Crawl-delay: 1`;
       console.error("Error details:", {
         message: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
-        priceId,
+        priceId: req.body.priceId,
         userId: req.session.userId
       });
       res.status(500).json({ 
