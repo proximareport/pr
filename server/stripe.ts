@@ -7,10 +7,14 @@ import type { Request, Response } from "express";
 export let stripe: Stripe;
 export let stripeConfigured = false;
 
-try {
-  if (!process.env.STRIPE_SECRET_KEY) {
-    throw new Error("STRIPE_SECRET_KEY environment variable is not set");
+// Lazy initialization function
+function initializeStripe() {
+  if (stripeConfigured) {
+    return; // Already initialized
   }
+  
+  // Initialize Stripe lazily when first used
+}
   
   // Debug: Check key format (safely)
   const key = process.env.STRIPE_SECRET_KEY;
@@ -107,6 +111,11 @@ export function validateStripeConfig(): { isValid: boolean; missingVars: string[
 // Create a Stripe checkout session
 export async function createStripeCheckoutSession(user: User, priceId: string) {
   console.log("Creating checkout session for user:", user?.username, "priceId:", priceId);
+  
+  // Initialize Stripe if not already done
+  if (!stripeConfigured) {
+    initializeStripe();
+  }
   
   // Validate Stripe configuration
   const configValidation = validateStripeConfig();
