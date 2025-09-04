@@ -5021,8 +5021,8 @@ Crawl-delay: 1`;
           },
         ],
         mode: 'payment', // One-time payment for gift
-        success_url: `${process.env.APP_URL || 'http://localhost:5000'}/gift/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.APP_URL || 'http://localhost:5000'}/pricing`,
+        success_url: `${process.env.APP_URL || (process.env.NODE_ENV === 'production' ? 'https://proximareport.com' : 'http://localhost:5000')}/gift/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.APP_URL || (process.env.NODE_ENV === 'production' ? 'https://proximareport.com' : 'http://localhost:5000')}/pricing`,
         metadata: {
           gifterId: gifter.id.toString(),
           recipientEmail,

@@ -222,8 +222,8 @@ export async function createStripeCheckoutSession(user: User, priceId: string) {
         },
       ],
       mode: 'subscription',
-      success_url: `${process.env.APP_URL || 'http://localhost:5000'}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.APP_URL || 'http://localhost:5000'}/subscription/cancel`,
+      success_url: `${process.env.APP_URL || (process.env.NODE_ENV === 'production' ? 'https://proximareport.com' : 'http://localhost:5000')}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.APP_URL || (process.env.NODE_ENV === 'production' ? 'https://proximareport.com' : 'http://localhost:5000')}/subscription/cancel`,
       metadata: {
         userId: user.id.toString(),
         tier: tierName,
