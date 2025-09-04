@@ -28,6 +28,12 @@ try {
   console.log("All environment variables containing 'STRIPE_SECRET':", 
     Object.keys(process.env).filter(k => k.includes('STRIPE_SECRET')));
   
+  // Check the actual values (safely)
+  console.log("Environment variable values:", {
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY ? 'SET' : 'NOT SET',
+    VITE_STRIPE_SECRET_KEY: process.env.VITE_STRIPE_SECRET_KEY ? 'SET' : 'NOT SET'
+  });
+  
   stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
     apiVersion: "2025-05-28.basil",
   });
