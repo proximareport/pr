@@ -4766,14 +4766,11 @@ Crawl-delay: 1`;
         const tier = session.metadata?.tier;
         
         if (userId && tier) {
-          // Update user subscription in database
-          await storage.updateUserSubscription(parseInt(userId), {
-            tier: tier as any,
-            status: 'active',
+          // Update user membership and Stripe info in database
+          await storage.updateUserMembership(parseInt(userId), tier as any);
+          await storage.updateUserStripeInfo(parseInt(userId), {
             stripeCustomerId: session.customer as string,
-            stripeSubscriptionId: session.subscription as string,
-            currentPeriodStart: new Date(),
-            currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+            stripeSubscriptionId: session.subscription as string
           });
           
           return res.json({

@@ -219,13 +219,10 @@ export async function handleStripeWebhook(req: Request, res: Response) {
           const tier = session.metadata.tier;
           
           // Update user's subscription status
-          await storage.updateUserSubscription(userId, {
-            tier: tier as any,
-            status: 'active',
+          await storage.updateUserMembership(userId, tier as any);
+          await storage.updateUserStripeInfo(userId, {
             stripeCustomerId: session.customer as string,
-            stripeSubscriptionId: session.subscription as string,
-            currentPeriodStart: new Date(),
-            currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+            stripeSubscriptionId: session.subscription as string
           });
           
           console.log(`Updated user ${userId} subscription to ${tier}`);
@@ -272,11 +269,8 @@ export async function cancelUserSubscription(userId: number) {
   // Cancel the subscription in Stripe
   await stripe.subscriptions.cancel(subscription.stripeSubscriptionId);
   
-  // Update local subscription status
-  await storage.updateUserSubscription(userId, {
-    status: 'cancelled',
-    currentPeriodEnd: new Date()
-  });
+  // Update local subscription status - set membership back to free
+  await storage.updateUserMembership(userId, 'free');
 
   return { success: true };
 }
