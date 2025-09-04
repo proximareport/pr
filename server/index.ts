@@ -17,6 +17,7 @@ console.log('Environment Variables:', {
   NODE_ENV: process.env.NODE_ENV
 });
 
+
 const missingEnvVars = Object.entries(requiredEnvVars)
   .filter(([_, value]) => !value)
   .map(([key]) => key);
