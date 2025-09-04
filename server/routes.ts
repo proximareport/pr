@@ -4773,9 +4773,15 @@ Crawl-delay: 1`;
             stripeSubscriptionId: session.subscription as string
           });
           
+          // Map database tier to frontend tier
+          let frontendTier = tier;
+          if (tier === 'tier1') frontendTier = 'supporter';
+          else if (tier === 'tier2') frontendTier = 'pro';
+          else if (tier === 'tier3') frontendTier = 'enterprise';
+          
           return res.json({
             success: true,
-            tier: tier,
+            tier: frontendTier,
             message: "Subscription verified successfully"
           });
         }

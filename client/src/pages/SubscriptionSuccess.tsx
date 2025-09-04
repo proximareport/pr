@@ -11,7 +11,7 @@ import { apiRequest } from "@/lib/queryClient";
 export default function SubscriptionSuccess() {
   const [isVerifying, setIsVerifying] = useState(true);
   const [status, setStatus] = useState<"success" | "error" | "pending">("pending");
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, refetch } = useAuth();
   const { toast } = useToast();
   const [, navigate] = useLocation();
   
@@ -36,14 +36,17 @@ export default function SubscriptionSuccess() {
           setStatus("success");
           // Update local user data
           if (updateUser) {
-            updateUser({
+            await updateUser({
               membershipTier: data.tier
             });
           }
           
+          // Force refresh user data from server
+          await refetch();
+          
           toast({
             title: "Subscription Successful!",
-            description: `Welcome to ${data.tier === "pro" ? "Pro" : "Supporter"} membership!`,
+            description: `Welcome to ${data.tier === "enterprise" ? "Enterprise" : data.tier === "pro" ? "Pro" : "Supporter"} membership!`,
           });
         } else {
           setStatus("error");
