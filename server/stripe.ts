@@ -95,15 +95,21 @@ export function validateStripeConfig(): { isValid: boolean; missingVars: string[
 
 // Create a Stripe checkout session
 export async function createStripeCheckoutSession(user: User, priceId: string) {
+  console.log("Creating checkout session for user:", user?.username, "priceId:", priceId);
+  
   // Validate Stripe configuration
   const configValidation = validateStripeConfig();
   if (!configValidation.isValid) {
+    console.error("Stripe validation failed:", configValidation.missingVars);
     throw new Error(`Stripe configuration incomplete. Missing: ${configValidation.missingVars.join(', ')}`);
   }
   
   if (!stripeConfigured) {
+    console.error("Stripe is not configured");
     throw new Error("Stripe is not properly configured. Please check your API key.");
   }
+  
+  console.log("Stripe validation passed, proceeding with checkout session creation");
   
   // Determine which subscription tier the user is purchasing
   let tierName: 'tier1' | 'tier2' | 'tier3';
@@ -134,25 +140,32 @@ export async function createStripeCheckoutSession(user: User, priceId: string) {
   }
 
   // Create the checkout session
-  const session = await stripe.checkout.sessions.create({
-    customer: customerId,
-    payment_method_types: ['card'],
-    line_items: [
-      {
-        price: priceId,
-        quantity: 1,
+  console.log("Creating Stripe checkout session with customerId:", customerId);
+  try {
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      mode: 'subscription',
+      success_url: `${process.env.APP_URL || 'http://localhost:5000'}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.APP_URL || 'http://localhost:5000'}/subscription/cancel`,
+      metadata: {
+        userId: user.id.toString(),
+        tier: tierName,
       },
-    ],
-    mode: 'subscription',
-    success_url: `${process.env.APP_URL || 'http://localhost:5000'}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${process.env.APP_URL || 'http://localhost:5000'}/subscription/cancel`,
-    metadata: {
-      userId: user.id.toString(),
-      tier: tierName,
-    },
-  });
-
-  return session;
+    });
+    
+    console.log("Checkout session created successfully:", session.id);
+    return session;
+  } catch (error) {
+    console.error("Error creating Stripe checkout session:", error);
+    throw error;
+  }
 }
 
 // Handle Stripe webhook events
