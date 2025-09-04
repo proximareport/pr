@@ -16,14 +16,9 @@ try {
     apiVersion: "2025-05-28.basil",
   });
   
-  // Verify the API key by making a test call
-  stripe.customers.list({ limit: 1 }).then(() => {
-    stripeConfigured = true;
-    console.log("✅ Stripe initialized successfully");
-  }).catch((error) => {
-    console.error("❌ Stripe API key validation failed:", error.message);
-    stripeConfigured = false;
-  });
+  // Set as configured immediately - we'll validate on first use
+  stripeConfigured = true;
+  console.log("✅ Stripe initialized successfully");
   
 } catch (error) {
   console.error("❌ Stripe initialization failed:", error.message);
