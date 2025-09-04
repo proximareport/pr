@@ -138,12 +138,40 @@ export async function createStripeCheckoutSession(user: User, priceId: string) {
   if (user.stripeCustomerId) {
     try {
       // Verify the customer still exists in Stripe
-      await stripe.customers.retrieve(user.stripeCustomerId);
+      const customer = await stripe.customers.retrieve(user.stripeCustomerId);
+      console.log("Customer exists in Stripe:", customer.id);
+      
+      // Also check if they have any active subscriptions
+      const subscriptions = await stripe.subscriptions.list({
+        customer: user.stripeCustomerId,
+        status: 'active'
+      });
+      
+      if (subscriptions.data.length === 0) {
+        console.log("No active subscriptions found, clearing old subscription data");
+        // Clear old subscription data from database
+        await storage.updateUser(user.id, { 
+          stripeCustomerId: null,
+          stripeSubscriptionId: null,
+          membershipTier: 'free'
+        });
+        console.log("Cleared old subscription data from database");
+      }
+      
       customerId = user.stripeCustomerId;
       console.log("Using existing Stripe customer ID:", customerId);
     } catch (error) {
       console.log("Existing customer ID invalid, creating new customer:", error.message);
       console.log("Customer ID that failed:", user.stripeCustomerId);
+      
+      // Clear the invalid customer ID from database
+      await storage.updateUser(user.id, { 
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+        membershipTier: 'free'
+      });
+      console.log("Cleared invalid customer data from database");
+      
       // Customer doesn't exist, create a new one
       const customer = await stripe.customers.create({
         email: user.email,
