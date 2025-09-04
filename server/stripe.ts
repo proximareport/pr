@@ -98,6 +98,7 @@ export function validateStripeConfig(): { isValid: boolean; missingVars: string[
 // Create a Stripe checkout session
 export async function createStripeCheckoutSession(user: User, priceId: string) {
   console.log("Creating checkout session for user:", user?.username, "priceId:", priceId);
+  console.log("User data:", { id: user?.id, username: user?.username, email: user?.email, stripeCustomerId: user?.stripeCustomerId });
   console.log("Stripe configured status:", stripeConfigured);
   
   // Initialize Stripe if not already done
@@ -142,6 +143,7 @@ export async function createStripeCheckoutSession(user: User, priceId: string) {
       console.log("Using existing Stripe customer ID:", customerId);
     } catch (error) {
       console.log("Existing customer ID invalid, creating new customer:", error.message);
+      console.log("Customer ID that failed:", user.stripeCustomerId);
       // Customer doesn't exist, create a new one
       const customer = await stripe.customers.create({
         email: user.email,
