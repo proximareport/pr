@@ -12,6 +12,16 @@ try {
     throw new Error("STRIPE_SECRET_KEY environment variable is not set");
   }
   
+  // Debug: Check key format (safely)
+  const key = process.env.STRIPE_SECRET_KEY;
+  console.log("Stripe key format check:", {
+    length: key.length,
+    startsWith: key.startsWith('sk_test_'),
+    endsWith: key.slice(-10), // Last 10 characters
+    hasSpaces: key.includes(' '),
+    hasNewlines: key.includes('\n')
+  });
+  
   stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
     apiVersion: "2025-05-28.basil",
   });
