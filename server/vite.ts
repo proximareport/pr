@@ -52,10 +52,8 @@ export async function setupVite(app: Express, server: Server) {
         req.path === '/rss.xml' || 
         req.path === '/ads.txt' || 
         req.path === '/feed.json') {
-      console.log("Skipping Vite middleware for API route:", req.path);
       return next();
     }
-    console.log("Applying Vite middleware for route:", req.path);
     // Apply Vite middleware to frontend routes
     vite.middlewares(req, res, next);
   });
