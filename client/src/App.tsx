@@ -20,6 +20,7 @@ import Astronomy from "@/pages/Astronomy";
 import Jobs from "@/pages/Jobs";
 import Subscribe from "@/pages/Subscribe";
 import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
+import SubscriptionCancel from "@/pages/SubscriptionCancel";
 import Pricing from "@/pages/Pricing";
 import TagView from "@/pages/TagView";
 import ProxiHub from "@/pages/ProxiHub";
@@ -108,6 +109,7 @@ function Router() {
       <Route path="/astronomy" component={Astronomy} />
       <Route path="/subscribe" component={Subscribe} />
       <Route path="/subscription/success" component={SubscriptionSuccess} />
+      <Route path="/subscription/cancel" component={SubscriptionCancel} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/proxihub" component={ProxiHub} />
       <Route path="/tools/word-generator" component={WordGenerator} />
