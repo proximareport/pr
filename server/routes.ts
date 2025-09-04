@@ -35,7 +35,7 @@ import {
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
-import { handleStripeWebhook, createStripeCheckoutSession, stripe, SUBSCRIPTION_PRICES } from "./stripe";
+import { handleStripeWebhook, createStripeCheckoutSession, stripe, stripeConfigured, SUBSCRIPTION_PRICES } from "./stripe";
 import session from "express-session";
 import { z } from "zod";
 import axios from "axios";
@@ -4738,6 +4738,65 @@ Crawl-delay: 1`;
   // Stripe webhook handler for subscription events
   // ----------------------------------------------------
   app.post("/api/stripe-webhook", express.raw({ type: "application/json" }), handleStripeWebhook);
+
+  // Verify Stripe checkout session
+  app.get("/api/stripe/verify-session", async (req, res) => {
+    try {
+      const { session_id } = req.query;
+      
+      if (!session_id) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Session ID is required" 
+        });
+      }
+      
+      // Initialize Stripe if not already done
+      if (!stripeConfigured) {
+        const { initializeStripe } = await import('./stripe');
+        initializeStripe();
+      }
+      
+      // Retrieve the session from Stripe
+      const session = await stripe.checkout.sessions.retrieve(session_id as string);
+      
+      if (session.payment_status === 'paid') {
+        // Get user from session metadata
+        const userId = session.metadata?.userId;
+        const tier = session.metadata?.tier;
+        
+        if (userId && tier) {
+          // Update user subscription in database
+          await storage.updateUserSubscription(parseInt(userId), {
+            tier: tier as any,
+            status: 'active',
+            stripeCustomerId: session.customer as string,
+            stripeSubscriptionId: session.subscription as string,
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+          });
+          
+          return res.json({
+            success: true,
+            tier: tier,
+            message: "Subscription verified successfully"
+          });
+        }
+      }
+      
+      return res.status(400).json({
+        success: false,
+        message: "Session not found or payment not completed"
+      });
+      
+    } catch (error) {
+      console.error("Error verifying session:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Error verifying session"
+      });
+    }
+  });
 
   // Create Stripe checkout session for subscriptions
   app.post("/api/create-checkout-session", requireAuth, async (req: Request, res: Response) => {
