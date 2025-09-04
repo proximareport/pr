@@ -13,90 +13,67 @@ function initializeStripe() {
     return; // Already initialized
   }
   
-  // Initialize Stripe lazily when first used
+  try {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error("STRIPE_SECRET_KEY environment variable is not set");
+    }
+    
+    // Debug: Check key format (safely)
+    const key = process.env.STRIPE_SECRET_KEY;
+    console.log("PRODUCTION Stripe key format check:", {
+      length: key.length,
+      startsWith: key.startsWith('sk_test_'),
+      endsWith: key.slice(-10), // Last 10 characters
+      hasSpaces: key.includes(' '),
+      hasNewlines: key.includes('\n'),
+      firstChars: key.slice(0, 20), // First 20 characters
+      lastChars: key.slice(-20) // Last 20 characters
+    });
+    
+    // Debug: Check all environment variables
+    console.log("All environment variables containing 'STRIPE':", 
+      Object.keys(process.env).filter(k => k.includes('STRIPE')).map(k => `${k}=${process.env[k] ? 'SET' : 'NOT SET'}`));
+    
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: "2025-05-28.basil",
+    });
+    
+    // Set as configured immediately - we'll validate on first use
+    stripeConfigured = true;
+    console.log("✅ Stripe initialized successfully");
+    
+  } catch (error) {
+    console.error("❌ Stripe initialization failed:", error.message);
+    console.warn("⚠️  Payments will not work until a valid STRIPE_SECRET_KEY is provided");
+    
+    // @ts-ignore - Create a dummy stripe object to prevent crashes
+    stripe = {
+      customers: { 
+        create: async () => { throw new Error("Stripe not configured"); }, 
+        retrieve: async () => { throw new Error("Stripe not configured"); },
+        list: async () => { throw new Error("Stripe not configured"); }
+      },
+      checkout: { sessions: { create: async () => { throw new Error("Stripe not configured"); } } },
+      webhooks: { constructEvent: () => { throw new Error("Stripe not configured"); } }
+    } as any;
+  }
 }
-  
-  // Debug: Check key format (safely)
-  const key = process.env.STRIPE_SECRET_KEY;
-  console.log("PRODUCTION Stripe key format check:", {
-    length: key.length,
-    startsWith: key.startsWith('sk_test_'),
-    endsWith: key.slice(-10), // Last 10 characters
-    hasSpaces: key.includes(' '),
-    hasNewlines: key.includes('\n'),
-    firstChars: key.slice(0, 20), // First 20 characters
-    lastChars: key.slice(-20) // Last 20 characters
-  });
-  
-  // Debug: Check all environment variables
-  console.log("All environment variables containing 'STRIPE':", 
-    Object.keys(process.env).filter(k => k.includes('STRIPE')).map(k => `${k}=${process.env[k] ? 'SET' : 'NOT SET'}`));
-  
-  stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: "2025-05-28.basil",
-  });
-  
-  // Set as configured immediately - we'll validate on first use
-  stripeConfigured = true;
-  console.log("✅ Stripe initialized successfully");
-  
-} catch (error) {
-  console.error("❌ Stripe initialization failed:", error.message);
-  console.warn("⚠️  Payments will not work until a valid STRIPE_SECRET_KEY is provided");
-  
-  // @ts-ignore - Create a dummy stripe object to prevent crashes
-  stripe = {
-    customers: { 
-      create: async () => { throw new Error("Stripe not configured"); }, 
-      retrieve: async () => { throw new Error("Stripe not configured"); },
-      list: async () => { throw new Error("Stripe not configured"); }
-    },
-    checkout: { sessions: { create: async () => { throw new Error("Stripe not configured"); } } },
-    webhooks: { constructEvent: () => { throw new Error("Stripe not configured"); } },
-    subscriptions: { 
-      retrieve: async () => { throw new Error("Stripe not configured"); }, 
-      update: async () => { throw new Error("Stripe not configured"); } 
-    },
-  };
-}
-
-// Price IDs for subscription tiers
-export const SUBSCRIPTION_PRICES = {
-  tier1: process.env.STRIPE_TIER1_PRICE_ID,
-  tier2: process.env.STRIPE_TIER2_PRICE_ID,
-  tier3: process.env.STRIPE_TIER3_PRICE_ID,
-};
 
 // Validate Stripe configuration
 export function validateStripeConfig(): { isValid: boolean; missingVars: string[] } {
   const missingVars: string[] = [];
-  
-  if (!process.env.STRIPE_SECRET_KEY) {
-    missingVars.push('STRIPE_SECRET_KEY');
-  }
-  
-  if (!process.env.STRIPE_TIER1_PRICE_ID) {
-    missingVars.push('STRIPE_TIER1_PRICE_ID');
-  }
-  
+  if (!process.env.STRIPE_SECRET_KEY) { missingVars.push('STRIPE_SECRET_KEY'); }
+  if (!process.env.STRIPE_TIER1_PRICE_ID) { missingVars.push('STRIPE_TIER1_PRICE_ID'); }
   // Yearly Price IDs are optional (disabled for now)
   // if (!process.env.STRIPE_TIER1_YEARLY_PRICE_ID) {
   //   missingVars.push('STRIPE_TIER1_YEARLY_PRICE_ID');
   // }
-  
-  if (!process.env.STRIPE_TIER2_PRICE_ID) {
-    missingVars.push('STRIPE_TIER2_PRICE_ID');
-  }
-  
+  if (!process.env.STRIPE_TIER2_PRICE_ID) { missingVars.push('STRIPE_TIER2_PRICE_ID'); }
   // Yearly Price IDs are optional (disabled for now)
   // if (!process.env.STRIPE_TIER2_YEARLY_PRICE_ID) {
   //   missingVars.push('STRIPE_TIER2_YEARLY_PRICE_ID');
   // }
-  
-  if (!process.env.STRIPE_TIER3_PRICE_ID) {
-    missingVars.push('STRIPE_TIER3_PRICE_ID');
-  }
-  
+  if (!process.env.STRIPE_TIER3_PRICE_ID) { missingVars.push('STRIPE_TIER3_PRICE_ID'); }
   // Yearly Price IDs are optional (disabled for now)
   // if (!process.env.STRIPE_TIER3_YEARLY_PRICE_ID) {
   //   missingVars.push('STRIPE_TIER3_YEARLY_PRICE_ID');
@@ -125,38 +102,44 @@ export async function createStripeCheckoutSession(user: User, priceId: string) {
   }
   
   if (!stripeConfigured) {
-    console.error("Stripe is not configured");
     throw new Error("Stripe is not properly configured. Please check your API key.");
   }
-  
-  console.log("Stripe validation passed, proceeding with checkout session creation");
-  
-  // Determine which subscription tier the user is purchasing
-  let tierName: 'tier1' | 'tier2' | 'tier3';
+
+  // Determine tier name from price ID
+  let tierName = 'unknown';
   if (priceId === process.env.STRIPE_TIER1_PRICE_ID) {
     tierName = 'tier1';
   } else if (priceId === process.env.STRIPE_TIER2_PRICE_ID) {
     tierName = 'tier2';
   } else if (priceId === process.env.STRIPE_TIER3_PRICE_ID) {
     tierName = 'tier3';
-  } else {
-    throw new Error(`Invalid price ID: ${priceId}. Valid options are: ${process.env.STRIPE_TIER1_PRICE_ID}, ${process.env.STRIPE_TIER2_PRICE_ID}, ${process.env.STRIPE_TIER3_PRICE_ID}`);
   }
 
-  // Create or get Stripe customer
-  let customerId = user.stripeCustomerId;
-  if (!customerId) {
+  // Get or create Stripe customer
+  let customerId: string;
+  
+  // Check if user already has a Stripe customer ID
+  if (user.stripeCustomerId) {
+    customerId = user.stripeCustomerId;
+    console.log("Using existing Stripe customer ID:", customerId);
+  } else {
+    // Create new Stripe customer
+    console.log("Creating new Stripe customer for user:", user.username);
     const customer = await stripe.customers.create({
       email: user.email,
       name: user.username,
       metadata: {
         userId: user.id.toString(),
-      },
+        username: user.username
+      }
     });
-    customerId = customer.id;
     
-    // Update user with Stripe customer ID
+    customerId = customer.id;
+    console.log("Created Stripe customer with ID:", customerId);
+    
+    // Update user record with Stripe customer ID
     await storage.updateUser(user.id, { stripeCustomerId: customerId });
+    console.log("Updated user record with Stripe customer ID");
   }
 
   // Create the checkout session
@@ -179,11 +162,11 @@ export async function createStripeCheckoutSession(user: User, priceId: string) {
         tier: tierName,
       },
     });
-    
-    console.log("Checkout session created successfully:", session.id);
+
+    console.log("✅ Stripe checkout session created successfully:", session.id);
     return session;
   } catch (error) {
-    console.error("Error creating Stripe checkout session:", error);
+    console.error("❌ Error creating Stripe checkout session:", error);
     throw error;
   }
 }
@@ -191,141 +174,94 @@ export async function createStripeCheckoutSession(user: User, priceId: string) {
 // Handle Stripe webhook events
 export async function handleStripeWebhook(req: Request, res: Response) {
   const sig = req.headers['stripe-signature'] as string;
-  
-  if (!sig) {
-    return res.status(400).send('Missing Stripe signature');
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (!webhookSecret) {
+    console.error('Stripe webhook secret not configured');
+    return res.status(400).send('Webhook secret not configured');
   }
 
+  let event: Stripe.Event;
+
   try {
-    const event = stripe.webhooks.constructEvent(
-      req.body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET || ''
-    );
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
 
-    console.log('Received webhook event:', event.type);
+  console.log('Received Stripe webhook event:', event.type);
 
+  try {
     switch (event.type) {
       case 'checkout.session.completed':
-        await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
+        const session = event.data.object as Stripe.Checkout.Session;
+        console.log('Checkout session completed:', session.id);
+        
+        // Update user subscription status
+        if (session.metadata?.userId) {
+          const userId = parseInt(session.metadata.userId);
+          const tier = session.metadata.tier;
+          
+          // Update user's subscription status
+          await storage.updateUserSubscription(userId, {
+            tier: tier as any,
+            status: 'active',
+            stripeCustomerId: session.customer as string,
+            stripeSubscriptionId: session.subscription as string,
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+          });
+          
+          console.log(`Updated user ${userId} subscription to ${tier}`);
+        }
         break;
+
       case 'customer.subscription.updated':
-        await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
+        const subscription = event.data.object as Stripe.Subscription;
+        console.log('Subscription updated:', subscription.id);
+        // Handle subscription updates
         break;
+
       case 'customer.subscription.deleted':
-        await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
+        const deletedSubscription = event.data.object as Stripe.Subscription;
+        console.log('Subscription deleted:', deletedSubscription.id);
+        // Handle subscription cancellation
         break;
-      case 'invoice.payment_failed':
-        await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
-        break;
+
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
 
     res.json({ received: true });
-  } catch (err) {
-    console.error('Webhook error:', err);
-    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-    res.status(400).send(`Webhook Error: ${errorMessage}`);
+  } catch (error) {
+    console.error('Error processing webhook:', error);
+    res.status(500).json({ error: 'Webhook processing failed' });
   }
 }
 
-async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
-  // Get the user ID from metadata
-  const userId = session.metadata?.userId;
-  const tier = session.metadata?.tier as 'tier1' | 'tier2' | 'tier3';
-  
-  if (!userId || !tier) {
-    console.error('Missing userId or tier in session metadata');
-    return;
-  }
-  
-  // Get the subscription
-  if (!session.subscription) {
-    console.error('Missing subscription in session');
-    return;
-  }
-  
-  const subscription = await stripe.subscriptions.retrieve(
-    session.subscription as string
-  );
-  
-  // Update user with subscription ID and tier
-  await storage.updateUser(parseInt(userId), { stripeSubscriptionId: subscription.id });
-  
-  // Update user membership tier
-  await storage.updateUserMembership(parseInt(userId), tier);
+// Get user subscription status
+export async function getUserSubscription(userId: number) {
+  const subscription = await storage.getUserSubscription(userId);
+  return subscription;
 }
 
-async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-  // Find the user with this subscription
-  const userId = subscription.metadata?.userId;
+// Cancel user subscription
+export async function cancelUserSubscription(userId: number) {
+  const subscription = await storage.getUserSubscription(userId);
   
-  if (!userId) {
-    // Try to find user by customer ID
-    const customer = await stripe.customers.retrieve(subscription.customer as string);
-    if (customer.deleted) {
-      console.error('Customer deleted');
-      return;
-    }
-    
-    const userIdFromCustomer = customer.metadata?.userId;
-    if (!userIdFromCustomer) {
-      console.error('Could not find userId in customer metadata');
-      return;
-    }
-    
-    // Determine the tier from the price ID
-    const priceId = subscription.items.data[0].price.id;
-    let tier: 'tier1' | 'tier2' | 'tier3' | 'free' = 'free';
-    
-    if (priceId.includes('tier1')) {
-      tier = 'tier1';
-    } else if (priceId.includes('tier2')) {
-      tier = 'tier2';
-    } else if (priceId.includes('tier3')) {
-      tier = 'tier3';
-    }
-    
-    // Update the user's subscription status
-    if (subscription.status === 'active') {
-      await storage.updateUserMembership(parseInt(userIdFromCustomer), tier);
-    } else if (subscription.status === 'canceled' || subscription.status === 'unpaid') {
-      await storage.updateUserMembership(parseInt(userIdFromCustomer), 'free');
-    }
+  if (!subscription?.stripeSubscriptionId) {
+    throw new Error('No active subscription found');
   }
-}
 
-async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-  // Find the user with this subscription
-  const userId = subscription.metadata?.userId;
+  // Cancel the subscription in Stripe
+  await stripe.subscriptions.cancel(subscription.stripeSubscriptionId);
   
-  if (!userId) {
-    // Try to find user by customer ID
-    const customer = await stripe.customers.retrieve(subscription.customer as string);
-    if (customer.deleted) {
-      console.error('Customer deleted');
-      return;
-    }
-    
-    const userIdFromCustomer = customer.metadata?.userId;
-    if (!userIdFromCustomer) {
-      console.error('Could not find userId in customer metadata');
-      return;
-    }
-    
-    // Update user membership to free
-    await storage.updateUserMembership(parseInt(userIdFromCustomer), 'free');
-  }
-}
+  // Update local subscription status
+  await storage.updateUserSubscription(userId, {
+    status: 'cancelled',
+    currentPeriodEnd: new Date()
+  });
 
-async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
-  // Handle failed payment - could downgrade user or send notification
-  console.log('Invoice payment failed:', invoice.id);
-  
-  // If you need to access the subscription from the invoice
-  if (invoice.subscription && typeof invoice.subscription === 'string') {
-    const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
-    // Handle failed payment logic here
-  }
+  return { success: true };
 }
