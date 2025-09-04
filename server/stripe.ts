@@ -64,25 +64,28 @@ export function validateStripeConfig(): { isValid: boolean; missingVars: string[
     missingVars.push('STRIPE_TIER1_PRICE_ID');
   }
   
-  if (!process.env.STRIPE_TIER1_YEARLY_PRICE_ID) {
-    missingVars.push('STRIPE_TIER1_YEARLY_PRICE_ID');
-  }
+  // Yearly Price IDs are optional (disabled for now)
+  // if (!process.env.STRIPE_TIER1_YEARLY_PRICE_ID) {
+  //   missingVars.push('STRIPE_TIER1_YEARLY_PRICE_ID');
+  // }
   
   if (!process.env.STRIPE_TIER2_PRICE_ID) {
     missingVars.push('STRIPE_TIER2_PRICE_ID');
   }
   
-  if (!process.env.STRIPE_TIER2_YEARLY_PRICE_ID) {
-    missingVars.push('STRIPE_TIER2_YEARLY_PRICE_ID');
-  }
+  // Yearly Price IDs are optional (disabled for now)
+  // if (!process.env.STRIPE_TIER2_YEARLY_PRICE_ID) {
+  //   missingVars.push('STRIPE_TIER2_YEARLY_PRICE_ID');
+  // }
   
   if (!process.env.STRIPE_TIER3_PRICE_ID) {
     missingVars.push('STRIPE_TIER3_PRICE_ID');
   }
   
-  if (!process.env.STRIPE_TIER3_YEARLY_PRICE_ID) {
-    missingVars.push('STRIPE_TIER3_YEARLY_PRICE_ID');
-  }
+  // Yearly Price IDs are optional (disabled for now)
+  // if (!process.env.STRIPE_TIER3_YEARLY_PRICE_ID) {
+  //   missingVars.push('STRIPE_TIER3_YEARLY_PRICE_ID');
+  // }
   
   return {
     isValid: missingVars.length === 0,
