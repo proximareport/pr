@@ -4777,7 +4777,16 @@ Crawl-delay: 1`;
       res.json({ url: session.url });
     } catch (error) {
       console.error("Error creating checkout session:", error);
-      res.status(500).json({ message: "Error creating checkout session" });
+      console.error("Error details:", {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        priceId,
+        userId: req.session.userId
+      });
+      res.status(500).json({ 
+        message: "Error creating checkout session",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
