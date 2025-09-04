@@ -1090,7 +1090,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Endpoint to get Stripe price IDs for frontend
+  // Endpoint to get Stripe price IDs for frontend - Updated
   app.get("/api/stripe/price-ids", (req: Request, res: Response) => {
     res.json({
       tier1: {
