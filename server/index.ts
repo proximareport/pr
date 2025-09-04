@@ -1,4 +1,7 @@
-import 'dotenv/config';
+// Only load dotenv in development
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv/config');
+}
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 // We now register newsletter routes directly in routes.ts
