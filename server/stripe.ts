@@ -135,8 +135,30 @@ export async function createStripeCheckoutSession(user: User, priceId: string) {
   
   // Check if user already has a Stripe customer ID
   if (user.stripeCustomerId) {
-    customerId = user.stripeCustomerId;
-    console.log("Using existing Stripe customer ID:", customerId);
+    try {
+      // Verify the customer still exists in Stripe
+      await stripe.customers.retrieve(user.stripeCustomerId);
+      customerId = user.stripeCustomerId;
+      console.log("Using existing Stripe customer ID:", customerId);
+    } catch (error) {
+      console.log("Existing customer ID invalid, creating new customer:", error.message);
+      // Customer doesn't exist, create a new one
+      const customer = await stripe.customers.create({
+        email: user.email,
+        name: user.username,
+        metadata: {
+          userId: user.id.toString(),
+          username: user.username
+        }
+      });
+      
+      customerId = customer.id;
+      console.log("Created new Stripe customer with ID:", customerId);
+      
+      // Update user record with new Stripe customer ID
+      await storage.updateUser(user.id, { stripeCustomerId: customerId });
+      console.log("Updated user record with new Stripe customer ID");
+    }
   } else {
     // Create new Stripe customer
     console.log("Creating new Stripe customer for user:", user.username);

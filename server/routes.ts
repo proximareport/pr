@@ -1105,7 +1105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         monthly: process.env.STRIPE_TIER3_PRICE_ID,
         yearly: process.env.STRIPE_TIER3_YEARLY_PRICE_ID
       },
-      publishableKey: process.env.VITE_STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLISHABLE_KEY
+      publishableKey: process.env.VITE_STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLISHABLE_KEY || 'pk_test_your-stripe-publishable-key'
     });
   });
 
