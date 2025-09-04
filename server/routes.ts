@@ -4765,7 +4765,7 @@ Crawl-delay: 1`;
       
       // Get user information
       const userId = req.session.userId;
-      const user = await storage.getUser(userId);
+      const user = await storage.getUserById(userId);
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
