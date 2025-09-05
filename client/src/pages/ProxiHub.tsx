@@ -435,8 +435,24 @@ function ProxiHub() {
                 Search Results ({filteredTools.length} tools)
               </h2>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredTools.map((tool, index) => (
-                  <Card key={index} className="bg-white/5 border-white/10 backdrop-blur-sm hover:bg-white/10 transition-all duration-300 group">
+                {filteredTools.map((tool, index) => {
+                  // Find which category this tool belongs to and if it's the first in that category
+                  const toolCategory = tool.category;
+                  const categoryTools = tools.filter(t => t.category === toolCategory);
+                  const isFirstToolInCategory = categoryTools.indexOf(tool) === 0;
+                  const isAdvancedTool = tool.category === "Advanced" || tool.badge === "Advanced";
+                  const hasAccess = isFirstToolInCategory || canAccessFeature('proxihub_basic');
+                  
+                  return (
+                    <PremiumAccess
+                      key={index}
+                      requiredTier="tier1"
+                      featureName={tool.name}
+                      description={isAdvancedTool ? "Advanced tools require Supporter plan or higher" : 
+                                 !isFirstToolInCategory ? "Additional tools require Supporter plan or higher" : undefined}
+                      showUpgrade={!hasAccess}
+                    >
+                      <Card className="bg-white/5 border-white/10 backdrop-blur-sm hover:bg-white/10 transition-all duration-300 group">
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="w-12 h-12 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
@@ -495,7 +511,9 @@ function ProxiHub() {
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                    </PremiumAccess>
+                  );
+                })}
               </div>
             </div>
           ) : (
@@ -544,15 +562,18 @@ function ProxiHub() {
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {group.tools.map((tool, toolIndex) => {
                       // Determine if tool requires premium access
-                      const isPremiumTool = tool.category === "Advanced" || tool.badge === "Advanced";
-                      const hasAccess = !isPremiumTool || canAccessFeature('proxihub_basic');
+                      // Unlock the first tool in each category for free users
+                      const isFirstToolInCategory = toolIndex === 0;
+                      const isAdvancedTool = tool.category === "Advanced" || tool.badge === "Advanced";
+                      const hasAccess = isFirstToolInCategory || canAccessFeature('proxihub_basic');
                       
                       return (
                         <PremiumAccess
                           key={toolIndex}
                           requiredTier="tier1"
                           featureName={tool.name}
-                          description={isPremiumTool ? "Advanced tools require Supporter plan or higher" : undefined}
+                          description={isAdvancedTool ? "Advanced tools require Supporter plan or higher" : 
+                                     !isFirstToolInCategory ? "Additional tools require Supporter plan or higher" : undefined}
                           showUpgrade={!hasAccess}
                         >
                           <Card className="bg-white/5 border-white/10 backdrop-blur-sm hover:bg-white/10 transition-all duration-300 group">

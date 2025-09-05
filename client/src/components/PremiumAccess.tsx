@@ -59,9 +59,9 @@ export const PremiumAccess: React.FC<PremiumAccessProps> = ({
         {children}
       </div>
       
-      {/* Overlay */}
-      <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm rounded-lg">
-        <Card className="w-full max-w-md mx-4 border-2 border-dashed border-gray-600">
+      {/* Overlay with higher z-index to avoid ad conflicts */}
+      <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm rounded-lg z-50">
+        <Card className="w-full max-w-md mx-4 border-2 border-dashed border-gray-600 relative z-50">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 p-3 rounded-full bg-gray-800">
               <LockIcon className="h-8 w-8 text-gray-400" />
