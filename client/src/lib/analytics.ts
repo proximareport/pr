@@ -261,17 +261,20 @@ class AnalyticsTracker {
       if (!pageViews[pageView.path]) {
         pageViews[pageView.path] = {
           totalViews: 0,
-          uniqueSessions: new Set(),
+          uniqueSessions: [],
           lastViewed: 0
         };
       }
       
+      // Ensure uniqueSessions is a Set
+      const uniqueSessions = new Set(pageViews[pageView.path].uniqueSessions || []);
+      
       pageViews[pageView.path].totalViews++;
-      pageViews[pageView.path].uniqueSessions.add(pageView.sessionId);
+      uniqueSessions.add(pageView.sessionId);
       pageViews[pageView.path].lastViewed = pageView.timestamp;
       
       // Convert Set to Array for localStorage
-      pageViews[pageView.path].uniqueSessions = Array.from(pageViews[pageView.path].uniqueSessions);
+      pageViews[pageView.path].uniqueSessions = Array.from(uniqueSessions);
       
       localStorage.setItem('pageViews', JSON.stringify(pageViews));
       
@@ -291,17 +294,20 @@ class AnalyticsTracker {
       if (!articleViews[articleView.slug]) {
         articleViews[articleView.slug] = {
           totalViews: 0,
-          uniqueSessions: new Set(),
+          uniqueSessions: [],
           totalTimeOnPage: 0,
           avgTimeOnPage: 0
         };
       }
       
+      // Ensure uniqueSessions is a Set
+      const uniqueSessions = new Set(articleViews[articleView.slug].uniqueSessions || []);
+      
       articleViews[articleView.slug].totalViews++;
-      articleViews[articleView.slug].uniqueSessions.add(articleView.sessionId);
+      uniqueSessions.add(articleView.sessionId);
       
       // Convert Set to Array for localStorage
-      articleViews[articleView.slug].uniqueSessions = Array.from(articleViews[articleView.slug].uniqueSessions);
+      articleViews[articleView.slug].uniqueSessions = Array.from(uniqueSessions);
       
       localStorage.setItem('articleViews', JSON.stringify(articleViews));
       
@@ -321,7 +327,7 @@ class AnalyticsTracker {
       if (!toolUsage[toolName]) {
         toolUsage[toolName] = {
           totalUsage: 0,
-          uniqueSessions: new Set(),
+          uniqueSessions: [],
           totalUsageTime: 0,
           avgUsageTime: 0,
           category: category,
@@ -330,14 +336,17 @@ class AnalyticsTracker {
         };
       }
       
+      // Ensure uniqueSessions is a Set
+      const uniqueSessions = new Set(toolUsage[toolName].uniqueSessions || []);
+      
       toolUsage[toolName].totalUsage++;
-      toolUsage[toolName].uniqueSessions.add(this.sessionId);
+      uniqueSessions.add(this.sessionId);
       toolUsage[toolName].totalUsageTime += usageDuration;
       toolUsage[toolName].avgUsageTime = toolUsage[toolName].totalUsageTime / toolUsage[toolName].totalUsage;
       toolUsage[toolName].lastUsed = Date.now();
       
       // Convert Set to Array for localStorage
-      toolUsage[toolName].uniqueSessions = Array.from(toolUsage[toolName].uniqueSessions);
+      toolUsage[toolName].uniqueSessions = Array.from(uniqueSessions);
       
       localStorage.setItem('toolUsage', JSON.stringify(toolUsage));
       
@@ -364,21 +373,24 @@ class AnalyticsTracker {
       if (!galleryData[imageId]) {
         galleryData[imageId] = {
           totalViews: 0,
-          uniqueSessions: new Set(),
+          uniqueSessions: [],
           totalTime: 0,
           avgTime: 0,
           lastViewed: 0
         };
       }
       
+      // Ensure uniqueSessions is a Set
+      const uniqueSessions = new Set(galleryData[imageId].uniqueSessions || []);
+      
       galleryData[imageId].totalViews++;
-      galleryData[imageId].uniqueSessions.add(this.sessionId);
+      uniqueSessions.add(this.sessionId);
       galleryData[imageId].totalTime += duration;
       galleryData[imageId].avgTime = galleryData[imageId].totalTime / galleryData[imageId].totalViews;
       galleryData[imageId].lastViewed = Date.now();
       
       // Convert Set to Array for localStorage
-      galleryData[imageId].uniqueSessions = Array.from(galleryData[imageId].uniqueSessions);
+      galleryData[imageId].uniqueSessions = Array.from(uniqueSessions);
       
       localStorage.setItem('galleryData', JSON.stringify(galleryData));
     } catch (error) {
@@ -393,21 +405,24 @@ class AnalyticsTracker {
       if (!missionControlData[feature]) {
         missionControlData[feature] = {
           totalUsage: 0,
-          uniqueSessions: new Set(),
+          uniqueSessions: [],
           totalTime: 0,
           avgTime: 0,
           lastUsed: 0
         };
       }
       
+      // Ensure uniqueSessions is a Set
+      const uniqueSessions = new Set(missionControlData[feature].uniqueSessions || []);
+      
       missionControlData[feature].totalUsage++;
-      missionControlData[feature].uniqueSessions.add(this.sessionId);
+      uniqueSessions.add(this.sessionId);
       missionControlData[feature].totalTime += duration;
       missionControlData[feature].avgTime = missionControlData[feature].totalTime / missionControlData[feature].totalUsage;
       missionControlData[feature].lastUsed = Date.now();
       
       // Convert Set to Array for localStorage
-      missionControlData[feature].uniqueSessions = Array.from(missionControlData[feature].uniqueSessions);
+      missionControlData[feature].uniqueSessions = Array.from(uniqueSessions);
       
       localStorage.setItem('missionControlData', JSON.stringify(missionControlData));
     } catch (error) {

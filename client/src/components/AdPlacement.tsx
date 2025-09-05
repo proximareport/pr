@@ -42,7 +42,7 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
   const maxRetries = isOpera ? 3 : isFirefox ? 2 : 1;
 
   useEffect(() => {
-    if (isGoogleAdsLoaded && consentGiven && !adLoaded && !isAdBlocked && !isProSubscriber) {
+    if (isGoogleAdsLoaded && consentGiven && !adLoaded && !isAdBlocked && !isPaidSubscriber) {
       // Browser-specific loading delays
       let delay = 300;
       if (isOpera) delay = 500; // Opera needs more time to initialize
@@ -75,7 +75,7 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
 
       return () => clearTimeout(timer);
     }
-  }, [isGoogleAdsLoaded, consentGiven, adLoaded, isAdBlocked, isProSubscriber, type, isOpera, isFirefox, isMobile]);
+  }, [isGoogleAdsLoaded, consentGiven, adLoaded, isAdBlocked, isPaidSubscriber, type, isOpera, isFirefox, isMobile]);
 
   const loadAd = () => {
     try {
