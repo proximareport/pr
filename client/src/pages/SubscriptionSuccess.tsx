@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { mapFrontendTierToDatabase } from "@/lib/tierMapping";
 import { apiRequest } from "@/lib/queryClient";
 
 export default function SubscriptionSuccess() {
@@ -34,14 +35,19 @@ export default function SubscriptionSuccess() {
         
         if (data.success) {
           setStatus("success");
-          // Update local user data
+          console.log("Subscription verification successful, data:", data);
+          
+          // Update local user data with database tier format
           if (updateUser) {
+            const databaseTier = mapFrontendTierToDatabase(data.tier as any);
+            console.log("Updating user with database tier:", databaseTier);
             await updateUser({
-              membershipTier: data.tier
+              membershipTier: databaseTier
             });
           }
           
           // Force refresh user data from server
+          console.log("Refreshing user data from server...");
           await refetch();
           
           toast({

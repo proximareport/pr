@@ -42,7 +42,7 @@ const app = express();
 
 // Session configuration with enhanced security
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  secret: process.env.SESSION_SECRET || (process.env.NODE_ENV === 'development' ? 'dev-session-secret-key-2024' : 'your-secret-key'),
   resave: false,
   saveUninitialized: false,
   name: 'proxima.sid', // Custom session name for security
