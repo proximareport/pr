@@ -32,6 +32,8 @@ import {
 import { Link } from "wouter";
 import { useState, useEffect } from "react";
 import { analyticsTracker } from "@/lib/analytics";
+import { useSubscriptionAccess } from "@/hooks/useSubscriptionAccess";
+import PremiumAccess from "@/components/PremiumAccess";
 
 interface Tool {
   name: string;
@@ -64,6 +66,7 @@ function ProxiHub() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [toolGroups, setToolGroups] = useState<ToolGroup[]>([]);
+  const { canAccessFeature } = useSubscriptionAccess();
 
   const tools: Tool[] = [
     // Built-in Tools
@@ -539,8 +542,20 @@ function ProxiHub() {
 
                   {/* Tools Grid */}
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {group.tools.map((tool, toolIndex) => (
-                      <Card key={toolIndex} className="bg-white/5 border-white/10 backdrop-blur-sm hover:bg-white/10 transition-all duration-300 group">
+                    {group.tools.map((tool, toolIndex) => {
+                      // Determine if tool requires premium access
+                      const isPremiumTool = tool.category === "Advanced" || tool.badge === "Advanced";
+                      const hasAccess = !isPremiumTool || canAccessFeature('proxihub_basic');
+                      
+                      return (
+                        <PremiumAccess
+                          key={toolIndex}
+                          requiredTier="tier1"
+                          featureName={tool.name}
+                          description={isPremiumTool ? "Advanced tools require Supporter plan or higher" : undefined}
+                          showUpgrade={!hasAccess}
+                        >
+                          <Card className="bg-white/5 border-white/10 backdrop-blur-sm hover:bg-white/10 transition-all duration-300 group">
                         <CardHeader className="pb-3">
                           <div className="flex items-start justify-between">
                             <div className="w-12 h-12 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
@@ -610,7 +625,9 @@ function ProxiHub() {
                           </div>
                         </CardContent>
                       </Card>
-                    ))}
+                        </PremiumAccess>
+                      );
+                    })}
                   </div>
                 </div>
               ))}

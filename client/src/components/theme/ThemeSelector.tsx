@@ -3,7 +3,9 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Palette, Monitor, Zap, Star, Rocket, Globe, Bug, Film, Space } from 'lucide-react';
+import { Palette, Monitor, Zap, Star, Rocket, Globe, Bug, Film, Space, Lock } from 'lucide-react';
+import { useSubscriptionAccess } from '@/hooks/useSubscriptionAccess';
+import { Link } from 'wouter';
 
 const themeIcons = {
   default: Monitor,
@@ -29,9 +31,13 @@ const themeDescriptions = {
   'futuristic': 'Modern sci-fi theme with holographic effects and quantum animations',
 };
 
+// Premium themes that require subscription
+const premiumThemes = ['apollo', 'cyberpunk', 'space-odyssey', 'alien-computer', 'mars-colony', 'blade-runner', 'interstellar', 'futuristic'];
+
 export const ThemeSelector: React.FC = () => {
   const { currentTheme, themes, setTheme, resetTheme, loading } = useTheme();
   const [previewTheme, setPreviewTheme] = useState<string | null>(null);
+  const { canAccessFeature } = useSubscriptionAccess();
 
   // Debug logging
   console.log('ThemeSelector render:', {
@@ -99,16 +105,20 @@ export const ThemeSelector: React.FC = () => {
           const IconComponent = themeIcons[theme.name as keyof typeof themeIcons] || Monitor;
           const isActive = currentTheme?.name === theme.name;
           const isPreviewing = previewTheme === theme.name;
+          const isPremium = premiumThemes.includes(theme.name);
+          const hasAccess = !isPremium || canAccessFeature('premium_themes');
 
           return (
             <Card
               key={theme.name}
-              className={`relative cursor-pointer transition-all duration-200 hover:shadow-lg ${
+              className={`relative transition-all duration-200 ${
+                hasAccess ? 'cursor-pointer hover:shadow-lg' : 'opacity-60'
+              } ${
                 isActive ? 'ring-2 ring-accent-primary' : ''
               } ${isPreviewing ? 'ring-2 ring-accent-secondary' : ''}`}
-              onClick={() => handleThemeSelect(theme.name)}
-              onMouseEnter={() => handlePreview(theme.name)}
-              onMouseLeave={handlePreviewEnd}
+              onClick={hasAccess ? () => handleThemeSelect(theme.name) : undefined}
+              onMouseEnter={hasAccess ? () => handlePreview(theme.name) : undefined}
+              onMouseLeave={hasAccess ? handlePreviewEnd : undefined}
             >
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
@@ -126,6 +136,12 @@ export const ThemeSelector: React.FC = () => {
                       Preview
                     </Badge>
                   )}
+                  {isPremium && !hasAccess && (
+                    <Badge variant="outline" className="border-yellow-500 text-yellow-500">
+                      <Lock className="h-3 w-3 mr-1" />
+                      Premium
+                    </Badge>
+                  )}
                 </div>
               </CardHeader>
               
@@ -140,6 +156,19 @@ export const ThemeSelector: React.FC = () => {
                   <div className="w-4 h-4 rounded-full bg-accent-primary"></div>
                   <div className="w-4 h-4 rounded-full bg-accent-secondary"></div>
                 </div>
+                
+                {isPremium && !hasAccess && (
+                  <div className="mt-3 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded text-center">
+                    <p className="text-xs text-yellow-500 mb-2">
+                      Premium theme - Subscribe to unlock
+                    </p>
+                    <Link to="/pricing">
+                      <Button size="sm" variant="outline" className="text-xs">
+                        View Plans
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </CardContent>
             </Card>
           );

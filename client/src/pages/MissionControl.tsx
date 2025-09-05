@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import SatelliteVisualizer from '../components/SatelliteVisualizer';
 import { analyticsTracker } from '@/lib/analytics';
 import { BannerAd, InContentAd } from '@/components/AdPlacement';
+import { useSubscriptionAccess } from '@/hooks/useSubscriptionAccess';
+import PremiumAccess from '@/components/PremiumAccess';
 import { 
   useUpcomingLaunches, 
   usePreviousLaunches,
@@ -181,6 +183,7 @@ const CompactCard = ({ title, icon, children, colorClass = "purple" }: {
 
 export default function MissionControl() {
   const [userLocation, setUserLocation] = useState<Location | null>(null);
+  const { canAccessFeature } = useSubscriptionAccess();
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -1084,8 +1087,13 @@ export default function MissionControl() {
 
         {/* Missions View */}
         {selectedView === 'missions' && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <PremiumAccess
+            requiredTier="tier1"
+            featureName="Mission Tracking"
+            description="Advanced mission tracking and monitoring features"
+          >
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {activeMissions.map((mission, index) => (
                 <CompactCard
                   key={index}
@@ -1116,12 +1124,18 @@ export default function MissionControl() {
               ))}
             </div>
           </div>
+          </PremiumAccess>
         )}
 
         {/* Space Stations View */}
         {selectedView === 'stations' && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <PremiumAccess
+            requiredTier="tier1"
+            featureName="Space Station Monitoring"
+            description="Real-time space station tracking and data"
+          >
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {spaceStations.map((station, index) => (
                 <CompactCard
                   key={index}
@@ -1149,6 +1163,7 @@ export default function MissionControl() {
               ))}
             </div>
           </div>
+          </PremiumAccess>
         )}
 
         {/* Events View */}

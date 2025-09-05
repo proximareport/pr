@@ -7,9 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { RoleBadges } from "@/components/ui/role-badge";
 import { Link } from "wouter";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowUpIcon, ArrowDownIcon, ReplyIcon } from "lucide-react";
+import { ArrowUpIcon, ArrowDownIcon, ReplyIcon, ZapIcon } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useSubscriptionAccess } from "@/hooks/useSubscriptionAccess";
 
 interface Comment {
   id: number;
@@ -28,6 +29,8 @@ interface Comment {
   downvotes: number;
   replies?: Comment[];
   parentId?: number | null;
+  isBoosted?: boolean;
+  boostedBy?: number[];
 }
 
 interface CommentSectionProps {
@@ -39,6 +42,7 @@ interface CommentSectionProps {
 function CommentSection({ articleId, comments = [], refetchComments }: CommentSectionProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { canAccessFeature } = useSubscriptionAccess();
   const [commentText, setCommentText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
@@ -208,6 +212,45 @@ function CommentSection({ articleId, comments = [], refetchComments }: CommentSe
     }
   };
 
+  // Boost a comment (tier3 users only)
+  const handleBoost = async (commentId: number) => {
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "You must be logged in to boost comments.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!canAccessFeature('comment_boosting')) {
+      toast({
+        title: "Premium Feature",
+        description: "Comment boosting requires Enterprise subscription.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoadingVotes((prev) => ({ ...prev, [commentId]: true }));
+    try {
+      await apiRequest("POST", `/api/comments/${commentId}/boost`, {});
+      toast({
+        title: "Comment Boosted!",
+        description: "This comment has been boosted and will appear higher in the list.",
+      });
+      refetchComments();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to boost comment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingVotes((prev) => ({ ...prev, [commentId]: false }));
+    }
+  };
+
   // Render a single comment with its replies
   const renderComment = (comment: Comment, depth = 0) => {
     const isPro = comment.author.membershipTier === "pro";
@@ -222,7 +265,9 @@ function CommentSection({ articleId, comments = [], refetchComments }: CommentSe
         {/* Comment */}
         <div
           className={`${
-            isAdmin
+            comment.isBoosted
+              ? "bg-yellow-900/10 border border-yellow-700/30 ring-2 ring-yellow-500/20"
+              : isAdmin
               ? "bg-red-900/10 border border-red-700/30"
               : isPro
               ? "bg-purple-900/10 border border-purple-700/30"
@@ -270,6 +315,12 @@ function CommentSection({ articleId, comments = [], refetchComments }: CommentSe
                   size="sm"
                   showAll={true}
                 />
+                {comment.isBoosted && (
+                  <Badge variant="outline" className="bg-yellow-500/20 text-yellow-300 border-yellow-500/30 text-xs">
+                    <ZapIcon className="h-3 w-3 mr-1" />
+                    Boosted
+                  </Badge>
+                )}
               </div>
               <p className="text-white/90 text-sm mb-2">{comment.content}</p>
               <div className="flex items-center text-sm text-white/60">
@@ -327,6 +378,21 @@ function CommentSection({ articleId, comments = [], refetchComments }: CommentSe
                     <ArrowDownIcon className="h-4 w-4" />
                   </Button>
                 </div>
+                {/* Boost button for tier3 users */}
+                {canAccessFeature('comment_boosting') && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-6 px-2 ${
+                      comment.boostedBy?.includes(user?.id || 0) ? "text-yellow-500" : "text-white/60"
+                    } hover:text-yellow-500`}
+                    onClick={() => handleBoost(comment.id)}
+                    disabled={loadingVotes[comment.id]}
+                  >
+                    <ZapIcon className="h-4 w-4 mr-1" />
+                    Boost
+                  </Button>
+                )}
                 <span>{formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}</span>
               </div>
             </div>

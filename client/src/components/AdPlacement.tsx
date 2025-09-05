@@ -27,8 +27,8 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
   const [retryCount, setRetryCount] = useState(0);
   const [adTimeout, setAdTimeout] = useState<NodeJS.Timeout | null>(null);
 
-  // Check if user has Pro subscription (should block ads)
-  const isProSubscriber = user?.membershipTier === 'pro';
+  // Check if user has any paid subscription (should block ads)
+  const isPaidSubscriber = user?.membershipTier === 'tier1' || user?.membershipTier === 'tier2' || user?.membershipTier === 'tier3';
 
   // Browser-specific ad loading timeout
   const getAdTimeout = () => {
@@ -164,8 +164,8 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
     };
   }, [adTimeout]);
 
-  // Don't show anything if user has Pro subscription
-  if (isProSubscriber) {
+  // Don't show anything if user has any paid subscription
+  if (isPaidSubscriber) {
     return null;
   }
 
