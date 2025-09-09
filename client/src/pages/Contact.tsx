@@ -9,6 +9,8 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { MailIcon, PhoneIcon, MapPinIcon, ClockIcon, MessageSquareIcon, HeadphonesIcon } from 'lucide-react';
 import { useGoogleAdSense } from "@/hooks/useGoogleAdSense";
+import SEO from "@/components/SEO";
+import { generateContactSEO } from "@/lib/seoUtils";
 
 const Contact: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -73,7 +75,9 @@ const Contact: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/40 to-black relative overflow-hidden">
+    <>
+      <SEO {...generateContactSEO()} />
+      <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/40 to-black relative overflow-hidden">
       {/* Geometric ambient effects */}
       <div className="absolute inset-0">
         <div className="absolute top-20 left-10 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
@@ -317,6 +321,7 @@ const Contact: React.FC = () => {
 
       </div>
     </div>
+    </>
   );
 };
 

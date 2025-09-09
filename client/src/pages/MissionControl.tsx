@@ -4,6 +4,7 @@ import { analyticsTracker } from '@/lib/analytics';
 import { BannerAd, InContentAd } from '@/components/AdPlacement';
 import { useSubscriptionAccess } from '@/hooks/useSubscriptionAccess';
 import PremiumAccess from '@/components/PremiumAccess';
+import ImageModal from '@/components/ui/ImageModal';
 import { 
   useUpcomingLaunches, 
   usePreviousLaunches,
@@ -183,6 +184,7 @@ const CompactCard = ({ title, icon, children, colorClass = "purple" }: {
 
 export default function MissionControl() {
   const [userLocation, setUserLocation] = useState<Location | null>(null);
+  const [apodModalOpen, setApodModalOpen] = useState(false);
   const { canAccessFeature } = useSubscriptionAccess();
 
   useEffect(() => {
@@ -692,17 +694,23 @@ export default function MissionControl() {
                 {issPassPredictions.passes.slice(0, 2).map((pass: { risetime: number; duration: number; mag: number }, index: number) => (
                   <div key={index} className="bg-gray-800/30 rounded p-1.5 border border-gray-700/30">
                     <div className="grid grid-cols-3 gap-1 text-center text-xs">
-                      <div>
+                      <div className="min-w-0">
                         <span className="text-gray-400 block">Start</span>
-                        <span className="text-white font-medium">{new Date(pass.risetime * 1000).toLocaleTimeString()}</span>
+                        <span className="text-white font-medium truncate block" title={new Date(pass.risetime * 1000).toLocaleTimeString()}>
+                          {new Date(pass.risetime * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <span className="text-gray-400 block">Duration</span>
-                        <span className="text-white font-medium">{pass.duration}s</span>
+                        <span className="text-white font-medium truncate block" title={`${pass.duration} seconds`}>
+                          {pass.duration > 60 ? `${Math.round(pass.duration / 60)}m` : `${pass.duration}s`}
+                        </span>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <span className="text-gray-400 block">Mag</span>
-                        <span className="text-yellow-300 font-medium">{pass.mag}</span>
+                        <span className="text-yellow-300 font-medium truncate block" title={`Magnitude: ${pass.mag}`}>
+                          {pass.mag.toFixed(1)}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -727,23 +735,31 @@ export default function MissionControl() {
               colorClass="red"
             >
               <div className="grid grid-cols-2 gap-1 mb-1">
-                <div className="bg-red-950/30 rounded p-1 border border-red-800/50 text-center">
+                <div className="bg-red-950/30 rounded p-1 border border-red-800/50 text-center min-w-0">
                   <div className="text-red-300 text-xs">Sol {marsWeather.sol}</div>
-                  <div className="text-white font-medium text-xs">{marsWeather.season}</div>
+                  <div className="text-white font-medium text-xs truncate" title={marsWeather.season}>
+                    {marsWeather.season}
+                  </div>
                 </div>
-                <div className="bg-blue-950/30 rounded p-1 border border-blue-800/50 text-center">
+                <div className="bg-blue-950/30 rounded p-1 border border-blue-800/50 text-center min-w-0">
                   <div className="text-blue-300 text-xs">Temp</div>
-                  <div className="text-white font-medium text-xs">{marsWeather.min_temp}° / {marsWeather.max_temp}°C</div>
+                  <div className="text-white font-medium text-xs truncate" title={`${marsWeather.min_temp}°C / ${marsWeather.max_temp}°C`}>
+                    {Math.round(marsWeather.min_temp)}° / {Math.round(marsWeather.max_temp)}°C
+                  </div>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-1">
-                <div className="bg-purple-950/30 rounded p-1 border border-purple-800/50 text-center">
+                <div className="bg-purple-950/30 rounded p-1 border border-purple-800/50 text-center min-w-0">
                   <div className="text-purple-300 text-xs">Pressure</div>
-                  <div className="text-white font-medium text-xs">{marsWeather.pressure} Pa</div>
+                  <div className="text-white font-medium text-xs truncate" title={`${marsWeather.pressure} Pa`}>
+                    {marsWeather.pressure > 1000 ? `${(marsWeather.pressure / 1000).toFixed(1)}k Pa` : `${Math.round(marsWeather.pressure)} Pa`}
+                  </div>
                 </div>
-                <div className="bg-green-950/30 rounded p-1 border border-green-800/50 text-center">
+                <div className="bg-green-950/30 rounded p-1 border border-green-800/50 text-center min-w-0">
                   <div className="text-green-300 text-xs">Wind</div>
-                  <div className="text-white font-medium text-xs">{marsWeather.wind_speed} m/s</div>
+                  <div className="text-white font-medium text-xs truncate" title={`${marsWeather.wind_speed} m/s`}>
+                    {Math.round(marsWeather.wind_speed)} m/s
+                  </div>
                 </div>
               </div>
             </CompactCard>
@@ -909,15 +925,20 @@ export default function MissionControl() {
                 colorClass="purple"
               >
                 {nasaAPOD.media_type === 'image' && (
-                  <div className="mb-2">
+                  <div className="mb-2 relative group cursor-pointer" onClick={() => setApodModalOpen(true)}>
                     <img 
                       src={nasaAPOD.url} 
                       alt={nasaAPOD.title}
-                      className="w-full h-32 object-cover rounded"
+                      className="w-full h-32 object-cover rounded transition-transform group-hover:scale-105"
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = 'none';
                       }}
                     />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded flex items-center justify-center">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 rounded-full p-2">
+                        <MaximizeIcon className="h-4 w-4 text-white" />
+                      </div>
+                    </div>
                   </div>
                 )}
                 <h4 className="text-white font-medium text-xs mb-1">{nasaAPOD.title}</h4>
@@ -1445,6 +1466,20 @@ export default function MissionControl() {
           </div>
         )}
       </div>
+
+      {/* APOD Image Modal */}
+      {nasaAPOD && (
+        <ImageModal
+          isOpen={apodModalOpen}
+          onClose={() => setApodModalOpen(false)}
+          imageUrl={nasaAPOD.url}
+          title={nasaAPOD.title}
+          description={nasaAPOD.explanation}
+          date={nasaAPOD.date}
+          copyright="NASA"
+          externalUrl="https://apod.nasa.gov/apod/"
+        />
+      )}
     </div>
   );
 }

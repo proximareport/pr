@@ -12,6 +12,8 @@ import mobileLogo from "../assets/images/proxima-logo-mobile.png";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiRequest } from "@/lib/queryClient";
 import ModernButton from "@/components/ui/modern-button";
+import SEO from "@/components/SEO";
+import { generateLoginSEO } from "@/lib/seoUtils";
 
 function Login() {
   const [, navigate] = useLocation();
@@ -79,7 +81,9 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/60 to-black flex items-center justify-center py-12 px-4 relative overflow-hidden">
+    <>
+      <SEO {...generateLoginSEO()} />
+      <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/60 to-black flex items-center justify-center py-12 px-4 relative overflow-hidden">
       {/* Enhanced dark purple background elements */}
       <div className="absolute inset-0">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-purple-900/20 via-violet-900/20 to-purple-800/20"></div>
@@ -246,6 +250,7 @@ function Login() {
         <div className="absolute -z-10 top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-purple-600/10 to-violet-600/10 rounded-full blur-3xl"></div>
       </div>
     </div>
+    </>
   );
 }
 

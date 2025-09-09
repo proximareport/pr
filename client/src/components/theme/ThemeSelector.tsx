@@ -3,7 +3,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Palette, Monitor, Zap, Star, Rocket, Globe, Bug, Film, Space, Lock } from 'lucide-react';
+import { Palette, Monitor, Zap, Star, Rocket, Globe, Bug, Film, Space, Lock, Crown } from 'lucide-react';
 import { useSubscriptionAccess } from '@/hooks/useSubscriptionAccess';
 import { Link } from 'wouter';
 
@@ -29,10 +29,17 @@ const themeDescriptions = {
   'blade-runner': 'Neo-noir cyberpunk aesthetic with rain effects and neon reflections',
   'interstellar': 'Space exploration theme with wormhole effects and cosmic colors',
   'futuristic': 'Modern sci-fi theme with holographic effects and quantum animations',
+  'quantum-realm': 'Exclusive: Quantum physics visualization with particle effects and dimensional portals',
+  'cosmic-empire': 'Exclusive: Imperial space theme with gold accents and regal cosmic elements',
+  'neon-galaxy': 'Exclusive: Cyberpunk galaxy with neon colors and holographic star fields',
+  'void-walker': 'Exclusive: Dark space theme with mysterious void effects and shadow particles',
 };
 
 // Premium themes that require subscription
 const premiumThemes = ['apollo', 'cyberpunk', 'space-odyssey', 'alien-computer', 'mars-colony', 'blade-runner', 'interstellar', 'futuristic'];
+
+// Exclusive themes for Tier 3 supporters
+const exclusiveThemes = ['quantum-realm', 'cosmic-empire', 'neon-galaxy', 'void-walker'];
 
 export const ThemeSelector: React.FC = () => {
   const { currentTheme, themes, setTheme, resetTheme, loading } = useTheme();
@@ -106,19 +113,21 @@ export const ThemeSelector: React.FC = () => {
           const isActive = currentTheme?.name === theme.name;
           const isPreviewing = previewTheme === theme.name;
           const isPremium = premiumThemes.includes(theme.name);
+          const isExclusive = exclusiveThemes.includes(theme.name);
           const hasAccess = !isPremium || canAccessFeature('premium_themes');
+          const hasExclusiveAccess = !isExclusive || canAccessFeature('exclusive_themes');
 
           return (
             <Card
               key={theme.name}
               className={`relative transition-all duration-200 ${
-                hasAccess ? 'cursor-pointer hover:shadow-lg' : 'opacity-60'
+                hasAccess && hasExclusiveAccess ? 'cursor-pointer hover:shadow-lg' : 'opacity-60'
               } ${
                 isActive ? 'ring-2 ring-accent-primary' : ''
               } ${isPreviewing ? 'ring-2 ring-accent-secondary' : ''}`}
-              onClick={hasAccess ? () => handleThemeSelect(theme.name) : undefined}
-              onMouseEnter={hasAccess ? () => handlePreview(theme.name) : undefined}
-              onMouseLeave={hasAccess ? handlePreviewEnd : undefined}
+              onClick={hasAccess && hasExclusiveAccess ? () => handleThemeSelect(theme.name) : undefined}
+              onMouseEnter={hasAccess && hasExclusiveAccess ? () => handlePreview(theme.name) : undefined}
+              onMouseLeave={hasAccess && hasExclusiveAccess ? handlePreviewEnd : undefined}
             >
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
@@ -140,6 +149,18 @@ export const ThemeSelector: React.FC = () => {
                     <Badge variant="outline" className="border-yellow-500 text-yellow-500">
                       <Lock className="h-3 w-3 mr-1" />
                       Premium
+                    </Badge>
+                  )}
+                  {isExclusive && !hasExclusiveAccess && (
+                    <Badge variant="outline" className="border-purple-500 text-purple-500">
+                      <Lock className="h-3 w-3 mr-1" />
+                      Exclusive
+                    </Badge>
+                  )}
+                  {isExclusive && hasExclusiveAccess && (
+                    <Badge variant="outline" className="border-purple-500 text-purple-500">
+                      <Crown className="h-3 w-3 mr-1" />
+                      Exclusive
                     </Badge>
                   )}
                 </div>

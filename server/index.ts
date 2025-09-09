@@ -1,7 +1,6 @@
-// Only load dotenv in development
-if (process.env.NODE_ENV !== 'production') {
-  require('dotenv/config');
-}
+// Debug: Check if DATABASE_URL is loaded
+console.log("DATABASE_URL loaded:", process.env.DATABASE_URL ? 'YES' : 'NO');
+console.log("NODE_ENV:", process.env.NODE_ENV);
 
 // Debug: Check environment variables in production
 console.log("Environment check:", {
@@ -71,14 +70,14 @@ app.use((req, res, next) => {
   // HSTS - Force HTTPS for 1 year
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   
-  // Content Security Policy - More permissive for Google AdSense
+  // Content Security Policy - More permissive for Google AdSense and external services
   res.setHeader('Content-Security-Policy', 
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com https://cdn.jsdelivr.net https://pagead2.googlesyndication.com https://www.google.com https://www.gstatic.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://fundingchoicesmessages.google.com; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com https://cdn.jsdelivr.net https://pagead2.googlesyndication.com https://www.google.com https://www.gstatic.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://fundingchoicesmessages.google.com https://platform.twitter.com https://replit.com https://ep2.adtrafficquality.google; " +
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.google.com https://www.gstatic.com; " +
     "font-src 'self' https://fonts.gstatic.com https://www.google.com; " +
     "img-src 'self' data: https: blob: https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://www.google.com https://tpc.googlesyndication.com https://www.gstatic.com; " +
-    "connect-src 'self' https://api.stripe.com https://www.google-analytics.com https://analytics.google.com https://proxima-stem-space.ghost.io https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://www.google.com https://ep1.adtrafficquality.google; " +
+    "connect-src 'self' https://api.stripe.com https://www.google-analytics.com https://analytics.google.com https://proxima-stem-space.ghost.io https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://www.google.com https://ep1.adtrafficquality.google https://ep2.adtrafficquality.google; " +
     "frame-src 'self' https://js.stripe.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://pagead2.googlesyndication.com; " +
     "object-src 'none'; " +
     "base-uri 'self'; " +

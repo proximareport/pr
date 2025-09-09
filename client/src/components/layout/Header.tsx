@@ -21,6 +21,8 @@ function Header() {
   const navLinks = [
     { name: "Mission Control", href: "/missioncontrol" },
     { name: "Gallery", href: "/gallery" },
+    { name: "Topics", href: "/topics" },
+    { name: "Staff", href: "/staff" },
     { name: "About", href: "/about" },
   ];
 

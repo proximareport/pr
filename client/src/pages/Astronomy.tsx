@@ -7,10 +7,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import ImageModal from "@/components/ui/ImageModal";
 import { Star, Info, Calendar, Compass, X } from "lucide-react";
 
 function Astronomy() {
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [apodModalOpen, setApodModalOpen] = useState(false);
   
   // Fetch NASA Astronomy Picture of the Day
   const { data: apodData, isLoading: isLoadingApod } = useQuery<{
@@ -65,12 +67,21 @@ function Astronomy() {
                 <p className="text-white/80 line-clamp-3 mb-4">
                   {isLoadingApod ? "Loading description..." : (apodData && apodData.explanation) || "Explore the breathtaking phenomena of our cosmos."}
                 </p>
-                <Button 
-                  className="bg-purple-800 hover:bg-purple-700"
-                  onClick={() => apodData && apodData.url && window.open(apodData.url, '_blank')}
-                >
-                  View Full Image
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    className="bg-purple-800 hover:bg-purple-700"
+                    onClick={() => setApodModalOpen(true)}
+                  >
+                    View Full Size
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    className="border-purple-600 text-purple-300 hover:bg-purple-800"
+                    onClick={() => apodData && apodData.url && window.open(apodData.url, '_blank')}
+                  >
+                    View on NASA
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -193,6 +204,20 @@ function Astronomy() {
           </div>
         </div>
       </section>
+
+      {/* APOD Image Modal */}
+      {apodData && (
+        <ImageModal
+          isOpen={apodModalOpen}
+          onClose={() => setApodModalOpen(false)}
+          imageUrl={apodData.url}
+          title={apodData.title}
+          description={apodData.explanation}
+          date={apodData.date}
+          copyright="NASA"
+          externalUrl="https://apod.nasa.gov/apod/"
+        />
+      )}
     </div>
   );
 }

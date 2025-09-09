@@ -28,6 +28,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { apiRequest } from '@/lib/queryClient';
+import SEO from '@/components/SEO';
+import { generatePricingSEO } from '@/lib/seoUtils';
 import { useStripeConfig } from '@/hooks/useStripeConfig';
 
 // Comprehensive feature definitions
@@ -50,14 +52,14 @@ const FEATURES = {
     { feature: "Comment on articles", included: true },
     { feature: "Enhanced profile customization", included: true },
     { feature: "Newsletter subscription", included: true },
-    { feature: "No Google ads", included: true },
+    { feature: "No ads at all", included: true },
     { feature: "Access to premium themes", included: true },
     { feature: "More profile customization options", included: true },
     { feature: "Tier 1 Supporter badge", included: true },
-    { feature: "Complete ad-free experience", included: false },
+    { feature: "Basic Proxihub access", included: true },
+    { feature: "Mission Control pages access", included: true },
     { feature: "Comment boosting on articles", included: false },
-    { feature: "Advanced Proxihub access", included: false },
-    { feature: "Mission Control pages access", included: false }
+    { feature: "Advanced Proxihub features", included: false }
   ],
   tier2: [
     { feature: "Access to all public articles", included: true },
@@ -69,11 +71,12 @@ const FEATURES = {
     { feature: "Access to premium themes", included: true },
     { feature: "More profile customization options", included: true },
     { feature: "Tier 1 Supporter badge", included: true },
-    { feature: "Ability to boost comments on articles", included: true },
-    { feature: "Access to advanced Proxihub", included: true },
-    { feature: "Access to Mission Control pages", included: true },
+    { feature: "Basic Proxihub access", included: true },
+    { feature: "Mission Control pages access", included: true },
+    { feature: "Advanced Proxihub features", included: true },
     { feature: "Early access to updates", included: true },
     { feature: "Tier 2 Supporter badge", included: true },
+    { feature: "Comment boosting on articles", included: false },
     { feature: "Custom art uploads", included: false },
     { feature: "Exclusive supporter articles", included: false },
     { feature: "Discord in-progress features access", included: false }
@@ -88,16 +91,17 @@ const FEATURES = {
     { feature: "Access to premium themes", included: true },
     { feature: "More profile customization options", included: true },
     { feature: "Tier 1 Supporter badge", included: true },
-    { feature: "Ability to boost comments on articles", included: true },
-    { feature: "Access to advanced Proxihub", included: true },
-    { feature: "Access to Mission Control pages", included: true },
+    { feature: "Basic Proxihub access", included: true },
+    { feature: "Mission Control pages access", included: true },
+    { feature: "Advanced Proxihub features", included: true },
     { feature: "Early access to updates", included: true },
     { feature: "Tier 2 Supporter badge", included: true },
+    { feature: "Ability to boost comments on articles", included: true },
     { feature: "Top fan badges for comments", included: true },
     { feature: "Ability to upload custom art/images directly to site", included: true },
     { feature: "Exclusive supporter articles", included: true },
     { feature: "Access to in-progress features section on Discord", included: true },
-    { feature: "Full access to Proxihub and Mission Control", included: true },
+    { feature: "Tier 3 Supporter badge", included: true },
     { feature: "Exclusive profile and site themes", included: true }
   ]
 };
@@ -375,7 +379,9 @@ function Pricing() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/40 to-black relative overflow-hidden">
+    <>
+      <SEO {...generatePricingSEO()} />
+      <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/40 to-black relative overflow-hidden">
       {/* Geometric ambient effects */}
       <div className="absolute inset-0">
         <div className="absolute top-20 left-10 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
@@ -482,9 +488,9 @@ function Pricing() {
                     <Button 
                       className="w-full" 
                       variant="outline"
-                                              disabled={!isPaidTier(user?.membershipTier || 'free')}
+                                              disabled={!isPaidTier((user?.membershipTier as any) || 'free')}
                     >
-                      {!isPaidTier(user?.membershipTier || 'free') ? 'Current Plan' : 'Get Started'}
+                      {!isPaidTier((user?.membershipTier as any) || 'free') ? 'Current Plan' : 'Get Started'}
                     </Button>
                   ) : (
                     <>
@@ -603,6 +609,7 @@ function Pricing() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

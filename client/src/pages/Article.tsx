@@ -22,6 +22,9 @@ import { getReadingTimeDisplay } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useGoogleAdSense } from "@/hooks/useGoogleAdSense";
 import { ArticleTopAd, ArticleBottomAd, InContentAd } from "@/components/AdPlacement";
+import { scrollToTop } from "@/lib/scrollUtils";
+import SEO from "@/components/SEO";
+import { generateArticleSEO } from "@/lib/seoUtils";
 
 interface ArticleParams {
   slug: string;
@@ -100,6 +103,21 @@ function Article() {
       analyticsTracker.trackArticleView(article.slug, article.title);
     }
   }, [article?.title, article?.slug]);
+
+  // Scroll to top when article loads
+  useEffect(() => {
+    scrollToTop(false); // Use instant scroll for immediate effect
+  }, [slug]);
+
+  // Also scroll to top when article data loads (in case of slow loading)
+  useEffect(() => {
+    if (article && !isLoading) {
+      // Small delay to ensure DOM is fully rendered
+      setTimeout(() => {
+        scrollToTop(false); // Use instant scroll for immediate effect
+      }, 100);
+    }
+  }, [article, isLoading]);
 
   // Load Google AdSense script
   useGoogleAdSense();
@@ -268,7 +286,15 @@ function Article() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/40 to-black relative overflow-hidden">
+    <>
+      <SEO {...(article ? generateArticleSEO(article) : {
+        title: "Article | Proxima Report",
+        description: "Read the latest article on Proxima Report",
+        keywords: "space news, STEM education, astronomy, space exploration, NASA, SpaceX, rocket launches, space missions, science news",
+        url: "https://proximareport.com/articles",
+        type: "website" as const
+      })} />
+      <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/40 to-black relative overflow-hidden">
       {/* Enhanced Reading Progress */}
       <ReadingProgress 
         totalWords={article?.html ? article.html.split(' ').length : 0}
@@ -706,6 +732,7 @@ function Article() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

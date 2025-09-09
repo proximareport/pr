@@ -266,16 +266,16 @@ export default function Home() {
   return (
     <>
       <SEO 
-        title="Latest Space & STEM News | Proxima Report"
-        description="Stay updated with the latest space exploration news, NASA missions, SpaceX launches, astronomy discoveries, and STEM education. Real-time coverage of space technology and scientific breakthroughs."
+        title="Proxima Report | Space, Astronomy & STEM News"
+        description="Proxima Report delivers the latest in space news, astronomy, planetary science, aerospace, and STEM breakthroughs. Stay informed on missions, discoveries, and cosmic exploration."
         keywords="space news, latest space missions, NASA news, SpaceX launches, astronomy discoveries, STEM education, space technology, rocket launches, space exploration, science news, space science, exoplanets, Mars missions, lunar exploration"
         url="https://proximareport.com"
         type="website"
         structuredData={{
           "@context": "https://schema.org",
           "@type": "WebPage",
-          "name": "Latest Space & STEM News",
-          "description": "Stay updated with the latest space exploration news, NASA missions, SpaceX launches, astronomy discoveries, and STEM education.",
+          "name": "Proxima Report | Space, Astronomy & STEM News",
+          "description": "Proxima Report delivers the latest in space news, astronomy, planetary science, aerospace, and STEM breakthroughs. Stay informed on missions, discoveries, and cosmic exploration.",
           "url": "https://proximareport.com",
           "mainEntity": {
             "@type": "ItemList",

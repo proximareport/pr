@@ -1,0 +1,16 @@
+[33mcommit 2e4a5d3b650c2fe4e5d4c5db63f6abafd399ed56[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: Sam Thibaut <samthibaut@gmail.com>
+Date:   Fri Sep 5 18:46:56 2025 -0500
+
+    Fix Premium Feature popup ad conflicts and unlock ProxiHub features
+    
+    - Fixed Premium Feature popup z-index conflicts with ads on Mission Control page
+    - Added z-50 classes to ensure popup appears above ads
+    - Unlocked first tool per category on ProxiHub for free users
+    - All other tools in each category remain locked behind tier 1+ subscription
+    - Applied consistent access logic to both grouped and search views
+    - Updated tool descriptions to clearly explain subscription requirements
+
+.env
+client/src/components/PremiumAccess.tsx
+client/src/pages/ProxiHub.tsx

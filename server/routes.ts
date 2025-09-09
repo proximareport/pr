@@ -2300,32 +2300,209 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ORDER BY tm.is_founder DESC, tm.display_order ASC
       `);
       
-      const teamMembers = result.rows.map(row => ({
-        id: row.id,
-        user_id: row.user_id,
-        name: row.name,
-        role: row.role,
-        bio: row.bio || row.user_bio,
-        profile_image_url: row.profile_image_url || row.profile_picture,
-        is_founder: row.is_founder,
-        display_order: row.display_order,
-        expertise: row.expertise || [],
-        social_linkedin: row.social_linkedin,
-        social_twitter: row.social_twitter,
-        social_email: row.social_email,
-        user: row.user_id ? {
-          id: row.user_id,
-          username: row.username,
-          email: row.email,
-          profile_picture: row.profile_picture,
-          bio: row.user_bio
-        } : undefined
-      }));
+      const teamMembers = result.rows.map(row => {
+        // Only include user data if the user actually exists and has a valid username
+        const hasValidUser = row.user_id && row.username && row.username.trim() !== '';
+        
+        return {
+          id: row.id,
+          user_id: row.user_id,
+          name: row.name,
+          role: row.role,
+          bio: row.bio || row.user_bio,
+          profile_image_url: row.profile_image_url || row.profile_picture,
+          is_founder: row.is_founder,
+          display_order: row.display_order,
+          expertise: row.expertise || [],
+          social_linkedin: row.social_linkedin,
+          social_twitter: row.social_twitter,
+          social_email: row.social_email,
+          user: hasValidUser ? {
+            id: row.user_id,
+            username: row.username,
+            email: row.email,
+            profile_picture: row.profile_picture,
+            bio: row.user_bio
+          } : undefined
+        };
+      });
       
       res.json(teamMembers);
     } catch (error) {
       console.error("Error fetching team members:", error);
       res.status(500).json({ message: "Error fetching team members" });
+    }
+  });
+
+  // Fix specific ObjectId issue (admin only)
+  app.post("/api/admin/fix-objectid-links", requireAuth, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      console.log('🔧 Fixing ObjectId links in team members...');
+      
+      // Find team members with ObjectId-like user_id (24 character hex strings)
+      const objectIdLinks = await pool.query(`
+        SELECT tm.id, tm.name, tm.user_id
+        FROM team_members tm
+        WHERE tm.user_id::text ~ '^[a-f0-9]{24}$'
+      `);
+      
+      console.log(`Found ${objectIdLinks.rows.length} ObjectId links`);
+      
+      // Remove ObjectId user_id references
+      for (const link of objectIdLinks.rows) {
+        await pool.query(`
+          UPDATE team_members 
+          SET user_id = NULL, updated_at = NOW()
+          WHERE id = $1
+        `, [link.id]);
+        console.log(`✅ Fixed ObjectId link for "${link.name}" (was: ${link.user_id})`);
+      }
+      
+      res.json({
+        message: 'ObjectId links fixed successfully',
+        fixedLinks: objectIdLinks.rows.length
+      });
+      
+    } catch (error) {
+      console.error("Error fixing ObjectId links:", error);
+      res.status(500).json({ message: "Error fixing ObjectId links" });
+    }
+  });
+
+  // Clean up invalid team member links (admin only)
+  app.post("/api/admin/cleanup-team-links", requireAuth, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      console.log('🧹 Cleaning up invalid team member links...');
+      
+      // Find team members with user_id that don't exist in users table OR are not integers
+      const invalidLinks = await pool.query(`
+        SELECT tm.id, tm.name, tm.user_id
+        FROM team_members tm
+        LEFT JOIN users u ON tm.user_id::text = u.id::text
+        WHERE tm.user_id IS NOT NULL 
+        AND (u.id IS NULL OR tm.user_id::text !~ '^[0-9]+$')
+      `);
+      
+      console.log(`Found ${invalidLinks.rows.length} invalid links`);
+      
+      // Remove invalid user_id references
+      for (const link of invalidLinks.rows) {
+        await pool.query(`
+          UPDATE team_members 
+          SET user_id = NULL, updated_at = NOW()
+          WHERE id = $1
+        `, [link.id]);
+        console.log(`✅ Cleaned up invalid link for "${link.name}" (was pointing to user_id: ${link.user_id})`);
+      }
+      
+      res.json({
+        message: 'Team member links cleaned up successfully',
+        cleanedLinks: invalidLinks.rows.length
+      });
+      
+    } catch (error) {
+      console.error("Error cleaning up team links:", error);
+      res.status(500).json({ message: "Error cleaning up team links" });
+    }
+  });
+
+  // Link team members to user accounts (admin only)
+  app.post("/api/admin/link-team-members", requireAuth, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      console.log('🔗 Linking team members to user accounts...');
+      
+      // Get all team members without user_id
+      const result = await pool.query(`
+        SELECT * FROM team_members 
+        WHERE user_id IS NULL AND is_active = true
+        ORDER BY is_founder DESC, display_order ASC
+      `);
+      
+      const linkedMembers = [];
+      
+      for (const member of result.rows) {
+        // Create username from name (lowercase, replace spaces with dots)
+        const username = member.name.toLowerCase()
+          .replace(/\s+/g, '.')
+          .replace(/[^a-z0-9.]/g, '');
+        
+        // Create email from social_email or generate one
+        const email = member.social_email || `${username}@proximareport.com`;
+        
+        // Generate a random password (team members can reset it later)
+        const password = Math.random().toString(36).slice(-12);
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        try {
+          // Create user account
+          const userResult = await pool.query(`
+            INSERT INTO users (username, email, password, role, membership_tier, bio, profile_picture, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+            RETURNING id
+          `, [
+            username,
+            email,
+            hashedPassword,
+            member.is_founder ? 'admin' : 'author', // Founders get admin role, others get author role
+            'tier3', // Give them premium membership
+            member.bio,
+            member.profile_image_url
+          ]);
+          
+          const userId = userResult.rows[0].id;
+          
+          // Link team member to user account
+          await pool.query(`
+            UPDATE team_members 
+            SET user_id = $1, updated_at = NOW()
+            WHERE id = $2
+          `, [userId, member.id]);
+          
+          linkedMembers.push({
+            name: member.name,
+            username,
+            email,
+            password,
+            userId
+          });
+          
+          console.log(`✅ Linked "${member.name}" to user account "${username}" (ID: ${userId})`);
+          
+        } catch (error: any) {
+          if (error.code === '23505') { // Unique constraint violation
+            console.log(`⚠️  User account for "${member.name}" already exists, trying to link...`);
+            
+            // Try to find existing user and link
+            const existingUser = await pool.query(`
+              SELECT id FROM users WHERE username = $1 OR email = $2
+            `, [username, email]);
+            
+            if (existingUser.rows.length > 0) {
+              const userId = existingUser.rows[0].id;
+              await pool.query(`
+                UPDATE team_members 
+                SET user_id = $1, updated_at = NOW()
+                WHERE id = $2
+              `, [userId, member.id]);
+              console.log(`✅ Linked "${member.name}" to existing user account (ID: ${userId})`);
+            } else {
+              console.log(`⚠️  Could not find existing user for "${member.name}"`);
+            }
+          } else {
+            console.error(`❌ Error creating user for "${member.name}":`, error.message);
+          }
+        }
+      }
+      
+      res.json({
+        message: 'Team members linked successfully',
+        linkedMembers,
+        count: linkedMembers.length
+      });
+      
+    } catch (error) {
+      console.error("Error linking team members:", error);
+      res.status(500).json({ message: "Error linking team members" });
     }
   });
 
@@ -2374,13 +2551,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get users for team member selection
   app.get("/api/admin/users", requireAdmin, async (req: Request, res: Response) => {
     try {
-      const result = await pool.query(`
+      const { excludeLinked = 'true' } = req.query;
+      
+      let query = `
         SELECT id, username, email, profile_picture, bio
         FROM users
-        WHERE id NOT IN (SELECT user_id FROM team_members WHERE user_id IS NOT NULL)
         ORDER BY username ASC
-      `);
+      `;
       
+      // Only exclude linked users when creating new team members
+      if (excludeLinked === 'true') {
+        query = `
+          SELECT id, username, email, profile_picture, bio
+          FROM users
+          WHERE id NOT IN (SELECT user_id FROM team_members WHERE user_id IS NOT NULL)
+          ORDER BY username ASC
+        `;
+      }
+      
+      const result = await pool.query(query);
       res.json(result.rows);
     } catch (error) {
       console.error("Error fetching users for team selection:", error);
@@ -2715,11 +2904,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/tags", async (req: Request, res: Response) => {
     try {
-      const tags = await storage.getTags();
-      res.json(tags);
+      // TEMPORARILY DISABLE GHOST API TO FIX OBJECT ERROR
+      console.log('TEMPORARILY DISABLED: /api/tags to fix object error');
+      
+      // Return only fallback data to prevent raw Ghost objects
+      const fallbackTags = [
+        {
+          id: 1,
+          name: 'Space Exploration',
+          slug: 'space-exploration',
+          description: 'Articles about space missions, rockets, and exploration'
+        },
+        {
+          id: 2,
+          name: 'Astronomy',
+          slug: 'astronomy',
+          description: 'Stellar observations, planetary science, and cosmic phenomena'
+        },
+        {
+          id: 3,
+          name: 'Technology',
+          slug: 'technology',
+          description: 'Space technology, engineering, and innovation'
+        },
+        {
+          id: 4,
+          name: 'Science',
+          slug: 'science',
+          description: 'Scientific discoveries and research in space and astronomy'
+        },
+        {
+          id: 5,
+          name: 'Rocket Science',
+          slug: 'rocket-science',
+          description: 'Propulsion systems, orbital mechanics, and launch vehicles'
+        },
+        {
+          id: 6,
+          name: 'Planetary Science',
+          slug: 'planetary-science',
+          description: 'Study of planets, moons, and planetary systems'
+        },
+        {
+          id: 7,
+          name: 'Astrophysics',
+          slug: 'astrophysics',
+          description: 'Physics of celestial objects and cosmic phenomena'
+        },
+        {
+          id: 8,
+          name: 'Space Technology',
+          slug: 'space-technology',
+          description: 'Innovations in space engineering and technology'
+        }
+      ];
+      
+      console.log('Returning fallback tags to prevent object error');
+      res.json(fallbackTags);
     } catch (error) {
-      console.error("Error fetching tags:", error);
-      res.status(500).json({ message: "Error fetching tags" });
+      console.error("Error in /api/tags endpoint:", error);
+      
+      // Return fallback data on error
+      const fallbackTags = [
+        {
+          id: 1,
+          name: 'Space Exploration',
+          slug: 'space-exploration',
+          description: 'Articles about space missions, rockets, and exploration'
+        },
+        {
+          id: 2,
+          name: 'Astronomy',
+          slug: 'astronomy',
+          description: 'Stellar observations, planetary science, and cosmic phenomena'
+        },
+        {
+          id: 3,
+          name: 'Technology',
+          slug: 'technology',
+          description: 'Space technology, engineering, and innovation'
+        },
+        {
+          id: 4,
+          name: 'Science',
+          slug: 'science',
+          description: 'Scientific discoveries and research in space and astronomy'
+        }
+      ];
+      
+      res.json(fallbackTags);
     }
   });
   
@@ -2744,6 +3017,320 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching published tags:", error);
       res.status(500).json({ message: "Error fetching published tags" });
+    }
+  });
+
+  // Get tags from Ghost API - CLEAN VERSION
+  app.get("/api/ghost/tags", async (req: Request, res: Response) => {
+    try {
+      const GHOST_URL = process.env.GHOST_URL;
+      const GHOST_CONTENT_API_KEY = process.env.GHOST_CONTENT_API_KEY;
+      
+      const response = await axios.get(`${GHOST_URL}/ghost/api/v3/content/tags/`, {
+        params: {
+          key: GHOST_CONTENT_API_KEY,
+          limit: 'all',
+          include: 'count.posts'
+        },
+        headers: {
+          'Accept-Version': 'v3.0',
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const tags = response.data.tags;
+      console.log('Raw Ghost response tags count:', tags.length);
+      
+      // Create completely clean tags array
+      const cleanTags: any[] = [];
+      
+      for (let i = 0; i < tags.length; i++) {
+        const tag = tags[i];
+        
+        // Log the raw tag to see what we're getting
+        console.log(`Raw tag ${i}:`, JSON.stringify(tag, null, 2));
+        
+        // Extract only the fields we need and ensure they're primitive types
+        const cleanTag = {
+          id: String(tag.id || ''),
+          name: String(tag.name || ''),
+          slug: String(tag.slug || ''),
+          description: tag.description ? String(tag.description) : null,
+          articleCount: typeof tag.count?.posts === 'number' ? tag.count.posts : 0
+        };
+        
+        // Validate required fields
+        if (!cleanTag.id || !cleanTag.name || !cleanTag.slug) {
+          console.warn(`Skipping tag ${i} with missing required fields:`, cleanTag);
+          continue;
+        }
+        
+        // Ensure all values are primitives
+        const hasObjectValues = Object.values(cleanTag).some(value => 
+          value !== null && value !== undefined && typeof value === 'object'
+        );
+        
+        if (hasObjectValues) {
+          console.error(`Skipping tag ${i} with object values:`, cleanTag);
+          continue;
+        }
+        
+        // Final check - ensure we only have the expected properties
+        const expectedKeys = ['id', 'name', 'slug', 'description', 'articleCount'];
+        const actualKeys = Object.keys(cleanTag);
+        
+        if (actualKeys.length !== expectedKeys.length || !expectedKeys.every(key => actualKeys.includes(key))) {
+          console.error(`Skipping tag ${i} with unexpected properties:`, { expectedKeys, actualKeys, tag: cleanTag });
+          continue;
+        }
+        
+        cleanTags.push(cleanTag);
+      }
+      
+      console.log(`Successfully cleaned ${cleanTags.length} tags from ${tags.length} raw tags`);
+      console.log('First clean tag:', JSON.stringify(cleanTags[0], null, 2));
+      
+      res.json(cleanTags);
+    } catch (error) {
+      console.error("Error fetching Ghost tags:", error);
+      res.status(500).json({ message: "Error fetching Ghost tags" });
+    }
+  });
+
+  // Fallback clean tags endpoint - returns only essential data
+  app.get("/api/ghost/tags/clean", async (req: Request, res: Response) => {
+    try {
+      // TEMPORARILY DISABLE GHOST API TO FIX OBJECT ERROR
+      console.log('TEMPORARILY DISABLED: Ghost API to fix object error');
+      
+      // Return only fallback data to prevent raw Ghost objects
+      const fallbackTags = [
+        {
+          id: '1',
+          name: 'Space Exploration',
+          slug: 'space-exploration',
+          description: 'Articles about space missions, rockets, and exploration',
+          articleCount: 0
+        },
+        {
+          id: '2',
+          name: 'Astronomy',
+          slug: 'astronomy',
+          description: 'Stellar observations, planetary science, and cosmic phenomena',
+          articleCount: 0
+        },
+        {
+          id: '3',
+          name: 'Technology',
+          slug: 'technology',
+          description: 'Space technology, engineering, and innovation',
+          articleCount: 0
+        },
+        {
+          id: '4',
+          name: 'Science',
+          slug: 'science',
+          description: 'Scientific discoveries and research in space and astronomy',
+          articleCount: 0
+        },
+        {
+          id: '5',
+          name: 'Rocket Science',
+          slug: 'rocket-science',
+          description: 'Propulsion systems, orbital mechanics, and launch vehicles',
+          articleCount: 0
+        },
+        {
+          id: '6',
+          name: 'Planetary Science',
+          slug: 'planetary-science',
+          description: 'Study of planets, moons, and planetary systems',
+          articleCount: 0
+        },
+        {
+          id: '7',
+          name: 'Astrophysics',
+          slug: 'astrophysics',
+          description: 'Physics of celestial objects and cosmic phenomena',
+          articleCount: 0
+        },
+        {
+          id: '8',
+          name: 'Space Technology',
+          slug: 'space-technology',
+          description: 'Innovations in space engineering and technology',
+          articleCount: 0
+        }
+      ];
+      
+      console.log('Returning fallback tags to prevent object error');
+      res.json(fallbackTags);
+    } catch (error) {
+      console.error("Error in clean tags endpoint:", error);
+      
+      // Return fallback data on error
+      const fallbackTags = [
+        {
+          id: '1',
+          name: 'Space Exploration',
+          slug: 'space-exploration',
+          description: 'Articles about space missions, rockets, and exploration',
+          articleCount: 0
+        },
+        {
+          id: '2',
+          name: 'Astronomy',
+          slug: 'astronomy',
+          description: 'Stellar observations, planetary science, and cosmic phenomena',
+          articleCount: 0
+        },
+        {
+          id: '3',
+          name: 'Technology',
+          slug: 'technology',
+          description: 'Space technology, engineering, and innovation',
+          articleCount: 0
+        },
+        {
+          id: '4',
+          name: 'Science',
+          slug: 'science',
+          description: 'Scientific discoveries and research in space and astronomy',
+          articleCount: 0
+        }
+      ];
+      
+      res.json(fallbackTags);
+    }
+  });
+
+  // Get articles by tag - USE SAME SYSTEM AS HOME PAGE
+  app.get("/api/articles/tag/:tagSlug", async (req: Request, res: Response) => {
+    try {
+      const { tagSlug } = req.params;
+      console.log(`=== FETCHING ARTICLES FOR TAG: ${tagSlug} ===`);
+      
+      // Use the same system as home page - getPosts with tag filter
+      const result = await getPosts(1, 20, `tag:${tagSlug}`);
+      
+      // Transform to ArticleCard format (same as home page)
+      const articles = result.posts.map((post: any) => ({
+        id: parseInt(post.id) || 0,
+        title: post.title,
+        slug: post.slug,
+        summary: post.excerpt || '',
+        featuredImage: post.feature_image || '',
+        category: post.primary_tag?.name || 'Uncategorized',
+        author: {
+          id: parseInt((post.authors?.[0]?.id || post.primary_author?.id) || '0'),
+          username: (post.authors?.[0]?.name || post.primary_author?.name) || 'Anonymous',
+          profilePicture: (post.authors?.[0]?.profile_image || post.primary_author?.profile_image) || ''
+        },
+        publishedAt: post.published_at,
+        readTime: post.reading_time || 5,
+        tags: post.tags?.map((tag: any) => tag.name) || [],
+        isBreaking: false,
+        isCollaborative: post.authors && post.authors.length > 1,
+        authors: post.authors ? post.authors.map((author: any) => ({
+          id: parseInt(author.id || '0'),
+          name: author.name || 'Unknown',
+          username: author.slug || author.name || 'unknown',
+          profilePicture: author.profile_image || '',
+          bio: author.bio || ''
+        })) : [],
+        views: 0,
+        trending: false,
+        likes: 0,
+        isLiked: false,
+        isBookmarked: false
+      }));
+      
+      console.log(`Found ${articles.length} articles for tag: ${tagSlug}`);
+      res.json(articles);
+    } catch (error) {
+      console.error(`Error fetching articles for tag ${req.params.tagSlug}:`, error);
+      res.status(500).json({ 
+        error: 'Failed to fetch articles',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Simple test endpoint
+  app.get("/api/test-articles", async (req: Request, res: Response) => {
+    console.log("=== TEST ARTICLES ENDPOINT CALLED ===");
+    res.json([
+      {
+        id: '1',
+        title: 'Test Article 1',
+        slug: 'test-article-1',
+        excerpt: 'This is a test article',
+        featuredImage: 'https://via.placeholder.com/400x200/8B5CF6/FFFFFF?text=Test+1',
+        publishedAt: new Date().toISOString(),
+        readTime: 5,
+        category: 'Test',
+        tags: ['test'],
+        author: {
+          id: 1,
+          username: 'Test Author',
+          profilePicture: 'https://via.placeholder.com/40x40/8B5CF6/FFFFFF?text=TA'
+        },
+        authors: [{
+          id: 1,
+          name: 'Test Author',
+          username: 'test-author',
+          profilePicture: 'https://via.placeholder.com/40x40/8B5CF6/FFFFFF?text=TA',
+          bio: 'Test author bio'
+        }],
+        summary: 'This is a test article',
+        isBreaking: false,
+        isCollaborative: false,
+        views: 100,
+        trending: false,
+        likes: 5,
+        isLiked: false,
+        isBookmarked: false
+      }
+    ]);
+  });
+
+  // Test endpoint to check Ghost API connectivity
+  app.get("/api/test-ghost", async (req: Request, res: Response) => {
+    try {
+      const GHOST_URL = process.env.GHOST_URL;
+      const GHOST_CONTENT_API_KEY = process.env.GHOST_CONTENT_API_KEY;
+      
+      console.log(`Testing Ghost API: ${GHOST_URL}`);
+      console.log(`Has API Key: ${!!GHOST_CONTENT_API_KEY}`);
+      
+      const response = await axios.get(`${GHOST_URL}/ghost/api/v3/content/posts/`, {
+        params: {
+          key: GHOST_CONTENT_API_KEY,
+          limit: 5,
+          fields: 'id,title,slug,tags'
+        },
+        headers: {
+          'Accept-Version': 'v3.0',
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const posts = response.data.posts || [];
+      console.log(`Ghost API test: Found ${posts.length} posts`);
+      
+      res.json({
+        success: true,
+        postCount: posts.length,
+        posts: posts.map(p => ({ id: p.id, title: p.title, tags: p.tags?.map(t => t.name) }))
+      });
+    } catch (error) {
+      console.error('Ghost API test failed:', error);
+      res.json({
+        success: false,
+        error: error.message,
+        ghostUrl: process.env.GHOST_URL,
+        hasApiKey: !!process.env.GHOST_CONTENT_API_KEY
+      });
     }
   });
 
@@ -3234,7 +3821,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Enhanced XML Sitemap for SEO and Google Ads compliance
   app.get("/sitemap.xml", async (req: Request, res: Response) => {
     try {
-      const baseUrl = 'https://proximareport.com';
+      const baseUrl = process.env.SITE_URL || process.env.CLIENT_URL || 'https://proximareport.com';
       const currentDate = new Date().toISOString();
       
       let articles = [];
@@ -3291,19 +3878,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   <url>
     <loc>${baseUrl}/privacy</loc>
     <lastmod>${currentDate}</lastmod>
-    <changefreq>quarterly</changefreq>
+    <changefreq>yearly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>${baseUrl}/terms</loc>
     <lastmod>${currentDate}</lastmod>
-    <changefreq>quarterly</changefreq>
+    <changefreq>yearly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>${baseUrl}/cookies</loc>
     <lastmod>${currentDate}</lastmod>
-    <changefreq>quarterly</changefreq>
+    <changefreq>yearly</changefreq>
     <priority>0.7</priority>
   </url>
   
@@ -3363,6 +3950,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     <lastmod>${currentDate}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
+  </url>
+  
+  <!-- Staff and Team Pages -->
+  <url>
+    <loc>${baseUrl}/staff</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>${baseUrl}/topics</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
   </url>
   
   <!-- Utility Pages -->
@@ -3579,46 +4181,49 @@ Allow: /
 # Sitemap
 Sitemap: ${baseUrl}/sitemap.xml
 
-# RSS and JSON Feeds
-# RSS Feed: ${baseUrl}/rss.xml
-# JSON Feed: ${baseUrl}/feed.json
-
-# Google Ads authentication
-# ads.txt location: ${baseUrl}/ads.txt
-
-# Disallow admin and private areas
+# Disallow admin and private areas only
 Disallow: /admin/
 Disallow: /api/
-Disallow: /login
-Disallow: /register
+Disallow: /_next/
+Disallow: /private/
+Disallow: /advertiser-dashboard/
+Disallow: /settings/
 Disallow: /edit-profile
 Disallow: /newsletter/verify
 Disallow: /newsletter/unsubscribe
-Disallow: /advertiser-dashboard
 
-# Allow important public pages
-Allow: /
-        Allow: /articles/
-Allow: /category/
-Allow: /tag/
-Allow: /launches
-Allow: /astronomy
-Allow: /missioncontrol
-Allow: /jobs
-Allow: /gallery
-Allow: /subscribe
-Allow: /advertise
-Allow: /sitemap
+# Allow important pages and content
 Allow: /about
 Allow: /contact
+Allow: /subscribe
+Allow: /jobs
+Allow: /astronomy
+Allow: /gallery
+Allow: /pricing
+Allow: /missioncontrol
+Allow: /proxihub
+Allow: /tools/
+Allow: /launches
+Allow: /benefits
+Allow: /gift
+Allow: /careers
 Allow: /privacy
 Allow: /terms
 Allow: /cookies
+Allow: /login
+Allow: /register
+Allow: /profile/
+Allow: /staff
+Allow: /topics
+Allow: /articles/
+Allow: /category/
+Allow: /tag/
+Allow: /advertise
 Allow: /ads.txt
 Allow: /rss.xml
 Allow: /feed.json
 
-# Crawl-delay for politeness
+# Crawl delay for respectful crawling
 Crawl-delay: 1`;
     
     res.set('Content-Type', 'text/plain');
@@ -5284,6 +5889,25 @@ Crawl-delay: 1`;
       console.error("Error resetting theme:", error);
       res.status(500).json({ 
         error: 'Failed to reset theme',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Get user's theme preference
+  app.get("/api/themes/user", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const theme = await themeService.getUserTheme(userId);
+      res.json({ theme });
+    } catch (error) {
+      console.error("Error fetching user theme:", error);
+      res.status(500).json({ 
+        error: 'Failed to fetch user theme',
         details: error instanceof Error ? error.message : 'Unknown error'
       });
     }

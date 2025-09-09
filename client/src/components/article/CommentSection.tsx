@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { RoleBadges } from "@/components/ui/role-badge";
 import { Link } from "wouter";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowUpIcon, ArrowDownIcon, ReplyIcon, ZapIcon } from "lucide-react";
+import { ArrowUpIcon, ArrowDownIcon, ReplyIcon, ZapIcon, CrownIcon } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useSubscriptionAccess } from "@/hooks/useSubscriptionAccess";
@@ -319,6 +319,12 @@ function CommentSection({ articleId, comments = [], refetchComments }: CommentSe
                   <Badge variant="outline" className="bg-yellow-500/20 text-yellow-300 border-yellow-500/30 text-xs">
                     <ZapIcon className="h-3 w-3 mr-1" />
                     Boosted
+                  </Badge>
+                )}
+                {comment.author.membershipTier === 'tier3' && (
+                  <Badge variant="outline" className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs">
+                    <CrownIcon className="h-3 w-3 mr-1" />
+                    Top Fan
                   </Badge>
                 )}
               </div>

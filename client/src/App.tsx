@@ -50,6 +50,8 @@ import { MissionControlSidebar } from "@/components/theme/MissionControlSidebar"
 import { StardateDisplay } from "@/components/theme/StardateDisplay";
 import AnimatedBackground from "@/components/ui/animated-background";
 import Gallery from './pages/Gallery';
+import Staff from './pages/Staff';
+import Topics from './pages/Topics';
 import { GoogleAdsProvider, CookieConsentBanner } from '@/components/GoogleAdsProvider';
 import { analyticsTracker } from "@/lib/analytics";
 
@@ -192,6 +194,8 @@ function Router() {
       }} />
       
       <Route path="/gallery" component={Gallery} />
+      <Route path="/staff" component={Staff} />
+      <Route path="/topics" component={Topics} />
       
       <Route path="/sitemap" component={() => {
         const SitemapPage = React.lazy(() => import('./pages/Sitemap'));
@@ -258,11 +262,16 @@ function Router() {
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useScrollToTop } from "@/hooks/useScrollToTop";
+import { ScrollToTopButton } from "@/components/ui/scroll-to-top-button";
 
 function MainApp() {
   const { settings } = useSiteSettings();
   const { isAdmin, user, isLoading: authLoading } = useAuth();
   const [location] = useLocation();
+  
+  // Scroll to top on every route change
+  useScrollToTop();
   
   // Fetch site block status
   const { data: siteBlock, isLoading: siteBlockLoading } = useQuery({
@@ -335,6 +344,9 @@ function MainApp() {
       {/* Theme-specific components */}
       <MissionControlSidebar />
       <StardateDisplay />
+      
+      {/* Scroll to top button */}
+      <ScrollToTopButton />
     </div>
   );
 }

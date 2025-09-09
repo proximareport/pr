@@ -17,6 +17,7 @@ import {
   FacebookIcon
 } from 'lucide-react';
 import { useEffect } from 'react';
+import { Link } from 'wouter';
 
 // Import logo image
 import mobileLogo from "../assets/images/proxima-logo-mobile.png";
@@ -28,6 +29,7 @@ import { useGoogleAdSense } from "@/hooks/useGoogleAdSense";
 // Types
 interface TeamMember {
   id: number;
+  user_id?: number;
   name: string;
   role: string;
   bio: string;
@@ -38,6 +40,13 @@ interface TeamMember {
   social_twitter?: string;
   social_email?: string;
   display_order: number;
+  user?: {
+    id: number;
+    username: string;
+    email: string;
+    profile_picture?: string;
+    bio?: string;
+  };
 }
 
 const stats = [
@@ -175,69 +184,84 @@ export default function About() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-            {founders.map((founder, index) => (
-              <div key={index} className="bg-gray-900/60 backdrop-blur-sm rounded-xl overflow-hidden border border-purple-900/30 hover:border-purple-800/50 transition-all duration-300">
-                <div className="relative">
-                  <div className="w-full h-56 bg-gradient-to-br from-purple-600/20 to-violet-700/20 flex items-center justify-center">
-                    <div className="w-28 h-28 rounded-full bg-gradient-to-r from-purple-500 to-violet-700 flex items-center justify-center text-2xl font-bold text-white shadow-lg">
-                      {founder.name.split(' ').map(n => n[0]).join('')}
+            {founders.map((founder, index) => {
+              const CardContent = (
+                <div className="bg-gray-900/60 backdrop-blur-sm rounded-xl overflow-hidden border border-purple-900/30 hover:border-purple-800/50 transition-all duration-300 cursor-pointer">
+                  <div className="relative">
+                    <div className="w-full h-56 bg-gradient-to-br from-purple-600/20 to-violet-700/20 flex items-center justify-center">
+                      <div className="w-28 h-28 rounded-full bg-gradient-to-r from-purple-500 to-violet-700 flex items-center justify-center text-2xl font-bold text-white shadow-lg">
+                        {founder.name.split(' ').map(n => n[0]).join('')}
+                      </div>
                     </div>
-                  </div>
-                  <div className="absolute top-4 right-4">
-                    <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold px-2 py-1 rounded-full">
-                      Founder
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-white mb-1">{founder.name}</h3>
-                  <p className="text-purple-400 text-sm font-medium mb-3">{founder.role}</p>
-                  <p className="text-gray-400 text-sm mb-4 line-clamp-4">{founder.bio}</p>
-                  
-                  <div className="mb-4">
-                    <h4 className="text-white text-sm font-medium mb-2">Expertise:</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {founder.expertise.map((skill, skillIndex) => (
-                        <span key={skillIndex} className="bg-purple-950/50 text-purple-300 text-xs px-2 py-1 rounded-full">
-                          {skill}
-                        </span>
-                      ))}
+                    <div className="absolute top-4 right-4">
+                      <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold px-2 py-1 rounded-full">
+                        Founder
+                      </span>
                     </div>
                   </div>
                   
-                  <div className="flex gap-3">
-                    {founder.social_linkedin && (
-                      <a 
-                        href={founder.social_linkedin} 
-                        className="text-gray-400 hover:text-blue-400 transition-colors"
-                        aria-label="LinkedIn"
-                      >
-                        <LinkedinIcon className="h-4 w-4" />
-                      </a>
-                    )}
-                    {founder.social_twitter && (
-                      <a 
-                        href={founder.social_twitter} 
-                        className="text-gray-400 hover:text-blue-400 transition-colors"
-                        aria-label="Twitter"
-                      >
-                        <TwitterIcon className="h-4 w-4" />
-                      </a>
-                    )}
-                    {founder.social_email && (
-                      <a 
-                        href={`mailto:${founder.social_email}`} 
-                        className="text-gray-400 hover:text-purple-400 transition-colors"
-                        aria-label="Email"
-                      >
-                        <MailIcon className="h-4 w-4" />
-                      </a>
-                    )}
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold text-white mb-1">{founder.name}</h3>
+                    <p className="text-purple-400 text-sm font-medium mb-3">{founder.role}</p>
+                    <p className="text-gray-400 text-sm mb-4 line-clamp-4">{founder.bio}</p>
+                    
+                    <div className="mb-4">
+                      <h4 className="text-white text-sm font-medium mb-2">Expertise:</h4>
+                      <div className="flex flex-wrap gap-1">
+                        {founder.expertise.map((skill, skillIndex) => (
+                          <span key={skillIndex} className="bg-purple-950/50 text-purple-300 text-xs px-2 py-1 rounded-full">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      {founder.social_linkedin && (
+                        <a 
+                          href={founder.social_linkedin} 
+                          className="text-gray-400 hover:text-blue-400 transition-colors"
+                          aria-label="LinkedIn"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <LinkedinIcon className="h-4 w-4" />
+                        </a>
+                      )}
+                      {founder.social_twitter && (
+                        <a 
+                          href={founder.social_twitter} 
+                          className="text-gray-400 hover:text-blue-400 transition-colors"
+                          aria-label="Twitter"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <TwitterIcon className="h-4 w-4" />
+                        </a>
+                      )}
+                      {founder.social_email && (
+                        <a 
+                          href={`mailto:${founder.social_email}`} 
+                          className="text-gray-400 hover:text-purple-400 transition-colors"
+                          aria-label="Email"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MailIcon className="h-4 w-4" />
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+
+              return founder.user ? (
+                <Link key={index} href={`/profile/${founder.user.username}`}>
+                  {CardContent}
+                </Link>
+              ) : (
+                <div key={index}>
+                  {CardContent}
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -263,64 +287,79 @@ export default function About() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {regularTeam.map((member, index) => (
-              <div key={index} className="bg-gray-900/60 backdrop-blur-sm rounded-xl overflow-hidden border border-purple-900/30 hover:border-purple-800/50 transition-all duration-300">
-                <div className="relative">
-                  <div className="w-full h-48 bg-gradient-to-br from-purple-600/20 to-violet-700/20 flex items-center justify-center">
-                    <div className="w-24 h-24 rounded-full bg-gradient-to-r from-purple-500 to-violet-700 flex items-center justify-center text-2xl font-bold text-white">
-                      {member.name.split(' ').map(n => n[0]).join('')}
+              {regularTeam.map((member, index) => {
+                const CardContent = (
+                  <div className="bg-gray-900/60 backdrop-blur-sm rounded-xl overflow-hidden border border-purple-900/30 hover:border-purple-800/50 transition-all duration-300 cursor-pointer">
+                    <div className="relative">
+                      <div className="w-full h-48 bg-gradient-to-br from-purple-600/20 to-violet-700/20 flex items-center justify-center">
+                        <div className="w-24 h-24 rounded-full bg-gradient-to-r from-purple-500 to-violet-700 flex items-center justify-center text-2xl font-bold text-white">
+                          {member.name.split(' ').map(n => n[0]).join('')}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="p-6">
+                      <h3 className="text-xl font-bold text-white mb-1">{member.name}</h3>
+                      <p className="text-purple-400 text-sm font-medium mb-3">{member.role}</p>
+                      <p className="text-gray-400 text-sm mb-4 line-clamp-3">{member.bio}</p>
+                      
+                      <div className="mb-4">
+                        <h4 className="text-white text-sm font-medium mb-2">Expertise:</h4>
+                        <div className="flex flex-wrap gap-1">
+                          {member.expertise.map((skill, skillIndex) => (
+                            <span key={skillIndex} className="bg-purple-950/50 text-purple-300 text-xs px-2 py-1 rounded-full">
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-3">
+                        {member.social_linkedin && (
+                          <a 
+                            href={member.social_linkedin} 
+                            className="text-gray-400 hover:text-blue-400 transition-colors"
+                            aria-label="LinkedIn"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <LinkedinIcon className="h-4 w-4" />
+                          </a>
+                        )}
+                        {member.social_twitter && (
+                          <a 
+                            href={member.social_twitter} 
+                            className="text-gray-400 hover:text-blue-400 transition-colors"
+                            aria-label="Twitter"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <TwitterIcon className="h-4 w-4" />
+                          </a>
+                        )}
+                        {member.social_email && (
+                          <a 
+                            href={`mailto:${member.social_email}`} 
+                            className="text-gray-400 hover:text-purple-400 transition-colors"
+                            aria-label="Email"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MailIcon className="h-4 w-4" />
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-                
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-white mb-1">{member.name}</h3>
-                  <p className="text-purple-400 text-sm font-medium mb-3">{member.role}</p>
-                  <p className="text-gray-400 text-sm mb-4 line-clamp-3">{member.bio}</p>
-                  
-                  <div className="mb-4">
-                    <h4 className="text-white text-sm font-medium mb-2">Expertise:</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {member.expertise.map((skill, skillIndex) => (
-                        <span key={skillIndex} className="bg-purple-950/50 text-purple-300 text-xs px-2 py-1 rounded-full">
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
+                );
+
+                return member.user ? (
+                  <Link key={index} href={`/profile/${member.user.username}`}>
+                    {CardContent}
+                  </Link>
+                ) : (
+                  <div key={index}>
+                    {CardContent}
                   </div>
-                  
-                  <div className="flex gap-3">
-                    {member.social_linkedin && (
-                      <a 
-                        href={member.social_linkedin} 
-                        className="text-gray-400 hover:text-blue-400 transition-colors"
-                        aria-label="LinkedIn"
-                      >
-                        <LinkedinIcon className="h-4 w-4" />
-                      </a>
-                    )}
-                    {member.social_twitter && (
-                      <a 
-                        href={member.social_twitter} 
-                        className="text-gray-400 hover:text-blue-400 transition-colors"
-                        aria-label="Twitter"
-                      >
-                        <TwitterIcon className="h-4 w-4" />
-                      </a>
-                    )}
-                    {member.social_email && (
-                      <a 
-                        href={`mailto:${member.social_email}`} 
-                        className="text-gray-400 hover:text-purple-400 transition-colors"
-                        aria-label="Email"
-                      >
-                        <MailIcon className="h-4 w-4" />
-                      </a>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
+                );
+              })}
           </div>
           )}
         </div>

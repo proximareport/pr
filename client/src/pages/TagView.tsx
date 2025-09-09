@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tag } from "lucide-react";
 import { Link } from "wouter";
+import SEO from "@/components/SEO";
+import { generateTagSEO } from "@/lib/seoUtils";
 
 interface TagViewProps {
   params: {
@@ -18,11 +20,42 @@ function TagView({ params }: TagViewProps) {
 
   const { data: articles = [], isLoading } = useQuery({
     queryKey: ["/api/articles/tag", decodedTagName],
+    queryFn: async () => {
+      console.log('TagView: Fetching articles for tag:', decodedTagName);
+      const response = await fetch(`/api/articles/tag/${decodedTagName}?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch articles');
+      }
+      const data = await response.json();
+      console.log('TagView: Raw API response for tag', decodedTagName, ':', data);
+      
+      // Ensure we have an array and validate each article
+      if (!Array.isArray(data)) {
+        console.error('Articles data is not an array:', data);
+        return [];
+      }
+      
+      
+      // Data is already cleaned by the API endpoint, just return it
+      console.log('TagView: Articles count:', data.length);
+      console.log('TagView: Articles:', data);
+      
+      return data;
+    },
     enabled: !!decodedTagName,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <>
+      <SEO {...generateTagSEO(decodedTagName)} />
+      <div className="container mx-auto py-8 px-4">
       <div className="flex items-center gap-2 mb-8">
         <Tag className="h-6 w-6 text-purple-500" />
         <h1 className="text-3xl font-space font-bold">
@@ -69,6 +102,7 @@ function TagView({ params }: TagViewProps) {
         </>
       )}
     </div>
+    </>
   );
 }
 

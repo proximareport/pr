@@ -95,9 +95,11 @@ export default function TeamManagement() {
 
   // Fetch users for selection
   const { data: users } = useQuery<User[]>({
-    queryKey: ['admin-users-for-team'],
+    queryKey: ['admin-users-for-team', editingMember?.id],
     queryFn: async () => {
-      const response = await fetch('/api/admin/users');
+      // When editing, include all users; when creating, exclude already linked users
+      const excludeLinked = editingMember ? 'false' : 'true';
+      const response = await fetch(`/api/admin/users?excludeLinked=${excludeLinked}`);
       if (!response.ok) throw new Error('Failed to fetch users');
       return response.json();
     },
@@ -199,7 +201,7 @@ export default function TeamManagement() {
     setExpertiseInput('');
   };
 
-  const handleEdit = (member: TeamMember) => {
+  const editTeamMember = (member: TeamMember) => {
     setEditingMember(member);
     setFormData({
       user_id: member.user_id,
@@ -216,8 +218,12 @@ export default function TeamManagement() {
       is_active: member.is_active
     });
     setUseExistingUser(!!member.user_id);
-    setExpertiseInput(member.expertise.join(', '));
     setIsDialogOpen(true);
+  };
+
+  const handleEdit = (member: TeamMember) => {
+    editTeamMember(member);
+    setExpertiseInput(member.expertise.join(', '));
   };
 
   const handleSubmit = (e: React.FormEvent) => {

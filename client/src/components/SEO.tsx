@@ -23,8 +23,8 @@ interface SEOProps {
 }
 
 const SEO: React.FC<SEOProps> = ({
-  title = 'Proxima Report - Premier Space & STEM News Platform',
-  description = 'Your premier destination for space exploration and scientific discovery. Get the latest news on space missions, astronomy, rocket launches, NASA, SpaceX, and cutting-edge space technology.',
+  title = 'Proxima Report | Space, Astronomy & STEM News',
+  description = 'Proxima Report delivers the latest in space news, astronomy, planetary science, aerospace, and STEM breakthroughs. Stay informed on missions, discoveries, and cosmic exploration.',
   keywords = 'space news, STEM education, astronomy, space exploration, NASA, SpaceX, rocket launches, space missions, science news, technology, exoplanets, space technology, astronomy news, space science, STEM careers, space industry, satellite launches, Mars missions, lunar exploration, space discoveries, space tools, ProxiHub, space calculator, planet generator, space facts, space color palette, space quiz, space word generator, distance calculator, mission generator',
   image = 'https://proximareport.com/og-image.jpg',
   url = 'https://proximareport.com',

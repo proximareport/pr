@@ -216,14 +216,14 @@ function ArticleCard({
         {article.tags && article.tags.length > 0 && !isCompact && (
           <div className="flex flex-wrap gap-2 mb-4">
             {article.tags.slice(0, 3).map((tag, index) => (
-              <Link key={tag} href={`/tag/${tag}`}>
+              <Link key={`${article.id}-tag-${index}-${tag}`} href={`/tag/${tag}`}>
                 <Badge className="bg-purple-800/60 hover:bg-purple-600/70 text-white text-xs py-1.5 px-3 transition-all duration-300 hover:scale-105 border border-purple-500/40 hover:border-purple-400/60 shadow-lg hover:shadow-purple-500/25">
                   {tag}
                 </Badge>
               </Link>
             ))}
             {article.tags.length > 3 && (
-              <Badge className="bg-transparent border border-purple-500/60 text-white/80 text-xs py-1.5 px-3 hover:bg-purple-500/30 hover:text-white transition-all duration-300">
+              <Badge key={`${article.id}-more-tags`} className="bg-transparent border border-purple-500/60 text-white/80 text-xs py-1.5 px-3 hover:bg-purple-500/30 hover:text-white transition-all duration-300">
                 +{article.tags.length - 3} more
               </Badge>
             )}
@@ -238,7 +238,7 @@ function ArticleCard({
               <div className="flex items-center min-w-0">
                 <div className="flex -space-x-2 mr-3 flex-shrink-0">
                   {article.authors.slice(0, 3).map((author, index) => (
-                    <Avatar key={author.id} className={`border-2 border-gray-800 transition-all duration-500 group-hover:border-purple-400/60 hover:scale-110 ${
+                    <Avatar key={`${article.id}-author-${index}-${author.id}`} className={`border-2 border-gray-800 transition-all duration-500 group-hover:border-purple-400/60 hover:scale-110 ${
                       isCompact ? 'h-6 w-6' : 'h-8 w-8'
                     }`}>
                       <AvatarImage 
@@ -246,7 +246,7 @@ function ArticleCard({
                         alt={author.username} 
                       />
                       <AvatarFallback className="bg-gradient-to-br from-purple-600 to-violet-600 text-white text-xs font-semibold">
-                        {author.username.substring(0, 2).toUpperCase()}
+                        {String(author.username || author.name || 'A').substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                   ))}
@@ -255,7 +255,7 @@ function ArticleCard({
                   <p className={`text-white font-medium truncate transition-all duration-300 group-hover:text-purple-200 ${
                     isCompact ? 'text-xs' : 'text-sm'
                   }`}>
-                    {article.authors[0].username}
+                    {String(article.authors[0].username || article.authors[0].name || 'Author')}
                     {article.authors.length > 1 && ` + ${article.authors.length - 1} more`}
                   </p>
                   {article.isCollaborative && (
@@ -275,14 +275,14 @@ function ArticleCard({
                     alt={article.author.username} 
                   />
                   <AvatarFallback className="bg-gradient-to-br from-purple-600 to-violet-600 text-white text-xs font-semibold">
-                    {article.author.username.substring(0, 2).toUpperCase()}
+                    {String(article.author.username).substring(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="ml-3 min-w-0 flex-1">
                   <p className={`text-white font-medium truncate transition-all duration-300 group-hover:text-purple-200 ${
                     isCompact ? 'text-xs' : 'text-sm'
                   }`}>
-                    {article.author.username}
+                    {String(article.author.username)}
                   </p>
                 </div>
               </div>

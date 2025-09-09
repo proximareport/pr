@@ -205,6 +205,21 @@
     <priority>0.4</priority>
   </url>
   
+  <!-- Staff and Team Pages -->
+  <url>
+    <loc>https://proximareport.com/staff</loc>
+    <lastmod>2024-01-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://proximareport.com/topics</loc>
+    <lastmod>2024-01-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  
   <!-- Business Pages -->
   <url>
     <loc>https://proximareport.com/advertise</loc>

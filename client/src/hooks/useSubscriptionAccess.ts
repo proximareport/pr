@@ -39,6 +39,9 @@ export const useSubscriptionAccess = () => {
       case 'work_in_progress':
       case 'special_badge':
       case 'priority_comments':
+      case 'custom_art_upload':
+      case 'exclusive_articles':
+      case 'exclusive_themes':
         return hasAccess('tier3');
       default:
         return false;
@@ -60,6 +63,9 @@ export const useSubscriptionAccess = () => {
       case 'work_in_progress':
       case 'special_badge':
       case 'priority_comments':
+      case 'custom_art_upload':
+      case 'exclusive_articles':
+      case 'exclusive_themes':
         return 'tier3';
       default:
         return 'free';
