@@ -24,7 +24,6 @@ This guide outlines the comprehensive SEO optimizations implemented for Proxima 
 ### 3. AI Search Optimization
 - ✅ **AI-Specific Meta Tags** - Custom meta tags for AI search engines
 - ✅ **Structured Data for AI** - Enhanced schema markup for AI understanding
-- ✅ **Content Classification** - Clear content type and topic identification
 - ✅ **Expertise Markers** - Domain expertise indicators
 
 ## 📊 SEO Implementation Details
@@ -46,7 +45,7 @@ This guide outlines the comprehensive SEO optimizations implemented for Proxima 
 ### Structured Data
 - **Organization Schema** - Company information and social profiles
 - **NewsMediaOrganization Schema** - News organization details
-- **EducationalOrganization Schema** - Educational content classification
+- **EducationalOrganization Schema** - Educational content organization
 - **WebSite Schema** - Website structure and tools listing
 - **BreadcrumbList Schema** - Navigation structure
 
@@ -89,7 +88,7 @@ Priority 0.3: Legal pages (yearly)
 ### AI Search Engines
 - **Perplexity AI** - Optimized with AI-specific meta tags
 - **Claude** - Enhanced structured data for better understanding
-- **ChatGPT** - Content classification for AI search
+- **ChatGPT** - Enhanced structured data for AI search
 
 ## 📱 Mobile Optimization
 
@@ -203,7 +202,6 @@ Priority 0.3: Legal pages (yearly)
 
 ### AI Search Optimization
 - [x] AI-specific meta tags added
-- [x] Content classification implemented
 - [x] Expertise markers included
 - [x] Structured data enhanced
 - [x] Topic identification clear

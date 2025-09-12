@@ -567,16 +567,8 @@ function ProxiHub() {
                       const isAdvancedTool = tool.category === "Advanced" || tool.badge === "Advanced";
                       const hasAccess = isFirstToolInCategory || canAccessFeature('proxihub_basic');
                       
-                      return (
-                        <PremiumAccess
-                          key={toolIndex}
-                          requiredTier="tier1"
-                          featureName={tool.name}
-                          description={isAdvancedTool ? "Advanced tools require Supporter plan or higher" : 
-                                     !isFirstToolInCategory ? "Additional tools require Supporter plan or higher" : undefined}
-                          showUpgrade={!hasAccess}
-                        >
-                          <Card className="bg-white/5 border-white/10 backdrop-blur-sm hover:bg-white/10 transition-all duration-300 group">
+                      const toolCard = (
+                        <Card key={toolIndex} className="bg-white/5 border-white/10 backdrop-blur-sm hover:bg-white/10 transition-all duration-300 group">
                         <CardHeader className="pb-3">
                           <div className="flex items-start justify-between">
                             <div className="w-12 h-12 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
@@ -646,6 +638,20 @@ function ProxiHub() {
                           </div>
                         </CardContent>
                       </Card>
+                      );
+
+                      // Return the tool card with or without PremiumAccess wrapper
+                      return hasAccess ? toolCard : (
+                        <PremiumAccess
+                          key={toolIndex}
+                          requiredTier="tier1"
+                          featureName={tool.name}
+                          description={isAdvancedTool ? "Advanced tools require Supporter plan or higher" : 
+                                     !isFirstToolInCategory ? "Additional tools require Supporter plan or higher" : undefined}
+                          showUpgrade={!hasAccess}
+                          compact={true}
+                        >
+                          {toolCard}
                         </PremiumAccess>
                       );
                     })}

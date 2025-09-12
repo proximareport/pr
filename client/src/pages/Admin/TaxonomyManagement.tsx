@@ -351,7 +351,7 @@ const TaxonomyManagement = () => {
                     </Select>
                     <FormDescription>
                       {field.value === 'tag' 
-                        ? 'Tags are used for detailed content classification' 
+                        ? 'Tags are used for detailed content organization' 
                         : 'Categories organize content into broader sections'}
                     </FormDescription>
                     <FormMessage />

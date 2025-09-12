@@ -222,7 +222,7 @@ export default function MissionControl() {
   const { data: spaceAgencies, isLoading: spaceAgenciesLoading, error: spaceAgenciesError } = useSpaceAgencies();
   const { data: marsWeather, isLoading: marsWeatherLoading, error: marsWeatherError } = useMarsWeather();
   const { data: moonPhase, isLoading: moonPhaseLoading, error: moonPhaseError } = useMoonPhase();
-  const { data: issPassPredictions, isLoading: issPassLoading, error: issPassError } = useISSPassPredictions(userLocation);
+  const { data: issPassPredictions, isLoading: issPassLoading, error: issPassError } = useISSPassPredictions(userLocation?.lat, userLocation?.lon);
   const { data: satellites, isLoading: satellitesLoading, error: satellitesError } = useSatelliteTracking();
   const { data: exoplanets, isLoading: exoplanetsLoading, error: exoplanetsError } = useExoplanets();
   const { data: solarActivity, isLoading: solarActivityLoading, error: solarActivityError } = useSolarActivity();
@@ -584,17 +584,18 @@ export default function MissionControl() {
         </div>
       </div>
 
-      {/* Tiny Top Ad - Minimal Size */}
-      <div className="relative z-10 bg-gray-900/20 backdrop-blur-sm border-b border-purple-900/20">
-        <div className="max-w-sm mx-auto px-4 py-0">
-          <InContentAd />
-        </div>
-      </div>
-
       {/* Main Content - Conditional Views */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 py-3">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-3 min-h-[80vh]">
         {selectedView === 'dashboard' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          <div className="space-y-4">
+            {/* Top Ad for Dashboard */}
+            <div className="flex justify-center">
+              <div className="w-full max-w-md">
+                <BannerAd />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           
           {/* Next Launches */}
           {upcomingLaunchesLoading ? (
@@ -848,6 +849,13 @@ export default function MissionControl() {
             </CompactCard>
           )}
 
+          {/* Middle Ad for Dashboard */}
+          <div className="col-span-full flex justify-center my-4">
+            <div className="w-full max-w-lg">
+              <InContentAd />
+            </div>
+          </div>
+
           {/* Space Weather */}
           {advancedSpaceWeatherLoading ? (
             <LoadingCard title="Space weather..." />
@@ -1097,14 +1105,8 @@ export default function MissionControl() {
             </div>
           </CompactCard>
         </div>
-        )}
-
-        {/* In-Content Ad - Tiny */}
-        <div className="my-2">
-          <div className="max-w-xs mx-auto">
-            <InContentAd />
           </div>
-        </div>
+        )}
 
         {/* Missions View */}
         {selectedView === 'missions' && (
@@ -1113,7 +1115,7 @@ export default function MissionControl() {
             featureName="Mission Tracking"
             description="Advanced mission tracking and monitoring features"
           >
-            <div className="space-y-4">
+            <div className="space-y-4 min-h-[60vh]">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {activeMissions.map((mission, index) => (
                 <CompactCard
@@ -1155,7 +1157,7 @@ export default function MissionControl() {
             featureName="Space Station Monitoring"
             description="Real-time space station tracking and data"
           >
-            <div className="space-y-4">
+            <div className="space-y-4 min-h-[60vh]">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {spaceStations.map((station, index) => (
                 <CompactCard
@@ -1189,7 +1191,12 @@ export default function MissionControl() {
 
         {/* Events View */}
         {selectedView === 'events' && (
-          <div className="space-y-4">
+          <PremiumAccess
+            requiredTier="tier1"
+            featureName="Space Events"
+            description="Access to space events and calendar features"
+          >
+            <div className="space-y-4 min-h-[60vh]">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {upcomingEvents.map((event, index) => (
                 <CompactCard
@@ -1219,11 +1226,17 @@ export default function MissionControl() {
               ))}
             </div>
           </div>
+          </PremiumAccess>
         )}
 
         {/* Calendar View */}
         {selectedView === 'calendar' && (
-          <div className="space-y-4">
+          <PremiumAccess
+            requiredTier="tier1"
+            featureName="Space Calendar"
+            description="Access to space calendar and scheduling features"
+          >
+            <div className="space-y-4 min-h-[60vh]">
             {/* Calendar Header */}
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -1373,18 +1386,30 @@ export default function MissionControl() {
               </CompactCard>
             </div>
           </div>
+          </PremiumAccess>
         )}
 
         {/* Orbits View */}
         {selectedView === 'orbits' && (
-          <div className="h-[calc(100vh-200px)]">
-            <SatelliteVisualizer />
-          </div>
+          <PremiumAccess
+            requiredTier="tier1"
+            featureName="Satellite Tracking"
+            description="Access to satellite tracking and orbital visualization"
+          >
+            <div className="h-[calc(100vh-200px)] min-h-[60vh]">
+              <SatelliteVisualizer />
+            </div>
+          </PremiumAccess>
         )}
 
         {/* Systems View */}
         {selectedView === 'systems' && (
-          <div className="space-y-4">
+          <PremiumAccess
+            requiredTier="tier1"
+            featureName="System Monitoring"
+            description="Access to system status monitoring and diagnostics"
+          >
+            <div className="space-y-4 min-h-[60vh]">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {systemStatuses.map((system, index) => (
                 <CompactCard
@@ -1464,6 +1489,7 @@ export default function MissionControl() {
               </CompactCard>
             </div>
           </div>
+          </PremiumAccess>
         )}
       </div>
 

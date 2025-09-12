@@ -21,7 +21,7 @@ function Header() {
   const navLinks = [
     { name: "Mission Control", href: "/missioncontrol" },
     { name: "Gallery", href: "/gallery" },
-    { name: "Topics", href: "/topics" },
+    { name: "ProxiHub", href: "/proxihub" },
     { name: "Staff", href: "/staff" },
     { name: "About", href: "/about" },
   ];
@@ -30,7 +30,6 @@ function Header() {
     { name: "Jobs", href: "/jobs", icon: <BriefcaseIcon className="h-4 w-4" /> },
     { name: "Advertise", href: "/advertise", icon: <MegaphoneIcon className="h-4 w-4" /> },
     { name: "Pricing", href: "/pricing", icon: <ShoppingCartIcon className="h-4 w-4" /> },
-    { name: "ProxiHub", href: "/proxihub", icon: <RocketIcon className="h-4 w-4" /> },
     { name: "System Status", href: "https://proximareport.statuspage.io", icon: <ActivityIcon className="h-4 w-4" />, external: true },
   ];
 

@@ -1,0 +1,52 @@
+[33mcommit e7c108c0b5df2bc9418f3deb5b356f73654a3312[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: Sam Thibaut <samthibaut@gmail.com>
+Date:   Tue Sep 9 17:02:16 2025 -0500
+
+    Fix Topics page and tag functionality
+    
+    - Updated Topics page to fetch real tags from Ghost API instead of hardcoded data
+    - Fixed /api/articles/tag/:tagSlug endpoint to use working getPosts system from homepage
+    - Resolved 'Objects are not valid as a React child' error by using proven data transformation
+    - All tag pages now show real articles from Ghost blog instead of 'no articles found'
+    - Topics page now displays actual tags with correct article counts (Astronomy: 11, Aerospace: 113, SpaceX: 66, etc.)
+    - Removed fallback hardcoded topics that didn't exist in Ghost blog
+    - Tag functionality now works consistently across all topics
+
+.env
+GHOST_API_SETUP.md
+client/robots.txt
+client/sitemap.xml
+client/src/App.tsx
+client/src/components/CustomArtUpload.tsx
+client/src/components/DiscordInProgress.tsx
+client/src/components/ExclusiveArticles.tsx
+client/src/components/SEO.tsx
+client/src/components/article/ArticleCard.tsx
+client/src/components/article/CommentSection.tsx
+client/src/components/layout/Header.tsx
+client/src/components/theme/ThemeSelector.tsx
+client/src/components/ui/ImageModal.tsx
+client/src/components/ui/scroll-to-top-button.tsx
+client/src/hooks/useScrollToTop.ts
+client/src/hooks/useSubscriptionAccess.ts
+client/src/lib/scrollUtils.ts
+client/src/lib/seoUtils.ts
+client/src/pages/About.tsx
+client/src/pages/Admin/TeamManagement.tsx
+client/src/pages/Article.tsx
+client/src/pages/Astronomy.tsx
+client/src/pages/Contact.tsx
+client/src/pages/Home.tsx
+client/src/pages/Login.tsx
+client/src/pages/MissionControl.tsx
+client/src/pages/Pricing.tsx
+client/src/pages/Staff.tsx
+client/src/pages/TagView.tsx
+client/src/pages/Topics.tsx
+server/db.ts
+server/debug-team-members.js
+server/index.ts
+server/routes.ts
+server/scripts/link-team-members.js
+server/scripts/link-team-members.ts
+tatus

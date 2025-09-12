@@ -325,7 +325,19 @@ export default function Home() {
 
         {/* Category Filter */}
         <div className="mb-6 md:mb-8 px-1">
-          <h3 className="text-lg md:text-xl font-bold text-white mb-3 md:mb-4">Browse by Category</h3>
+          <div className="flex items-center justify-between mb-3 md:mb-4">
+            <h3 className="text-lg md:text-xl font-bold text-white">Browse by Category</h3>
+            <Link href="/topics">
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="border-purple-600 text-purple-400 hover:bg-purple-600/20 hover:text-purple-300 transition-colors"
+              >
+                <BookOpen className="w-4 h-4 mr-2" />
+                View All Topics
+              </Button>
+            </Link>
+          </div>
           <div className="flex flex-wrap gap-2">
             {categories.map((category: string) => (
               <Badge

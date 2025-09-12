@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { analyticsTracker } from '@/lib/analytics';
 import { BannerAd, InContentAd } from '@/components/AdPlacement';
+import PremiumAccess from '@/components/PremiumAccess';
+import { useAuth } from '@/lib/AuthContext';
 
 import { 
   Search, 
@@ -35,8 +37,13 @@ const Gallery: React.FC = () => {
     item: GalleryItem;
   } | null>(null);
 
+  const { user } = useAuth();
   const { data: galleryData, isLoading, error } = useGallery(currentPage, 20, selectedTag);
   const { data: tags } = useGalleryTags();
+
+  // Check if user has access to current page
+  const isPaidSubscriber = user?.membershipTier === 'tier1' || user?.membershipTier === 'tier2' || user?.membershipTier === 'tier3';
+  const isPageLocked = currentPage >= 3 && !isPaidSubscriber;
 
   // Filter items based on search query
   const filteredItems = galleryData?.items?.filter(item =>
@@ -47,6 +54,16 @@ const Gallery: React.FC = () => {
   const handleTagFilter = (tagSlug: string) => {
     setSelectedTag(tagSlug === selectedTag ? '' : tagSlug);
     setCurrentPage(1);
+  };
+
+  const handlePageClick = (page: number) => {
+    const isPageLocked = page >= 3 && !isPaidSubscriber;
+    if (isPageLocked) {
+      // Show upgrade message for locked pages
+      alert('This page requires a Supporter plan or higher. Please upgrade to access additional gallery pages.');
+      return;
+    }
+    setCurrentPage(page);
   };
 
   const openImageModal = (imageUrl: string, alt: string, caption: string, item: GalleryItem) => {
@@ -209,7 +226,21 @@ const Gallery: React.FC = () => {
 
       {/* Gallery Content */}
       <div className="container mx-auto px-4 py-8">
-        {filteredItems.length === 0 ? (
+        {isPageLocked ? (
+          <PremiumAccess
+            requiredTier="tier1"
+            featureName="Gallery Access"
+            description="Access to additional gallery pages requires Supporter plan or higher"
+          >
+            <div className="text-center py-12">
+              <ImageIcon className="h-16 w-16 text-gray-600 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Gallery Page {currentPage}</h3>
+              <p className="text-gray-400">
+                This page contains additional gallery content
+              </p>
+            </div>
+          </PremiumAccess>
+        ) : filteredItems.length === 0 ? (
           <div className="text-center py-12">
             <ImageIcon className="h-16 w-16 text-gray-600 mx-auto mb-4" />
             <h3 className="text-xl font-semibold mb-2">No Images Found</h3>
@@ -569,26 +600,39 @@ const Gallery: React.FC = () => {
                       page === galleryData.meta.pagination.pages || 
                       Math.abs(page - currentPage) <= 2
                     )
-                    .map((page, index, arr) => (
-                      <React.Fragment key={page}>
-                        {index > 0 && arr[index - 1] !== page - 1 && (
-                          <span className="text-gray-500">...</span>
-                        )}
-                        <Button
-                          variant={page === currentPage ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setCurrentPage(page)}
-                          className="w-10 h-10"
-                        >
-                          {page}
-                        </Button>
-                      </React.Fragment>
-                    ))}
+                    .map((page, index, arr) => {
+                      const isPageLocked = page >= 3 && !isPaidSubscriber;
+                      return (
+                        <React.Fragment key={page}>
+                          {index > 0 && arr[index - 1] !== page - 1 && (
+                            <span className="text-gray-500">...</span>
+                          )}
+                          <Button
+                            variant={page === currentPage ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => handlePageClick(page)}
+                            className={`w-10 h-10 ${isPageLocked ? 'border-orange-500 text-orange-400 hover:bg-orange-500/20' : ''}`}
+                            title={isPageLocked ? 'Click to see upgrade message' : ''}
+                          >
+                            {page}
+                            {isPageLocked && <span className="text-xs ml-1">🔒</span>}
+                          </Button>
+                        </React.Fragment>
+                      );
+                    })}
                 </div>
 
                 <Button
                   variant="outline"
-                  onClick={() => setCurrentPage(currentPage + 1)}
+                  onClick={() => {
+                    const nextPage = currentPage + 1;
+                    const isNextPageLocked = nextPage >= 3 && !isPaidSubscriber;
+                    if (isNextPageLocked) {
+                      alert('This page requires a Supporter plan or higher. Please upgrade to access additional gallery pages.');
+                      return;
+                    }
+                    setCurrentPage(nextPage);
+                  }}
                   disabled={!galleryData.meta.pagination.next}
                   className="flex items-center gap-2"
                 >
