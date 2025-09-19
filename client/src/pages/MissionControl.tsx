@@ -763,52 +763,37 @@ const MissionControl: React.FC = () => {
   // Save mission session to database
   const saveMissionSession = async (mission: MissionControlMission) => {
     try {
+      // Always create a new session to avoid duplicates
+      // Clean up old sessions first
       if (missionState.sessionId) {
-        // Update existing session
-        console.log('💾 Updating existing mission session:', missionState.sessionId);
-        console.log('💾 Updating session with liveStreamUrl:', mission.liveStreamUrl);
-        const updatedSession = await missionControlAPI.updateSession(missionState.sessionId, {
-          missionName: mission.name,
-          agency: mission.agency,
-          launchDate: mission.launchDate,
-          status: mission.status,
-          description: mission.description,
-          vehicle: mission.vehicle,
-          payload: mission.payload,
-          destination: mission.destination,
-          launchSite: mission.launchSite,
-          liveStreamUrl: mission.liveStreamUrl,
-          missionPatchUrl: mission.missionPatch
-        });
-        console.log('✅ Mission session updated:', updatedSession);
-        return updatedSession;
-      } else {
-        // Create new session
-        console.log('💾 Creating new mission session for:', mission.name);
-        const session = await missionControlAPI.createSession({
-          missionId: mission.id,
-          missionName: mission.name,
-          agency: mission.agency,
-          launchDate: mission.launchDate,
-          description: mission.description,
-          vehicle: mission.vehicle,
-          payload: mission.payload,
-          destination: mission.destination,
-          launchSite: mission.launchSite,
-          liveStreamUrl: mission.liveStreamUrl,
-          missionPatchUrl: mission.missionPatch,
-          adminUserId: user?.id
-        });
-        console.log('✅ New mission session created:', session);
-        console.log('🔍 Session ID field:', session.sessionId, 'Session ID field (alt):', session.session_id);
-
-        setMissionState(prev => ({
-          ...prev,
-          sessionId: session.sessionId || session.session_id
-        }));
-
-        return session;
+        console.log('🧹 Cleaning up old session:', missionState.sessionId);
+        try {
+          await missionControlAPI.deleteSession(missionState.sessionId);
+        } catch (error) {
+          console.warn('⚠️ Could not delete old session:', error);
+        }
       }
+
+      // Create new session
+      console.log('💾 Creating new mission session for:', mission.name);
+      const session = await missionControlAPI.createSession({
+        missionId: mission.id,
+        missionName: mission.name,
+        agency: mission.agency,
+        launchDate: mission.launchDate,
+        description: mission.description,
+        vehicle: mission.vehicle,
+        payload: mission.payload,
+        destination: mission.destination,
+        launchSite: mission.launchSite,
+        liveStreamUrl: mission.liveStreamUrl,
+        missionPatchUrl: mission.missionPatch,
+        adminUserId: user?.id
+      });
+      console.log('✅ New mission session created:', session);
+      console.log('🔍 Session ID field:', session.sessionId, 'Session ID field (alt):', session.session_id);
+
+      return session;
     } catch (error) {
       console.error('❌ Error saving mission session:', error);
       return null;
