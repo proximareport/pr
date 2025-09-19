@@ -8,6 +8,9 @@ const GHOST_URL = process.env.GHOST_URL as string;
 const GHOST_CONTENT_API_KEY = process.env.GHOST_CONTENT_API_KEY as string;
 
 if (!GHOST_URL || !GHOST_CONTENT_API_KEY) {
+  console.error('Missing required Ghost API configuration');
+  console.error('GHOST_URL:', GHOST_URL);
+  console.error('GHOST_CONTENT_API_KEY:', GHOST_CONTENT_API_KEY ? 'SET' : 'NOT SET');
   throw new Error('Missing required Ghost API configuration');
 }
 
