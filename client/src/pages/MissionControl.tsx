@@ -1207,17 +1207,34 @@ const MissionControl: React.FC = () => {
         `Mission ${mission.name} has been selected for mission control operations.`
       );
 
-      // Add default weather data
-      await saveWeatherData({
-        temperature: 0,
-        windSpeed: 0,
-        visibility: 0,
-        conditions: 'N/A',
-        goNoGo: 'TBD'
-      });
+      // Add weather data (ISS-specific or default)
+      if (isISSFeed) {
+        await saveWeatherData({
+          temperature: -270, // Space temperature
+          windSpeed: 0,
+          visibility: 1000, // Clear view from space
+          conditions: 'Space Environment',
+          goNoGo: 'GO'
+        });
+      } else {
+        await saveWeatherData({
+          temperature: 0,
+          windSpeed: 0,
+          visibility: 0,
+          conditions: 'N/A',
+          goNoGo: 'TBD'
+        });
+      }
 
-      // Add default objectives
-      const defaultObjectives = [
+      // Add objectives (ISS-specific or default)
+      const sessionId = session.sessionId || session.session_id;
+      const objectives = isISSFeed ? [
+        'Monitor Earth observation activities',
+        'Conduct scientific experiments',
+        'Maintain station systems',
+        'Support crew operations',
+        'Document Earth changes from space'
+      ] : [
         'Complete final system checks',
         'Verify weather conditions', 
         'Execute launch sequence',
@@ -1225,8 +1242,7 @@ const MissionControl: React.FC = () => {
         'Ensure payload deployment'
       ];
 
-      const sessionId = session.sessionId || session.session_id;
-      for (const objective of defaultObjectives) {
+      for (const objective of objectives) {
         await missionControlAPI.addObjective(sessionId, objective);
       }
 
@@ -1234,9 +1250,16 @@ const MissionControl: React.FC = () => {
       await loadMissionData(sessionId);
     }
 
-    // Add default milestones if this is an upcoming mission
-    if ((missionStatus === 'upcoming' || missionStatus === 'scheduled') && (session?.sessionId || session?.session_id)) {
-      const defaultMilestones = [
+    // Add milestones (ISS-specific or default)
+    if ((missionStatus === 'upcoming' || missionStatus === 'scheduled' || isISSFeed) && (session?.sessionId || session?.session_id)) {
+      const milestones = isISSFeed ? [
+        { name: 'ISS Orbit Established', timeOffset: 'T-0:00:00', description: 'International Space Station in stable orbit' },
+        { name: 'Live Feed Active', timeOffset: 'T+0:00:00', description: '24/7 live video feed operational' },
+        { name: 'Earth Observation', timeOffset: 'T+0:00:00', description: 'Continuous Earth monitoring' },
+        { name: 'Crew Activities', timeOffset: 'T+0:00:00', description: 'Astronaut operations and experiments' },
+        { name: 'Spacewalk Preparation', timeOffset: 'T+0:00:00', description: 'EVA suit checks and procedures' },
+        { name: 'Scientific Experiments', timeOffset: 'T+0:00:00', description: 'Research and data collection' }
+      ] : [
         { name: 'T-24h: Final Preparations', timeOffset: 'T-24:00:00', description: 'Rocket assembly and final checks' },
         { name: 'T-4h: Weather Briefing', timeOffset: 'T-04:00:00', description: 'Launch weather assessment' },
         { name: 'T-2h: Fueling Begins', timeOffset: 'T-02:00:00', description: 'Rocket propellant loading' },
@@ -1247,7 +1270,7 @@ const MissionControl: React.FC = () => {
         { name: 'T+8m: Second Stage Ignition', timeOffset: 'T+00:08:00', description: 'Second stage engine start' }
       ];
 
-      for (const milestone of defaultMilestones) {
+      for (const milestone of milestones) {
         await addMissionMilestone(milestone.name, milestone.timeOffset, milestone.description);
       }
     }
@@ -1568,7 +1591,7 @@ const MissionControl: React.FC = () => {
         </div>
               )}
               
-              {isSimulatingLive && videoFeedUrl ? (
+              {(isSimulatingLive && videoFeedUrl) || (missionState.currentMission?.id === 'iss-live-feed' && videoFeedUrl) ? (
                 <iframe
                   src={videoFeedUrl}
                   className="w-full h-full"
@@ -1891,7 +1914,7 @@ const MissionControl: React.FC = () => {
           {isFullscreen && (
             <div className="fixed inset-0 z-50 bg-black">
               <div className="relative w-full h-full">
-                {isSimulatingLive && videoFeedUrl ? (
+                {(isSimulatingLive && videoFeedUrl) || (missionState.currentMission?.id === 'iss-live-feed' && videoFeedUrl) ? (
                   <iframe
                     src={videoFeedUrl}
                     className="w-full h-full"
