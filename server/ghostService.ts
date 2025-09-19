@@ -12,16 +12,12 @@ if (!GHOST_URL || !GHOST_CONTENT_API_KEY) {
   console.error('GHOST_URL:', GHOST_URL);
   console.error('GHOST_CONTENT_API_KEY:', GHOST_CONTENT_API_KEY ? 'SET' : 'NOT SET');
   console.error('Available environment variables:', Object.keys(process.env).filter(key => key.includes('GHOST')));
-  // Don't throw error, just log and continue with fallback
-  console.warn('Continuing without Ghost API - some features may not work');
+  console.error('All environment variables:', Object.keys(process.env).sort());
+  throw new Error('Missing required Ghost API configuration');
 }
 
 // Test the Ghost API connection
 async function testGhostConnection() {
-  if (!GHOST_URL || !GHOST_CONTENT_API_KEY) {
-    console.warn('⚠️ Ghost API not configured, skipping connection test');
-    return null;
-  }
   
   try {
     const testUrl = `${GHOST_URL}/ghost/api/v3/content/posts/?key=${GHOST_CONTENT_API_KEY}&limit=1`;
@@ -150,10 +146,6 @@ function formatGhostPost(post: any): GhostPost | null {
 
 // Get posts with pagination
 export async function getPosts(page = 1, limit = 10, filter?: string) {
-  if (!GHOST_URL || !GHOST_CONTENT_API_KEY) {
-    console.warn('⚠️ Ghost API not configured, returning empty posts');
-    return { posts: [], meta: { pagination: { page, limit, pages: 0, total: 0, next: null, prev: null } } };
-  }
   
   try {
     const params = new URLSearchParams();
