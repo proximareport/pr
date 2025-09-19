@@ -36,6 +36,7 @@ import {
   MarsWeather,
   MoonPhase
 } from '../services/launchesService';
+import { useCurrentLiveFeed, issLiveFeedAPI, type CurrentLiveFeed } from '../services/issLiveFeedService';
 import { 
   RocketIcon, 
   ClockIcon,
@@ -513,6 +514,7 @@ const MissionControl: React.FC = () => {
   const { user } = useAuth();
   const { canAccessFeature } = useSubscriptionAccess();
   const { data: upcomingLaunches, isLoading: launchesLoading } = useUpcomingLaunches();
+  const { data: currentLiveFeed, isLoading: liveFeedLoading } = useCurrentLiveFeed();
   
   const [missionState, setMissionState] = useState<MissionControlState>({
     currentMission: defaultMission,
@@ -535,10 +537,19 @@ const MissionControl: React.FC = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [videoOverlay, setVideoOverlay] = useState<'none' | 'starting-soon' | 'technical-difficulties' | 'standby' | 'maintenance' | 'custom'>('none');
   const [customOverlayText, setCustomOverlayText] = useState('');
+  const [issFeedEnabled, setIssFeedEnabled] = useState(true);
 
   // Track Mission Control page view for analytics
   useEffect(() => {
     analyticsTracker.trackPageView('/mission-control');
+  }, []);
+
+  // Reset simulation state on page load
+  useEffect(() => {
+    // Reset simulation state when page loads
+    setIsSimulatingLive(false);
+    setVideoFeedUrl('');
+    console.log('🔄 Reset simulation state on page load');
   }, []);
 
   // Update admin mode when user data changes
@@ -605,6 +616,12 @@ const MissionControl: React.FC = () => {
 
           console.log('✅ Mission loaded from database:', mission.name, 'Session:', session);
 
+          // Set video URL if available
+          if (mission.liveStreamUrl) {
+            console.log('🎬 Setting video URL from loaded mission:', mission.liveStreamUrl);
+            setVideoFeedUrl(mission.liveStreamUrl);
+          }
+
           // Load additional data will be handled by the useEffect
         }
       } catch (error) {
@@ -639,11 +656,12 @@ const MissionControl: React.FC = () => {
   const loadMissionData = async (sessionId: string) => {
     console.log('🔄 Loading mission data for session:', sessionId);
     try {
-      const [updates, milestones, weather, overlay] = await Promise.all([
+      const [updates, milestones, weather, overlay, session] = await Promise.all([
         missionControlAPI.getUpdates(sessionId),
         missionControlAPI.getMilestones(sessionId),
         missionControlAPI.getLatestWeather(sessionId),
-        missionControlAPI.getVideoOverlay(sessionId)
+        missionControlAPI.getVideoOverlay(sessionId),
+        missionControlAPI.getActiveSession()
       ]);
 
       console.log('📊 Loaded data:', { updates: updates.length, milestones: milestones.length, weather: !!weather, overlay: !!overlay });
@@ -704,8 +722,41 @@ const MissionControl: React.FC = () => {
         setVideoOverlay('none');
         setCustomOverlayText('');
       }
+
+      // Update video URL from session
+      if (session && session.liveStreamUrl) {
+        console.log('🎬 Video URL loaded from database:', session.liveStreamUrl);
+        setVideoFeedUrl(session.liveStreamUrl);
+      }
+
+      // Update ISS feed setting from session
+      if (session && typeof session.issFeedEnabled === 'boolean') {
+        console.log('🛰️ ISS feed setting loaded from database:', session.issFeedEnabled);
+        setIssFeedEnabled(session.issFeedEnabled);
+      } else {
+        console.log('🛰️ No ISS feed setting in database, using default (true)');
+        setIssFeedEnabled(true);
+      }
     } catch (error) {
       console.error('Error loading mission data:', error);
+    }
+  };
+
+  // Save ISS feed setting to database
+  const saveISSFeedSetting = async (enabled: boolean) => {
+    if (!missionState.sessionId) {
+      console.log('❌ Cannot save ISS feed setting - no session ID');
+      return;
+    }
+
+    try {
+      await axios.put('/api/mission-control/iss-feed-settings', {
+        sessionId: missionState.sessionId,
+        issFeedEnabled: enabled
+      });
+      console.log('✅ ISS feed setting saved:', enabled);
+    } catch (error) {
+      console.error('❌ Error saving ISS feed setting:', error);
     }
   };
 
@@ -715,6 +766,7 @@ const MissionControl: React.FC = () => {
       if (missionState.sessionId) {
         // Update existing session
         console.log('💾 Updating existing mission session:', missionState.sessionId);
+        console.log('💾 Updating session with liveStreamUrl:', mission.liveStreamUrl);
         const updatedSession = await missionControlAPI.updateSession(missionState.sessionId, {
           missionName: mission.name,
           agency: mission.agency,
@@ -1077,6 +1129,9 @@ const MissionControl: React.FC = () => {
     console.log('🚀 Selecting mission:', launch.name);
     const missionStatus = getMissionStatus(launch);
     
+    // Check if this is the ISS Live Feed
+    const isISSFeed = launch.id === 'iss-live-feed';
+    
     const mission: MissionControlMission = {
       id: launch.id,
       name: launch.name,
@@ -1088,7 +1143,7 @@ const MissionControl: React.FC = () => {
       payload: launch.mission?.name || 'Unknown',
       destination: launch.mission?.orbit?.name || 'Unknown',
       launchSite: launch.pad?.name || 'Unknown',
-      liveStreamUrl: launch.webcast_url || '',
+      liveStreamUrl: isISSFeed ? 'https://www.youtube.com/embed/iYmvCUonukw?autoplay=1&rel=0&modestbranding=1&showinfo=0&controls=1&disablekb=1&fs=1&cc_load_policy=0&iv_load_policy=3&start=0' : (launch.webcast_url || ''),
       missionPatch: launch.image || '',
       objectives: [],
       milestones: [],
@@ -1109,6 +1164,13 @@ const MissionControl: React.FC = () => {
       ...prev,
       currentMission: mission
     }));
+
+    // If this is ISS feed, also set the video feed URL
+    if (isISSFeed) {
+      setVideoFeedUrl(mission.liveStreamUrl);
+      console.log('🛰️ ISS feed selected, video URL set to:', mission.liveStreamUrl);
+      console.log('🛰️ Mission liveStreamUrl:', mission.liveStreamUrl);
+    }
 
     // Save mission to database
     console.log('💾 Saving mission to database...');
@@ -1216,7 +1278,7 @@ const MissionControl: React.FC = () => {
   };
 
   if (!missionState.currentMission) {
-    return (
+  return (
       <div className="min-h-screen bg-black text-white p-8">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-3xl font-bold mb-8">Mission Control</h1>
@@ -1224,8 +1286,8 @@ const MissionControl: React.FC = () => {
             <RocketIcon className="h-16 w-16 mx-auto mb-4 text-gray-400" />
             <p className="text-xl text-gray-400">No mission selected</p>
             <p className="text-gray-500 mt-2">Select a mission from the upcoming launches to begin</p>
-          </div>
-        </div>
+      </div>
+              </div>
       </div>
     );
   }
@@ -1293,7 +1355,7 @@ const MissionControl: React.FC = () => {
                   </button>
                 )}
               </>
-            )}
+                )}
               </div>
             </div>
           </div>
@@ -1381,7 +1443,7 @@ const MissionControl: React.FC = () => {
               <div className="flex flex-wrap items-center gap-2">
                 {missionState.adminMode && (
                   <>
-                    <button
+                <button
                       onClick={async () => {
                         startVideoSimulation();
                         // Auto-save video simulation start to database
@@ -1402,8 +1464,8 @@ const MissionControl: React.FC = () => {
                     >
                       <PlayIcon className="h-3 w-3 mr-1 inline" />
                       Start Simulation
-                    </button>
-                    <button
+                </button>
+              <button
                       onClick={async () => {
                         stopVideoSimulation();
                         // Auto-save video simulation stop to database
@@ -1424,7 +1486,7 @@ const MissionControl: React.FC = () => {
                     >
                       <SquareIcon className="h-3 w-3 mr-1 inline" />
                       Stop
-                    </button>
+              </button>
                   </>
                 )}
                 <button
@@ -1468,23 +1530,66 @@ const MissionControl: React.FC = () => {
                       Fullscreen
                     </>
                   )}
-                </button>
-              </div>
+              </button>
             </div>
+          </div>
             
             <div className="relative bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
-              {videoFeedUrl ? (
+              {/* Debug info - remove in production */}
+              {missionState.adminMode && (
+                <div className="absolute top-2 left-2 bg-black/80 text-white text-xs p-2 rounded z-20">
+                  <div>Simulating: {isSimulatingLive ? 'Yes' : 'No'}</div>
+                  <div>Video URL: {videoFeedUrl ? 'Set' : 'None'}</div>
+                  <div>ISS Enabled: {issFeedEnabled ? 'Yes' : 'No'}</div>
+                  <div>Live Feed: {currentLiveFeed?.feed ? 'Available' : 'None'}</div>
+        </div>
+              )}
+              
+              {isSimulatingLive && videoFeedUrl ? (
                 <iframe
                   src={videoFeedUrl}
                   className="w-full h-full"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
+              ) : currentLiveFeed?.feed && !liveFeedLoading && issFeedEnabled ? (
+                <div className="w-full h-full">
+                  <iframe
+                    src={currentLiveFeed.feed.embedUrl}
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    title={currentLiveFeed.feed.title}
+                    referrerPolicy="no-referrer"
+                    sandbox="allow-scripts allow-same-origin allow-presentation"
+                  />
+                  {currentLiveFeed.launchInfo && (
+                    <div className="absolute top-4 left-4 bg-blue-600/90 text-white px-3 py-2 rounded-lg text-sm">
+                      <div className="font-semibold">Next Launch: {currentLiveFeed.launchInfo.launchName}</div>
+                      <div className="text-xs opacity-90">
+                        Switching in {currentLiveFeed.launchInfo.timeUntilSwitch} minutes
+        </div>
+      </div>
+                  )}
+                  <div className="absolute bottom-4 left-4 bg-black/70 text-white px-3 py-2 rounded-lg text-sm">
+                    <div className="font-semibold">{currentLiveFeed.feed.title}</div>
+                    {currentLiveFeed.feed.description && (
+                      <div className="text-xs opacity-90">{currentLiveFeed.feed.description}</div>
+                    )}
+                    </div>
+                    </div>
+              ) : liveFeedLoading ? (
+                <div className="w-full h-full flex items-center justify-center bg-gray-800">
+                  <div className="text-center">
+                    <VideoIcon className="h-16 w-16 mx-auto mb-4 text-gray-400 animate-pulse" />
+                    <p className="text-xl text-gray-400 mb-2">Loading Live Feed...</p>
+                  </div>
+              </div>
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gray-800">
                   <div className="text-center">
                     <VideoIcon className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-                    <p className="text-xl text-gray-400 mb-2">No Live Feed</p>
+                    <p className="text-xl text-gray-400 mb-2">No Live Feed Available</p>
                    <p className="text-sm text-gray-500">
                      {missionState.adminMode 
                        ? 'Click "Start Simulation" to begin live video feed' 
@@ -1496,7 +1601,7 @@ const MissionControl: React.FC = () => {
               )}
               
               {/* Video Overlay */}
-              {overlayVisible && (videoFeedUrl || isSimulatingLive) && (
+              {overlayVisible && isSimulatingLive && (
                 <div className="absolute inset-0 pointer-events-none">
                   {/* Main Overlay Container */}
                   <div className="absolute inset-0 bg-gradient-to-br from-black/20 via-transparent to-black/30">
@@ -1533,9 +1638,9 @@ const MissionControl: React.FC = () => {
               <div className="space-y-1">
                               <div className="text-white text-sm font-medium">{missionState.currentMission.name}</div>
                               <div className="text-gray-300 text-xs">{missionState.currentMission.vehicle}</div>
+                      </div>
+                      </div>
                     </div>
-                    </div>
-                  </div>
 
                         {/* Right Side - Live Status and Time */}
                         <div className="flex items-center space-x-2 sm:space-x-6">
@@ -1561,7 +1666,7 @@ const MissionControl: React.FC = () => {
                               <div className="text-center">
                                 <div className="text-lg font-bold text-blue-400 font-mono">{missionState.currentMission.countdown.days}</div>
                                 <div className="text-xs text-gray-400">D</div>
-                      </div>
+              </div>
                               <div className="text-blue-400 text-sm font-mono">:</div>
                               <div className="text-center">
                                 <div className="text-lg font-bold text-blue-400 font-mono">{missionState.currentMission.countdown.hours}</div>
@@ -1571,19 +1676,19 @@ const MissionControl: React.FC = () => {
                               <div className="text-center">
                                 <div className="text-lg font-bold text-blue-400 font-mono">{missionState.currentMission.countdown.minutes}</div>
                                 <div className="text-xs text-gray-400">M</div>
-                    </div>
+                      </div>
                               <div className="text-blue-400 text-sm font-mono">:</div>
                               <div className="text-center">
                                 <div className="text-lg font-bold text-blue-400 font-mono">{missionState.currentMission.countdown.seconds}</div>
                                 <div className="text-xs text-gray-400">S</div>
-              </div>
-                            </div>
-                          </div>
+                      </div>
+                    </div>
+                  </div>
                           <div className="text-center">
                             <div className="text-white text-xs font-medium mb-1">STATUS</div>
                             <div className={`px-2 py-1 rounded-full text-xs font-bold ${getStatusColor(missionState.currentMission.status)}`}>
                               {missionState.currentMission.status.toUpperCase()}
-                            </div>
+              </div>
                           </div>
                         </div>
 
@@ -1597,25 +1702,25 @@ const MissionControl: React.FC = () => {
                                 <div className="text-center">
                                   <div className="text-3xl font-bold text-blue-400 font-mono">{missionState.currentMission.countdown.days}</div>
                                   <div className="text-xs text-gray-400 font-medium">DAYS</div>
-                                </div>
+                  </div>
                                 <div className="text-blue-400 text-2xl font-mono">:</div>
                                 <div className="text-center">
                                   <div className="text-3xl font-bold text-blue-400 font-mono">{missionState.currentMission.countdown.hours}</div>
                                   <div className="text-xs text-gray-400 font-medium">HRS</div>
-                                </div>
+                </div>
                                 <div className="text-blue-400 text-2xl font-mono">:</div>
                                 <div className="text-center">
                                   <div className="text-3xl font-bold text-blue-400 font-mono">{missionState.currentMission.countdown.minutes}</div>
                                   <div className="text-xs text-gray-400 font-medium">MIN</div>
-                                </div>
+                  </div>
                                 <div className="text-blue-400 text-2xl font-mono">:</div>
                                 <div className="text-center">
                                   <div className="text-3xl font-bold text-blue-400 font-mono">{missionState.currentMission.countdown.seconds}</div>
                                   <div className="text-xs text-gray-400 font-medium">SEC</div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
+                </div>
+              </div>
+                  </div>
+                </div>
 
                           {/* Center - Mission Status */}
                           <div className="flex items-center space-x-4">
@@ -1623,8 +1728,8 @@ const MissionControl: React.FC = () => {
                               <div className="text-white text-xs font-medium mb-1 tracking-wider">MISSION STATUS</div>
                               <div className={`px-3 py-1 rounded-full text-sm font-bold ${getStatusColor(missionState.currentMission.status)}`}>
                                 {missionState.currentMission.status.toUpperCase()}
-                              </div>
-                            </div>
+                  </div>
+                </div>
                             
                             <div className="h-12 w-px bg-blue-500/30"></div>
                             
@@ -1632,7 +1737,7 @@ const MissionControl: React.FC = () => {
                               <div className="text-white text-xs font-medium mb-1 tracking-wider">WEATHER</div>
                               <div className={`px-3 py-1 rounded-full text-sm font-bold ${getGoNoGoColor(missionState.currentMission.weather.goNoGo)}`}>
                                 {missionState.currentMission.weather.goNoGo}
-                              </div>
+              </div>
                             </div>
                           </div>
 
@@ -1657,7 +1762,7 @@ const MissionControl: React.FC = () => {
                       <div className="absolute left-1/4 top-0 w-px h-full bg-gradient-to-b from-transparent via-blue-500/20 to-transparent animate-pulse" style={{ animationDelay: '0.3s' }}></div>
                       <div className="absolute left-1/2 top-0 w-px h-full bg-gradient-to-b from-transparent via-blue-500/30 to-transparent animate-pulse" style={{ animationDelay: '0.8s' }}></div>
                       <div className="absolute left-3/4 top-0 w-px h-full bg-gradient-to-b from-transparent via-blue-500/20 to-transparent animate-pulse" style={{ animationDelay: '1.3s' }}></div>
-                    </div>
+                      </div>
 
                     {/* Corner Brackets - Positioned to not overlap content */}
                     <div className="absolute top-16 left-4 w-8 h-8 border-t-2 border-l-2 border-blue-500/40 rounded-tl-lg"></div>
@@ -1668,8 +1773,8 @@ const MissionControl: React.FC = () => {
                     {/* Data Stream Effects */}
                     <div className="absolute top-1/3 left-6 w-1 h-20 bg-gradient-to-b from-transparent via-cyan-400/60 to-transparent animate-pulse" style={{ animationDelay: '2s' }}></div>
                     <div className="absolute top-2/3 right-6 w-1 h-20 bg-gradient-to-b from-transparent via-purple-400/60 to-transparent animate-pulse" style={{ animationDelay: '2.5s' }}></div>
-                  </div>
-                </div>
+                      </div>
+                    </div>
               )}
 
               {/* Video Status Overlay */}
@@ -1680,7 +1785,7 @@ const MissionControl: React.FC = () => {
                       <>
                         <div className="w-24 h-24 mx-auto mb-6 bg-blue-600 rounded-full flex items-center justify-center animate-pulse">
                           <ClockIcon className="h-12 w-12 text-white" />
-                        </div>
+              </div>
                         <h2 className="text-4xl font-bold text-white mb-4">STARTING SOON</h2>
                         <p className="text-xl text-gray-300">Mission Control will begin shortly</p>
                         <div className="mt-6 flex items-center justify-center space-x-2">
@@ -1695,7 +1800,7 @@ const MissionControl: React.FC = () => {
                       <>
                         <div className="w-24 h-24 mx-auto mb-6 bg-red-600 rounded-full flex items-center justify-center animate-pulse">
                           <AlertCircleIcon className="h-12 w-12 text-white" />
-                        </div>
+                </div>
                         <h2 className="text-4xl font-bold text-red-400 mb-4">TECHNICAL DIFFICULTIES</h2>
                         <p className="text-xl text-gray-300 mb-2">We are experiencing technical issues</p>
                         <p className="text-lg text-gray-400">Please stand by while we resolve this</p>
@@ -1703,7 +1808,7 @@ const MissionControl: React.FC = () => {
                           <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
                           <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
                           <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-                        </div>
+                </div>
                       </>
                     )}
 
@@ -1711,7 +1816,7 @@ const MissionControl: React.FC = () => {
                       <>
                         <div className="w-24 h-24 mx-auto mb-6 bg-yellow-600 rounded-full flex items-center justify-center animate-pulse">
                           <PauseCircleIcon className="h-12 w-12 text-white" />
-                        </div>
+                </div>
                         <h2 className="text-4xl font-bold text-yellow-400 mb-4">STANDBY</h2>
                         <p className="text-xl text-gray-300 mb-2">Mission Control is on standby</p>
                         <p className="text-lg text-gray-400">Waiting for next phase</p>
@@ -1719,7 +1824,7 @@ const MissionControl: React.FC = () => {
                           <div className="w-2 h-2 bg-yellow-400 rounded-full animate-ping"></div>
                           <div className="w-2 h-2 bg-yellow-400 rounded-full animate-ping" style={{ animationDelay: '0.3s' }}></div>
                           <div className="w-2 h-2 bg-yellow-400 rounded-full animate-ping" style={{ animationDelay: '0.6s' }}></div>
-                        </div>
+                </div>
                       </>
                     )}
 
@@ -1727,7 +1832,7 @@ const MissionControl: React.FC = () => {
                       <>
                         <div className="w-24 h-24 mx-auto mb-6 bg-gray-600 rounded-full flex items-center justify-center animate-pulse">
                           <SettingsIcon className="h-12 w-12 text-white" />
-                        </div>
+              </div>
                         <h2 className="text-4xl font-bold text-gray-300 mb-4">MAINTENANCE</h2>
                         <p className="text-xl text-gray-300 mb-2">System maintenance in progress</p>
                         <p className="text-lg text-gray-400">We'll be back shortly</p>
@@ -1743,18 +1848,18 @@ const MissionControl: React.FC = () => {
                       <>
                         <div className="w-24 h-24 mx-auto mb-6 bg-purple-600 rounded-full flex items-center justify-center animate-pulse">
                           <MessageSquareIcon className="h-12 w-12 text-white" />
-                        </div>
+                </div>
                         <h2 className="text-4xl font-bold text-purple-400 mb-4">ANNOUNCEMENT</h2>
                         <p className="text-xl text-gray-300 mb-2">{customOverlayText || 'Custom message'}</p>
                         <div className="mt-6 flex items-center justify-center space-x-2">
                           <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
                           <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
                           <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                        </div>
+                </div>
                       </>
                     )}
-                  </div>
                 </div>
+              </div>
               )}
             </div>
           </div>
@@ -1763,18 +1868,49 @@ const MissionControl: React.FC = () => {
           {isFullscreen && (
             <div className="fixed inset-0 z-50 bg-black">
               <div className="relative w-full h-full">
-                {videoFeedUrl ? (
+                {isSimulatingLive && videoFeedUrl ? (
                   <iframe
                     src={videoFeedUrl}
                     className="w-full h-full"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                   />
+                ) : currentLiveFeed?.feed && !liveFeedLoading && issFeedEnabled ? (
+                  <div className="w-full h-full">
+                    <iframe
+                      src={currentLiveFeed.feed.embedUrl}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      title={currentLiveFeed.feed.title}
+                    />
+                    {currentLiveFeed.launchInfo && (
+                      <div className="absolute top-4 left-4 bg-blue-600/90 text-white px-3 py-2 rounded-lg text-sm">
+                        <div className="font-semibold">Next Launch: {currentLiveFeed.launchInfo.launchName}</div>
+                        <div className="text-xs opacity-90">
+                          Switching in {currentLiveFeed.launchInfo.timeUntilSwitch} minutes
+              </div>
+                </div>
+                    )}
+                    <div className="absolute bottom-4 left-4 bg-black/70 text-white px-3 py-2 rounded-lg text-sm">
+                      <div className="font-semibold">{currentLiveFeed.feed.title}</div>
+                      {currentLiveFeed.feed.description && (
+                        <div className="text-xs opacity-90">{currentLiveFeed.feed.description}</div>
+                      )}
+                </div>
+              </div>
+                ) : liveFeedLoading ? (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-800">
+                    <div className="text-center">
+                      <VideoIcon className="h-16 w-16 mx-auto mb-4 text-gray-400 animate-pulse" />
+                      <p className="text-xl text-gray-400 mb-2">Loading Live Feed...</p>
+                    </div>
+                  </div>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gray-800">
                     <div className="text-center">
                       <VideoIcon className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-                      <p className="text-xl text-gray-400 mb-2">No Live Feed</p>
+                      <p className="text-xl text-gray-400 mb-2">No Live Feed Available</p>
                    <p className="text-sm text-gray-500">
                      {missionState.adminMode 
                        ? 'Click "Start Simulation" to begin live video feed' 
@@ -1786,7 +1922,7 @@ const MissionControl: React.FC = () => {
                 )}
                 
                 {/* Fullscreen Overlay */}
-                {overlayVisible && (videoFeedUrl || isSimulatingLive) && (
+                {overlayVisible && isSimulatingLive && (
                   <div className="absolute inset-0 pointer-events-none">
                     {/* Main Overlay Container */}
                     <div className="absolute inset-0 bg-gradient-to-br from-black/20 via-transparent to-black/30">
@@ -1801,38 +1937,38 @@ const MissionControl: React.FC = () => {
                              src="https://pbs.twimg.com/profile_images/1911607693585821696/D0v0kjf-_400x400.jpg" 
                              alt="Proxima Report" 
                              className="w-6 h-6 sm:w-8 sm:h-8 object-cover rounded"
-                                  onError={(e) => {
+                      onError={(e) => {
                                     e.currentTarget.style.display = 'none';
                                     e.currentTarget.parentElement.innerHTML = '<div class="w-6 h-6 sm:w-8 sm:h-8 bg-white rounded flex items-center justify-center"><span class="text-blue-600 font-bold text-xs sm:text-sm">PR</span></div>';
-                                  }}
-                                />
-                              </div>
+                      }}
+                    />
+                      </div>
                               <div className="hidden sm:block">
                                 <div className="text-white font-bold text-sm sm:text-lg tracking-wide">PROXIMA REPORT</div>
                                 <div className="text-blue-300 text-xs font-medium">MISSION CONTROL CENTER</div>
-                              </div>
+                    </div>
                               <div className="block sm:hidden">
                                 <div className="text-white font-bold text-xs tracking-wide">PROXIMA</div>
                                 <div className="text-blue-300 text-xs font-medium">MISSION CONTROL</div>
-                              </div>
-                            </div>
+                  </div>
+                </div>
                             
                             {/* Mission Info - Hidden on mobile */}
                             <div className="hidden lg:flex items-center space-x-4">
                               <div className="h-8 w-px bg-blue-500/30"></div>
-                              <div className="space-y-1">
+              <div className="space-y-1">
                                 <div className="text-white text-sm font-medium">{missionState.currentMission.name}</div>
                                 <div className="text-gray-300 text-xs">{missionState.currentMission.vehicle}</div>
-                              </div>
-                            </div>
-                          </div>
+                      </div>
+                    </div>
+                  </div>
 
                           {/* Right Side - Live Status and Time */}
                           <div className="flex items-center space-x-2 sm:space-x-6">
                             <div className="flex items-center space-x-1 sm:space-x-2">
                               <div className="w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded-full animate-pulse shadow-lg shadow-red-500/50"></div>
                               <span className="text-white font-bold text-xs sm:text-sm tracking-wider">LIVE</span>
-                            </div>
+              </div>
                             <div className="text-white text-xs sm:text-sm font-mono">
                               {currentTime.toLocaleTimeString()}
                             </div>
@@ -1845,13 +1981,13 @@ const MissionControl: React.FC = () => {
                         <div className="flex items-center justify-between h-full px-3 sm:px-6">
                           {/* Mobile Layout */}
                           <div className="flex sm:hidden w-full justify-between items-center">
-                            <div className="text-center">
+            <div className="text-center">
                               <div className="text-white text-xs font-medium mb-1">COUNTDOWN</div>
                               <div className="flex items-center space-x-1">
                                 <div className="text-center">
                                   <div className="text-lg font-bold text-blue-400 font-mono">{missionState.currentMission.countdown.days}</div>
                                   <div className="text-xs text-gray-400">D</div>
-                                </div>
+            </div>
                                 <div className="text-blue-400 text-sm font-mono">:</div>
                                 <div className="text-center">
                                   <div className="text-lg font-bold text-blue-400 font-mono">{missionState.currentMission.countdown.hours}</div>
@@ -1881,13 +2017,13 @@ const MissionControl: React.FC = () => {
                           <div className="hidden sm:flex items-center justify-between w-full">
                             {/* Left Side - Countdown */}
                             <div className="flex items-center space-x-6">
-                              <div className="text-center">
+            <div className="text-center">
                                 <div className="text-white text-xs font-medium mb-1 tracking-wider">TIME TO LAUNCH</div>
                                 <div className="flex items-center space-x-3">
                                   <div className="text-center">
                                     <div className="text-3xl font-bold text-blue-400 font-mono">{missionState.currentMission.countdown.days}</div>
                                     <div className="text-xs text-gray-400 font-medium">DAYS</div>
-                                  </div>
+            </div>
                                   <div className="text-blue-400 text-2xl font-mono">:</div>
                                   <div className="text-center">
                                     <div className="text-3xl font-bold text-blue-400 font-mono">{missionState.currentMission.countdown.hours}</div>
@@ -1909,11 +2045,11 @@ const MissionControl: React.FC = () => {
 
                             {/* Center - Mission Status */}
                             <div className="flex items-center space-x-4">
-                              <div className="text-center">
+            <div className="text-center">
                                 <div className="text-white text-xs font-medium mb-1 tracking-wider">MISSION STATUS</div>
                                 <div className={`px-3 py-1 rounded-full text-sm font-bold ${getStatusColor(missionState.currentMission.status)}`}>
                                   {missionState.currentMission.status.toUpperCase()}
-                                </div>
+            </div>
                               </div>
                               
                               <div className="h-12 w-px bg-blue-500/30"></div>
@@ -1922,15 +2058,15 @@ const MissionControl: React.FC = () => {
                                 <div className="text-white text-xs font-medium mb-1 tracking-wider">WEATHER</div>
                                 <div className={`px-3 py-1 rounded-full text-sm font-bold ${getGoNoGoColor(missionState.currentMission.weather.goNoGo)}`}>
                                   {missionState.currentMission.weather.goNoGo}
-                                </div>
-                              </div>
-                            </div>
+              </div>
+              </div>
+              </div>
 
                             {/* Right Side - Additional Info */}
                             <div className="text-right">
                               <div className="text-white text-xs font-medium mb-1 tracking-wider">LAUNCH SITE</div>
                               <div className="text-gray-300 text-sm">{missionState.currentMission.launchSite}</div>
-                            </div>
+            </div>
                           </div>
                         </div>
                       </div>
@@ -1946,7 +2082,7 @@ const MissionControl: React.FC = () => {
                         <div className="absolute left-1/4 top-0 w-px h-full bg-gradient-to-b from-transparent via-blue-500/20 to-transparent animate-pulse" style={{ animationDelay: '0.3s' }}></div>
                         <div className="absolute left-1/2 top-0 w-px h-full bg-gradient-to-b from-transparent via-blue-500/30 to-transparent animate-pulse" style={{ animationDelay: '0.8s' }}></div>
                         <div className="absolute left-3/4 top-0 w-px h-full bg-gradient-to-b from-transparent via-blue-500/20 to-transparent animate-pulse" style={{ animationDelay: '1.3s' }}></div>
-                      </div>
+              </div>
 
                       {/* Corner Brackets - Positioned to not overlap content */}
                       <div className="absolute top-16 left-4 w-8 h-8 border-t-2 border-l-2 border-blue-500/40 rounded-tl-lg"></div>
@@ -1957,8 +2093,8 @@ const MissionControl: React.FC = () => {
                       {/* Data Stream Effects */}
                       <div className="absolute top-1/3 left-6 w-1 h-20 bg-gradient-to-b from-transparent via-cyan-400/60 to-transparent animate-pulse" style={{ animationDelay: '2s' }}></div>
                       <div className="absolute top-2/3 right-6 w-1 h-20 bg-gradient-to-b from-transparent via-purple-400/60 to-transparent animate-pulse" style={{ animationDelay: '2.5s' }}></div>
-                    </div>
-                  </div>
+              </div>
+              </div>
                 )}
 
                 {/* Fullscreen Video Status Overlay */}
@@ -1969,14 +2105,14 @@ const MissionControl: React.FC = () => {
                         <>
                           <div className="w-24 h-24 mx-auto mb-6 bg-blue-600 rounded-full flex items-center justify-center animate-pulse">
                             <ClockIcon className="h-12 w-12 text-white" />
-                          </div>
+              </div>
                           <h2 className="text-4xl font-bold text-white mb-4">STARTING SOON</h2>
                           <p className="text-xl text-gray-300">Mission Control will begin shortly</p>
                           <div className="mt-6 flex items-center justify-center space-x-2">
                             <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
                             <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
                             <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                          </div>
+            </div>
                         </>
                       )}
 
@@ -1984,7 +2120,7 @@ const MissionControl: React.FC = () => {
                         <>
                           <div className="w-24 h-24 mx-auto mb-6 bg-red-600 rounded-full flex items-center justify-center animate-pulse">
                             <AlertCircleIcon className="h-12 w-12 text-white" />
-                          </div>
+              </div>
                           <h2 className="text-4xl font-bold text-red-400 mb-4">TECHNICAL DIFFICULTIES</h2>
                           <p className="text-xl text-gray-300 mb-2">We are experiencing technical issues</p>
                           <p className="text-lg text-gray-400">Please stand by while we resolve this</p>
@@ -1992,7 +2128,7 @@ const MissionControl: React.FC = () => {
                             <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
                             <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
                             <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-                          </div>
+              </div>
                         </>
                       )}
 
@@ -2000,7 +2136,7 @@ const MissionControl: React.FC = () => {
                         <>
                           <div className="w-24 h-24 mx-auto mb-6 bg-yellow-600 rounded-full flex items-center justify-center animate-pulse">
                             <PauseCircleIcon className="h-12 w-12 text-white" />
-                          </div>
+              </div>
                           <h2 className="text-4xl font-bold text-yellow-400 mb-4">STANDBY</h2>
                           <p className="text-xl text-gray-300 mb-2">Mission Control is on standby</p>
                           <p className="text-lg text-gray-400">Waiting for next phase</p>
@@ -2008,7 +2144,7 @@ const MissionControl: React.FC = () => {
                             <div className="w-2 h-2 bg-yellow-400 rounded-full animate-ping"></div>
                             <div className="w-2 h-2 bg-yellow-400 rounded-full animate-ping" style={{ animationDelay: '0.3s' }}></div>
                             <div className="w-2 h-2 bg-yellow-400 rounded-full animate-ping" style={{ animationDelay: '0.6s' }}></div>
-                          </div>
+            </div>
                         </>
                       )}
 
@@ -2016,7 +2152,7 @@ const MissionControl: React.FC = () => {
                         <>
                           <div className="w-24 h-24 mx-auto mb-6 bg-gray-600 rounded-full flex items-center justify-center animate-pulse">
                             <SettingsIcon className="h-12 w-12 text-white" />
-                          </div>
+        </div>
                           <h2 className="text-4xl font-bold text-gray-300 mb-4">MAINTENANCE</h2>
                           <p className="text-xl text-gray-300 mb-2">System maintenance in progress</p>
                           <p className="text-lg text-gray-400">We'll be back shortly</p>
@@ -2032,14 +2168,14 @@ const MissionControl: React.FC = () => {
                         <>
                           <div className="w-24 h-24 mx-auto mb-6 bg-purple-600 rounded-full flex items-center justify-center animate-pulse">
                             <MessageSquareIcon className="h-12 w-12 text-white" />
-                          </div>
+          </div>
                           <h2 className="text-4xl font-bold text-purple-400 mb-4">ANNOUNCEMENT</h2>
                           <p className="text-xl text-gray-300 mb-2">{customOverlayText || 'Custom message'}</p>
                           <div className="mt-6 flex items-center justify-center space-x-2">
                             <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
                             <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
                             <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                          </div>
+        </div>
                         </>
                       )}
                     </div>
@@ -2078,8 +2214,8 @@ const MissionControl: React.FC = () => {
                   <span className="text-gray-400">Go/No-Go:</span>
                   <span className={`px-3 py-1 rounded-full border text-sm font-medium ${getGoNoGoColor(missionState.currentMission.weather.goNoGo)}`}>
                     {missionState.currentMission.weather.goNoGo}
-                        </span>
-                      </div>
+                      </span>
+                    </div>
                     </div>
                   </div>
 
@@ -2097,8 +2233,8 @@ const MissionControl: React.FC = () => {
                   </li>
                 ))}
               </ul>
-              </div>
-        </div>
+            </div>
+          </div>
 
           {/* Mission Timeline */}
           <div className="bg-gray-900 rounded-lg p-6 mb-6 border border-gray-700">
@@ -2119,13 +2255,13 @@ const MissionControl: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <span className="font-medium">{milestone.name}</span>
                       <span className="text-sm text-gray-400">{milestone.time}</span>
-                  </div>
+                    </div>
                     <p className="text-sm text-gray-400">{milestone.description}</p>
-                </div>
+                    </div>
                   </div>
               ))}
-                </div>
-              </div>
+            </div>
+          </div>
 
           {/* Live Updates */}
           <div className="bg-gray-900 rounded-lg p-6 border border-gray-700">
@@ -2148,12 +2284,12 @@ const MissionControl: React.FC = () => {
                       <span className="text-xs text-gray-400">
                         {new Date(update.timestamp).toLocaleTimeString()}
                       </span>
-                  </div>
+                    </div>
                     <p className="text-sm text-gray-300">{update.message}</p>
-                </div>
+                    </div>
                   </div>
               ))}
-                </div>
+            </div>
             
             {missionState.adminMode && (
               <div className="mt-4 flex space-x-2">
@@ -2170,8 +2306,8 @@ const MissionControl: React.FC = () => {
                 >
                   Send
                 </button>
-              </div>
-            )}
+          </div>
+        )}
           </div>
         </div>
 
@@ -2180,19 +2316,11 @@ const MissionControl: React.FC = () => {
           <div className="w-full lg:w-80 bg-gray-900 border-t lg:border-t-0 lg:border-l border-gray-700 p-4 sm:p-6">
             <h3 className="text-base sm:text-lg font-bold mb-4">Admin Controls</h3>
             
-            {/* Test Button */}
-            <button 
-              onClick={() => console.log('🧪 TEST BUTTON CLICKED - Admin panel is working!')}
-              className="mb-4 px-3 py-2 bg-red-600 text-white text-xs rounded hover:bg-red-700"
-            >
-              TEST BUTTON - Click Me
-            </button>
-            
             {/* Video Feed Controls */}
             <div className="mb-6">
               <h4 className="text-sm font-medium text-gray-400 mb-2">Video Feed</h4>
               <div className="space-y-3">
-                <div>
+              <div>
                   <label className="text-xs text-gray-400 mb-1 block">Custom Video URL</label>
                   <input
                     type="url"
@@ -2219,7 +2347,47 @@ const MissionControl: React.FC = () => {
                     placeholder="https://www.youtube.com/embed/VIDEO_ID"
                     className="w-full p-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm"
                   />
-                </div>
+              </div>
+                
+                {/* Simulation Status */}
+                {isSimulatingLive && (
+                  <div className="bg-blue-900/30 border border-blue-500/50 rounded-lg p-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-xs font-medium text-blue-400">Simulation Active</div>
+                        <div className="text-xs text-blue-300">Custom video is playing</div>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          stopVideoSimulation();
+                          if (missionState.sessionId) {
+                            await addMissionUpdate(
+                              'technical',
+                              'Video Simulation Stopped',
+                              'Live video simulation deactivated'
+                            );
+                          }
+                        }}
+                        className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded"
+                      >
+                        Stop
+                </button>
+              </div>
+            </div>
+                )}
+
+                {/* Force Reset Button */}
+                <button
+                  onClick={() => {
+                    setIsSimulatingLive(false);
+                    setVideoFeedUrl('');
+                    console.log('🔄 Force reset simulation state');
+                  }}
+                  className="w-full px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-xs rounded-lg font-medium transition-colors"
+                >
+                  Force Reset Video State
+              </button>
+                
                 <div className="flex space-x-2">
                   <button
                     onClick={async () => {
@@ -2244,7 +2412,7 @@ const MissionControl: React.FC = () => {
                   >
                     <PlayIcon className="h-3 w-3 mr-1 inline" />
                     Load Video
-                  </button>
+              </button>
                   <button
                     onClick={async () => {
                       stopVideoSimulation();
@@ -2266,7 +2434,7 @@ const MissionControl: React.FC = () => {
                   >
                     <SquareIcon className="h-3 w-3 mr-1 inline" />
                     Stop
-                  </button>
+              </button>
                 </div>
               </div>
             </div>
@@ -2275,6 +2443,39 @@ const MissionControl: React.FC = () => {
             <div className="mb-6">
               <h4 className="text-sm font-medium text-gray-400 mb-2">Select Mission</h4>
               <div className="space-y-2 max-h-40 overflow-y-auto">
+                {/* ISS Live Feed Option */}
+                <button
+                  onClick={() => {
+                    const issMission = {
+                      id: 'iss-live-feed',
+                      name: 'ISS Live Feed',
+                      net: new Date().toISOString(),
+                      status: { name: 'Live' },
+                      launch_service_provider: { name: 'NASA' },
+                      rocket: { configuration: { name: 'ISS' } },
+                      mission: { name: 'International Space Station', description: 'Live views from the International Space Station' },
+                      pad: { name: 'Low Earth Orbit' }
+                    };
+                    selectMission(issMission);
+                  }}
+                  className={`w-full text-left p-2 rounded-lg text-sm transition-colors ${
+                    missionState.currentMission?.id === 'iss-live-feed'
+                      ? 'bg-blue-900/50 border border-blue-400/50'
+                      : 'bg-blue-900/30 hover:bg-blue-800/30 border border-blue-500/30'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium text-blue-300">ISS Live Feed</div>
+                    <div className="flex items-center space-x-1 text-green-400">
+                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                      <span className="text-xs">LIVE</span>
+                    </div>
+                  </div>
+                  <div className="text-xs text-blue-400">
+                    NASA International Space Station - 24/7 Live Stream
+                  </div>
+              </button>
+                
                 {upcomingLaunches?.results?.slice(0, 10).map((launch) => {
                   const missionStatus = getMissionStatus(launch);
                   const statusColor = getStatusColor(missionStatus);
@@ -2296,7 +2497,7 @@ const MissionControl: React.FC = () => {
                       <div className="text-xs text-gray-400">
                         {new Date(launch.net).toLocaleDateString()} at {new Date(launch.net).toLocaleTimeString()}
                       </div>
-                </button>
+              </button>
                   );
                 })}
               </div>
@@ -2398,7 +2599,7 @@ const MissionControl: React.FC = () => {
             {/* Overlay Controls */}
             <div className="mb-6">
               <h4 className="text-sm font-medium text-gray-400 mb-2">Overlay Controls</h4>
-              <div className="space-y-2">
+                  <div className="space-y-2">
                 <button
                   onClick={async () => {
                     setOverlayVisible(!overlayVisible);
@@ -2423,7 +2624,8 @@ const MissionControl: React.FC = () => {
                   Overlay shows mission info, countdown, and branding on video feed
                 </div>
               </div>
-            </div>
+                    </div>
+                    
 
             {/* Video Status Overlay Controls */}
             <div className="mb-6">
@@ -2458,8 +2660,8 @@ const MissionControl: React.FC = () => {
                     <option value="maintenance">Maintenance</option>
                     <option value="custom">Custom Message</option>
                   </select>
-                </div>
-                
+                    </div>
+
                 {videoOverlay === 'custom' && (
                   <div>
                     <label className="text-xs text-gray-400 mb-1 block">Custom Message</label>
@@ -2488,8 +2690,8 @@ const MissionControl: React.FC = () => {
                 
                 <div className="text-xs text-gray-500">
                   Overlay appears over the video player to show status messages
-                </div>
-              </div>
+                    </div>
+                  </div>
             </div>
           </div>
         )}
@@ -2559,7 +2761,7 @@ const MissionControl: React.FC = () => {
                       Lat: {issLocation?.iss_position?.latitude ? 
                         parseFloat(issLocation.iss_position.latitude).toFixed(2) : 
                         issLocation?.latitude ? issLocation.latitude.toFixed(2) : 'N/A'}°
-                </div>
+                  </div>
                     <div className="text-white">
                       Lon: {issLocation?.iss_position?.longitude ? 
                         parseFloat(issLocation.iss_position.longitude).toFixed(2) : 
@@ -2573,7 +2775,7 @@ const MissionControl: React.FC = () => {
               </div>
                   </div>
                 )}
-            </CompactCard>
+              </CompactCard>
               
               {/* Mars Weather */}
               <CompactCard title="Mars Weather" icon={<ThermometerIcon className="h-4 w-4 text-orange-400" />} colorClass="orange">
@@ -2600,7 +2802,7 @@ const MissionControl: React.FC = () => {
                 <div className="text-center">
                     <div className="text-lg font-bold text-purple-400">{moonPhase?.phase_name}</div>
                     <div className="text-xs text-gray-400">{moonPhase?.illumination}% illuminated</div>
-              </div>
+                  </div>
                 )}
               </CompactCard>
 
@@ -2618,7 +2820,7 @@ const MissionControl: React.FC = () => {
                 </div>
         )}
               </CompactCard>
-
+              
               {/* Near Earth Objects */}
               <CompactCard title="Near Earth Objects" icon={<TargetIcon className="h-4 w-4 text-red-400" />} colorClass="red">
                 {nearEarthObjectsLoading ? (
@@ -2626,12 +2828,12 @@ const MissionControl: React.FC = () => {
                 ) : nearEarthObjectsError ? (
                   <ErrorCard title="NEOs" error="Failed to load near earth objects" />
                 ) : (
-                  <div className="text-center">
+                <div className="text-center">
                     <div className="text-2xl font-bold text-red-400">
                       {nearEarthObjects?.near_earth_objects ? 
                         Object.keys(nearEarthObjects.near_earth_objects).length : 
                         nearEarthObjects?.element_count || 0}
-                </div>
+                  </div>
                     <div className="text-xs text-gray-400">Objects today</div>
                     {nearEarthObjects?.near_earth_objects && Object.keys(nearEarthObjects.near_earth_objects).length > 0 && (
                       <div className="mt-2 text-xs text-gray-500">
@@ -2642,11 +2844,11 @@ const MissionControl: React.FC = () => {
                           ));
                           return maxDiameter > 0 ? `Largest: ${maxDiameter.toFixed(0)}m` : '';
                         })()}
-              </div>
+                </div>
                     )}
                   </div>
         )}
-            </CompactCard>
+              </CompactCard>
 
               {/* Space News */}
               <CompactCard title="Latest News" icon={<BookOpenIcon className="h-4 w-4 text-indigo-400" />} colorClass="indigo">
@@ -2660,10 +2862,10 @@ const MissionControl: React.FC = () => {
                       <div key={index} className="text-xs">
                         <div className="font-medium text-white truncate">{article.title}</div>
                         <div className="text-gray-400">{article.publishedAt}</div>
-                    </div>
+            </div>
                     ))}
-                    </div>
-                )}
+          </div>
+        )}
                 </CompactCard>
             </div>
 
@@ -2698,8 +2900,8 @@ const MissionControl: React.FC = () => {
                     />
                     <h4 className="font-semibold text-white mb-2">{nasaAPOD?.title}</h4>
                     <p className="text-sm text-gray-400">{nasaAPOD?.explanation?.substring(0, 200)}...</p>
-                  </div>
-                )}
+          </div>
+        )}
                 </div>
 
               {/* Space Events */}
@@ -2711,7 +2913,7 @@ const MissionControl: React.FC = () => {
                 {spaceEventsLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-2 border-green-400/30 border-t-green-400"></div>
-            </div>
+                    </div>
                 ) : spaceEventsError ? (
                   <div className="text-red-400 text-center py-8">Failed to load events</div>
                 ) : (
@@ -2723,14 +2925,14 @@ const MissionControl: React.FC = () => {
                           <div className="font-medium text-white text-sm">{event.title}</div>
                           <div className="text-xs text-gray-400">{event.date}</div>
                           <div className="text-xs text-gray-500 mt-1">{event.description}</div>
-            </div>
-                      </div>
-                    ))}
+                    </div>
+                  </div>
+              ))}
           </div>
         )}
               </div>
             </div>
-
+            
             {/* Additional Dashboard Sections */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
               {/* Previous Launches */}
@@ -2742,7 +2944,7 @@ const MissionControl: React.FC = () => {
                 {previousLaunchesLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-2 border-green-400/30 border-t-green-400"></div>
-                      </div>
+                </div>
                 ) : previousLaunchesError ? (
                   <div className="text-red-400 text-center py-8">Failed to load recent launches</div>
                 ) : (
@@ -2770,7 +2972,7 @@ const MissionControl: React.FC = () => {
                 {spaceAgenciesLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-2 border-purple-400/30 border-t-purple-400"></div>
-            </div>
+                </div>
                 ) : spaceAgenciesError ? (
                   <div className="text-red-400 text-center py-8">Failed to load agencies</div>
                 ) : (
@@ -2799,7 +3001,7 @@ const MissionControl: React.FC = () => {
                 {spaceXCompanyLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-400/30 border-t-blue-400"></div>
-              </div>
+                </div>
                 ) : spaceXCompanyError ? (
                   <div className="text-red-400 text-center py-8">Failed to load SpaceX data</div>
                 ) : (
@@ -2833,7 +3035,7 @@ const MissionControl: React.FC = () => {
                 {issPassLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-2 border-cyan-400/30 border-t-cyan-400"></div>
-              </div>
+                </div>
                 ) : issPassError ? (
                   <div className="text-red-400 text-center py-8">Failed to load ISS passes</div>
                 ) : (
@@ -2843,7 +3045,7 @@ const MissionControl: React.FC = () => {
                         <div key={index} className="p-3 bg-gray-800 rounded-lg">
                           <div className="text-sm text-white font-medium">
                             {new Date(pass.risetime * 1000).toLocaleString()}
-              </div>
+            </div>
                           <div className="text-xs text-gray-400">
                             Duration: {Math.floor(pass.duration / 60)} minutes
               </div>
@@ -2867,8 +3069,8 @@ const MissionControl: React.FC = () => {
         </div>
         )}
           </div>
-                )}
-        </div>
+        )}
+      </div>
 
               {/* Hubble Images */}
               <div className="bg-gray-900 rounded-lg p-6 border border-gray-700">

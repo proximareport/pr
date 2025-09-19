@@ -18,6 +18,7 @@ export interface MissionSession {
   liveStreamUrl?: string;
   missionPatchUrl?: string;
   isLive: boolean;
+  issFeedEnabled?: boolean;
   adminUserId?: number;
   createdAt: Date;
   updatedAt: Date;
@@ -161,14 +162,32 @@ export async function updateMissionSession(sessionId: string, updates: Partial<M
     'mission_patch_url', 'is_live'
   ];
 
-  const updateFields = Object.keys(updates).filter(key => allowedFields.includes(key));
+  // Map camelCase to snake_case
+  const fieldMapping: { [key: string]: string } = {
+    'missionName': 'mission_name',
+    'liveStreamUrl': 'live_stream_url',
+    'missionPatchUrl': 'mission_patch_url',
+    'launchDate': 'launch_date',
+    'launchSite': 'launch_site'
+  };
+
+  // Convert camelCase fields to snake_case
+  const convertedUpdates: any = {};
+  for (const [key, value] of Object.entries(updates)) {
+    const dbField = fieldMapping[key] || key;
+    if (allowedFields.includes(dbField)) {
+      convertedUpdates[dbField] = value;
+    }
+  }
+
+  const updateFields = Object.keys(convertedUpdates);
   
   if (updateFields.length === 0) {
     throw new Error('No valid fields to update');
   }
 
   const setClause = updateFields.map((field, index) => `${field} = $${index + 2}`).join(', ');
-  const values = [sessionId, ...updateFields.map(field => updates[field as keyof MissionSession])];
+  const values = [sessionId, ...updateFields.map(field => convertedUpdates[field])];
 
   const query = `
     UPDATE mission_control_sessions 
@@ -505,4 +524,14 @@ export async function cleanupExpiredSessions(): Promise<number> {
   const query = 'DELETE FROM mission_control_sessions WHERE expires_at < CURRENT_TIMESTAMP';
   const result = await pool.query(query);
   return result.rowCount || 0;
+}
+
+// Update ISS feed settings
+export async function updateISSFeedSettings(sessionId: string, issFeedEnabled: boolean): Promise<void> {
+  const query = `
+    UPDATE mission_control_sessions 
+    SET iss_feed_enabled = $1, updated_at = CURRENT_TIMESTAMP 
+    WHERE session_id = $2
+  `;
+  await pool.query(query, [issFeedEnabled, sessionId]);
 }

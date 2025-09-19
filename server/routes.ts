@@ -98,8 +98,21 @@ import {
   updateMissionObjective,
   addMissionCrew,
   getMissionCrew,
-  cleanupExpiredSessions
+  cleanupExpiredSessions,
+  updateISSFeedSettings
 } from './missionControlService';
+
+// ISS Live Feed API functions
+import {
+  getCurrentLiveFeed,
+  getAllISSLiveFeeds,
+  addISSLiveFeed,
+  updateISSLiveFeed,
+  scheduleLaunchFeed,
+  getLaunchFeedSchedules,
+  markLaunchFeedSwitched,
+  cleanupOldLaunchSchedules
+} from './issLiveFeedService';
 
 import { getFeaturedImages, getGalleryImages, getAvailableTags } from './ghostService';
 import { getPosts, getPostBySlug } from './ghostService';
@@ -650,6 +663,153 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error cleaning up expired sessions:', error);
       res.status(500).json({ error: 'Failed to cleanup expired sessions' });
+    }
+  });
+
+  // Update ISS feed settings
+  app.put("/api/mission-control/iss-feed-settings", async (req: Request, res: Response) => {
+    try {
+      const { sessionId, issFeedEnabled } = req.body;
+      
+      if (!sessionId || typeof issFeedEnabled !== 'boolean') {
+        return res.status(400).json({ error: 'Session ID and issFeedEnabled are required' });
+      }
+
+      await updateISSFeedSettings(sessionId, issFeedEnabled);
+      res.json({ success: true, message: 'ISS feed settings updated' });
+    } catch (error) {
+      console.error('Error updating ISS feed settings:', error);
+      res.status(500).json({ error: 'Failed to update ISS feed settings' });
+    }
+  });
+
+  // ISS Live Feed API Routes
+  
+  // Get current live feed (ISS or upcoming launch)
+  app.get("/api/iss-live-feed/current", async (req: Request, res: Response) => {
+    try {
+      const result = await getCurrentLiveFeed();
+      res.json(result);
+    } catch (error) {
+      console.error('Error fetching current live feed:', error);
+      res.status(500).json({ error: 'Failed to fetch current live feed' });
+    }
+  });
+
+  // Get all ISS live feeds
+  app.get("/api/iss-live-feed/feeds", async (req: Request, res: Response) => {
+    try {
+      const feeds = await getAllISSLiveFeeds();
+      res.json(feeds);
+    } catch (error) {
+      console.error('Error fetching ISS live feeds:', error);
+      res.status(500).json({ error: 'Failed to fetch ISS live feeds' });
+    }
+  });
+
+  // Add new ISS live feed (admin only)
+  app.post("/api/iss-live-feed/feeds", async (req: Request, res: Response) => {
+    try {
+      const { feedId, title, description, youtubeUrl, embedUrl, isActive, isDefault, priority } = req.body;
+      
+      if (!feedId || !title || !youtubeUrl || !embedUrl) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      const feed = await addISSLiveFeed({
+        feedId,
+        title,
+        description,
+        youtubeUrl,
+        embedUrl,
+        isActive,
+        isDefault,
+        priority
+      });
+
+      res.json(feed);
+    } catch (error) {
+      console.error('Error adding ISS live feed:', error);
+      res.status(500).json({ error: 'Failed to add ISS live feed' });
+    }
+  });
+
+  // Update ISS live feed (admin only)
+  app.put("/api/iss-live-feed/feeds/:feedId", async (req: Request, res: Response) => {
+    try {
+      const { feedId } = req.params;
+      const updates = req.body;
+      
+      const feed = await updateISSLiveFeed(feedId, updates);
+      
+      if (!feed) {
+        return res.status(404).json({ error: 'Feed not found' });
+      }
+
+      res.json(feed);
+    } catch (error) {
+      console.error('Error updating ISS live feed:', error);
+      res.status(500).json({ error: 'Failed to update ISS live feed' });
+    }
+  });
+
+  // Schedule launch feed
+  app.post("/api/iss-live-feed/schedule", async (req: Request, res: Response) => {
+    try {
+      const { launchId, launchName, launchDate, feedId, youtubeUrl, embedUrl, switchTimeMinutes } = req.body;
+      
+      if (!launchId || !launchName || !launchDate) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      const schedule = await scheduleLaunchFeed({
+        launchId,
+        launchName,
+        launchDate: new Date(launchDate),
+        feedId,
+        youtubeUrl,
+        embedUrl,
+        switchTimeMinutes
+      });
+
+      res.json(schedule);
+    } catch (error) {
+      console.error('Error scheduling launch feed:', error);
+      res.status(500).json({ error: 'Failed to schedule launch feed' });
+    }
+  });
+
+  // Get launch feed schedules
+  app.get("/api/iss-live-feed/schedules", async (req: Request, res: Response) => {
+    try {
+      const schedules = await getLaunchFeedSchedules();
+      res.json(schedules);
+    } catch (error) {
+      console.error('Error fetching launch feed schedules:', error);
+      res.status(500).json({ error: 'Failed to fetch launch feed schedules' });
+    }
+  });
+
+  // Mark launch feed as switched
+  app.post("/api/iss-live-feed/schedules/:launchId/switch", async (req: Request, res: Response) => {
+    try {
+      const { launchId } = req.params;
+      await markLaunchFeedSwitched(launchId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error marking launch feed as switched:', error);
+      res.status(500).json({ error: 'Failed to mark launch feed as switched' });
+    }
+  });
+
+  // Cleanup old launch schedules (admin only)
+  app.post("/api/iss-live-feed/cleanup", async (req: Request, res: Response) => {
+    try {
+      await cleanupOldLaunchSchedules();
+      res.json({ success: true, message: 'Old launch schedules cleaned up' });
+    } catch (error) {
+      console.error('Error cleaning up old launch schedules:', error);
+      res.status(500).json({ error: 'Failed to cleanup old launch schedules' });
     }
   });
 

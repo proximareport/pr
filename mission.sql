@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS mission_control_sessions (
     live_stream_url TEXT,
     mission_patch_url TEXT,
     is_live BOOLEAN DEFAULT FALSE,
+    iss_feed_enabled BOOLEAN DEFAULT TRUE,
     admin_user_id INTEGER REFERENCES users(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

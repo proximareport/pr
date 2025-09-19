@@ -96,3 +96,5 @@ temp/
 server/public
 vite.config.ts.*
 *.tar.gz.env
+STRIPE_SECRET_KEY=sk_test_...
+.env

@@ -350,6 +350,36 @@ export const searchHistory = pgTable("search_history", {
   isAnonymous: boolean("is_anonymous").default(false).notNull(),
 });
 
+// ISS Live Feeds
+export const issLiveFeeds = pgTable("iss_live_feeds", {
+  id: serial("id").primaryKey(),
+  feedId: text("feed_id").notNull().unique(),
+  title: text("title").notNull(),
+  description: text("description"),
+  youtubeUrl: text("youtube_url").notNull(),
+  embedUrl: text("embed_url").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  isDefault: boolean("is_default").default(false).notNull(),
+  priority: integer("priority").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Launch Feed Schedules
+export const launchFeedSchedules = pgTable("launch_feed_schedules", {
+  id: serial("id").primaryKey(),
+  launchId: text("launch_id").notNull().unique(),
+  launchName: text("launch_name").notNull(),
+  launchDate: timestamp("launch_date").notNull(),
+  feedId: text("feed_id").references(() => issLiveFeeds.feedId, { onDelete: "set null" }),
+  youtubeUrl: text("youtube_url"),
+  embedUrl: text("embed_url"),
+  switchTimeMinutes: integer("switch_time_minutes").default(30).notNull(),
+  hasSwitched: boolean("has_switched").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const usersRelations = relations(users, ({ many, one }) => ({
   primaryAuthorArticles: many(articles, { relationName: "primaryAuthor" }),
   authoredArticles: many(articleAuthors, { relationName: "articleAuthor" }),
@@ -506,6 +536,17 @@ export const searchHistoryRelations = relations(searchHistory, ({ one }) => ({
   user: one(users, {
     fields: [searchHistory.userId],
     references: [users.id],
+  }),
+}));
+
+export const issLiveFeedsRelations = relations(issLiveFeeds, ({ many }) => ({
+  launchSchedules: many(launchFeedSchedules),
+}));
+
+export const launchFeedSchedulesRelations = relations(launchFeedSchedules, ({ one }) => ({
+  feed: one(issLiveFeeds, {
+    fields: [launchFeedSchedules.feedId],
+    references: [issLiveFeeds.feedId],
   }),
 }));
 
@@ -688,6 +729,8 @@ export type SearchHistory = typeof searchHistory.$inferSelect;
 export type NewsletterSentHistory = typeof newsletterSentHistory.$inferSelect;
 export type TaxonomyItem = typeof taxonomy.$inferSelect;
 export type ArticleTaxonomy = typeof articleTaxonomy.$inferSelect;
+export type ISSLiveFeed = typeof issLiveFeeds.$inferSelect;
+export type LaunchFeedSchedule = typeof launchFeedSchedules.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertArticle = z.infer<typeof insertArticleSchema>;
