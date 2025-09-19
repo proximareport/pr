@@ -334,13 +334,16 @@ export function useUpcomingLaunches() {
   return useQuery<{ results: SpaceDevsLaunch[]; count: number; next: string | null }>({
     queryKey: ['upcoming-launches'],
     queryFn: async () => {
-      const response = await fetch('/api/launches/upcoming');
+      const response = await fetch(`/api/launches/upcoming?t=${Date.now()}`);
       if (!response.ok) {
         throw new Error('Failed to fetch upcoming launches');
       }
       const data = await response.json();
       return data;
-    }
+    },
+    staleTime: 0, // Always consider data stale
+    refetchOnMount: true, // Always refetch on mount
+    refetchOnWindowFocus: true, // Refetch when window gains focus
   });
 }
 
@@ -348,13 +351,16 @@ export function usePreviousLaunches() {
   return useQuery<{ results: SpaceDevsLaunch[]; count: number; next: string | null }>({
     queryKey: ['previous-launches'],
     queryFn: async () => {
-      const response = await fetch('/api/launches/previous');
+      const response = await fetch(`/api/launches/previous?t=${Date.now()}`);
       if (!response.ok) {
         throw new Error('Failed to fetch previous launches');
       }
       const data = await response.json();
       return data;
-    }
+    },
+    staleTime: 0, // Always consider data stale
+    refetchOnMount: true, // Always refetch on mount
+    refetchOnWindowFocus: true, // Refetch when window gains focus
   });
 }
 

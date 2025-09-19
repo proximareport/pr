@@ -52,7 +52,7 @@ export const ExclusiveArticles: React.FC<ExclusiveArticlesProps> = ({ className 
     },
     {
       title: "The Race to Europa: Mission Design and Scientific Objectives",
-      description: "Detailed technical analysis of upcoming Europa Clipper mission",
+      description: "Detailed technical analysis of upcoming Jupiter exploration missions",
       tier: "tier3",
       readTime: "18 min read",
       publishedAt: "2024-01-05",

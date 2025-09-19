@@ -1,114 +1,72 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RocketIcon, CalendarIcon, MapPinIcon, ClockIcon, ExternalLinkIcon, PlayIcon } from "lucide-react";
+import { useUpcomingLaunches, usePreviousLaunches } from "@/services/launchesService";
 
 interface Launch {
   id: string;
   name: string;
-  date: string;
-  time: string;
-  location: string;
-  mission: string;
-  rocket: string;
-  status: "upcoming" | "recent" | "completed";
-  description: string;
+  net: string;
+  status: {
+    name: string;
+    description?: string;
+  };
+  launch_service_provider: {
+    name: string;
+  };
+  rocket: {
+    configuration: {
+      name: string;
+    };
+  };
+  mission: {
+    name: string;
+    description?: string;
+  };
+  pad: {
+    name: string;
+    location: {
+      name: string;
+      country: string;
+    };
+  };
   image?: string;
-  livestream?: string;
+  webcast_live?: boolean;
+  webcast_url?: string;
 }
 
 function Launches() {
-  const [launches, setLaunches] = useState<Launch[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: upcomingData, isLoading: upcomingLoading, error: upcomingError } = useUpcomingLaunches();
+  const { data: previousData, isLoading: previousLoading, error: previousError } = usePreviousLaunches();
 
-  useEffect(() => {
-    // Simulate loading launches data
-    setTimeout(() => {
-      const mockLaunches: Launch[] = [
-        {
-          id: "1",
-          name: "Starlink Group 6-45",
-          date: "2024-01-15",
-          time: "14:30 UTC",
-          location: "Kennedy Space Center, Florida",
-          mission: "Deploy 23 Starlink satellites to low Earth orbit",
-          rocket: "Falcon 9",
-          status: "upcoming",
-          description: "SpaceX will launch another batch of Starlink satellites to expand global internet coverage.",
-          livestream: "https://www.spacex.com/launches"
-        },
-        {
-          id: "2",
-          name: "Artemis II",
-          date: "2024-11-20",
-          time: "12:00 UTC",
-          location: "Kennedy Space Center, Florida",
-          mission: "Crewed lunar flyby mission",
-          rocket: "SLS",
-          status: "upcoming",
-          description: "NASA's first crewed mission to the Moon since Apollo 17, carrying four astronauts on a lunar flyby.",
-          livestream: "https://www.nasa.gov/nasatv"
-        },
-        {
-          id: "3",
-          name: "CST-100 Starliner Crew Flight Test",
-          date: "2024-04-10",
-          time: "10:15 UTC",
-          location: "Cape Canaveral Space Force Station",
-          mission: "Crewed test flight to ISS",
-          rocket: "Atlas V",
-          status: "upcoming",
-          description: "Boeing's CST-100 Starliner will carry NASA astronauts to the International Space Station.",
-          livestream: "https://www.nasa.gov/nasatv"
-        },
-        {
-          id: "4",
-          name: "Starlink Group 6-44",
-          date: "2024-01-10",
-          time: "16:45 UTC",
-          location: "Vandenberg Space Force Base, California",
-          mission: "Deploy 22 Starlink satellites",
-          rocket: "Falcon 9",
-          status: "completed",
-          description: "Successfully deployed 22 Starlink satellites to low Earth orbit.",
-          livestream: "https://www.spacex.com/launches"
-        },
-        {
-          id: "5",
-          name: "Vulcan Centaur Certification-1",
-          date: "2024-01-08",
-          time: "07:18 UTC",
-          location: "Cape Canaveral Space Force Station",
-          mission: "Certification flight with Peregrine lunar lander",
-          rocket: "Vulcan Centaur",
-          status: "completed",
-          description: "United Launch Alliance's Vulcan Centaur rocket made its maiden flight carrying Astrobotic's Peregrine lunar lander.",
-          livestream: "https://www.ulalaunch.com"
-        }
-      ];
-      setLaunches(mockLaunches);
-      setLoading(false);
-    }, 1000);
-  }, []);
-
-  const upcomingLaunches = launches.filter(launch => launch.status === "upcoming");
-  const recentLaunches = launches.filter(launch => launch.status === "completed");
+  const upcomingLaunches = upcomingData?.results || [];
+  const recentLaunches = previousData?.results || [];
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "upcoming":
+    switch (status.toLowerCase()) {
+      case "go":
+      case "tbd":
+      case "tbc":
         return "bg-blue-500/20 text-blue-300 border-blue-500/30";
+      case "success":
       case "completed":
         return "bg-green-500/20 text-green-300 border-green-500/30";
+      case "failure":
+      case "failed":
+        return "bg-red-500/20 text-red-300 border-red-500/30";
+      case "partial failure":
+        return "bg-yellow-500/20 text-yellow-300 border-yellow-500/30";
       default:
         return "bg-gray-500/20 text-gray-300 border-gray-500/30";
     }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -116,12 +74,34 @@ function Launches() {
     });
   };
 
-  if (loading) {
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZoneName: 'short'
+    });
+  };
+
+  if (upcomingLoading || previousLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0A0A0F] via-[#14141E] to-[#1A1A2E]">
         <div className="container mx-auto px-4 py-16">
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin h-8 w-8 border-4 border-purple-500 border-t-transparent rounded-full"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (upcomingError || previousError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#0A0A0F] via-[#14141E] to-[#1A1A2E]">
+        <div className="container mx-auto px-4 py-16">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-red-400 mb-4">Error Loading Launches</h1>
+            <p className="text-gray-400">Unable to fetch launch data. Please try again later.</p>
           </div>
         </div>
       </div>
@@ -167,11 +147,11 @@ function Launches() {
                       <div className="flex-1">
                         <CardTitle className="text-white text-lg">{launch.name}</CardTitle>
                         <CardDescription className="text-gray-400 mt-2">
-                          {launch.rocket} • {launch.mission}
+                          {launch.rocket?.configuration?.name || 'Unknown Rocket'} • {launch.mission?.name || 'Unknown Mission'}
                         </CardDescription>
                       </div>
-                      <Badge className={getStatusColor(launch.status)}>
-                        {launch.status === "upcoming" ? "Upcoming" : "Completed"}
+                      <Badge className={getStatusColor(launch.status?.name || 'unknown')}>
+                        {launch.status?.name || 'Unknown'}
                       </Badge>
                     </div>
                   </CardHeader>
@@ -179,23 +159,25 @@ function Launches() {
                     <div className="space-y-2">
                       <div className="flex items-center text-sm text-gray-300">
                         <CalendarIcon className="w-4 h-4 mr-2 text-purple-400" />
-                        {formatDate(launch.date)} at {launch.time}
+                        {formatDate(launch.net)} at {formatTime(launch.net)}
                       </div>
                       <div className="flex items-center text-sm text-gray-300">
                         <MapPinIcon className="w-4 h-4 mr-2 text-purple-400" />
-                        {launch.location}
+                        {launch.pad?.location?.name || 'Unknown Location'}, {launch.pad?.location?.country || 'Unknown Country'}
                       </div>
                     </div>
                     
                     <p className="text-gray-400 text-sm leading-relaxed">
-                      {launch.description}
+                      {launch.mission?.description || 'No description available'}
                     </p>
 
                     <div className="flex gap-2 pt-2">
-                      {launch.livestream && (
-                        <Button size="sm" className="flex-1 bg-purple-600 hover:bg-purple-700">
-                          <PlayIcon className="w-4 h-4 mr-2" />
-                          Watch Live
+                      {launch.webcast_live && launch.webcast_url && (
+                        <Button size="sm" className="flex-1 bg-purple-600 hover:bg-purple-700" asChild>
+                          <a href={launch.webcast_url} target="_blank" rel="noopener noreferrer">
+                            <PlayIcon className="w-4 h-4 mr-2" />
+                            Watch Live
+                          </a>
                         </Button>
                       )}
                       <Button size="sm" variant="outline" className="border-gray-700 text-gray-300 hover:border-purple-500 hover:text-purple-400">
@@ -218,11 +200,11 @@ function Launches() {
                       <div className="flex-1">
                         <CardTitle className="text-white text-lg">{launch.name}</CardTitle>
                         <CardDescription className="text-gray-400 mt-2">
-                          {launch.rocket} • {launch.mission}
+                          {launch.rocket?.configuration?.name || 'Unknown Rocket'} • {launch.mission?.name || 'Unknown Mission'}
                         </CardDescription>
                       </div>
-                      <Badge className={getStatusColor(launch.status)}>
-                        Completed
+                      <Badge className={getStatusColor(launch.status?.name || 'unknown')}>
+                        {launch.status?.name || 'Unknown'}
                       </Badge>
                     </div>
                   </CardHeader>
@@ -230,16 +212,16 @@ function Launches() {
                     <div className="space-y-2">
                       <div className="flex items-center text-sm text-gray-300">
                         <CalendarIcon className="w-4 h-4 mr-2 text-purple-400" />
-                        {formatDate(launch.date)} at {launch.time}
+                        {formatDate(launch.net)} at {formatTime(launch.net)}
                       </div>
                       <div className="flex items-center text-sm text-gray-300">
                         <MapPinIcon className="w-4 h-4 mr-2 text-purple-400" />
-                        {launch.location}
+                        {launch.pad?.location?.name || 'Unknown Location'}, {launch.pad?.location?.country || 'Unknown Country'}
                       </div>
                     </div>
                     
                     <p className="text-gray-400 text-sm leading-relaxed">
-                      {launch.description}
+                      {launch.mission?.description || 'No description available'}
                     </p>
 
                     <div className="flex gap-2 pt-2">

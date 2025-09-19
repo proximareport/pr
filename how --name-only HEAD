@@ -1,0 +1,27 @@
+[33mcommit 5f70ee385bfc638db4bee8045cb110947c37fa33[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: Sam Thibaut <samthibaut@gmail.com>
+Date:   Thu Sep 11 21:31:23 2025 -0500
+
+    Implement gallery paywall and improve premium access UX
+    
+    - Lock gallery pages 3+ behind Tier 1 Supporter subscription
+    - Make locked pages clickable with upgrade messages instead of disabled
+    - Add visual indicators (orange styling, lock icons) for locked pages
+    - Improve PremiumAccess component with compact mode for ProxiHub
+    - Remove Content Classification feature from entire site
+    - Add Topics button to homepage categories area
+    - Move ProxiHub button to header navigation
+    - Fix Mission Control page layout and ad placement
+    - Enhance premium feature dialogs with better positioning and styling
+
+.env
+client/SEO_OPTIMIZATION_GUIDE.md
+client/src/components/PremiumAccess.tsx
+client/src/components/article/ArticleContent.tsx
+client/src/components/layout/Header.tsx
+client/src/pages/Admin/TaxonomyManagement.tsx
+client/src/pages/Gallery.tsx
+client/src/pages/Home.tsx
+client/src/pages/MissionControl.tsx
+client/src/pages/ProxiHub.tsx
+et --soft HEAD~1

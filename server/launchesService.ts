@@ -2,7 +2,7 @@ import fetch from 'node-fetch';
 
 // Cache for API responses
 const cache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = -1; // Disable cache completely
 const CACHE_TTL_LONG = 30 * 60 * 1000; // 30 minutes for less frequently changing data
 
 // Check if API keys are configured
@@ -99,6 +99,20 @@ const FALLBACK_DATA = {
 };
 
 async function getCachedData<T>(key: string, fetchFn: () => Promise<T>, ttl: number = CACHE_TTL, fallback?: any): Promise<T> {
+  // If cache is disabled, always fetch fresh data
+  if (ttl < 0) {
+    try {
+      return await fetchFn();
+    } catch (error) {
+      console.error(`Error fetching ${key}:`, error);
+      if (fallback) {
+        console.log(`Using fallback data for ${key}`);
+        return fallback;
+      }
+      throw error;
+    }
+  }
+
   const cached = cache.get(key);
   if (cached && Date.now() - cached.timestamp < ttl) {
     return cached.data;
@@ -140,45 +154,171 @@ export async function getSpaceXLaunches() {
 
 export async function getUpcomingLaunches() {
   return getCachedData('upcoming-launches', async () => {
-    const url = SPACEDEVS_API_KEY 
-      ? `https://ll.thespacedevs.com/2.2.0/launch/upcoming/?limit=50`
-      : `https://lldev.thespacedevs.com/2.2.0/launch/upcoming/?limit=50`;
-    
-    const options: any = {};
-    if (SPACEDEVS_API_KEY) {
-      options.headers = { 'Authorization': `Token ${SPACEDEVS_API_KEY}` };
+    try {
+      // Try RocketLaunch.live API first for most current data
+      console.log('Fetching upcoming launches from RocketLaunch.live...');
+      const rocketLaunchResponse = await fetch('https://fdo.rocketlaunch.live/json/launches/next/10');
+      if (rocketLaunchResponse.ok) {
+        const rocketLaunchData = await rocketLaunchResponse.json();
+        console.log('RocketLaunch.live API response:', { count: rocketLaunchData.count });
+        
+        // Transform RocketLaunch.live data to match our format
+        const transformedData = rocketLaunchData.result.map((launch: any) => ({
+          id: `rl-${launch.id}`,
+          name: launch.name,
+          net: launch.t0 || new Date(launch.est_date.year, launch.est_date.month - 1, launch.est_date.day).toISOString(),
+          status: {
+            name: launch.t0 ? "Go" : "TBD",
+            description: launch.launch_description || ''
+          },
+          launch_service_provider: {
+            name: launch.provider.name
+          },
+          rocket: {
+            configuration: {
+              name: launch.vehicle.name
+            }
+          },
+          mission: {
+            name: launch.missions?.[0]?.name || launch.name,
+            description: launch.mission_description || launch.launch_description || ''
+          },
+          pad: {
+            name: launch.pad.name,
+            location: {
+              name: launch.pad.location.name,
+              country: launch.pad.location.country
+            }
+          },
+          image: launch.media?.[0] || null,
+          webcast_live: false,
+          webcast_url: `https://rocketlaunch.live/launch/${launch.slug}`
+        }));
+
+        return {
+          results: transformedData,
+          count: transformedData.length,
+          next: null
+        };
+      }
+    } catch (error) {
+      console.log('RocketLaunch.live API failed, trying Space Devs API...', error);
     }
 
-    console.log('Fetching upcoming launches from:', url);
-    const response = await fetch(url, options);
-    if (!response.ok) {
-      throw new Error(`Space Devs API error: ${response.statusText}`);
+    try {
+      // Fallback to Space Devs API
+      console.log('Fetching upcoming launches from Space Devs...');
+      const spaceDevsUrl = SPACEDEVS_API_KEY 
+        ? `https://ll.thespacedevs.com/2.2.0/launch/upcoming/?limit=10`
+        : `https://lldev.thespacedevs.com/2.2.0/launch/upcoming/?limit=10`;
+      
+      const options: any = {};
+      if (SPACEDEVS_API_KEY) {
+        options.headers = { 'Authorization': `Token ${SPACEDEVS_API_KEY}` };
+      }
+
+      const response = await fetch(spaceDevsUrl, options);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Space Devs response:', { count: data.count, resultsLength: data.results?.length });
+        return data;
+      }
+    } catch (error) {
+      console.log('Space Devs API failed, using fallback data...', error);
     }
-    const data = await response.json();
-    console.log('Upcoming launches response:', { count: data.count, resultsLength: data.results?.length });
-    return data;
+
+    // No fallback data - return empty if APIs fail
+    console.log('All APIs failed, returning empty results');
+    return {
+      results: [],
+      count: 0,
+      next: null
+    };
   }, CACHE_TTL, { results: [] });
 }
 
 export async function getPreviousLaunches() {
   return getCachedData('previous-launches', async () => {
-    const url = SPACEDEVS_API_KEY 
-      ? `https://ll.thespacedevs.com/2.2.0/launch/previous/?limit=50`
-      : `https://lldev.thespacedevs.com/2.2.0/launch/previous/?limit=50`;
-    
-    const options: any = {};
-    if (SPACEDEVS_API_KEY) {
-      options.headers = { 'Authorization': `Token ${SPACEDEVS_API_KEY}` };
+    try {
+      // Try RocketLaunch.live API for recent launches
+      console.log('Fetching recent launches from RocketLaunch.live...');
+      const rocketLaunchResponse = await fetch('https://fdo.rocketlaunch.live/json/launches/past/10');
+      if (rocketLaunchResponse.ok) {
+        const rocketLaunchData = await rocketLaunchResponse.json();
+        console.log('RocketLaunch.live past launches response:', { count: rocketLaunchData.count });
+        
+        // Transform RocketLaunch.live data to match our format
+        const transformedData = rocketLaunchData.result.map((launch: any) => ({
+          id: `rl-past-${launch.id}`,
+          name: launch.name,
+          net: launch.t0 || new Date(launch.est_date.year, launch.est_date.month - 1, launch.est_date.day).toISOString(),
+          status: {
+            name: launch.result === 1 ? "Success" : launch.result === 0 ? "Failure" : "Unknown",
+            description: launch.launch_description || ''
+          },
+          launch_service_provider: {
+            name: launch.provider.name
+          },
+          rocket: {
+            configuration: {
+              name: launch.vehicle.name
+            }
+          },
+          mission: {
+            name: launch.missions?.[0]?.name || launch.name,
+            description: launch.mission_description || launch.launch_description || ''
+          },
+          pad: {
+            name: launch.pad.name,
+            location: {
+              name: launch.pad.location.name,
+              country: launch.pad.location.country
+            }
+          },
+          image: launch.media?.[0] || null,
+          webcast_live: false,
+          webcast_url: `https://rocketlaunch.live/launch/${launch.slug}`
+        }));
+
+        return {
+          results: transformedData,
+          count: transformedData.length,
+          next: null
+        };
+      }
+    } catch (error) {
+      console.log('RocketLaunch.live past launches API failed, trying Space Devs API...', error);
     }
 
-    console.log('Fetching previous launches from:', url);
-    const response = await fetch(url, options);
-    if (!response.ok) {
-      throw new Error(`Space Devs API error: ${response.statusText}`);
+    try {
+      // Fallback to Space Devs API
+      console.log('Fetching recent launches from Space Devs...');
+      const spaceDevsUrl = SPACEDEVS_API_KEY 
+        ? `https://ll.thespacedevs.com/2.2.0/launch/previous/?limit=10`
+        : `https://lldev.thespacedevs.com/2.2.0/launch/previous/?limit=10`;
+      
+      const options: any = {};
+      if (SPACEDEVS_API_KEY) {
+        options.headers = { 'Authorization': `Token ${SPACEDEVS_API_KEY}` };
+      }
+
+      const response = await fetch(spaceDevsUrl, options);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Space Devs past launches response:', { count: data.count, resultsLength: data.results?.length });
+        return data;
+      }
+    } catch (error) {
+      console.log('Space Devs past launches API failed, using fallback data...', error);
     }
-    const data = await response.json();
-    console.log('Previous launches response:', { count: data.count, resultsLength: data.results?.length });
-    return data;
+
+    // No fallback data - return empty if APIs fail
+    console.log('All APIs failed, returning empty results');
+    return {
+      results: [],
+      count: 0,
+      next: null
+    };
   }, CACHE_TTL, { results: [] });
 }
 

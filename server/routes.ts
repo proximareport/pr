@@ -77,6 +77,30 @@ import {
   getEarthquakeData,
   getAdvancedSpaceWeather
 } from './launchesService';
+
+// Mission Control API functions
+import {
+  createMissionSession,
+  getActiveMissionSession,
+  updateMissionSession,
+  deleteMissionSession,
+  addMissionUpdate,
+  getMissionUpdates,
+  addMissionMilestone,
+  getMissionMilestones,
+  updateMissionMilestone,
+  addMissionWeather,
+  getLatestMissionWeather,
+  setVideoOverlay,
+  getVideoOverlay,
+  addMissionObjective,
+  getMissionObjectives,
+  updateMissionObjective,
+  addMissionCrew,
+  getMissionCrew,
+  cleanupExpiredSessions
+} from './missionControlService';
+
 import { getFeaturedImages, getGalleryImages, getAvailableTags } from './ghostService';
 import { getPosts, getPostBySlug } from './ghostService';
 import { ThemeService } from './themeService';
@@ -286,6 +310,346 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching previous launches:', error);
       res.status(500).json({ error: 'Failed to fetch previous launches' });
+    }
+  });
+
+  // Mission Control API Routes
+  
+  // Create a new mission session
+  app.post("/api/mission-control/session", async (req: Request, res: Response) => {
+    try {
+      const { missionId, missionName, agency, launchDate, description, vehicle, payload, destination, launchSite, liveStreamUrl, missionPatchUrl, adminUserId } = req.body;
+      
+      if (!missionId || !missionName || !agency || !launchDate) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      const session = await createMissionSession({
+        missionId,
+        missionName,
+        agency,
+        launchDate: new Date(launchDate),
+        description,
+        vehicle,
+        payload,
+        destination,
+        launchSite,
+        liveStreamUrl,
+        missionPatchUrl,
+        adminUserId
+      });
+
+      res.json(session);
+    } catch (error) {
+      console.error('Error creating mission session:', error);
+      res.status(500).json({ error: 'Failed to create mission session' });
+    }
+  });
+
+  // Get active mission session
+  app.get("/api/mission-control/session", async (req: Request, res: Response) => {
+    try {
+      const session = await getActiveMissionSession();
+      res.json(session);
+    } catch (error) {
+      console.error('Error fetching active mission session:', error);
+      res.status(500).json({ error: 'Failed to fetch active mission session' });
+    }
+  });
+
+  // Update mission session
+  app.put("/api/mission-control/session", async (req: Request, res: Response) => {
+    try {
+      const { sessionId, updates } = req.body;
+      
+      if (!sessionId) {
+        return res.status(400).json({ error: 'Session ID is required' });
+      }
+
+      const session = await updateMissionSession(sessionId, updates);
+      res.json(session);
+    } catch (error) {
+      console.error('Error updating mission session:', error);
+      res.status(500).json({ error: 'Failed to update mission session' });
+    }
+  });
+
+  // Delete mission session
+  app.delete("/api/mission-control/session/:sessionId", async (req: Request, res: Response) => {
+    try {
+      const { sessionId } = req.params;
+      await deleteMissionSession(sessionId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting mission session:', error);
+      res.status(500).json({ error: 'Failed to delete mission session' });
+    }
+  });
+
+  // Add mission update
+  app.post("/api/mission-control/updates", async (req: Request, res: Response) => {
+    try {
+      const { sessionId, updateType, title, content, author, priority, isPublic } = req.body;
+      
+      if (!sessionId || !updateType || !title || !content || !author) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      const update = await addMissionUpdate({
+        sessionId,
+        updateType,
+        title,
+        content,
+        author,
+        priority: priority || 'normal',
+        isPublic: isPublic !== false
+      });
+
+      res.json(update);
+    } catch (error) {
+      console.error('Error adding mission update:', error);
+      res.status(500).json({ error: 'Failed to add mission update' });
+    }
+  });
+
+  // Get mission updates
+  app.get("/api/mission-control/updates/:sessionId", async (req: Request, res: Response) => {
+    try {
+      const { sessionId } = req.params;
+      const updates = await getMissionUpdates(sessionId);
+      res.json(updates);
+    } catch (error) {
+      console.error('Error fetching mission updates:', error);
+      res.status(500).json({ error: 'Failed to fetch mission updates' });
+    }
+  });
+
+  // Add mission milestone
+  app.post("/api/mission-control/milestones", async (req: Request, res: Response) => {
+    try {
+      const { sessionId, name, timeOffset, description, sortOrder } = req.body;
+      
+      if (!sessionId || !name || !timeOffset) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      const milestone = await addMissionMilestone({
+        sessionId,
+        name,
+        timeOffset,
+        description,
+        sortOrder: sortOrder || 0
+      });
+
+      res.json(milestone);
+    } catch (error) {
+      console.error('Error adding mission milestone:', error);
+      res.status(500).json({ error: 'Failed to add mission milestone' });
+    }
+  });
+
+  // Get mission milestones
+  app.get("/api/mission-control/milestones/:sessionId", async (req: Request, res: Response) => {
+    try {
+      const { sessionId } = req.params;
+      const milestones = await getMissionMilestones(sessionId);
+      res.json(milestones);
+    } catch (error) {
+      console.error('Error fetching mission milestones:', error);
+      res.status(500).json({ error: 'Failed to fetch mission milestones' });
+    }
+  });
+
+  // Update mission milestone
+  app.put("/api/mission-control/milestones/:milestoneId", async (req: Request, res: Response) => {
+    try {
+      const { milestoneId } = req.params;
+      const { status } = req.body;
+      
+      if (!milestoneId || !status) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      const milestone = await updateMissionMilestone(milestoneId, { status });
+      res.json(milestone);
+    } catch (error) {
+      console.error('Error updating mission milestone:', error);
+      res.status(500).json({ error: 'Failed to update mission milestone' });
+    }
+  });
+
+  // Add mission weather
+  app.post("/api/mission-control/weather", async (req: Request, res: Response) => {
+    try {
+      const { sessionId, temperature, windSpeed, windDirection, visibility, humidity, conditions, goNoGo, weatherSource } = req.body;
+      
+      if (!sessionId) {
+        return res.status(400).json({ error: 'Session ID is required' });
+      }
+
+      const weather = await addMissionWeather({
+        sessionId,
+        temperature,
+        windSpeed,
+        windDirection,
+        visibility,
+        humidity,
+        conditions,
+        goNoGo,
+        weatherSource
+      });
+
+      res.json(weather);
+    } catch (error) {
+      console.error('Error adding mission weather:', error);
+      res.status(500).json({ error: 'Failed to add mission weather' });
+    }
+  });
+
+  // Get latest mission weather
+  app.get("/api/mission-control/weather/:sessionId", async (req: Request, res: Response) => {
+    try {
+      const { sessionId } = req.params;
+      const weather = await getLatestMissionWeather(sessionId);
+      res.json(weather);
+    } catch (error) {
+      console.error('Error fetching mission weather:', error);
+      res.status(500).json({ error: 'Failed to fetch mission weather' });
+    }
+  });
+
+  // Set video overlay
+  app.post("/api/mission-control/video-overlay", async (req: Request, res: Response) => {
+    try {
+      const { sessionId, overlayType, customText, isActive } = req.body;
+      
+      if (!sessionId || !overlayType) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      const overlay = await setVideoOverlay({
+        sessionId,
+        overlayType,
+        customText,
+        isActive: isActive !== false
+      });
+
+      res.json(overlay);
+    } catch (error) {
+      console.error('Error setting video overlay:', error);
+      res.status(500).json({ error: 'Failed to set video overlay' });
+    }
+  });
+
+  // Get video overlay
+  app.get("/api/mission-control/video-overlay/:sessionId", async (req: Request, res: Response) => {
+    try {
+      const { sessionId } = req.params;
+      const overlay = await getVideoOverlay(sessionId);
+      res.json(overlay);
+    } catch (error) {
+      console.error('Error fetching video overlay:', error);
+      res.status(500).json({ error: 'Failed to fetch video overlay' });
+    }
+  });
+
+  // Add mission objective
+  app.post("/api/mission-control/objectives", async (req: Request, res: Response) => {
+    try {
+      const { sessionId, objective, sortOrder } = req.body;
+      
+      if (!sessionId || !objective) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      const objectiveRecord = await addMissionObjective({
+        sessionId,
+        objective,
+        sortOrder: sortOrder || 0
+      });
+
+      res.json(objectiveRecord);
+    } catch (error) {
+      console.error('Error adding mission objective:', error);
+      res.status(500).json({ error: 'Failed to add mission objective' });
+    }
+  });
+
+  // Get mission objectives
+  app.get("/api/mission-control/objectives/:sessionId", async (req: Request, res: Response) => {
+    try {
+      const { sessionId } = req.params;
+      const objectives = await getMissionObjectives(sessionId);
+      res.json(objectives);
+    } catch (error) {
+      console.error('Error fetching mission objectives:', error);
+      res.status(500).json({ error: 'Failed to fetch mission objectives' });
+    }
+  });
+
+  // Update mission objective
+  app.put("/api/mission-control/objectives/:objectiveId", async (req: Request, res: Response) => {
+    try {
+      const { objectiveId } = req.params;
+      const { isCompleted } = req.body;
+      
+      if (!objectiveId) {
+        return res.status(400).json({ error: 'Objective ID is required' });
+      }
+
+      const objective = await updateMissionObjective(objectiveId, { isCompleted });
+      res.json(objective);
+    } catch (error) {
+      console.error('Error updating mission objective:', error);
+      res.status(500).json({ error: 'Failed to update mission objective' });
+    }
+  });
+
+  // Add mission crew
+  app.post("/api/mission-control/crew", async (req: Request, res: Response) => {
+    try {
+      const { sessionId, name, role, agency, isCommander, sortOrder } = req.body;
+      
+      if (!sessionId || !name || !role) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      const crew = await addMissionCrew({
+        sessionId,
+        name,
+        role,
+        agency,
+        isCommander: isCommander || false,
+        sortOrder: sortOrder || 0
+      });
+
+      res.json(crew);
+    } catch (error) {
+      console.error('Error adding mission crew:', error);
+      res.status(500).json({ error: 'Failed to add mission crew' });
+    }
+  });
+
+  // Get mission crew
+  app.get("/api/mission-control/crew/:sessionId", async (req: Request, res: Response) => {
+    try {
+      const { sessionId } = req.params;
+      const crew = await getMissionCrew(sessionId);
+      res.json(crew);
+    } catch (error) {
+      console.error('Error fetching mission crew:', error);
+      res.status(500).json({ error: 'Failed to fetch mission crew' });
+    }
+  });
+
+  // Cleanup expired sessions (admin only)
+  app.post("/api/mission-control/cleanup", async (req: Request, res: Response) => {
+    try {
+      await cleanupExpiredSessions();
+      res.json({ success: true, message: 'Expired sessions cleaned up' });
+    } catch (error) {
+      console.error('Error cleaning up expired sessions:', error);
+      res.status(500).json({ error: 'Failed to cleanup expired sessions' });
     }
   });
 

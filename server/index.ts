@@ -9,7 +9,7 @@ console.log("Environment check:", {
   allEnvKeys: Object.keys(process.env).filter(k => k.includes('STRIPE'))
 });
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
+import { registerRoutes } from "./routes.js";
 // We now register newsletter routes directly in routes.ts
 import { setupVite, serveStatic, log } from "./vite";
 import session from 'express-session';
@@ -73,12 +73,12 @@ app.use((req, res, next) => {
   // Content Security Policy - More permissive for Google AdSense and external services
   res.setHeader('Content-Security-Policy', 
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com https://cdn.jsdelivr.net https://pagead2.googlesyndication.com https://www.google.com https://www.gstatic.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://fundingchoicesmessages.google.com https://platform.twitter.com https://replit.com https://ep2.adtrafficquality.google; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com https://cdn.jsdelivr.net https://pagead2.googlesyndication.com https://www.google.com https://www.gstatic.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://fundingchoicesmessages.google.com https://platform.twitter.com https://replit.com https://ep2.adtrafficquality.google https://www.clarity.ms; " +
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.google.com https://www.gstatic.com; " +
     "font-src 'self' https://fonts.gstatic.com https://www.google.com; " +
     "img-src 'self' data: https: blob: https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://www.google.com https://tpc.googlesyndication.com https://www.gstatic.com; " +
     "connect-src 'self' https://api.stripe.com https://www.google-analytics.com https://analytics.google.com https://proxima-stem-space.ghost.io https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://www.google.com https://ep1.adtrafficquality.google https://ep2.adtrafficquality.google; " +
-    "frame-src 'self' https://js.stripe.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://pagead2.googlesyndication.com; " +
+    "frame-src 'self' https://js.stripe.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://pagead2.googlesyndication.com https://www.youtube.com https://youtube.com https://player.vimeo.com; " +
     "object-src 'none'; " +
     "base-uri 'self'; " +
     "form-action 'self'; " +
