@@ -1130,10 +1130,29 @@ const MissionControl: React.FC = () => {
       launchSite: launch.pad?.name || 'Unknown',
       liveStreamUrl: isISSFeed ? 'https://www.youtube.com/embed/iYmvCUonukw?autoplay=1&rel=0&modestbranding=1&showinfo=0&controls=1&disablekb=1&fs=1&cc_load_policy=0&iv_load_policy=3&start=0' : (launch.webcast_url || ''),
       missionPatch: launch.image || '',
-      objectives: [],
-      milestones: [],
+      objectives: isISSFeed ? [
+        'Monitor Earth observation activities',
+        'Conduct scientific experiments',
+        'Maintain station systems',
+        'Support crew operations',
+        'Document Earth changes from space'
+      ] : [],
+      milestones: isISSFeed ? [
+        { name: 'ISS Orbit Established', timeOffset: 'T-0:00:00', status: 'completed', description: 'International Space Station in stable orbit' },
+        { name: 'Live Feed Active', timeOffset: 'T+0:00:00', status: 'completed', description: '24/7 live video feed operational' },
+        { name: 'Earth Observation', timeOffset: 'T+0:00:00', status: 'in-progress', description: 'Continuous Earth monitoring' },
+        { name: 'Crew Activities', timeOffset: 'T+0:00:00', status: 'in-progress', description: 'Astronaut operations and experiments' }
+      ] : [],
       liveUpdates: [],
-      weather: {
+      weather: isISSFeed ? {
+        temperature: -270, // Space temperature
+        windSpeed: 0,
+        windDirection: 'N/A',
+        visibility: 1000, // Clear view from space
+        humidity: 0,
+        conditions: 'Space Environment',
+        goNoGo: 'GO'
+      } : {
         temperature: 0,
         windSpeed: 0,
         windDirection: 'N/A',
@@ -1155,6 +1174,7 @@ const MissionControl: React.FC = () => {
       setVideoFeedUrl(mission.liveStreamUrl);
       console.log('🛰️ ISS feed selected, video URL set to:', mission.liveStreamUrl);
       console.log('🛰️ Mission liveStreamUrl:', mission.liveStreamUrl);
+      console.log('🛰️ Setting videoFeedUrl state to:', mission.liveStreamUrl);
     }
 
     // Save mission to database
@@ -1171,6 +1191,12 @@ const MissionControl: React.FC = () => {
         isLive: session.isLive
       }));
       console.log('🔄 Updated mission state with session ID:', sessionId);
+      
+      // Ensure video URL is set for ISS missions
+      if (isISSFeed && mission.liveStreamUrl) {
+        setVideoFeedUrl(mission.liveStreamUrl);
+        console.log('🛰️ ISS mission - setting video URL after session creation:', mission.liveStreamUrl);
+      }
     }
 
     // Add initial mission update
@@ -1390,11 +1416,23 @@ const MissionControl: React.FC = () => {
               </div>
 
           {/* Countdown Timer */}
-          <div className="bg-gray-900 rounded-lg p-3 sm:p-6 mb-4 sm:mb-6 border border-gray-700">
+          <div className="bg-gray-900 rounded-lg p-3 sm:p-6 mb-4 sm:mb-6 border border-gray-700 relative">
             <h3 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 flex items-center justify-center sm:justify-start">
               <ClockIcon className="h-5 w-5 sm:h-6 sm:w-6 mr-2 text-blue-400" />
               Countdown
             </h3>
+            
+            {/* ISS Mission Blur Overlay */}
+            {missionState.currentMission?.id === 'iss-live-feed' && (
+              <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-sm rounded-lg flex items-center justify-center z-10">
+                <div className="text-center p-6">
+                  <div className="text-2xl sm:text-3xl font-bold text-blue-400 mb-2">No Live Mission Videos Currently</div>
+                  <div className="text-lg text-gray-300">In the meantime, here is the ISS!</div>
+                  <div className="text-sm text-gray-400 mt-2">Live from the International Space Station</div>
+                </div>
+              </div>
+            )}
+            
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
               <div className="text-center">
                 <div className="text-2xl sm:text-4xl font-bold text-blue-400">{missionState.currentMission.countdown.days}</div>
@@ -2438,8 +2476,13 @@ const MissionControl: React.FC = () => {
                       status: { name: 'Live' },
                       launch_service_provider: { name: 'NASA' },
                       rocket: { configuration: { name: 'ISS' } },
-                      mission: { name: 'International Space Station', description: 'Live views from the International Space Station' },
-                      pad: { name: 'Low Earth Orbit' }
+                      mission: { 
+                        name: 'International Space Station', 
+                        description: 'Live views from the International Space Station orbiting Earth at 408 km altitude',
+                        orbit: { name: 'Low Earth Orbit (408 km)' }
+                      },
+                      pad: { name: 'Low Earth Orbit' },
+                      image: 'https://www.nasa.gov/sites/default/files/thumbnails/image/iss056e123456.jpg'
                     };
                     selectMission(issMission);
                   }}
