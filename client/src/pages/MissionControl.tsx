@@ -656,15 +656,16 @@ const MissionControl: React.FC = () => {
   const loadMissionData = async (sessionId: string) => {
     console.log('🔄 Loading mission data for session:', sessionId);
     try {
-      const [updates, milestones, weather, overlay, session] = await Promise.all([
+      const [updates, milestones, weather, overlay, objectives, session] = await Promise.all([
         missionControlAPI.getUpdates(sessionId),
         missionControlAPI.getMilestones(sessionId),
         missionControlAPI.getLatestWeather(sessionId),
         missionControlAPI.getVideoOverlay(sessionId),
+        missionControlAPI.getObjectives(sessionId),
         missionControlAPI.getActiveSession()
       ]);
 
-      console.log('📊 Loaded data:', { updates: updates.length, milestones: milestones.length, weather: !!weather, overlay: !!overlay });
+      console.log('📊 Loaded data:', { updates: updates.length, milestones: milestones.length, weather: !!weather, overlay: !!overlay, objectives: objectives.length });
 
       // Update mission with loaded data
       setMissionState(prev => {
@@ -702,6 +703,9 @@ const MissionControl: React.FC = () => {
             goNoGo: weather.goNoGo as any || 'TBD'
           };
         }
+
+        // Update objectives
+        updatedMission.objectives = objectives.map(obj => obj.objective);
 
         return {
           ...prev,
@@ -1647,7 +1651,7 @@ const MissionControl: React.FC = () => {
               )}
               
               {/* Video Overlay */}
-              {overlayVisible && isSimulatingLive && (
+              {overlayVisible && (isSimulatingLive || missionState.currentMission?.id === 'iss-live-feed') && (
                 <div className="absolute inset-0 pointer-events-none">
                   {/* Main Overlay Container */}
                   <div className="absolute inset-0 bg-gradient-to-br from-black/20 via-transparent to-black/30">
@@ -1968,7 +1972,7 @@ const MissionControl: React.FC = () => {
                 )}
                 
                 {/* Fullscreen Overlay */}
-                {overlayVisible && isSimulatingLive && (
+                {overlayVisible && (isSimulatingLive || missionState.currentMission?.id === 'iss-live-feed') && (
                   <div className="absolute inset-0 pointer-events-none">
                     {/* Main Overlay Container */}
                     <div className="absolute inset-0 bg-gradient-to-br from-black/20 via-transparent to-black/30">
