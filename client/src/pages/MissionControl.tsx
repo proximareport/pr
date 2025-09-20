@@ -969,6 +969,13 @@ const MissionControl: React.FC = () => {
       const launchTime = new Date(missionState.currentMission!.launchDate).getTime();
       const timeLeft = launchTime - now;
 
+      console.log('🕐 Countdown update:', {
+        missionStatus: missionState.currentMission.status,
+        launchTime: new Date(launchTime).toISOString(),
+        timeLeft: timeLeft,
+        isUpcoming: missionState.currentMission.status === 'upcoming' || missionState.currentMission.status === 'scheduled'
+      });
+
       // Only update countdown for upcoming/scheduled missions
       if (missionState.currentMission.status === 'upcoming' || missionState.currentMission.status === 'scheduled') {
         if (timeLeft > 0) {
@@ -1211,26 +1218,24 @@ const MissionControl: React.FC = () => {
         `Mission ${mission.name} has been selected for mission control operations.`
       );
 
-      // Add weather data (ISS-specific or default)
-      if (isISSFeed) {
-        await saveWeatherData({
-          temperature: -270, // Space temperature
-          windSpeed: 0,
-          visibility: 1000, // Clear view from space
-          conditions: 'Space Environment',
-          goNoGo: 'GO'
-        });
-      } else {
-        await saveWeatherData({
-          temperature: 0,
-          windSpeed: 0,
-          visibility: 0,
-          conditions: 'N/A',
-          goNoGo: 'TBD'
-        });
-      }
+      // Add weather data (use mission weather or default)
+      const weatherData = isISSFeed ? {
+        temperature: -270, // Space temperature
+        windSpeed: 0,
+        visibility: 1000, // Clear view from space
+        conditions: 'Space Environment',
+        goNoGo: 'GO'
+      } : {
+        temperature: mission.weather.temperature || 0,
+        windSpeed: mission.weather.windSpeed || 0,
+        visibility: mission.weather.visibility || 0,
+        conditions: mission.weather.conditions || 'N/A',
+        goNoGo: mission.weather.goNoGo || 'TBD'
+      };
+      
+      await saveWeatherData(weatherData);
 
-      // Add objectives (ISS-specific or default)
+      // Add objectives (use mission objectives or default)
       const sessionId = session.sessionId || session.session_id;
       const objectives = isISSFeed ? [
         'Monitor Earth observation activities',
@@ -1238,13 +1243,13 @@ const MissionControl: React.FC = () => {
         'Maintain station systems',
         'Support crew operations',
         'Document Earth changes from space'
-      ] : [
+      ] : (mission.objectives && mission.objectives.length > 0 ? mission.objectives : [
         'Complete final system checks',
         'Verify weather conditions', 
         'Execute launch sequence',
         'Monitor flight trajectory',
         'Ensure payload deployment'
-      ];
+      ]);
 
       for (const objective of objectives) {
         await missionControlAPI.addObjective(sessionId, objective);
@@ -1254,7 +1259,7 @@ const MissionControl: React.FC = () => {
       await loadMissionData(sessionId);
     }
 
-    // Add milestones (ISS-specific or default)
+    // Add milestones (use mission milestones or default)
     if ((missionStatus === 'upcoming' || missionStatus === 'scheduled' || isISSFeed) && (session?.sessionId || session?.session_id)) {
       const milestones = isISSFeed ? [
         { name: 'ISS Orbit Established', timeOffset: 'T-0:00:00', description: 'International Space Station in stable orbit' },
@@ -1263,7 +1268,11 @@ const MissionControl: React.FC = () => {
         { name: 'Crew Activities', timeOffset: 'T+0:00:00', description: 'Astronaut operations and experiments' },
         { name: 'Spacewalk Preparation', timeOffset: 'T+0:00:00', description: 'EVA suit checks and procedures' },
         { name: 'Scientific Experiments', timeOffset: 'T+0:00:00', description: 'Research and data collection' }
-      ] : [
+      ] : (mission.milestones && mission.milestones.length > 0 ? mission.milestones.map(m => ({
+        name: m.name,
+        timeOffset: m.time,
+        description: m.description || ''
+      })) : [
         { name: 'T-24h: Final Preparations', timeOffset: 'T-24:00:00', description: 'Rocket assembly and final checks' },
         { name: 'T-4h: Weather Briefing', timeOffset: 'T-04:00:00', description: 'Launch weather assessment' },
         { name: 'T-2h: Fueling Begins', timeOffset: 'T-02:00:00', description: 'Rocket propellant loading' },
@@ -1272,7 +1281,7 @@ const MissionControl: React.FC = () => {
         { name: 'T-0: Liftoff', timeOffset: 'T-00:00:00', description: 'Rocket launch' },
         { name: 'T+2m: Stage Separation', timeOffset: 'T+00:02:00', description: 'First stage separation' },
         { name: 'T+8m: Second Stage Ignition', timeOffset: 'T+00:08:00', description: 'Second stage engine start' }
-      ];
+      ]);
 
       for (const milestone of milestones) {
         await addMissionMilestone(milestone.name, milestone.timeOffset, milestone.description);
