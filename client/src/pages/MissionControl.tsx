@@ -622,7 +622,9 @@ const MissionControl: React.FC = () => {
             setVideoFeedUrl(mission.liveStreamUrl);
           }
 
-          // Load additional data will be handled by the useEffect
+          // Load mission data (updates, milestones, weather, etc.)
+          console.log('🔄 Loading mission data for active session:', sessionId);
+          await loadMissionData(sessionId);
         }
       } catch (error) {
         console.error('Error loading active session:', error);
@@ -780,6 +782,20 @@ const MissionControl: React.FC = () => {
 
       // Create new session
       console.log('💾 Creating new mission session for:', mission.name);
+      console.log('💾 Mission data being saved:', {
+        missionId: mission.id,
+        missionName: mission.name,
+        agency: mission.agency,
+        launchDate: mission.launchDate,
+        description: mission.description,
+        vehicle: mission.vehicle,
+        payload: mission.payload,
+        destination: mission.destination,
+        launchSite: mission.launchSite,
+        liveStreamUrl: mission.liveStreamUrl,
+        missionPatchUrl: mission.missionPatch
+      });
+      
       const session = await missionControlAPI.createSession({
         missionId: mission.id,
         missionName: mission.name,
