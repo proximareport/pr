@@ -14,6 +14,8 @@ import { registerRoutes } from "./routes.js";
 import { setupVite, serveStatic, log } from "./vite";
 import session from 'express-session';
 import cors from 'cors';
+import pgSession from 'connect-pg-simple';
+import { pool } from './db.js';
 
 // Validate required environment variables
 const requiredEnvVars = {
@@ -39,20 +41,30 @@ if (missingEnvVars.length > 0) {
 
 const app = express();
 
-// Session configuration with enhanced security
+// Create session store for persistent sessions
+const PgSession = pgSession(session);
+
+// Session configuration with enhanced security and persistence
 app.use(session({
+  store: new PgSession({
+    pool: pool, // Use the same pool as the main database
+    tableName: 'session', // Table name for sessions
+    createTableIfMissing: true, // Automatically create the table if it doesn't exist
+    pruneSessionInterval: 60, // Prune expired sessions every 60 seconds
+    errorLog: (error: any) => console.error('Session store error:', error)
+  }),
   secret: process.env.SESSION_SECRET || (process.env.NODE_ENV === 'development' ? 'dev-session-secret-key-2024' : 'your-secret-key'),
   resave: false,
   saveUninitialized: false,
   name: 'proxima.sid', // Custom session name for security
   cookie: {
     secure: process.env.NODE_ENV === 'production', // Always secure in production
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days (extended from 24 hours)
     httpOnly: true,
-    sameSite: 'strict', // Stricter same-site policy
+    sameSite: 'lax', // Changed from 'strict' to 'lax' for better compatibility
     domain: process.env.NODE_ENV === 'production' ? '.proximareport.com' : undefined
   },
-  rolling: true, // Reset expiration on activity
+  rolling: true, // Reset expiration on activity - this extends session on each request
   proxy: process.env.NODE_ENV === 'production' // Trust proxy in production
 }));
 

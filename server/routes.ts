@@ -1747,36 +1747,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid credentials" });
       }
       
-      // Regenerate session to prevent session fixation
-      req.session.regenerate((err) => {
+      // Set session data (no need to regenerate unless it's a security concern)
+      req.session.userId = user.id;
+      req.session.isAdmin = user.role === 'admin';
+      
+      // Save session explicitly
+      req.session.save((err) => {
         if (err) {
-          console.error("Session regeneration error:", err);
-          return res.status(500).json({ message: "Error regenerating session" });
+          console.error("Session save error:", err);
+          return res.status(500).json({ message: "Error saving session" });
         }
         
-        // Set session data
-        req.session.userId = user.id;
-        req.session.isAdmin = user.role === 'admin';
-        
-        // Save session explicitly
-        req.session.save((err) => {
-          if (err) {
-            console.error("Session save error:", err);
-            return res.status(500).json({ message: "Error saving session" });
-          }
-          
-          console.log("Login successful - Session regenerated and saved:", {
-            userId: req.session.userId,
-            isAdmin: req.session.isAdmin,
-            userRole: user.role,
-            sessionID: req.sessionID
-          });
-          
-          // Update last login time
-          storage.updateUser(user.id, { lastLoginAt: new Date() });
-          
-          res.json(user);
+        console.log("Login successful - Session saved:", {
+          userId: req.session.userId,
+          isAdmin: req.session.isAdmin,
+          userRole: user.role,
+          sessionID: req.sessionID
         });
+        
+        // Update last login time
+        storage.updateUser(user.id, { lastLoginAt: new Date() });
+        
+        res.json(user);
       });
     } catch (error) {
       console.error("Login error:", error);
@@ -1853,6 +1845,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json({ message: "Logged out successfully" });
     });
+  });
+
+  // Session refresh endpoint - helps maintain sessions
+  app.post("/api/session/refresh", (req: Request, res: Response) => {
+    if (req.session && req.session.userId) {
+      // Touch the session to reset its expiration
+      req.session.touch();
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session refresh error:", err);
+          return res.status(500).json({ message: "Error refreshing session" });
+        }
+        
+        res.json({ 
+          message: "Session refreshed successfully",
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+        });
+      });
+    } else {
+      res.status(401).json({ message: "No active session to refresh" });
+    }
   });
 
   // ----------------------------------------------------
@@ -4522,7 +4535,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         sitemap += `
   <url>
-    <loc>${baseUrl}/articles/${article.slug}</loc>
+    <loc>${baseUrl}/article/${article.slug}</loc>
     <lastmod>${new Date(lastmod).toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>`;

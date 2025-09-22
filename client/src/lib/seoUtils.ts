@@ -4,6 +4,41 @@ import type { GhostPost } from '../../../server/ghostService';
  * SEO utility functions for generating consistent meta tags across the site
  */
 
+/**
+ * Strip HTML tags from text
+ */
+function stripHtml(html: string): string {
+  if (!html) return '';
+  return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Generate a meta description from article content
+ */
+function generateDescriptionFromContent(html: string, title: string): string {
+  if (!html) return `Discover the latest insights on ${title} at Proxima Report. Expert analysis of space exploration, astronomy, and STEM developments.`;
+  
+  const text = stripHtml(html);
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 10);
+  
+  if (sentences.length > 0) {
+    let description = sentences[0].trim();
+    // Try to get a good length description
+    if (description.length < 100 && sentences.length > 1) {
+      description += '. ' + sentences[1].trim();
+    }
+    
+    // Ensure it's not too long
+    if (description.length > 160) {
+      description = description.substring(0, 157) + '...';
+    }
+    
+    return description;
+  }
+  
+  return `Discover the latest insights on ${title} at Proxima Report. Expert analysis of space exploration, astronomy, and STEM developments.`;
+}
+
 export interface SEOConfig {
   title: string;
   description: string;
@@ -25,11 +60,34 @@ export interface SEOConfig {
  */
 export function generateArticleSEO(article: GhostPost): SEOConfig {
   const baseUrl = 'https://proximareport.com';
-  const articleUrl = `${baseUrl}/articles/${article.slug}`;
+  const articleUrl = `${baseUrl}/article/${article.slug}`;
+  
+  // Prioritize custom_excerpt over excerpt for better meta descriptions
+  const getMetaDescription = () => {
+    let description = '';
+    
+    if (article.custom_excerpt && article.custom_excerpt.trim()) {
+      description = stripHtml(article.custom_excerpt.trim());
+    } else if (article.excerpt && article.excerpt.trim()) {
+      description = stripHtml(article.excerpt.trim());
+    } else {
+      // Generate description from article content
+      description = generateDescriptionFromContent(article.html, article.title);
+    }
+    
+    // Ensure description is within optimal length (150-160 characters)
+    if (description.length > 160) {
+      description = description.substring(0, 157) + '...';
+    }
+    
+    return description;
+  };
+  
+  const metaDescription = getMetaDescription();
   
   return {
     title: `${article.title} | Proxima Report`,
-    description: article.excerpt || `Read the latest article on Proxima Report: ${article.title}`,
+    description: metaDescription,
     keywords: article.tags?.map(tag => tag.name).join(', ') || 'space news, STEM education, astronomy, space exploration, NASA, SpaceX, rocket launches, space missions, science news',
     url: articleUrl,
     type: 'article',
@@ -43,7 +101,7 @@ export function generateArticleSEO(article: GhostPost): SEOConfig {
       "@context": "https://schema.org",
       "@type": "Article",
       "headline": article.title,
-      "description": article.excerpt || `Read the latest article on Proxima Report: ${article.title}`,
+      "description": metaDescription,
       "image": article.feature_image || `${baseUrl}/assets/images/proxima-logo-desktop.png`,
       "author": {
         "@type": "Person",

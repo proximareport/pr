@@ -67,6 +67,7 @@ export interface GhostPost {
   feature_image: string;
   published_at: string;
   excerpt: string;
+  custom_excerpt?: string;
   reading_time: number;
   primary_author: GhostAuthor;
   primary_tag: GhostTag;
@@ -125,6 +126,7 @@ function formatGhostPost(post: any): GhostPost | null {
     feature_image: post.feature_image,
     published_at: post.published_at,
     excerpt: post.excerpt,
+    custom_excerpt: post.custom_excerpt,
     reading_time: readingTime,
     primary_author: post.primary_author as GhostAuthor,
     primary_tag: post.primary_tag as GhostTag,

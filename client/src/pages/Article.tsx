@@ -285,15 +285,30 @@ function Article() {
     );
   }
 
+  // Debug SEO data
+  const seoConfig = article ? generateArticleSEO(article) : {
+    title: "Article | Proxima Report",
+    description: "Read the latest article on Proxima Report",
+    keywords: "space news, STEM education, astronomy, space exploration, NASA, SpaceX, rocket launches, space missions, science news",
+    url: "https://proximareport.com/articles",
+    type: "website" as const
+  };
+
+  // Debug logging for SEO
+  if (article) {
+    console.log('Article SEO Debug:', {
+      title: article.title,
+      excerpt: article.excerpt,
+      custom_excerpt: article.custom_excerpt,
+      finalDescription: seoConfig.description,
+      tags: article.tags?.map(tag => tag.name),
+      author: article.primary_author?.name
+    });
+  }
+
   return (
     <>
-      <SEO {...(article ? generateArticleSEO(article) : {
-        title: "Article | Proxima Report",
-        description: "Read the latest article on Proxima Report",
-        keywords: "space news, STEM education, astronomy, space exploration, NASA, SpaceX, rocket launches, space missions, science news",
-        url: "https://proximareport.com/articles",
-        type: "website" as const
-      })} />
+      <SEO {...seoConfig} />
       <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/40 to-black relative overflow-hidden">
       {/* Enhanced Reading Progress */}
       <ReadingProgress 

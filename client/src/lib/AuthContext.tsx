@@ -33,6 +33,7 @@ interface AuthContextType {
   register: (userData: { username: string; email: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (data: Partial<User>) => Promise<void>;
+  refreshSession: () => Promise<void>;
   refetch: () => Promise<any>;
 }
 
@@ -60,6 +61,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     retry: (failureCount, error: any) => {
       return !error?.message?.includes('401') && failureCount < 3;
     },
+    // Refresh every 10 minutes to keep session alive
+    refetchInterval: 10 * 60 * 1000, // 10 minutes
+    refetchIntervalInBackground: true,
   });
 
   // Login mutation
@@ -184,6 +188,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await registerMutation.mutateAsync(userData);
   };
 
+  // Session refresh function
+  const refreshSession = async () => {
+    try {
+      await apiRequest('POST', '/api/session/refresh');
+      console.log('Session refreshed successfully');
+    } catch (error: any) {
+      console.error('Session refresh error:', error);
+      // If refresh fails, the session might be expired
+      if (error.message?.includes('401')) {
+        setUser(null);
+        queryClient.clear();
+      }
+    }
+  };
+
   // Logout function
   const logout = async () => {
     await logoutMutation.mutateAsync();
@@ -208,6 +227,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         register,
         logout,
         updateUser,
+        refreshSession,
         refetch,
       }}
     >
