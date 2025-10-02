@@ -4,6 +4,29 @@ Allow: /
 # Sitemap
 Sitemap: https://proximareport.com/sitemap.xml
 
+# News Sitemap
+Sitemap: https://proximareport.com/news-sitemap.xml
+
+# News Feeds
+Sitemap: https://proximareport.com/rss.xml
+Sitemap: https://proximareport.com/atom.xml
+Sitemap: https://proximareport.com/feed.json
+
+# Google News specific rules
+User-agent: Googlebot-News
+Allow: /
+Crawl-delay: 0
+
+# Apple News specific rules
+User-agent: Applebot
+Allow: /
+Crawl-delay: 0
+
+# Microsoft News specific rules
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 0
+
 # Disallow admin and private areas only
 Disallow: /admin/
 Disallow: /api/
@@ -36,6 +59,12 @@ Allow: /profile/
 Allow: /staff
 Allow: /topics
 Allow: /articles/
+
+# News content priority
+Allow: /articles/
+Allow: /rss.xml
+Allow: /atom.xml
+Allow: /feed.json
 
 # Crawl delay for respectful crawling
 Crawl-delay: 1 

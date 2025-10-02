@@ -4367,14 +4367,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let jobListings = [];
       
       try {
-        // Get all published articles
-        articles = await storage.getArticles(1000, 0, false);
+        // Get all published articles from Ghost CMS
+        const ghostPosts = await getPosts(1, 1000); // Get up to 1000 posts
+        articles = ghostPosts.posts || [];
         
-        // Get all categories and tags
-        categories = await storage.getCategories();
-        tags = await storage.getTags();
+        // Get all tags from Ghost (Ghost doesn't have separate categories)
+        const availableTags = await getAvailableTags();
+        categories = []; // Ghost doesn't have categories, only tags
+        tags = availableTags || [];
         
-        // Get job listings
+        // Get job listings from local database
         jobListings = await storage.getJobListings(true);
       } catch (dbError) {
         console.error("Database error in sitemap generation, using fallback:", dbError);
@@ -4504,6 +4506,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     <priority>0.8</priority>
   </url>
   
+  <!-- ProxiHub and Tools -->
+  <url>
+    <loc>${baseUrl}/proxihub</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  
+  <!-- Tool Pages -->
+  <url>
+    <loc>${baseUrl}/tools/word-generator</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/tools/distance-calculator</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/tools/fact-generator</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/tools/color-palette</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/tools/planet-generator</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/tools/mission-generator</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/tools/quiz-generator</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/tools/delta-v-calculator</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/tools/astrophysics-playground</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <!-- Additional Pages -->
+  <url>
+    <loc>${baseUrl}/benefits</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/gift</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/careers</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/pricing</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
   <!-- Utility Pages -->
   <url>
     <loc>${baseUrl}/sitemap</loc>
@@ -4530,37 +4622,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Add articles to sitemap with image and news metadata
       articles.forEach(article => {
-        const lastmod = article.updatedAt || article.publishedAt || article.createdAt;
-        const publishDate = article.publishedAt || article.createdAt;
+        const lastmod = article.updated_at || article.published_at || article.created_at;
+        const publishDate = article.published_at || article.created_at;
+        
+        // Ensure we have valid dates
+        const lastmodDate = lastmod ? new Date(lastmod) : new Date();
+        const publishDateObj = publishDate ? new Date(publishDate) : new Date();
+        
+        // Check if dates are valid
+        const validLastmod = !isNaN(lastmodDate.getTime()) ? lastmodDate.toISOString() : new Date().toISOString();
+        const validPublishDate = !isNaN(publishDateObj.getTime()) ? publishDateObj : new Date();
         
         sitemap += `
   <url>
-    <loc>${baseUrl}/article/${article.slug}</loc>
-    <lastmod>${new Date(lastmod).toISOString()}</lastmod>
+    <loc>${baseUrl}/articles/${article.slug}</loc>
+    <lastmod>${validLastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>`;
         
         // Add news metadata for recent articles (last 2 days)
-        const articleDate = new Date(publishDate);
         const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
         
-        if (articleDate > twoDaysAgo) {
+        if (validPublishDate > twoDaysAgo) {
           sitemap += `
     <news:news>
       <news:publication>
         <news:name>Proxima Report</news:name>
         <news:language>en</news:language>
       </news:publication>
-      <news:publication_date>${new Date(publishDate).toISOString()}</news:publication_date>
+      <news:publication_date>${validPublishDate.toISOString()}</news:publication_date>
       <news:title><![CDATA[${article.title}]]></news:title>
     </news:news>`;
         }
         
         // Add image metadata if article has featured image
-        if (article.featuredImage) {
+        if (article.feature_image) {
           sitemap += `
     <image:image>
-      <image:loc>${article.featuredImage}</image:loc>
+      <image:loc>${article.feature_image}</image:loc>
       <image:title><![CDATA[${article.title}]]></image:title>
       <image:caption><![CDATA[${article.excerpt || article.title}]]></image:caption>
     </image:image>`;
@@ -4608,7 +4707,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       sitemap += `
 </urlset>`;
       
-      res.set('Content-Type', 'application/xml');
+      res.set('Content-Type', 'text/xml; charset=utf-8');
       res.set('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
       res.send(sitemap);
     } catch (error) {
@@ -4626,10 +4725,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let jobListings = [];
       
       try {
-        // Try to get data from database
-        articles = await storage.getArticles(1000, 0, false);
-        categories = await storage.getCategories();
-        tags = await storage.getTags();
+        // Try to get data from Ghost CMS
+        const ghostPosts = await getPosts(1, 1000);
+        articles = ghostPosts.posts || [];
+        
+        const availableTags = await getAvailableTags();
+        categories = []; // Ghost doesn't have categories, only tags
+        tags = availableTags || [];
+        
         jobListings = await storage.getJobListings(true);
       } catch (dbError) {
         console.error("Database error, using fallback data:", dbError);
@@ -4812,21 +4915,22 @@ Crawl-delay: 1`;
         return html.replace(/<[^>]*>/g, '').trim();
       };
 
-      // Generate RSS 2.0 feed
+      // Generate RSS 2.0 feed with Google News support
       let rss = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" 
      xmlns:content="http://purl.org/rss/1.0/modules/content/"
      xmlns:dc="http://purl.org/dc/elements/1.1/"
      xmlns:atom="http://www.w3.org/2005/Atom"
-     xmlns:media="http://search.yahoo.com/mrss/">
+     xmlns:media="http://search.yahoo.com/mrss/"
+     xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
   <channel>
-    <title>Proxima Report</title>
+    <title>Proxima Report - Space & STEM News</title>
     <link>${baseUrl}</link>
     <description>Your premier destination for space exploration and scientific discovery. Get the latest news on space missions, astronomy, and technological breakthroughs.</description>
     <language>en-US</language>
     <lastBuildDate>${currentDate}</lastBuildDate>
     <pubDate>${currentDate}</pubDate>
-    <ttl>60</ttl>
+    <ttl>30</ttl>
     <generator>Proxima Report CMS</generator>
     <managingEditor>editorial@proximareport.com (Proxima Report Editorial Team)</managingEditor>
     <webMaster>tech@proximareport.com (Proxima Report Technical Team)</webMaster>
@@ -4834,6 +4938,13 @@ Crawl-delay: 1`;
     <category>Science/Technology</category>
     <category>Space Exploration</category>
     <category>Astronomy</category>
+    <category>STEM Education</category>
+    
+    <!-- Google News specific elements -->
+    <news:publication>
+      <news:name>Proxima Report</news:name>
+      <news:language>en</news:language>
+    </news:publication>
     
     <!-- RSS feed discovery -->
     <atom:link href="${baseUrl}/rss.xml" rel="self" type="application/rss+xml"/>
@@ -4851,7 +4962,7 @@ Crawl-delay: 1`;
               // Add articles to RSS feed
       articles.forEach(article => {
         const pubDate = new Date(article.published_at || article.created_at).toUTCString();
-        const link = `${baseUrl}/article/${article.slug}`;
+        const link = `${baseUrl}/articles/${article.slug}`;
         
         // Create article excerpt/description
         let description = '';
@@ -4873,7 +4984,18 @@ Crawl-delay: 1`;
       <pubDate>${pubDate}</pubDate>
       <guid isPermaLink="true">${link}</guid>
       <dc:creator>${escapeXml(article.primary_author?.name || 'Proxima Report')}</dc:creator>
-      <category>${escapeXml(article.primary_tag?.name || 'Space News')}</category>`;
+      <category>${escapeXml(article.primary_tag?.name || 'Space News')}</category>
+      
+      <!-- Google News specific elements -->
+      <news:news>
+        <news:publication>
+          <news:name>Proxima Report</news:name>
+          <news:language>en</news:language>
+        </news:publication>
+        <news:publication_date>${new Date(article.published_at || article.created_at).toISOString()}</news:publication_date>
+        <news:title><![CDATA[${article.title}]]></news:title>
+        <news:keywords>${escapeXml(article.primary_tag?.name || 'Space News')}, space, NASA, SpaceX, astronomy, STEM</news:keywords>
+      </news:news>`;
       
       // Add content:encoded for full article content (if available)
       if (article.html) {
@@ -4912,6 +5034,203 @@ Crawl-delay: 1`;
     } catch (error) {
       console.error("Error generating RSS feed:", error);
       res.status(500).json({ message: "Error generating RSS feed" });
+    }
+  });
+
+  // Atom Feed for better news integration
+  app.get("/atom.xml", async (req: Request, res: Response) => {
+    try {
+      const baseUrl = 'https://proximareport.com';
+      const currentDate = new Date().toISOString();
+      
+      let articles = [];
+      
+      try {
+        // Get latest 50 published articles from Ghost CMS for Atom feed
+        const ghostPosts = await getPosts(1, 50);
+        articles = ghostPosts.posts || [];
+      } catch (ghostError) {
+        console.error("Ghost API error in Atom generation:", ghostError);
+        articles = [];
+      }
+      
+      // Escape XML special characters
+      const escapeXml = (str: string) => {
+        if (!str) return '';
+        return str
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      };
+
+      // Strip HTML tags for plain text content
+      const stripHtml = (html: string) => {
+        if (!html) return '';
+        return html.replace(/<[^>]*>/g, '').trim();
+      };
+
+      // Generate Atom 1.0 feed
+      let atom = `<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"
+      xmlns:media="http://search.yahoo.com/mrss/"
+      xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <title>Proxima Report</title>
+  <subtitle>Premier space and STEM news platform covering space exploration, astronomy, and technological breakthroughs</subtitle>
+  <link href="${baseUrl}" rel="alternate" type="text/html"/>
+  <link href="${baseUrl}/atom.xml" rel="self" type="application/atom+xml"/>
+  <id>${baseUrl}/</id>
+  <updated>${currentDate}</updated>
+  <author>
+    <name>Proxima Report Editorial Team</name>
+    <email>editorial@proximareport.com</email>
+  </author>
+  <rights>© ${new Date().getFullYear()} Proxima Report. All rights reserved.</rights>
+  <category term="Science" label="Science"/>
+  <category term="Technology" label="Technology"/>
+  <category term="Space Exploration" label="Space Exploration"/>
+  <category term="Astronomy" label="Astronomy"/>
+  <category term="STEM Education" label="STEM Education"/>
+  <logo>${baseUrl}/logo.png</logo>
+  <icon>${baseUrl}/logo.png</icon>`;
+
+      // Add articles to Atom feed
+      articles.forEach(article => {
+        const pubDate = new Date(article.published_at || article.created_at);
+        const link = `${baseUrl}/articles/${article.slug}`;
+        
+        // Create article excerpt/description
+        let description = '';
+        if (article.excerpt) {
+          description = stripHtml(article.excerpt);
+        } else if (article.custom_excerpt) {
+          description = stripHtml(article.custom_excerpt);
+        } else if (article.html) {
+          const contentText = stripHtml(article.html.toString());
+          description = contentText.substring(0, 200) + (contentText.length > 200 ? '...' : '');
+        }
+
+        atom += `
+  <entry>
+    <title>${escapeXml(article.title)}</title>
+    <link href="${link}" rel="alternate" type="text/html"/>
+    <id>${link}</id>
+    <updated>${pubDate.toISOString()}</updated>
+    <published>${pubDate.toISOString()}</published>
+    <author>
+      <name>${escapeXml(article.primary_author?.name || 'Proxima Report')}</name>
+    </author>
+    <summary type="text">${escapeXml(description)}</summary>
+    <category term="${escapeXml(article.primary_tag?.name || 'Space News')}" label="${escapeXml(article.primary_tag?.name || 'Space News')}"/>`;
+
+        // Add content if available
+        if (article.html) {
+          atom += `
+    <content type="html"><![CDATA[${article.html.toString()}]]></content>`;
+        }
+        
+        // Add featured image if available
+        if (article.feature_image) {
+          atom += `
+    <media:content url="${article.feature_image}" type="image/jpeg">
+      <media:description>${escapeXml(article.title)}</media:description>
+    </media:content>`;
+        }
+        
+        // Add tags if available
+        if (article.tags && Array.isArray(article.tags)) {
+          article.tags.forEach(tag => {
+            atom += `
+    <category term="${escapeXml(tag.name || tag)}" label="${escapeXml(tag.name || tag)}"/>`;
+          });
+        }
+        
+        atom += `
+  </entry>`;
+      });
+      
+      atom += `
+</feed>`;
+      
+      res.set('Content-Type', 'application/atom+xml; charset=utf-8');
+      res.set('Cache-Control', 'public, max-age=1800'); // Cache for 30 minutes
+      res.send(atom);
+    } catch (error) {
+      console.error("Error generating Atom feed:", error);
+      res.status(500).json({ message: "Error generating Atom feed" });
+    }
+  });
+
+  // Google News Sitemap
+  app.get("/news-sitemap.xml", async (req: Request, res: Response) => {
+    try {
+      const baseUrl = 'https://proximareport.com';
+      const currentDate = new Date().toISOString();
+      
+      let articles = [];
+      
+      try {
+        // Get latest 1000 published articles from Ghost CMS for news sitemap
+        const ghostPosts = await getPosts(1, 1000);
+        articles = ghostPosts.posts || [];
+      } catch (ghostError) {
+        console.error("Ghost API error in news sitemap generation:", ghostError);
+        articles = [];
+      }
+      
+      // Generate Google News Sitemap
+      let newsSitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+  <url>
+    <loc>${baseUrl}</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Proxima Report</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>${currentDate}</news:publication_date>
+      <news:title>Proxima Report - Premier Space & STEM News Platform</news:title>
+    </news:news>
+  </url>`;
+
+      // Add articles to news sitemap (only recent articles - last 2 days)
+      const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+      
+      articles.forEach(article => {
+        const publishDate = new Date(article.published_at || article.created_at);
+        
+        // Only include recent articles for news sitemap
+        if (publishDate > twoDaysAgo) {
+          const link = `${baseUrl}/articles/${article.slug}`;
+          const validPublishDate = !isNaN(publishDate.getTime()) ? publishDate.toISOString() : new Date().toISOString();
+          
+          newsSitemap += `
+  <url>
+    <loc>${link}</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Proxima Report</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>${validPublishDate}</news:publication_date>
+      <news:title><![CDATA[${article.title}]]></news:title>
+      <news:keywords>${article.primary_tag?.name || 'Space News'}, space, NASA, SpaceX, astronomy, STEM</news:keywords>
+    </news:news>
+  </url>`;
+        }
+      });
+      
+      newsSitemap += `
+</urlset>`;
+      
+      res.set('Content-Type', 'application/xml; charset=utf-8');
+      res.set('Cache-Control', 'public, max-age=1800'); // Cache for 30 minutes
+      res.send(newsSitemap);
+    } catch (error) {
+      console.error("Error generating news sitemap:", error);
+      res.status(500).json({ message: "Error generating news sitemap" });
     }
   });
 

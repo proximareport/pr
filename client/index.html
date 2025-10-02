@@ -74,8 +74,46 @@
     <link rel="canonical" href="https://proximareport.com" />
     
     <!-- RSS and Feed Discovery -->
-    <link rel="alternate" type="application/rss+xml" title="Proxima Report RSS Feed" href="/articles" />
-    <link rel="alternate" type="application/feed+json" title="Proxima Report JSON Feed" href="/articles" />
+    <link rel="alternate" type="application/rss+xml" title="Proxima Report RSS Feed" href="/rss.xml" />
+    <link rel="alternate" type="application/feed+json" title="Proxima Report JSON Feed" href="/feed.json" />
+    
+    <!-- News Integration Meta Tags -->
+    <meta name="news_keywords" content="space, NASA, SpaceX, astronomy, rocket, launch, mission, Mars, Moon, ISS, satellite, space exploration, STEM, science, technology" />
+    <meta name="article:section" content="Science" />
+    <meta name="article:tag" content="Space Exploration" />
+    <meta name="article:tag" content="STEM Education" />
+    <meta name="article:tag" content="Astronomy" />
+    <meta name="article:tag" content="NASA" />
+    <meta name="article:tag" content="SpaceX" />
+    
+    <!-- Google News Integration -->
+    <meta name="google-news" content="enabled" />
+    <meta name="google-news-syndication" content="enabled" />
+    <meta name="google-news-standout" content="enabled" />
+    
+    <!-- Apple News Integration -->
+    <meta name="apple-news" content="enabled" />
+    <meta name="apple-news-standout" content="enabled" />
+    
+    <!-- Microsoft News Integration -->
+    <meta name="msnews" content="enabled" />
+    <meta name="msnews-standout" content="enabled" />
+    
+    <!-- News Publisher Verification -->
+    <meta name="news-publisher" content="Proxima Report" />
+    <meta name="news-category" content="Science & Technology" />
+    <meta name="news-subcategory" content="Space Exploration" />
+    
+    <!-- Content Classification for News -->
+    <meta name="content-type" content="news" />
+    <meta name="content-category" content="science, technology, space, education" />
+    <meta name="content-language" content="en-US" />
+    <meta name="content-region" content="US" />
+    
+    <!-- News Feed Discovery -->
+    <link rel="alternate" type="application/rss+xml" title="Proxima Report - Space News" href="/rss.xml" />
+    <link rel="alternate" type="application/atom+xml" title="Proxima Report - Space News" href="/atom.xml" />
+    <link rel="alternate" type="application/json" title="Proxima Report - Space News" href="/feed.json" />
     
     <!-- DNS Prefetch for External Resources -->
     <link rel="dns-prefetch" href="//www.googletagmanager.com" />
@@ -224,6 +262,71 @@
         "SpaceX Launches",
         "Exoplanets",
         "Space Science"
+      ],
+      "publishingPrinciples": "https://proximareport.com/editorial-guidelines",
+      "ethicsPolicy": "https://proximareport.com/ethics-policy",
+      "correctionsPolicy": "https://proximareport.com/corrections-policy",
+      "diversityPolicy": "https://proximareport.com/diversity-policy",
+      "masthead": "https://proximareport.com/staff",
+      "missionCoveragePriorities": "Space exploration, STEM education, scientific discoveries, technological breakthroughs",
+      "verificationFactCheckingPolicy": "https://proximareport.com/fact-checking-policy"
+    }
+    </script>
+    
+    <!-- News Website Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "@id": "https://proximareport.com/#website",
+      "url": "https://proximareport.com",
+      "name": "Proxima Report",
+      "description": "Premier space and STEM news platform covering space exploration, astronomy, and technological breakthroughs",
+      "publisher": {
+        "@id": "https://proximareport.com/#organization"
+      },
+      "potentialAction": [
+        {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://proximareport.com/search?q={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        }
+      ],
+      "inLanguage": "en-US"
+    }
+    </script>
+    
+    <!-- News Publisher Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "@id": "https://proximareport.com/#organization",
+      "name": "Proxima Report",
+      "url": "https://proximareport.com",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://proximareport.com/logo.png",
+        "width": 512,
+        "height": 512
+      },
+      "description": "Premier space and STEM news platform covering space exploration, astronomy, and technological breakthroughs",
+      "foundingDate": "2023",
+      "areaServed": "Worldwide",
+      "serviceType": "News Media",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer service",
+        "email": "hello@proximareport.com"
+      },
+      "sameAs": [
+        "https://twitter.com/proximareport",
+        "https://linkedin.com/company/proximareport",
+        "https://instagram.com/proximareport",
+        "https://youtube.com/@proximareport"
       ]
     }
     </script>
