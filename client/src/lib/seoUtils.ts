@@ -60,7 +60,7 @@ export interface SEOConfig {
  */
 export function generateArticleSEO(article: GhostPost): SEOConfig {
   const baseUrl = 'https://proximareport.com';
-  const articleUrl = `${baseUrl}/article/${article.slug}`;
+  const articleUrl = `${baseUrl}/articles/${article.slug}`;
   
   // Prioritize custom_excerpt over excerpt for better meta descriptions
   const getMetaDescription = () => {

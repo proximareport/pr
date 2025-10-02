@@ -4604,6 +4604,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     <priority>0.4</priority>
   </url>
   
+  <!-- Additional missing pages -->
+  <url>
+    <loc>${baseUrl}/advertise</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/security-policy</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/newsletter/verify</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/newsletter/unsubscribe</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  
   <!-- RSS and JSON Feeds -->
   <url>
     <loc>${baseUrl}/rss.xml</loc>

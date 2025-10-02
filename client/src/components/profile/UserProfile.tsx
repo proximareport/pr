@@ -550,7 +550,7 @@ const UserProfile = ({ username, isEditable = false }: ProfileProps) => {
                               Saved {new Date(saved.savedAt).toLocaleDateString()}
                             </p>
                             <Link 
-                              to={`/article/${saved.ghostPostId}`}
+                              to={`/articles/${saved.ghostPostId}`}
                               className="text-sm text-purple-400 hover:text-purple-300 transition-colors"
                             >
                               Read Article →
@@ -598,7 +598,7 @@ const UserProfile = ({ username, isEditable = false }: ProfileProps) => {
                         </div>
                         <div className="pt-3 border-t border-white/10">
                           <Link 
-                            to={`/article/${comment.ghostPostId}`}
+                            to={`/articles/${comment.ghostPostId}`}
                             className="text-sm text-purple-400 hover:text-purple-300 transition-colors"
                           >
                             View Article →

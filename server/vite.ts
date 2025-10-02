@@ -48,8 +48,10 @@ export async function setupVite(app: Express, server: Server) {
         req.path.startsWith('/backend/') || 
         req.path.startsWith('/v1/') ||
         req.path === '/sitemap.xml' || 
+        req.path === '/news-sitemap.xml' ||
         req.path === '/robots.txt' || 
         req.path === '/rss.xml' || 
+        req.path === '/atom.xml' ||
         req.path === '/ads.txt' || 
         req.path === '/feed.json') {
       return next();
@@ -62,11 +64,14 @@ export async function setupVite(app: Express, server: Server) {
     const url = req.originalUrl;
 
     // Skip SEO and compliance routes - let them be handled by the API middleware
-    if (req.path === '/sitemap.xml' || 
+    if (        req.path === '/sitemap.xml' || 
+        req.path === '/news-sitemap.xml' ||
         req.path === '/robots.txt' || 
         req.path === '/rss.xml' || 
+        req.path === '/atom.xml' ||
         req.path === '/ads.txt' || 
         req.path === '/feed.json' ||
+        req.path === '/news-sitemap.xml' ||
         req.path.startsWith('/api/') || 
         req.path.startsWith('/test') || 
         req.path.startsWith('/backend/') || 
@@ -111,11 +116,14 @@ export function serveStatic(app: Express) {
   // Only serve index.html for non-API routes
   app.use("*", (req, res, next) => {
     // Skip SEO and compliance routes - let them be handled by the API middleware
-    if (req.path === '/sitemap.xml' || 
+    if (        req.path === '/sitemap.xml' || 
+        req.path === '/news-sitemap.xml' ||
         req.path === '/robots.txt' || 
         req.path === '/rss.xml' || 
+        req.path === '/atom.xml' ||
         req.path === '/ads.txt' || 
         req.path === '/feed.json' ||
+        req.path === '/news-sitemap.xml' ||
         req.path.startsWith('/api/') || 
         req.path.startsWith('/test') || 
         req.path.startsWith('/backend/') || 
