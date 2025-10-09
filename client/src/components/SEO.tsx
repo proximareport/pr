@@ -96,7 +96,7 @@ const SEO: React.FC<SEOProps> = ({
       <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       
       {/* Canonical URL */}
-      {canonical && <link rel="canonical" href={canonical} />}
+      <link rel="canonical" href={canonical || fullUrl} />
       
       {/* Open Graph Meta Tags */}
       <meta property="og:title" content={fullTitle} />

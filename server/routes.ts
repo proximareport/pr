@@ -4618,6 +4618,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     <priority>0.4</priority>
   </url>
   <url>
+    <loc>${baseUrl}/ethics-policy</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/diversity-policy</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
     <loc>${baseUrl}/newsletter/verify</loc>
     <lastmod>${currentDate}</lastmod>
     <changefreq>monthly</changefreq>

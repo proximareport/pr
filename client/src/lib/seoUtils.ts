@@ -44,6 +44,7 @@ export interface SEOConfig {
   description: string;
   keywords: string;
   url: string;
+  canonical?: string;
   type: 'website' | 'article';
   image?: string;
   author?: string;
@@ -90,6 +91,7 @@ export function generateArticleSEO(article: GhostPost): SEOConfig {
     description: metaDescription,
     keywords: article.tags?.map(tag => tag.name).join(', ') || 'space news, STEM education, astronomy, space exploration, NASA, SpaceX, rocket launches, space missions, science news',
     url: articleUrl,
+    canonical: articleUrl,
     type: 'article',
     image: article.feature_image || `${baseUrl}/assets/images/proxima-logo-desktop.png`,
     author: article.primary_author?.name || 'Proxima Report',
@@ -136,6 +138,7 @@ export function generateHomeSEO(): SEOConfig {
     description: "Proxima Report delivers the latest in space news, astronomy, planetary science, aerospace, and STEM breakthroughs. Stay informed on missions, discoveries, and cosmic exploration.",
     keywords: "space news, latest space missions, NASA news, SpaceX launches, astronomy discoveries, STEM education, space technology, rocket launches, space exploration, science news, space science, exoplanets, Mars missions, lunar exploration",
     url: "https://proximareport.com",
+    canonical: "https://proximareport.com",
     type: "website",
     structuredData: {
       "@context": "https://schema.org",
@@ -166,6 +169,7 @@ export function generateAboutSEO(): SEOConfig {
     description: "Learn about Proxima Report's mission to make space exploration data accessible and inspiring. Meet our team of space enthusiasts, scientists, and communicators dedicated to bringing the universe closer to you.",
     keywords: "about proxima report, space news team, STEM education mission, space exploration platform, astronomy news team, space technology journalists, NASA coverage team, SpaceX news reporters, space science communicators",
     url: "https://proximareport.com/about",
+    canonical: "https://proximareport.com/about",
     type: "website",
     structuredData: {
       "@context": "https://schema.org",
@@ -197,6 +201,7 @@ export function generatePricingSEO(): SEOConfig {
     description: "Choose the perfect subscription plan for your space exploration journey. Get access to exclusive content, premium features, and advanced space tools. Free and premium options available.",
     keywords: "proxima report pricing, space news subscription, premium space content, space tools subscription, STEM education plans, space exploration membership, premium astronomy content, space technology access",
     url: "https://proximareport.com/pricing",
+    canonical: "https://proximareport.com/pricing",
     type: "website",
     structuredData: {
       "@context": "https://schema.org",
@@ -236,6 +241,7 @@ export function generateContactSEO(): SEOConfig {
     description: "Get in touch with the Proxima Report team. We're here to help with questions about space news, STEM education, partnerships, or technical support. Contact us today!",
     keywords: "contact proxima report, space news contact, STEM education support, space technology questions, astronomy help, space exploration inquiries, Proxima Report team contact",
     url: "https://proximareport.com/contact",
+    canonical: "https://proximareport.com/contact",
     type: "website",
     structuredData: {
       "@context": "https://schema.org",
@@ -265,6 +271,7 @@ export function generateLoginSEO(): SEOConfig {
     description: "Sign in to your Proxima Report account to access exclusive space news, premium content, and personalized space exploration features.",
     keywords: "proxima report login, space news account, STEM education login, space exploration membership, astronomy account access, space technology login",
     url: "https://proximareport.com/login",
+    canonical: "https://proximareport.com/login",
     type: "website",
     noindex: true, // Login pages should not be indexed
   };
@@ -281,6 +288,7 @@ export function generateTagSEO(tagName: string): SEOConfig {
     description: `Explore the latest ${tagName} articles and news on Proxima Report. Stay updated with cutting-edge ${tagName} developments in space exploration and STEM education.`,
     keywords: `${tagName} articles, ${tagName} news, space ${tagName}, STEM ${tagName}, astronomy ${tagName}, space exploration ${tagName}, NASA ${tagName}, SpaceX ${tagName}`,
     url: `https://proximareport.com/tag/${tagName}`,
+    canonical: `https://proximareport.com/tag/${tagName}`,
     type: "website",
     structuredData: {
       "@context": "https://schema.org",
@@ -306,6 +314,7 @@ export function generateTopicsSEO(): SEOConfig {
     description: "Explore all topics and categories covered by Proxima Report. Discover articles about space exploration, astronomy, technology, science, and STEM education. Find content that interests you.",
     keywords: "space topics, astronomy categories, STEM topics, science categories, space exploration topics, technology topics, education categories, Proxima Report topics",
     url: "https://proximareport.com/topics",
+    canonical: "https://proximareport.com/topics",
     type: "website",
     structuredData: {
       "@context": "https://schema.org",
@@ -318,6 +327,157 @@ export function generateTopicsSEO(): SEOConfig {
         "name": "Proxima Report Topics",
         "description": "Collection of topics and categories for space and STEM content"
       }
+    }
+  };
+}
+
+/**
+ * Generate SEO config for gallery page
+ */
+export function generateGallerySEO(): SEOConfig {
+  return {
+    title: "Space Image Gallery | Proxima Report",
+    description: "Explore stunning space images, astronomical photographs, and visual content from missions across the cosmos. Browse our curated gallery of space exploration imagery.",
+    keywords: "space images, astronomy photos, space gallery, NASA images, space photography, astronomical images, space exploration photos, cosmic images, space pictures",
+    url: "https://proximareport.com/gallery",
+    canonical: "https://proximareport.com/gallery",
+    type: "website",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "ImageGallery",
+      "name": "Space Image Gallery",
+      "description": "Curated collection of space exploration imagery and astronomical photographs",
+      "url": "https://proximareport.com/gallery"
+    }
+  };
+}
+
+/**
+ * Generate SEO config for staff page
+ */
+export function generateStaffSEO(): SEOConfig {
+  return {
+    title: "Our Team | Proxima Report",
+    description: "Meet the Proxima Report team of space enthusiasts, scientists, writers, and communicators dedicated to bringing you the latest in space exploration and STEM news.",
+    keywords: "Proxima Report team, space writers, astronomy journalists, STEM educators, space news team, science communicators",
+    url: "https://proximareport.com/staff",
+    canonical: "https://proximareport.com/staff",
+    type: "website",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "AboutPage",
+      "name": "Our Team",
+      "description": "Meet the Proxima Report team dedicated to space news and STEM education",
+      "url": "https://proximareport.com/staff"
+    }
+  };
+}
+
+/**
+ * Generate SEO config for jobs page
+ */
+export function generateJobsSEO(): SEOConfig {
+  return {
+    title: "Space Industry Jobs | Proxima Report",
+    description: "Discover career opportunities in the space industry. Browse job listings from leading space agencies, aerospace companies, and space technology startups.",
+    keywords: "space jobs, aerospace careers, NASA jobs, SpaceX careers, space industry employment, rocket science jobs, astronomy careers, STEM jobs",
+    url: "https://proximareport.com/jobs",
+    canonical: "https://proximareport.com/jobs",
+    type: "website",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "JobPosting",
+      "hiringOrganization": {
+        "@type": "Organization",
+        "name": "Proxima Report"
+      },
+      "description": "Space industry job listings and career opportunities"
+    }
+  };
+}
+
+/**
+ * Generate SEO config for astronomy page
+ */
+export function generateAstronomySEO(): SEOConfig {
+  return {
+    title: "Astronomy News & Sky Watching | Proxima Report",
+    description: "Latest astronomy news, stargazing guides, celestial events, and astronomical discoveries. Your guide to understanding the cosmos and observing the night sky.",
+    keywords: "astronomy news, sky watching, stargazing, celestial events, astronomical discoveries, night sky, telescope viewing, planets, stars, galaxies",
+    url: "https://proximareport.com/astronomy",
+    canonical: "https://proximareport.com/astronomy",
+    type: "website",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Astronomy News & Sky Watching",
+      "description": "Latest astronomy news and stargazing guides",
+      "url": "https://proximareport.com/astronomy"
+    }
+  };
+}
+
+/**
+ * Generate SEO config for mission control page
+ */
+export function generateMissionControlSEO(): SEOConfig {
+  return {
+    title: "Mission Control Dashboard | Proxima Report",
+    description: "Track live space missions, upcoming launches, ISS location, and real-time space data. Your comprehensive space mission control center.",
+    keywords: "space missions, live launches, ISS tracking, space dashboard, mission control, rocket launches, space station, real-time space data",
+    url: "https://proximareport.com/missioncontrol",
+    canonical: "https://proximareport.com/missioncontrol",
+    type: "website",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Mission Control Dashboard",
+      "description": "Real-time space mission tracking and data visualization",
+      "url": "https://proximareport.com/missioncontrol",
+      "applicationCategory": "Space Tracking"
+    }
+  };
+}
+
+/**
+ * Generate SEO config for launches page
+ */
+export function generateLaunchesSEO(): SEOConfig {
+  return {
+    title: "Rocket Launches Schedule | Proxima Report",
+    description: "View upcoming rocket launches, past mission results, and detailed launch information. Never miss a space launch with our comprehensive launch schedule.",
+    keywords: "rocket launches, launch schedule, SpaceX launches, NASA launches, upcoming launches, space missions, rocket launch calendar",
+    url: "https://proximareport.com/launches",
+    canonical: "https://proximareport.com/launches",
+    type: "website",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Rocket Launches Schedule",
+      "description": "Comprehensive rocket launch schedule and mission information",
+      "url": "https://proximareport.com/launches"
+    }
+  };
+}
+
+/**
+ * Generate SEO config for ProxiHub page
+ */
+export function generateProxiHubSEO(): SEOConfig {
+  return {
+    title: "ProxiHub - Space Tools & Resources | Proxima Report",
+    description: "Access powerful space tools, calculators, and educational resources. From mission planning to astronomical calculations, ProxiHub has everything space enthusiasts need.",
+    keywords: "space tools, astronomy calculators, space resources, mission planning tools, space education, STEM tools, space calculators",
+    url: "https://proximareport.com/proxihub",
+    canonical: "https://proximareport.com/proxihub",
+    type: "website",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "ProxiHub",
+      "description": "Space tools and educational resources hub",
+      "url": "https://proximareport.com/proxihub",
+      "applicationCategory": "Educational Tool"
     }
   };
 }

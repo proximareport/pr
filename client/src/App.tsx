@@ -41,6 +41,8 @@ import Careers from "@/pages/Careers";
 import NewsletterVerify from "@/pages/NewsletterVerify";
 import NewsletterUnsubscribe from "@/pages/NewsletterUnsubscribe";
 import SecurityPolicy from "@/pages/SecurityPolicy";
+import EthicsPolicy from "@/pages/EthicsPolicy";
+import DiversityPolicy from "@/pages/DiversityPolicy";
 
 import SiteBlock from "@/components/SiteBlock";
 import AdminDashboard from "@/pages/Admin/NewDashboard";
@@ -253,6 +255,10 @@ function Router() {
       }} />
       
       <Route path="/security-policy" component={SecurityPolicy} />
+      
+      {/* Policy Pages */}
+      <Route path="/ethics-policy" component={EthicsPolicy} />
+      <Route path="/diversity-policy" component={DiversityPolicy} />
       
       <Route component={NotFound} />
     </Switch>
