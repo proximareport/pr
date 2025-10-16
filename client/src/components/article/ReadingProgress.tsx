@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Clock, Eye, TrendingUp, BookOpen } from "lucide-react";
+import { Clock, Eye, TrendingUp, BookOpen, Zap, Target } from "lucide-react";
 
 interface ReadingProgressProps {
   totalWords?: number;
@@ -10,6 +10,8 @@ function ReadingProgress({ totalWords = 0, readingSpeed = 200 }: ReadingProgress
   const [readingProgress, setReadingProgress] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
+  const [wordsRead, setWordsRead] = useState(0);
+  const [readingStreak, setReadingStreak] = useState(0);
 
   useEffect(() => {
     // Animate in after a short delay
@@ -24,12 +26,19 @@ function ReadingProgress({ totalWords = 0, readingSpeed = 200 }: ReadingProgress
       const progress = (scrollTop / docHeight) * 100;
       setReadingProgress(Math.min(100, Math.max(0, progress)));
       
-      // Calculate time remaining based on progress
+      // Calculate words read based on progress
       if (totalWords > 0) {
+        const currentWordsRead = Math.floor((progress / 100) * totalWords);
+        setWordsRead(currentWordsRead);
+        
+        // Calculate time remaining based on progress
         const totalTime = totalWords / readingSpeed; // in minutes
         const remainingTime = totalTime * (1 - progress / 100);
         setTimeRemaining(Math.max(0, remainingTime));
       }
+      
+      // Track reading streak (consecutive scroll events)
+      setReadingStreak(prev => prev + 1);
     };
 
     window.addEventListener('scroll', handleScroll);
@@ -72,6 +81,14 @@ function ReadingProgress({ totalWords = 0, readingSpeed = 200 }: ReadingProgress
                 </span>
               </div>
 
+              {/* Words read */}
+              {totalWords > 0 && (
+                <div className="flex items-center gap-1 sm:gap-2 text-white/60">
+                  <Target className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                  <span>{wordsRead.toLocaleString()} words read</span>
+                </div>
+              )}
+
               {/* Reading time remaining */}
               {totalWords > 0 && (
                 <div className="flex items-center gap-1 sm:gap-2 text-white/60">
@@ -87,6 +104,14 @@ function ReadingProgress({ totalWords = 0, readingSpeed = 200 }: ReadingProgress
                 <TrendingUp className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 <span>{readingSpeed} wpm</span>
               </div>
+
+              {/* Reading streak */}
+              {readingStreak > 10 && (
+                <div className="flex items-center gap-1 sm:gap-2 text-purple-400">
+                  <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                  <span>{readingStreak} scrolls</span>
+                </div>
+              )}
 
               {/* Total reading time */}
               {totalWords > 0 && (

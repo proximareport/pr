@@ -25,6 +25,8 @@ import { ArticleTopAd, ArticleBottomAd, InContentAd } from "@/components/AdPlace
 import { scrollToTop } from "@/lib/scrollUtils";
 import SEO from "@/components/SEO";
 import { generateArticleSEO } from "@/lib/seoUtils";
+import Breadcrumbs from "@/components/Breadcrumbs";
+import RelatedArticles from "@/components/RelatedArticles";
 
 interface ArticleParams {
   slug: string;
@@ -71,6 +73,19 @@ function Article() {
       }
     },
     enabled: !!article?.id
+  });
+
+  // Fetch related articles based on current article's tags
+  const { data: relatedArticlesData } = useQuery<GhostPost[]>({
+    queryKey: ['related-articles', article?.primary_tag?.slug],
+    queryFn: async () => {
+      if (!article?.primary_tag?.slug) return [];
+      
+      // Fetch articles with the same primary tag
+      const response = await axios.get(`/api/ghost/posts/tag/${article.primary_tag.slug}?limit=5`);
+      return response.data || [];
+    },
+    enabled: !!article?.primary_tag?.slug,
   });
   
   // Extract headings from article content for TOC
@@ -384,7 +399,7 @@ function Article() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-12">
           {/* Desktop Back Navigation */}
-          <div className="hidden lg:block mb-8 lg:mb-12">
+          <div className="hidden lg:block mb-6">
             <Link href="/">
               <Button 
                 variant="ghost" 
@@ -394,6 +409,18 @@ function Article() {
                 Back to Articles
               </Button>
             </Link>
+          </div>
+
+          {/* Breadcrumbs */}
+          <div className="mb-8 lg:mb-12">
+            <Breadcrumbs 
+              items={[
+                { name: 'Articles', href: '/' },
+                ...(article.primary_tag ? [{ name: article.primary_tag.name, href: `/tag/${article.primary_tag.slug}` }] : []),
+                { name: article.title, href: `/articles/${article.slug}` }
+              ]}
+              className="text-white/70"
+            />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
@@ -701,47 +728,13 @@ function Article() {
                 </div>
               </div>
               
-              {/* Enhanced Related Articles */}
-              <div className="bg-gradient-to-br from-white/5 via-purple-500/5 to-white/5 backdrop-blur-xl rounded-3xl p-6 border border-white/10 shadow-2xl hover:border-purple-400/30 transition-all duration-500">
-                <h3 className="text-xl font-bold mb-6 text-white flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-purple-500/20">
-                    <BookOpen className="w-5 h-5 text-purple-400" />
-                  </div>
-                  Related Articles
-                </h3>
-                <p className="text-white/60 text-sm mb-6">Discover more space exploration content</p>
-                <div className="space-y-4">
-                  <div className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-all duration-300 cursor-pointer group border border-transparent hover:border-purple-400/20">
-                    <h4 className="text-sm font-semibold text-white mb-2 group-hover:text-purple-300 transition-colors duration-300">Latest Mars Mission Updates</h4>
-                    <p className="text-xs text-white/60 mb-3">Exploring the red planet's secrets</p>
-                    <div className="flex items-center gap-2 text-xs text-purple-400">
-                      <Clock className="w-3 h-3" />
-                      <span>5 min read</span>
-                    </div>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-all duration-300 cursor-pointer group border border-transparent hover:border-purple-400/20">
-                    <h4 className="text-sm font-semibold text-white mb-2 group-hover:text-purple-300 transition-colors duration-300">Space Tourism Guide</h4>
-                    <p className="text-xs text-white/60 mb-3">Your guide to commercial space travel</p>
-                    <div className="flex items-center gap-2 text-xs text-purple-400">
-                      <Clock className="w-3 h-3" />
-                      <span>8 min read</span>
-                    </div>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-all duration-300 cursor-pointer group border border-transparent hover:border-purple-400/20">
-                    <h4 className="text-sm font-semibold text-white mb-2 group-hover:text-purple-300 transition-colors duration-300">Exoplanet Discoveries</h4>
-                    <p className="text-xs text-white/60 mb-3">New worlds beyond our solar system</p>
-                    <div className="flex items-center gap-2 text-xs text-purple-400">
-                      <Clock className="w-3 h-3" />
-                      <span>6 min read</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-6">
-                  <Button variant="outline" className="w-full border-purple-400/40 text-purple-400 hover:bg-purple-500/10 hover:border-purple-400 transition-all duration-300 rounded-2xl">
-                    Browse All Articles
-                  </Button>
-                </div>
-              </div>
+              {/* Related Articles */}
+              {relatedArticlesData && relatedArticlesData.length > 0 && (
+                <RelatedArticles 
+                  articles={relatedArticlesData}
+                  currentArticleSlug={article?.slug}
+                />
+              )}
             </div>
           </div>
         </div>

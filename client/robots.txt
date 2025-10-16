@@ -7,6 +7,9 @@ Sitemap: https://proximareport.com/sitemap.xml
 # News Sitemap
 Sitemap: https://proximareport.com/news-sitemap.xml
 
+# Image Sitemap
+Sitemap: https://proximareport.com/image-sitemap.xml
+
 # News Feeds
 Sitemap: https://proximareport.com/rss.xml
 Sitemap: https://proximareport.com/atom.xml

@@ -4422,6 +4422,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.redirect(301, '/');
   });
 
+  // AMP Routes
+  app.get("/amp/articles/:slug", (req: Request, res: Response) => {
+    // Serve AMP version of article
+    res.redirect(301, `/articles/${req.params.slug}?amp=1`);
+  });
+
   // ----------------------------------------------------
   // Sitemap API
   // ----------------------------------------------------
@@ -4461,7 +4467,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <!-- Homepage -->
   <url>
@@ -4741,17 +4748,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const validLastmod = !isNaN(lastmodDate.getTime()) ? lastmodDate.toISOString() : new Date().toISOString();
         const validPublishDate = !isNaN(publishDateObj.getTime()) ? publishDateObj : new Date();
         
+        // Determine changefreq based on article age and activity
+        const daysSincePublish = Math.floor((Date.now() - publishDateObj.getTime()) / (1000 * 60 * 60 * 24));
+        const daysSinceUpdate = Math.floor((Date.now() - lastmodDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        let changefreq = 'monthly';
+        let priority = 0.9;
+        
+        // Recent articles (less than 7 days) are updated more frequently
+        if (daysSincePublish <= 7) {
+          changefreq = 'daily';
+          priority = 1.0;
+        } else if (daysSincePublish <= 30) {
+          changefreq = 'weekly';
+          priority = 0.9;
+        } else if (daysSincePublish <= 90) {
+          changefreq = 'monthly';
+          priority = 0.8;
+        } else {
+          changefreq = 'yearly';
+          priority = 0.7;
+        }
+        
+        // Boost priority for featured articles
+        if (article.featured) {
+          priority = Math.min(1.0, priority + 0.1);
+        }
+        
         sitemap += `
   <url>
     <loc>${baseUrl}/articles/${article.slug}</loc>
     <lastmod>${validLastmod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>`;
+    <changefreq>${changefreq}</changefreq>
+    <priority>${priority.toFixed(1)}</priority>
+    <xhtml:link rel="amphtml" href="${baseUrl}/amp/articles/${article.slug}" />`;
         
-        // Add news metadata for recent articles (last 2 days)
-        const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+        // Add news metadata for recent articles (last 7 days)
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
         
-        if (validPublishDate > twoDaysAgo) {
+        if (validPublishDate > sevenDaysAgo) {
           sitemap += `
     <news:news>
       <news:publication>
@@ -5303,14 +5338,14 @@ Crawl-delay: 1`;
     </news:news>
   </url>`;
 
-      // Add articles to news sitemap (only recent articles - last 2 days)
-      const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+      // Add articles to news sitemap (only recent articles - last 7 days)
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
       
       articles.forEach(article => {
         const publishDate = new Date(article.published_at || article.created_at);
         
-        // Only include recent articles for news sitemap
-        if (publishDate > twoDaysAgo) {
+        // Only include recent articles for news sitemap (last 7 days for better coverage)
+        if (publishDate > sevenDaysAgo) {
           const link = `${baseUrl}/articles/${article.slug}`;
           const validPublishDate = !isNaN(publishDate.getTime()) ? publishDate.toISOString() : new Date().toISOString();
           
@@ -5339,6 +5374,71 @@ Crawl-delay: 1`;
     } catch (error) {
       console.error("Error generating news sitemap:", error);
       res.status(500).json({ message: "Error generating news sitemap" });
+    }
+  });
+
+  // Image Sitemap for better image SEO
+  app.get("/image-sitemap.xml", async (req: Request, res: Response) => {
+    try {
+      const baseUrl = 'https://proximareport.com';
+      
+      let articles = [];
+      
+      try {
+        // Get all published articles from Ghost CMS for image sitemap
+        const ghostPosts = await getPosts(1, 1000);
+        articles = ghostPosts.posts || [];
+      } catch (ghostError) {
+        console.error("Ghost API error in image sitemap generation:", ghostError);
+        articles = [];
+      }
+      
+      // Generate Image Sitemap
+      let imageSitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">`;
+
+      // Add homepage logo and featured images
+      imageSitemap += `
+  <url>
+    <loc>${baseUrl}</loc>
+    <image:image>
+      <image:loc>${baseUrl}/assets/images/proxima-logo-desktop.png</image:loc>
+      <image:title>Proxima Report Logo</image:title>
+      <image:caption>Proxima Report - Premier Space & STEM News Platform</image:caption>
+    </image:image>
+  </url>`;
+
+      // Add article images
+      articles.forEach(article => {
+        if (article.feature_image) {
+          const lastmod = article.updated_at || article.published_at || article.created_at;
+          const validLastmod = lastmod ? new Date(lastmod).toISOString() : new Date().toISOString();
+          
+          imageSitemap += `
+  <url>
+    <loc>${baseUrl}/articles/${article.slug}</loc>
+    <lastmod>${validLastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>${article.feature_image}</image:loc>
+      <image:title><![CDATA[${article.title}]]></image:title>
+      <image:caption><![CDATA[${article.excerpt || article.title}]]></image:caption>
+    </image:image>
+  </url>`;
+        }
+      });
+      
+      imageSitemap += `
+</urlset>`;
+      
+      res.set('Content-Type', 'application/xml; charset=utf-8');
+      res.set('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+      res.send(imageSitemap);
+    } catch (error) {
+      console.error("Error generating image sitemap:", error);
+      res.status(500).json({ message: "Error generating image sitemap" });
     }
   });
 
