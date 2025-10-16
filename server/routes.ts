@@ -1913,9 +1913,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
           total = 0;
         }
       } else {
-        // Get all articles with pagination
-        articles = await storage.getArticles(limit, (page - 1) * limit, showDrafts, isAdmin ? undefined : userId);
-        total = articles.length; // For now, we'll use the length as total
+        // Use Ghost CMS instead of local database for articles
+        try {
+          const ghostPosts = await getPosts(page, limit);
+          const ghostArticles = ghostPosts.posts || [];
+          
+          // Transform Ghost posts to match expected format
+          articles = ghostArticles.map((post: any) => ({
+            id: parseInt(post.id) || 0,
+            title: post.title,
+            slug: post.slug,
+            summary: post.excerpt || post.custom_excerpt || '',
+            content: post.html,
+            publishedAt: post.published_at,
+            updatedAt: post.updated_at,
+            status: post.status,
+            featured: post.featured,
+            featureImage: post.feature_image,
+            authorId: post.primary_author?.id || null,
+            author: post.primary_author?.name || 'Proxima Report',
+            tags: post.tags || [],
+            category: post.primary_tag?.name || null,
+            readingTime: post.reading_time || 0,
+            viewCount: 0,
+            likeCount: 0,
+            commentCount: 0
+          }));
+          
+          total = ghostPosts.meta?.pagination?.total || articles.length;
+        } catch (ghostError) {
+          console.error('Error fetching articles from Ghost:', ghostError);
+          // Fallback to local database if Ghost fails
+          articles = await storage.getArticles(limit, (page - 1) * limit, showDrafts, isAdmin ? undefined : userId);
+          total = articles.length;
+        }
       }
       
       // Construct response with pagination info
@@ -1944,13 +1975,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
       
-      // Get recent published articles
-      const articles = await storage.getRecentArticles(limit);
+      // Use Ghost CMS for recent articles
+      const ghostPosts = await getPosts(1, limit);
+      const ghostArticles = ghostPosts.posts || [];
+      
+      // Transform Ghost posts to match expected format
+      const articles = ghostArticles.map((post: any) => ({
+        id: parseInt(post.id) || 0,
+        title: post.title,
+        slug: post.slug,
+        summary: post.excerpt || post.custom_excerpt || '',
+        content: post.html,
+        publishedAt: post.published_at,
+        updatedAt: post.updated_at,
+        status: post.status,
+        featured: post.featured,
+        featureImage: post.feature_image,
+        authorId: post.primary_author?.id || null,
+        author: post.primary_author?.name || 'Proxima Report',
+        tags: post.tags || [],
+        category: post.primary_tag?.name || null,
+        readingTime: post.reading_time || 0,
+        viewCount: 0,
+        likeCount: 0,
+        commentCount: 0
+      }));
       
       res.json(articles);
     } catch (error) {
       console.error("Error fetching recent articles:", error);
-      res.status(500).json({ message: "Error fetching recent articles" });
+      // Fallback to local database if Ghost fails
+      try {
+        const articles = await storage.getRecentArticles(parseInt(req.query.limit as string) || 5);
+        res.json(articles);
+      } catch (fallbackError) {
+        console.error("Fallback also failed:", fallbackError);
+        res.status(500).json({ message: "Error fetching recent articles" });
+      }
     }
   });
 
@@ -4350,6 +4411,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error setting primary taxonomy:", error);
       res.status(500).json({ message: "Error setting primary taxonomy" });
     }
+  });
+
+  // ----------------------------------------------------
+  // SEO Redirects
+  // ----------------------------------------------------
+
+  // Redirect /articles/all to home page (301 redirect)
+  app.get("/articles/all", (req: Request, res: Response) => {
+    res.redirect(301, '/');
   });
 
   // ----------------------------------------------------

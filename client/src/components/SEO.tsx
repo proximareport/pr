@@ -45,6 +45,15 @@ const SEO: React.FC<SEOProps> = ({
   const fullTitle = title.includes('Proxima Report') ? title : `${title} | Proxima Report`;
   const fullUrl = canonical || url;
   
+  // Ensure canonical URL is absolute and properly formatted
+  const getCanonicalUrl = () => {
+    if (canonical) return canonical;
+    if (url.startsWith('http')) return url;
+    return `https://proximareport.com${url.startsWith('/') ? url : '/' + url}`;
+  };
+  
+  const canonicalUrl = getCanonicalUrl();
+  
   // Default structured data for articles
   const defaultStructuredData = type === 'article' ? {
     "@context": "https://schema.org",
@@ -70,7 +79,7 @@ const SEO: React.FC<SEOProps> = ({
     "dateModified": modifiedTime || publishedTime,
     "mainEntityOfPage": {
       "@type": "WebPage",
-      "@id": fullUrl
+      "@id": canonicalUrl
     },
     "articleSection": section,
     "keywords": keywords,
@@ -96,13 +105,13 @@ const SEO: React.FC<SEOProps> = ({
       <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       
       {/* Canonical URL */}
-      <link rel="canonical" href={canonical || fullUrl} />
+      <link rel="canonical" href={canonicalUrl} />
       
       {/* Open Graph Meta Tags */}
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />
       <meta property="og:type" content={type} />
-      <meta property="og:url" content={fullUrl} />
+      <meta property="og:url" content={canonicalUrl} />
       <meta property="og:image" content={image} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
@@ -140,8 +149,6 @@ const SEO: React.FC<SEOProps> = ({
       )}
       
       {/* Additional Meta Tags for Better SEO */}
-      <meta name="theme-color" content="#7c3aed" />
-      <meta name="msapplication-TileColor" content="#7c3aed" />
       <meta name="apple-mobile-web-app-title" content="Proxima Report" />
       <meta name="application-name" content="Proxima Report" />
       
@@ -179,7 +186,7 @@ const SEO: React.FC<SEOProps> = ({
       <meta name="DC.date" content={publishedTime || new Date().toISOString().split('T')[0]} />
       <meta name="DC.type" content="Text" />
       <meta name="DC.format" content="text/html" />
-      <meta name="DC.identifier" content={fullUrl} />
+      <meta name="DC.identifier" content={canonicalUrl} />
       <meta name="DC.language" content="en-US" />
       <meta name="DC.coverage" content="Worldwide" />
       <meta name="DC.rights" content="Copyright 2024 Proxima Report" />

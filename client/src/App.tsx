@@ -86,21 +86,7 @@ function Router() {
     <Switch>
       {/* Public routes */}
       <Route path="/" component={Home} />
-      {/* Special route for "all" category that redirects to home */}
-      <Route path="/articles/all" component={() => {
-        const [, navigate] = useLocation();
-        
-        React.useEffect(() => {
-          navigate('/');
-        }, [navigate]);
-        
-        return <div className="flex justify-center items-center h-screen">
-          <div className="flex flex-col items-center">
-            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mb-4"></div>
-            <div>Redirecting to home page...</div>
-          </div>
-        </div>;
-      }} />
+      {/* /articles/all route is handled by server-side 301 redirect */}
       <Route path="/articles/:slug" component={Article} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />

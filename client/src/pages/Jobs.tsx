@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Link } from 'wouter';
 import { MapPin, Building2, DollarSign, Calendar, ExternalLink, Briefcase } from 'lucide-react';
 import { formatDistance } from 'date-fns';
+import SEO from '@/components/SEO';
+import { generateJobsSEO } from '@/lib/seoUtils';
 
 interface JobListing {
   id: number;
@@ -64,6 +66,8 @@ export default function Jobs() {
 
   // Job posting function removed - handled in admin dashboard
 
+  const seoConfig = generateJobsSEO();
+
   const formatSalary = (salary?: string) => {
     if (!salary) return null;
     return salary;
@@ -75,7 +79,9 @@ export default function Jobs() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <>
+      <SEO {...seoConfig} />
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-12">
@@ -215,6 +221,7 @@ export default function Jobs() {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 } 

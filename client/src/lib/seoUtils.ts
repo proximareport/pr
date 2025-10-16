@@ -1,4 +1,5 @@
 import type { GhostPost } from '../../../server/ghostService';
+import { sanitizeStructuredData } from './structuredDataValidator';
 
 /**
  * SEO utility functions for generating consistent meta tags across the site
@@ -99,7 +100,7 @@ export function generateArticleSEO(article: GhostPost): SEOConfig {
     modifiedTime: article.published_at, // Using published_at since updated_at is not available
     section: article.primary_tag?.name || 'Space News',
     tags: article.tags?.map(tag => tag.name) || [],
-    structuredData: {
+    structuredData: sanitizeStructuredData({
       "@context": "https://schema.org",
       "@type": "Article",
       "headline": article.title,
@@ -114,7 +115,9 @@ export function generateArticleSEO(article: GhostPost): SEOConfig {
         "name": "Proxima Report",
         "logo": {
           "@type": "ImageObject",
-          "url": `${baseUrl}/assets/images/proxima-logo-desktop.png`
+          "url": `${baseUrl}/assets/images/proxima-logo-desktop.png`,
+          "width": 512,
+          "height": 512
         }
       },
       "datePublished": article.published_at,
@@ -125,7 +128,7 @@ export function generateArticleSEO(article: GhostPost): SEOConfig {
       },
       "articleSection": article.primary_tag?.name || "Space News",
       "keywords": article.tags?.map(tag => tag.name).join(', ') || 'space news, STEM education, astronomy, space exploration, NASA, SpaceX, rocket launches, space missions, science news'
-    }
+    })
   };
 }
 

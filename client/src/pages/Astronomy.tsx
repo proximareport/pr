@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import ImageModal from "@/components/ui/ImageModal";
 import { Star, Info, Calendar, Compass, X } from "lucide-react";
+import SEO from "@/components/SEO";
+import { generateAstronomySEO } from "@/lib/seoUtils";
 
 function Astronomy() {
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -24,8 +26,12 @@ function Astronomy() {
     queryKey: ["/api/nasa/apod"],
   });
 
+  const seoConfig = generateAstronomySEO();
+
   return (
-    <div className="bg-[#0D0D17] min-h-screen">
+    <>
+      <SEO {...seoConfig} />
+      <div className="bg-[#0D0D17] min-h-screen">
       {/* Fullscreen D3 Celestial Sky Map */}
       {isFullScreen && (
         <div className="fixed inset-0 bg-black z-50">
@@ -218,7 +224,8 @@ function Astronomy() {
           externalUrl="https://apod.nasa.gov/apod/"
         />
       )}
-    </div>
+      </div>
+    </>
   );
 }
 
