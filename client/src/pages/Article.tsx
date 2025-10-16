@@ -76,13 +76,13 @@ function Article() {
   });
 
   // Fetch related articles based on current article's tags
-  const { data: relatedArticlesData } = useQuery<GhostPost[]>({
+  const { data: relatedArticlesData } = useQuery<any[]>({
     queryKey: ['related-articles', article?.primary_tag?.slug],
     queryFn: async () => {
       if (!article?.primary_tag?.slug) return [];
       
-      // Fetch articles with the same primary tag
-      const response = await axios.get(`/api/ghost/posts/tag/${article.primary_tag.slug}?limit=5`);
+      // Fetch articles with the same primary tag using the correct endpoint
+      const response = await axios.get(`/api/articles/tag/${article.primary_tag.slug}`);
       return response.data || [];
     },
     enabled: !!article?.primary_tag?.slug,
@@ -309,17 +309,7 @@ function Article() {
     type: "website" as const
   };
 
-  // Debug logging for SEO
-  if (article) {
-    console.log('Article SEO Debug:', {
-      title: article.title,
-      excerpt: article.excerpt,
-      custom_excerpt: article.custom_excerpt,
-      finalDescription: seoConfig.description,
-      tags: article.tags?.map(tag => tag.name),
-      author: article.primary_author?.name
-    });
-  }
+  // Debug logging for SEO (removed to clean up console)
 
   return (
     <>

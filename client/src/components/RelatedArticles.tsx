@@ -3,10 +3,25 @@ import { Link } from 'wouter';
 import { Clock, User, Calendar, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
-import type { GhostPost } from '../../server/ghostService';
+interface ArticleData {
+  id: number;
+  title: string;
+  slug: string;
+  summary: string;
+  featuredImage: string;
+  category: string;
+  author: {
+    id: number;
+    username: string;
+    profilePicture: string;
+  };
+  publishedAt: string;
+  readTime: number;
+  tags: string[];
+}
 
 interface RelatedArticlesProps {
-  articles: GhostPost[];
+  articles: ArticleData[];
   currentArticleSlug?: string;
   className?: string;
 }
@@ -25,11 +40,7 @@ const RelatedArticles: React.FC<RelatedArticlesProps> = ({
     return null;
   }
 
-  const getReadingTime = (html: string) => {
-    const wordsPerMinute = 200;
-    const words = html.split(' ').length;
-    return Math.ceil(words / wordsPerMinute);
-  };
+  // No need for getReadingTime since readTime is already provided
 
   return (
     <div className={`space-y-6 ${className}`}>
@@ -50,10 +61,10 @@ const RelatedArticles: React.FC<RelatedArticlesProps> = ({
           <Link key={article.id} href={`/articles/${article.slug}`}>
             <article className="group bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-400/50 rounded-2xl p-6 transition-all duration-500 backdrop-blur-md hover:shadow-lg hover:shadow-purple-500/20 cursor-pointer">
               {/* Article Image */}
-              {article.feature_image && (
+              {article.featuredImage && (
                 <div className="relative overflow-hidden rounded-xl mb-4 aspect-video">
                   <img
-                    src={article.feature_image}
+                    src={article.featuredImage}
                     alt={article.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
@@ -64,12 +75,12 @@ const RelatedArticles: React.FC<RelatedArticlesProps> = ({
               {/* Article Content */}
               <div className="space-y-3">
                 {/* Tags */}
-                {article.primary_tag && (
+                {article.category && (
                   <Badge 
                     variant="secondary" 
                     className="bg-purple-500/20 text-purple-300 border-purple-400/30 hover:bg-purple-500/30"
                   >
-                    {article.primary_tag.name}
+                    {article.category}
                   </Badge>
                 )}
 
@@ -79,30 +90,30 @@ const RelatedArticles: React.FC<RelatedArticlesProps> = ({
                 </h4>
 
                 {/* Excerpt */}
-                {article.excerpt && (
+                {article.summary && (
                   <p className="text-white/70 text-sm line-clamp-3 leading-relaxed">
-                    {article.excerpt}
+                    {article.summary}
                   </p>
                 )}
 
                 {/* Meta Information */}
                 <div className="flex items-center justify-between text-xs text-white/50">
                   <div className="flex items-center gap-4">
-                    {article.primary_author && (
+                    {article.author && (
                       <div className="flex items-center gap-1">
                         <User className="w-3 h-3" />
-                        <span>{article.primary_author.name}</span>
+                        <span>{article.author.username}</span>
                       </div>
                     )}
                     <div className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      <span>{getReadingTime(article.html || '')} min read</span>
+                      <span>{article.readTime} min read</span>
                     </div>
                   </div>
-                  {article.published_at && (
+                  {article.publishedAt && (
                     <div className="flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
-                      <span>{format(new Date(article.published_at), 'MMM d')}</span>
+                      <span>{format(new Date(article.publishedAt), 'MMM d')}</span>
                     </div>
                   )}
                 </div>
