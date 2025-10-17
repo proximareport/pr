@@ -7092,6 +7092,161 @@ Crawl-delay: 1`;
     }
   });
 
+  // Test endpoint to verify meta tag injection is working
+  app.get("/test-meta/:slug", async (req: Request, res: Response) => {
+    const { slug } = req.params;
+    
+    try {
+      console.log(`=== TESTING META INJECTION for article: ${slug} ===`);
+      
+      const { getPosts } = await import('./ghostService.js');
+      const result = await getPosts(1, 1, `slug:${slug}`);
+      const article = result.posts?.[0];
+      
+      if (article) {
+        res.json({
+          success: true,
+          article: {
+            title: article.title,
+            slug: article.slug,
+            excerpt: article.excerpt,
+            feature_image: article.feature_image,
+            author: article.primary_author?.name,
+            published_at: article.published_at,
+            tags: article.tags?.map(tag => tag.name)
+          },
+          metaTags: {
+            title: `${article.title} | Proxima Report`,
+            description: article.excerpt || article.custom_excerpt || article.title,
+            image: article.feature_image || 'https://proximareport.com/assets/images/proxima-logo-desktop.png',
+            url: `https://proximareport.com/articles/${slug}`
+          }
+        });
+      } else {
+        res.status(404).json({ success: false, error: 'Article not found' });
+      }
+    } catch (error) {
+      console.error(`Error testing meta injection for ${slug}:`, error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Handle article pages with server-side meta tag injection
+  // This must be placed BEFORE static file serving to ensure it intercepts article requests
+  app.get("/articles/:slug", async (req: Request, res: Response, next: NextFunction) => {
+    const { slug } = req.params;
+    
+    try {
+      console.log(`=== SERVER-SIDE META INJECTION for article: ${slug} ===`);
+      
+      // Import getPosts dynamically to avoid circular dependencies
+      const { getPosts } = await import('./ghostService.js');
+      
+      // Fetch the article by slug
+      const result = await getPosts(1, 1, `slug:${slug}`);
+      const article = result.posts?.[0];
+      
+      if (article) {
+        console.log(`Found article: ${article.title}`);
+        
+        // Import path and fs for file operations
+        const path = await import('path');
+        const fs = await import('fs');
+        
+        // Determine the correct index.html path based on environment
+        const indexPath = process.env.NODE_ENV === 'production' 
+          ? path.default.resolve(process.cwd(), 'dist', 'public', 'index.html')
+          : path.default.resolve(process.cwd(), 'client', 'index.html');
+        
+        // Read the index.html file
+        let html = await fs.promises.readFile(indexPath, 'utf-8');
+        
+        // Generate article-specific meta tags
+        const articleUrl = `https://proximareport.com/articles/${slug}`;
+        const articleImage = article.feature_image || 'https://proximareport.com/assets/images/proxima-logo-desktop.png';
+        const articleDescription = article.excerpt || article.custom_excerpt || article.title;
+        const articleTitle = `${article.title} | Proxima Report`;
+        const authorName = article.primary_author?.name || 'Proxima Report';
+        const publishedDate = article.published_at;
+        
+        console.log(`Injecting meta tags for: ${articleTitle}`);
+        
+        // Replace meta tags in the HTML
+        html = html.replace(
+          /<title>.*?<\/title>/,
+          `<title>${articleTitle}</title>`
+        );
+        
+        html = html.replace(
+          /<meta name="description" content="[^"]*" \/>/,
+          `<meta name="description" content="${articleDescription.replace(/"/g, '&quot;')}" />`
+        );
+        
+        // Add cache-busting timestamp to force social media platforms to re-fetch
+        const cacheBuster = Date.now();
+        
+        // Add/update Open Graph tags
+        const ogTags = `
+    <!-- Server-side injected meta tags for social media sharing -->
+    <meta property="og:title" content="${articleTitle.replace(/"/g, '&quot;')}" />
+    <meta property="og:description" content="${articleDescription.replace(/"/g, '&quot;')}" />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="${articleUrl}" />
+    <meta property="og:image" content="${articleImage}?v=${cacheBuster}" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="${article.title.replace(/"/g, '&quot;')}" />
+    <meta property="og:site_name" content="Proxima Report" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="article:published_time" content="${publishedDate}" />
+    <meta property="article:author" content="${authorName.replace(/"/g, '&quot;')}" />
+    <meta property="article:section" content="${article.primary_tag?.name || 'Space News'}" />
+    ${article.tags?.map(tag => `<meta property="article:tag" content="${tag.name.replace(/"/g, '&quot;')}" />`).join('\n    ') || ''}
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${articleTitle.replace(/"/g, '&quot;')}" />
+    <meta name="twitter:description" content="${articleDescription.replace(/"/g, '&quot;')}" />
+    <meta name="twitter:image" content="${articleImage}?v=${cacheBuster}" />
+    <meta name="twitter:image:alt" content="${article.title.replace(/"/g, '&quot;')}" />
+    <meta name="twitter:site" content="@proximareport" />
+    <meta name="twitter:creator" content="@proximareport" />
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="${articleUrl}" />
+    
+    <!-- Cache control headers for social media crawlers -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />`;
+        
+        // Insert OG tags before the closing head tag
+        html = html.replace('</head>', `${ogTags}\n  </head>`);
+        
+        console.log(`Successfully injected meta tags for: ${slug}`);
+        
+        // Set headers to prevent caching for social media crawlers
+        res.set({
+          'Content-Type': 'text/html',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+          'X-Robots-Tag': 'noarchive'
+        });
+        
+        res.send(html);
+      } else {
+        console.log(`Article not found: ${slug}`);
+        // Article not found, continue to next middleware (static file serving)
+        next();
+      }
+    } catch (error) {
+      console.error(`Error serving article page for ${slug}:`, error);
+      // Fallback to next middleware (static file serving)
+      next();
+    }
+  });
+
   // Create HTTP server
   // This server will be returned to index.ts to serve the app
   const httpServer = createServer(app);
