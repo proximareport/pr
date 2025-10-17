@@ -7131,6 +7131,263 @@ Crawl-delay: 1`;
     }
   });
 
+  // Handle internal pages with server-side meta tag injection
+  // This must be placed BEFORE static file serving to ensure it intercepts page requests
+  
+  // Define page configurations for meta tag injection
+  const pageConfigs = {
+    '/proxihub': {
+      title: 'ProxiHub - Space Tools & Calculators | Proxima Report',
+      description: 'Explore ProxiHub, your ultimate space toolkit featuring calculators, generators, and interactive tools for space exploration, astronomy, and STEM education.',
+      image: 'https://proximareport.com/assets/images/proxima-logo-desktop.png',
+      type: 'website'
+    },
+    '/missioncontrol': {
+      title: 'Mission Control - Live Space Updates | Proxima Report',
+      description: 'Mission Control provides real-time updates on space missions, rocket launches, satellite tracking, and space exploration activities around the world.',
+      image: 'https://proximareport.com/assets/images/proxima-logo-desktop.png',
+      type: 'website'
+    },
+    '/astronomy': {
+      title: 'Astronomy Portal - Space News & Discoveries | Proxima Report',
+      description: 'Dive into the latest astronomy discoveries, exoplanet findings, telescope observations, and cosmic phenomena in our comprehensive astronomy portal.',
+      image: 'https://proximareport.com/assets/images/proxima-logo-desktop.png',
+      type: 'website'
+    },
+    '/jobs': {
+      title: 'Space Careers & Jobs - Find Your Dream Space Job | Proxima Report',
+      description: 'Discover exciting career opportunities in space, aerospace, astronomy, and STEM fields. Find jobs at NASA, SpaceX, and leading space companies.',
+      image: 'https://proximareport.com/assets/images/proxima-logo-desktop.png',
+      type: 'website'
+    },
+    '/launches': {
+      title: 'Rocket Launches - Live Launch Schedule | Proxima Report',
+      description: 'Track upcoming rocket launches, live stream space missions, and get real-time updates on SpaceX, NASA, and international space launches.',
+      image: 'https://proximareport.com/assets/images/proxima-logo-desktop.png',
+      type: 'website'
+    },
+    '/subscribe': {
+      title: 'Subscribe to Proxima Report - Space News Newsletter',
+      description: 'Stay updated with the latest space news, astronomy discoveries, and STEM breakthroughs. Subscribe to our premium newsletter for exclusive content.',
+      image: 'https://proximareport.com/assets/images/proxima-logo-desktop.png',
+      type: 'website'
+    },
+    '/pricing': {
+      title: 'Pricing - Proxima Report Premium Subscription',
+      description: 'Choose the perfect Proxima Report subscription plan. Get unlimited access to premium space content, exclusive tools, and ad-free browsing.',
+      image: 'https://proximareport.com/assets/images/proxima-logo-desktop.png',
+      type: 'website'
+    },
+    '/gallery': {
+      title: 'Space Gallery - Stunning Space Images & Photos | Proxima Report',
+      description: 'Explore our curated collection of breathtaking space images, astronomy photos, and cosmic artwork from NASA, ESA, and space photographers.',
+      image: 'https://proximareport.com/assets/images/proxima-logo-desktop.png',
+      type: 'website'
+    },
+    '/staff': {
+      title: 'Meet Our Team - Proxima Report Staff | Proxima Report',
+      description: 'Meet the passionate team behind Proxima Report. Learn about our space journalists, astronomy experts, and STEM educators.',
+      image: 'https://proximareport.com/assets/images/proxima-logo-desktop.png',
+      type: 'website'
+    },
+    '/topics': {
+      title: 'Space Topics - Explore Space Science Categories | Proxima Report',
+      description: 'Browse our comprehensive collection of space topics, from Mars exploration to black holes, exoplanets to space technology.',
+      image: 'https://proximareport.com/assets/images/proxima-logo-desktop.png',
+      type: 'website'
+    },
+    '/about': {
+      title: 'About Proxima Report - Our Mission in Space Journalism',
+      description: 'Learn about Proxima Report\'s mission to democratize space knowledge and make space exploration accessible to everyone through quality journalism.',
+      image: 'https://proximareport.com/assets/images/proxima-logo-desktop.png',
+      type: 'website'
+    },
+    '/contact': {
+      title: 'Contact Proxima Report - Get in Touch',
+      description: 'Contact the Proxima Report team for media inquiries, partnerships, feedback, or general questions about space news and STEM education.',
+      image: 'https://proximareport.com/assets/images/proxima-logo-desktop.png',
+      type: 'website'
+    },
+    '/careers': {
+      title: 'Careers at Proxima Report - Join Our Space Team',
+      description: 'Join the Proxima Report team and help us share the wonders of space exploration. Explore career opportunities in journalism, technology, and STEM education.',
+      image: 'https://proximareport.com/assets/images/proxima-logo-desktop.png',
+      type: 'website'
+    },
+    '/advertise': {
+      title: 'Advertise on Proxima Report - Reach Space Enthusiasts',
+      description: 'Advertise your space, technology, or STEM products to our engaged audience of space enthusiasts, educators, and professionals.',
+      image: 'https://proximareport.com/assets/images/proxima-logo-desktop.png',
+      type: 'website'
+    }
+  };
+
+  // Tool pages configurations
+  const toolConfigs = {
+    '/tools/word-generator': {
+      title: 'Space Word Generator - Generate Space-Themed Words | Proxima Report',
+      description: 'Generate creative space-themed words for writing, education, and inspiration. Perfect for authors, educators, and space enthusiasts.',
+      image: 'https://proximareport.com/assets/images/proxima-logo-desktop.png',
+      type: 'website'
+    },
+    '/tools/distance-calculator': {
+      title: 'Space Distance Calculator - Calculate Astronomical Distances | Proxima Report',
+      description: 'Calculate distances between planets, stars, and celestial objects. Perfect tool for astronomy students and space enthusiasts.',
+      image: 'https://proximareport.com/assets/images/proxima-logo-desktop.png',
+      type: 'website'
+    },
+    '/tools/fact-generator': {
+      title: 'Space Fact Generator - Random Space Facts | Proxima Report',
+      description: 'Generate random space facts and discoveries to learn about the universe. Great for education and space trivia.',
+      image: 'https://proximareport.com/assets/images/proxima-logo-desktop.png',
+      type: 'website'
+    },
+    '/tools/color-palette': {
+      title: 'Space Color Palette - Cosmic Color Schemes | Proxima Report',
+      description: 'Generate beautiful space-inspired color palettes for design projects. Perfect for artists, designers, and space-themed creations.',
+      image: 'https://proximareport.com/assets/images/proxima-logo-desktop.png',
+      type: 'website'
+    },
+    '/tools/planet-generator': {
+      title: 'Planet Name Generator - Create Unique Planet Names | Proxima Report',
+      description: 'Generate unique and creative planet names for science fiction, games, and creative writing projects.',
+      image: 'https://proximareport.com/assets/images/proxima-logo-desktop.png',
+      type: 'website'
+    },
+    '/tools/mission-generator': {
+      title: 'Space Mission Generator - Create Space Missions | Proxima Report',
+      description: 'Generate creative space mission ideas and scenarios for educational purposes and creative projects.',
+      image: 'https://proximareport.com/assets/images/proxima-logo-desktop.png',
+      type: 'website'
+    },
+    '/tools/quiz-generator': {
+      title: 'Space Quiz Generator - Create Space Quizzes | Proxima Report',
+      description: 'Generate interactive space quizzes and trivia questions for education and entertainment.',
+      image: 'https://proximareport.com/assets/images/proxima-logo-desktop.png',
+      type: 'website'
+    },
+    '/tools/delta-v-calculator': {
+      title: 'Delta-V Calculator - Calculate Spacecraft Delta-V | Proxima Report',
+      description: 'Calculate delta-v requirements for space missions and spacecraft maneuvers. Essential tool for space mission planning.',
+      image: 'https://proximareport.com/assets/images/proxima-logo-desktop.png',
+      type: 'website'
+    },
+    '/tools/astrophysics-playground': {
+      title: 'Astrophysics Playground - Interactive Space Physics | Proxima Report',
+      description: 'Explore astrophysics concepts through interactive simulations and calculations. Perfect for students and space enthusiasts.',
+      image: 'https://proximareport.com/assets/images/proxima-logo-desktop.png',
+      type: 'website'
+    }
+  };
+
+  // Function to inject meta tags for any page
+  const injectPageMetaTags = async (req: Request, res: Response, pageConfig: any) => {
+    try {
+      console.log(`=== SERVER-SIDE META INJECTION for page: ${req.path} ===`);
+      
+      // Import path and fs for file operations
+      const path = await import('path');
+      const fs = await import('fs');
+      
+      // Determine the correct index.html path based on environment
+      const indexPath = process.env.NODE_ENV === 'production' 
+        ? path.default.resolve(process.cwd(), 'dist', 'public', 'index.html')
+        : path.default.resolve(process.cwd(), 'client', 'index.html');
+      
+      // Read the index.html file
+      let html = await fs.promises.readFile(indexPath, 'utf-8');
+      
+      // Generate page-specific meta tags
+      const pageUrl = `https://proximareport.com${req.path}`;
+      const cacheBuster = Date.now();
+      
+      console.log(`Injecting meta tags for: ${pageConfig.title}`);
+      
+      // Replace meta tags in the HTML
+      html = html.replace(
+        /<title>.*?<\/title>/,
+        `<title>${pageConfig.title}</title>`
+      );
+      
+      html = html.replace(
+        /<meta name="description" content="[^"]*" \/>/,
+        `<meta name="description" content="${pageConfig.description.replace(/"/g, '&quot;')}" />`
+      );
+      
+      // Add/update Open Graph tags
+      const ogTags = `
+    <!-- Server-side injected meta tags for social media sharing -->
+    <meta property="og:title" content="${pageConfig.title.replace(/"/g, '&quot;')}" />
+    <meta property="og:description" content="${pageConfig.description.replace(/"/g, '&quot;')}" />
+    <meta property="og:type" content="${pageConfig.type}" />
+    <meta property="og:url" content="${pageUrl}" />
+    <meta property="og:image" content="${pageConfig.image}?v=${cacheBuster}" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="${pageConfig.title.replace(/"/g, '&quot;')}" />
+    <meta property="og:site_name" content="Proxima Report" />
+    <meta property="og:locale" content="en_US" />
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${pageConfig.title.replace(/"/g, '&quot;')}" />
+    <meta name="twitter:description" content="${pageConfig.description.replace(/"/g, '&quot;')}" />
+    <meta name="twitter:image" content="${pageConfig.image}?v=${cacheBuster}" />
+    <meta name="twitter:image:alt" content="${pageConfig.title.replace(/"/g, '&quot;')}" />
+    <meta name="twitter:site" content="@proximareport" />
+    <meta name="twitter:creator" content="@proximareport" />
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="${pageUrl}" />
+    
+    <!-- Cache control headers for social media crawlers -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />`;
+      
+      // Insert OG tags before the closing head tag
+      html = html.replace('</head>', `${ogTags}\n  </head>`);
+      
+      console.log(`Successfully injected meta tags for: ${req.path}`);
+      
+      // Set headers to prevent caching for social media crawlers
+      res.set({
+        'Content-Type': 'text/html',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'X-Robots-Tag': 'noarchive'
+      });
+      
+      res.send(html);
+    } catch (error) {
+      console.error(`Error serving page ${req.path}:`, error);
+      // Fallback to next middleware (static file serving)
+      return false;
+    }
+    return true;
+  };
+
+  // Handle specific internal pages
+  Object.keys(pageConfigs).forEach(path => {
+    app.get(path, async (req: Request, res: Response, next: NextFunction) => {
+      const success = await injectPageMetaTags(req, res, pageConfigs[path]);
+      if (!success) {
+        next();
+      }
+    });
+  });
+
+  // Handle tool pages
+  Object.keys(toolConfigs).forEach(path => {
+    app.get(path, async (req: Request, res: Response, next: NextFunction) => {
+      const success = await injectPageMetaTags(req, res, toolConfigs[path]);
+      if (!success) {
+        next();
+      }
+    });
+  });
+
   // Handle article pages with server-side meta tag injection
   // This must be placed BEFORE static file serving to ensure it intercepts article requests
   app.get("/articles/:slug", async (req: Request, res: Response, next: NextFunction) => {
