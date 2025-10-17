@@ -39,6 +39,7 @@ import { handleStripeWebhook, createStripeCheckoutSession, stripe, stripeConfigu
 import session from "express-session";
 import { z } from "zod";
 import axios from "axios";
+import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import path from "path";
 import multer from "multer";
@@ -255,6 +256,29 @@ const requireEditor = async (req: Request, res: Response, next: NextFunction) =>
   
   next();
 };
+
+// Function to generate Ghost Admin API JWT token
+function generateGhostAdminToken(adminApiKey: string): string {
+  const [id, secret] = adminApiKey.split(':');
+  const now = Math.floor(Date.now() / 1000);
+  
+  const payload = {
+    iat: now,
+    exp: now + (5 * 60), // 5 minutes expiration
+    aud: '/v5/admin/'
+  };
+  
+  const token = jwt.sign(payload, Buffer.from(secret, 'hex'), {
+    algorithm: 'HS256',
+    header: {
+      alg: 'HS256',
+      kid: id,
+      typ: 'JWT'
+    }
+  });
+  
+  return token;
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -1380,22 +1404,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Please select at least one newsletter" });
       }
 
-      // Log the subscription for now (Ghost API integration pending correct API key)
+      // Get Ghost Admin API configuration
+      const GHOST_ADMIN_API_URL = process.env.GHOST_ADMIN_API_URL;
+      const GHOST_ADMIN_API_KEY = process.env.GHOST_ADMIN_API_KEY;
+
+      if (!GHOST_ADMIN_API_URL || !GHOST_ADMIN_API_KEY) {
+        console.error('Missing Ghost Admin API configuration');
+        return res.status(500).json({ 
+          message: "Newsletter service is not configured. Please contact support.",
+        });
+      }
+
       console.log('Newsletter subscription request received:', {
         email,
         newsletters,
         newsletterCount: newsletters.length,
         timestamp: new Date().toISOString()
       });
-      
-      // TODO: Implement Ghost API integration once correct Admin API key is obtained
-      // For now, return success and log the subscription data
-      return res.status(200).json({ 
-        message: `Successfully subscribed to ${newsletters.length} newsletter${newsletters.length > 1 ? 's' : ''}!`,
-        email: email,
-        newsletters: newsletters,
-        note: "Subscription logged - Ghost integration pending API key setup"
-      });
+
+      // Generate JWT token for Ghost Admin API
+      const ghostToken = generateGhostAdminToken(GHOST_ADMIN_API_KEY);
+
+      // Create member in Ghost using Admin API
+      const memberData = {
+        members: [{
+          email: email
+        }]
+      };
+
+      try {
+        const response = await axios.post(
+          `${GHOST_ADMIN_API_URL}members/`,
+          memberData,
+          {
+            headers: {
+              'Authorization': `Ghost ${ghostToken}`,
+              'Content-Type': 'application/json',
+              'Accept-Version': 'v5.0'
+            }
+          }
+        );
+
+        console.log('Ghost API response:', {
+          status: response.status,
+          statusText: response.statusText,
+          memberId: response.data?.members?.[0]?.id
+        });
+
+        if (response.status === 201 || response.status === 200) {
+          console.log('Successfully subscribed email to Ghost newsletter:', email);
+          return res.status(200).json({ 
+            message: `Successfully subscribed to ${newsletters.length} newsletter${newsletters.length > 1 ? 's' : ''}!`,
+            email: email,
+            newsletters: newsletters,
+            ghostMemberId: response.data?.members?.[0]?.id
+          });
+        } else {
+          throw new Error(`Ghost API returned status ${response.status}: ${response.statusText}`);
+        }
+
+      } catch (ghostError) {
+        console.error('Ghost API error:', ghostError);
+        
+        if (axios.isAxiosError(ghostError)) {
+          // Handle specific Ghost API errors
+          if (ghostError.response?.status === 422) {
+            // Member already exists
+            console.log('Member already exists in Ghost:', email);
+            return res.status(200).json({ 
+              message: `You're already subscribed! You'll receive ${newsletters.length} newsletter${newsletters.length > 1 ? 's' : ''}.`,
+              email: email,
+              newsletters: newsletters,
+              alreadySubscribed: true
+            });
+          }
+          
+          if (ghostError.response?.status === 401) {
+            console.error('Ghost API authentication failed');
+            return res.status(500).json({ message: "Newsletter service configuration error" });
+          }
+          
+          console.error('Ghost API error details:', {
+            status: ghostError.response?.status,
+            data: ghostError.response?.data
+          });
+        }
+        
+        throw ghostError;
+      }
 
     } catch (error) {
       console.error('Newsletter subscription error:', error);
