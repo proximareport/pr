@@ -12,9 +12,24 @@ export default function NewsletterSubscription({
   variant = 'default' 
 }: NewsletterSubscriptionProps) {
   const [email, setEmail] = useState('');
+  const [selectedNewsletters, setSelectedNewsletters] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const { toast } = useToast();
+
+  const newsletters = [
+    { id: 'weekly-dose', name: 'Weekly Dose of Space', description: 'Weekly space news and updates' },
+    { id: 'cosmic-curiosities', name: 'Cosmic Curiosities', description: 'Fascinating space discoveries and phenomena' },
+    { id: 'monthly-dose', name: 'Monthly Dose of Space', description: 'Monthly space news summary' }
+  ];
+
+  const handleNewsletterToggle = (newsletterId: string) => {
+    setSelectedNewsletters(prev => 
+      prev.includes(newsletterId) 
+        ? prev.filter(id => id !== newsletterId)
+        : [...prev, newsletterId]
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +43,15 @@ export default function NewsletterSubscription({
       return;
     }
 
+    if (selectedNewsletters.length === 0) {
+      toast({
+        title: "Select newsletters",
+        description: "Please select at least one newsletter to subscribe to.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
     
     try {
@@ -36,7 +60,10 @@ export default function NewsletterSubscription({
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ 
+          email,
+          newsletters: selectedNewsletters 
+        }),
       });
 
       const data = await response.json();
@@ -44,9 +71,10 @@ export default function NewsletterSubscription({
       if (response.ok) {
         setIsSuccess(true);
         setEmail('');
+        setSelectedNewsletters([]);
         toast({
           title: "Successfully subscribed!",
-          description: "You'll now receive our latest space news and updates.",
+          description: `You've been subscribed to ${selectedNewsletters.length} newsletter${selectedNewsletters.length > 1 ? 's' : ''}.`,
         });
       } else {
         throw new Error(data.message || 'Failed to subscribe');
@@ -66,6 +94,7 @@ export default function NewsletterSubscription({
   const resetForm = () => {
     setIsSuccess(false);
     setEmail('');
+    setSelectedNewsletters([]);
   };
 
   if (isSuccess && variant === 'article') {
@@ -148,6 +177,29 @@ export default function NewsletterSubscription({
               required
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-3">
+              Choose Newsletter(s)
+            </label>
+            <div className="space-y-2">
+              {newsletters.map((newsletter) => (
+                <label key={newsletter.id} className="flex items-start space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedNewsletters.includes(newsletter.id)}
+                    onChange={() => handleNewsletterToggle(newsletter.id)}
+                    disabled={isLoading}
+                    className="mt-1 h-4 w-4 text-purple-600 bg-gray-800 border-gray-600 rounded focus:ring-purple-500 focus:ring-2"
+                  />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-white">{newsletter.name}</div>
+                    <div className="text-xs text-gray-400">{newsletter.description}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
           <button
             type="submit"
             disabled={isLoading}
@@ -203,6 +255,29 @@ export default function NewsletterSubscription({
             disabled={isLoading}
             required
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-3">
+            Choose Newsletter(s)
+          </label>
+          <div className="space-y-2">
+            {newsletters.map((newsletter) => (
+              <label key={newsletter.id} className="flex items-start space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedNewsletters.includes(newsletter.id)}
+                  onChange={() => handleNewsletterToggle(newsletter.id)}
+                  disabled={isLoading}
+                  className="mt-1 h-4 w-4 text-purple-600 bg-gray-800 border-gray-600 rounded focus:ring-purple-500 focus:ring-2"
+                />
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-white">{newsletter.name}</div>
+                  <div className="text-xs text-gray-400">{newsletter.description}</div>
+                </div>
+              </label>
+            ))}
+          </div>
         </div>
         <button
           type="submit"

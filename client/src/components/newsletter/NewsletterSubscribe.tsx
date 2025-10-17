@@ -12,6 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const schema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
+  newsletters: z.array(z.string()).min(1, { message: "Please select at least one newsletter" }),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -24,6 +25,13 @@ interface NewsletterSubscribeProps {
 export function NewsletterSubscribe({ compact = false, className = "" }: NewsletterSubscribeProps) {
   const { toast } = useToast();
   const [subscribeStatus, setSubscribeStatus] = useState<"idle" | "success" | "error">("idle");
+  const [selectedNewsletters, setSelectedNewsletters] = useState<string[]>([]);
+
+  const newsletters = [
+    { id: 'weekly-dose', name: 'Weekly Dose of Space', description: 'Weekly space news and updates' },
+    { id: 'cosmic-curiosities', name: 'Cosmic Curiosities', description: 'Fascinating space discoveries and phenomena' },
+    { id: 'monthly-dose', name: 'Monthly Dose of Space', description: 'Monthly space news summary' }
+  ];
   
   const {
     register,
@@ -34,9 +42,21 @@ export function NewsletterSubscribe({ compact = false, className = "" }: Newslet
     resolver: zodResolver(schema),
   });
 
+  const handleNewsletterToggle = (newsletterId: string) => {
+    setSelectedNewsletters(prev => 
+      prev.includes(newsletterId) 
+        ? prev.filter(id => id !== newsletterId)
+        : [...prev, newsletterId]
+    );
+  };
+
   const { mutate, isPending } = useMutation({
     mutationFn: async (data: FormValues) => {
-      return apiRequest("POST", "/api/newsletter/subscribe", data);
+      const payload = {
+        ...data,
+        newsletters: selectedNewsletters
+      };
+      return apiRequest("POST", "/api/newsletter/subscribe", payload);
     },
     onSuccess: (response) => {
       if (response.ok) {
@@ -152,6 +172,30 @@ export function NewsletterSubscribe({ compact = false, className = "" }: Newslet
             />
             {errors.email && (
               <span className="text-xs text-red-500">{errors.email.message}</span>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Choose Newsletter(s)</label>
+            <div className="space-y-2">
+              {newsletters.map((newsletter) => (
+                <label key={newsletter.id} className="flex items-start space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedNewsletters.includes(newsletter.id)}
+                    onChange={() => handleNewsletterToggle(newsletter.id)}
+                    disabled={isPending || subscribeStatus === "success"}
+                    className="mt-1 h-4 w-4"
+                  />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium">{newsletter.name}</div>
+                    <div className="text-xs text-muted-foreground">{newsletter.description}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+            {selectedNewsletters.length === 0 && (
+              <span className="text-xs text-red-500">Please select at least one newsletter</span>
             )}
           </div>
           

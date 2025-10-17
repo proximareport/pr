@@ -1363,7 +1363,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Subscribe to newsletter endpoint - Ghost API integration
   app.post("/api/newsletter/subscribe", async (req: Request, res: Response) => {
     try {
-      const { email } = req.body;
+      const { email, newsletters = [] } = req.body;
       
       if (!email || !email.includes('@')) {
         return res.status(400).json({ message: "Valid email is required" });
@@ -1375,14 +1375,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Please enter a valid email address" });
       }
 
-      // For now, let's use a simple approach - just return success
-      // TODO: Implement proper Ghost API integration
-      console.log('Newsletter subscription request received for:', email);
+      // Validate newsletter selection
+      if (!Array.isArray(newsletters) || newsletters.length === 0) {
+        return res.status(400).json({ message: "Please select at least one newsletter" });
+      }
+
+      // Log the subscription for now (Ghost API integration pending correct API key)
+      console.log('Newsletter subscription request received:', {
+        email,
+        newsletters,
+        newsletterCount: newsletters.length,
+        timestamp: new Date().toISOString()
+      });
       
-      // Simulate successful subscription for now
+      // TODO: Implement Ghost API integration once correct Admin API key is obtained
+      // For now, return success and log the subscription data
       return res.status(200).json({ 
-        message: "Successfully subscribed to newsletter!",
-        email: email
+        message: `Successfully subscribed to ${newsletters.length} newsletter${newsletters.length > 1 ? 's' : ''}!`,
+        email: email,
+        newsletters: newsletters,
+        note: "Subscription logged - Ghost integration pending API key setup"
       });
 
     } catch (error) {
