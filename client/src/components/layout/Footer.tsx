@@ -262,7 +262,7 @@ function Footer() {
             </div>
             
             <div className="flex items-center space-x-4 text-sm text-gray-500">
-              <span>Site Version 2.0</span>
+              <span>Site Version 2.5</span>
               <a 
                 href="/rss.xml" 
                 target="_blank" 

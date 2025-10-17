@@ -533,6 +533,27 @@ export default function About() {
             </div>
           </div>
         </div>
+
+        {/* Version Information */}
+        <div className="mt-16 text-center">
+          <div className="bg-gradient-to-r from-gray-900/50 to-purple-900/30 rounded-xl p-6 border border-purple-900/20">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-sm text-gray-400">Platform Status</span>
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">Proxima Report v2.5</h3>
+            <p className="text-gray-400 text-sm mb-4">
+              Enhanced with modern animations, improved user experience, and advanced features
+            </p>
+            <div className="flex justify-center gap-6 text-xs text-gray-500">
+              <span>Last Updated: {new Date().toLocaleDateString()}</span>
+              <span>•</span>
+              <span>Build: 2.5.0</span>
+              <span>•</span>
+              <span>Status: Active</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     </>

@@ -125,6 +125,7 @@ const GallerySection: React.FC = () => {
                         </div>
                       </div>
                     </div>
+                  </div>
                   <Link href="/gallery">
                     <div className="absolute inset-0 cursor-pointer" />
                   </Link>
