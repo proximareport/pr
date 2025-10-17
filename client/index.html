@@ -119,10 +119,61 @@
     <link rel="dns-prefetch" href="//googleads.g.doubleclick.net" />
     <link rel="dns-prefetch" href="//pagead2.googlesyndication.com" />
     
-    <!-- Google AdSense -->
+    <!-- Google AdSense - Enhanced Browser Compatibility -->
     <meta name="google-adsense-account" content="ca-pub-9144996607586274">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9144996607586274" crossorigin="anonymous"></script>
     <meta name="google-site-verification" content="your-verification-code">
+    
+    <!-- Enhanced AdSense Configuration for Cross-Browser Compatibility -->
+    <script>
+      // Enhanced Google Ads initialization with browser detection
+      (function() {
+        const userAgent = navigator.userAgent.toLowerCase();
+        const isSafari = /safari/.test(userAgent) && !/chrome/.test(userAgent);
+        const isFirefox = /firefox/.test(userAgent);
+        const isEdge = /edge|edg/.test(userAgent);
+        const isOpera = /opera|opr/.test(userAgent);
+        
+        // Browser-specific AdSense optimizations
+        window.adsbygoogle = window.adsbygoogle || [];
+        
+        if (isSafari) {
+          // Safari-specific optimizations
+          window.adsbygoogle.push({
+            google_ad_client: "ca-pub-9144996607586274",
+            enable_page_level_ads: false,
+            overlays: {bottom: true}
+          });
+        } else if (isFirefox) {
+          // Firefox-specific optimizations
+          window.adsbygoogle.push({
+            google_ad_client: "ca-pub-9144996607586274",
+            enable_page_level_ads: false
+          });
+        } else if (isEdge) {
+          // Edge-specific optimizations
+          window.adsbygoogle.push({
+            google_ad_client: "ca-pub-9144996607586274",
+            enable_page_level_ads: false
+          });
+        } else if (isOpera) {
+          // Opera-specific optimizations
+          window.adsbygoogle.push({
+            google_ad_client: "ca-pub-9144996607586274",
+            enable_page_level_ads: false,
+            overlays: {bottom: true}
+          });
+        }
+        
+        // Enhanced error handling for ad loading
+        window.addEventListener('error', function(e) {
+          if (e.message && e.message.includes('adsbygoogle')) {
+            console.warn('AdSense loading issue detected, attempting recovery...');
+            // Recovery logic handled by React components
+          }
+        });
+      })();
+    </script>
     
     <!-- Privacy and Cookie Compliance -->
     <meta name="googlebot" content="index, follow">

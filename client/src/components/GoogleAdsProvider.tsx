@@ -48,38 +48,62 @@ export const GoogleAdsProvider: React.FC<GoogleAdsProviderProps> = ({ children }
       setConsentGiven(true);
     }
 
-    // Enhanced browser detection
-    const detectBrowser = () => {
-      const userAgent = navigator.userAgent.toLowerCase();
-      const isIOS = /iphone|ipad|ipod/.test(userAgent);
-      const isAndroid = /android/.test(userAgent);
-      const isOperaBrowser = /opera|opr/.test(userAgent);
-      const isFirefoxBrowser = /firefox/.test(userAgent);
-      const isChrome = /chrome/.test(userAgent);
-      const isSafari = /safari/.test(userAgent) && !isChrome;
-      const isEdge = /edge/.test(userAgent);
-      const isMobileBrowser = /mobile|tablet|ipad|android|blackberry|opera mini|iemobile/.test(userAgent);
-      const isSmallScreen = window.innerWidth <= 768;
-      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-      const isTablet = /ipad|tablet/.test(userAgent) || (window.innerWidth > 768 && window.innerWidth <= 1024);
-      
-      // Consider device mobile if any of these conditions are true
-      const mobile = isIOS || isAndroid || isMobileBrowser || (isSmallScreen && isTouchDevice) || isTablet;
-      
-      setIsMobile(mobile);
-      setIsOpera(isOperaBrowser);
-      setIsFirefox(isFirefoxBrowser);
-      
-      // Set browser type for debugging
-      let browser = 'unknown';
-      if (isOperaBrowser) browser = 'opera';
-      else if (isFirefoxBrowser) browser = 'firefox';
-      else if (isChrome) browser = 'chrome';
-      else if (isSafari) browser = 'safari';
-      else if (isEdge) browser = 'edge';
-      
-      setBrowserType(browser);
-    };
+  // Enhanced browser detection with better compatibility
+  const detectBrowser = () => {
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isIOS = /iphone|ipad|ipod/.test(userAgent);
+    const isAndroid = /android/.test(userAgent);
+    const isOperaBrowser = /opera|opr/.test(userAgent);
+    const isFirefoxBrowser = /firefox/.test(userAgent);
+    const isChrome = /chrome/.test(userAgent) && !isOperaBrowser;
+    const isSafari = /safari/.test(userAgent) && !isChrome && !isOperaBrowser;
+    const isEdge = /edge|edg/.test(userAgent);
+    const isSamsungInternet = /samsungbrowser/.test(userAgent);
+    const isUCBrowser = /ucbrowser/.test(userAgent);
+    const isMobileBrowser = /mobile|tablet|ipad|android|blackberry|opera mini|iemobile/.test(userAgent);
+    const isSmallScreen = window.innerWidth <= 768;
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const isTablet = /ipad|tablet/.test(userAgent) || (window.innerWidth > 768 && window.innerWidth <= 1024);
+    
+    // Consider device mobile if any of these conditions are true
+    const mobile = isIOS || isAndroid || isMobileBrowser || (isSmallScreen && isTouchDevice) || isTablet;
+    
+    setIsMobile(mobile);
+    setIsOpera(isOperaBrowser);
+    setIsFirefox(isFirefoxBrowser);
+    
+    // Set browser type for debugging and optimization
+    let browser = 'unknown';
+    if (isOperaBrowser) browser = 'opera';
+    else if (isFirefoxBrowser) browser = 'firefox';
+    else if (isChrome) browser = 'chrome';
+    else if (isSafari) browser = 'safari';
+    else if (isEdge) browser = 'edge';
+    else if (isSamsungInternet) browser = 'samsung';
+    else if (isUCBrowser) browser = 'ucbrowser';
+    
+    setBrowserType(browser);
+    
+    // Enhanced device detection logging for debugging
+    console.log('Enhanced browser detection:', {
+      userAgent: userAgent.substring(0, 100),
+      isIOS,
+      isAndroid,
+      isOperaBrowser,
+      isFirefoxBrowser,
+      isChrome,
+      isSafari,
+      isEdge,
+      isSamsungInternet,
+      isUCBrowser,
+      isMobileBrowser,
+      isSmallScreen,
+      isTouchDevice,
+      isTablet,
+      finalResult: mobile,
+      browserType: browser
+    });
+  };
     
     detectBrowser();
     window.addEventListener('resize', detectBrowser);
@@ -169,53 +193,90 @@ export const GoogleAdsProvider: React.FC<GoogleAdsProviderProps> = ({ children }
     }
 
     try {
-      // Load Google AdSense script with browser-specific optimizations
+      // Load Google AdSense script with comprehensive browser optimizations
       const script = document.createElement('script');
       script.async = true;
       script.crossOrigin = 'anonymous';
       script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${GOOGLE_ADSENSE_ID}`;
       
-      // Browser-specific loading optimizations
+      // Comprehensive browser-specific loading optimizations
       if (isOpera) {
         // Opera-specific optimizations
         script.setAttribute('data-ad-client', GOOGLE_ADSENSE_ID);
         script.setAttribute('data-adtest', 'off');
         script.setAttribute('data-ad-region', 'true');
+        script.setAttribute('data-ad-loading-strategy', 'prefer-viewability');
       } else if (isFirefox) {
         // Firefox-specific optimizations
         script.setAttribute('data-ad-client', GOOGLE_ADSENSE_ID);
         script.setAttribute('data-adtest', 'off');
         script.setAttribute('data-ad-loading-strategy', 'prefer-viewability');
-      } else if (isMobile) {
+        script.setAttribute('data-ad-region', 'true');
+      } else if (browserType === 'safari') {
+        // Safari-specific optimizations (iOS and macOS)
         script.setAttribute('data-ad-client', GOOGLE_ADSENSE_ID);
         script.setAttribute('data-adtest', 'off');
+        script.setAttribute('data-ad-loading-strategy', 'prefer-viewability');
+      } else if (browserType === 'edge') {
+        // Edge-specific optimizations
+        script.setAttribute('data-ad-client', GOOGLE_ADSENSE_ID);
+        script.setAttribute('data-adtest', 'off');
+        script.setAttribute('data-ad-region', 'true');
+      } else if (browserType === 'samsung') {
+        // Samsung Internet optimizations
+        script.setAttribute('data-ad-client', GOOGLE_ADSENSE_ID);
+        script.setAttribute('data-adtest', 'off');
+        script.setAttribute('data-ad-loading-strategy', 'prefer-viewability');
+      } else if (isMobile) {
+        // Mobile-specific optimizations
+        script.setAttribute('data-ad-client', GOOGLE_ADSENSE_ID);
+        script.setAttribute('data-adtest', 'off');
+        script.setAttribute('data-ad-loading-strategy', 'prefer-viewability');
       }
       
       script.onload = () => {
+        console.log(`Google Ads loaded successfully for ${browserType}`);
         setIsGoogleAdsLoaded(true);
       };
-      script.onerror = () => {
-        // Retry loading for problematic browsers
-        if (isOpera || isFirefox) {
+      
+      script.onerror = (error) => {
+        console.error(`Google Ads script failed to load for ${browserType}:`, error);
+        
+        // Enhanced retry logic for problematic browsers
+        if (isOpera || isFirefox || browserType === 'safari' || browserType === 'edge') {
           setTimeout(() => {
             try {
+              console.log(`Retrying Google Ads load for ${browserType}...`);
               const retryScript = document.createElement('script');
               retryScript.async = true;
               retryScript.crossOrigin = 'anonymous';
-              retryScript.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${GOOGLE_ADSENSE_ID}`;
+              retryScript.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${GOOGLE_ADSENSE_ID}&libraries=adsense`;
+              
+              // Add retry-specific attributes
+              retryScript.setAttribute('data-ad-client', GOOGLE_ADSENSE_ID);
+              retryScript.setAttribute('data-adtest', 'off');
+              retryScript.setAttribute('data-ad-loading-strategy', 'prefer-viewability');
+              
               retryScript.onload = () => {
+                console.log(`Google Ads retry successful for ${browserType}`);
                 setIsGoogleAdsLoaded(true);
               };
+              
+              retryScript.onerror = (retryError) => {
+                console.error(`Google Ads retry failed for ${browserType}:`, retryError);
+              };
+              
               document.head.appendChild(retryScript);
             } catch (retryError) {
-              console.error(`Retry failed for ${browserType}:`, retryError);
+              console.error(`Retry script creation failed for ${browserType}:`, retryError);
             }
-          }, 1000);
+          }, browserType === 'safari' ? 2000 : 1000); // Safari needs more time
         }
       };
+      
       document.head.appendChild(script);
     } catch (error) {
-      console.error('Error loading Google AdSense:', error);
+      console.error('Error creating Google AdSense script:', error);
     }
   };
 

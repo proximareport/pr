@@ -84,30 +84,77 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
         clearTimeout(adTimeout);
       }
 
-      // Browser-specific ad loading
-      if (isOpera) {
-        // Opera-specific ad loading
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      } else if (isFirefox) {
-        // Firefox-specific ad loading
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      } else {
-        // Standard ad loading
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      }
+      console.log(`Loading ad for ${type} on ${browserType} (${isMobile ? 'mobile' : 'desktop'})`);
 
-      // Monitor ad loading success
+      // Enhanced browser-specific ad loading with comprehensive error handling
+      const pushAd = () => {
+        try {
+          // Initialize adsbygoogle array if it doesn't exist
+          if (!window.adsbygoogle) {
+            window.adsbygoogle = [];
+          }
+          
+          // Browser-specific ad loading strategies
+          if (isOpera) {
+            // Opera-specific ad loading with additional attributes
+            (window.adsbygoogle as any[]).push({
+              google_ad_client: "ca-pub-9144996607586274",
+              enable_page_level_ads: false,
+              overlays: {bottom: true}
+            });
+          } else if (isFirefox) {
+            // Firefox-specific ad loading
+            (window.adsbygoogle as any[]).push({
+              google_ad_client: "ca-pub-9144996607586274",
+              enable_page_level_ads: false
+            });
+          } else if (browserType === 'safari') {
+            // Safari-specific ad loading (iOS and macOS)
+            (window.adsbygoogle as any[]).push({
+              google_ad_client: "ca-pub-9144996607586274",
+              enable_page_level_ads: false
+            });
+          } else if (browserType === 'edge') {
+            // Edge-specific ad loading
+            (window.adsbygoogle as any[]).push({
+              google_ad_client: "ca-pub-9144996607586274",
+              enable_page_level_ads: false
+            });
+          } else {
+            // Standard ad loading for Chrome and other browsers
+            (window.adsbygoogle as any[]).push({});
+          }
+        } catch (pushError) {
+          console.error(`Error pushing ad for ${browserType}:`, pushError);
+          throw pushError;
+        }
+      };
+
+      pushAd();
+
+      // Enhanced ad success monitoring with multiple detection methods
       const checkAdSuccess = () => {
         const container = document.querySelector(`.ad-placement.ad-${type}`) as HTMLElement;
         if (container) {
           const adElement = container.querySelector('.adsbygoogle');
           if (adElement) {
-            // Check for various success indicators
-            const hasGoogleAd = adElement.querySelector('[id^="aswift_"], [id^="google_ads_"], [id^="div-gpt-ad"]');
-            const hasAdContent = adElement.innerHTML.length > 100; // Basic content check
+            // Multiple success indicators for better reliability
+            const hasGoogleAd = adElement.querySelector('[id^="aswift_"], [id^="google_ads_"], [id^="div-gpt-ad"], [id^="google_ad_"]');
+            const hasAdContent = adElement.innerHTML.length > 100;
             const hasAdDimensions = (adElement as HTMLElement).offsetHeight > 50 && (adElement as HTMLElement).offsetWidth > 50;
+            const hasAdImages = adElement.querySelectorAll('img').length > 0;
+            const hasAdFrames = adElement.querySelectorAll('iframe').length > 0;
             
-            if (hasGoogleAd || (hasAdContent && hasAdDimensions)) {
+            // Browser-specific success criteria
+            const isSuccess = hasGoogleAd || 
+                            (hasAdContent && hasAdDimensions) || 
+                            hasAdImages || 
+                            hasAdFrames ||
+                            (browserType === 'safari' && hasAdDimensions) || // Safari needs dimension check
+                            (isFirefox && hasAdContent); // Firefox needs content check
+            
+            if (isSuccess) {
+              console.log(`Ad loaded successfully for ${type} on ${browserType}`);
               setAdLoaded(true);
               return true;
             }
@@ -116,7 +163,7 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
         return false;
       };
 
-      // Set timeout for ad loading with multiple checks
+      // Enhanced timeout logic with browser-specific adjustments
       const timeout = setTimeout(() => {
         if (!adLoaded && retryCount < maxRetries) {
           // Check if ad actually loaded but we missed the signal
@@ -124,31 +171,44 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
             return;
           }
           
+          console.log(`Retrying ad load for ${type} on ${browserType} (attempt ${retryCount + 1})`);
           setRetryCount(prev => prev + 1);
           setAdError(false);
-          loadAd(); // Retry loading
+          
+          // Browser-specific retry delays
+          const retryDelay = browserType === 'safari' ? 2000 : 
+                           browserType === 'firefox' ? 1500 : 
+                           browserType === 'opera' ? 1500 : 1000;
+          
+          setTimeout(() => loadAd(), retryDelay);
         } else if (retryCount >= maxRetries) {
+          console.error(`Ad failed to load after ${maxRetries} attempts for ${type} on ${browserType}`);
           setAdError(true);
         }
       }, getAdTimeout());
 
       setAdTimeout(timeout);
 
-      // Also check for success periodically
+      // Enhanced success checking with browser-specific intervals
+      const checkInterval = browserType === 'safari' ? 750 : 
+                          browserType === 'firefox' ? 600 : 
+                          browserType === 'opera' ? 600 : 500;
+      
       const successCheckInterval = setInterval(() => {
         if (checkAdSuccess()) {
           clearInterval(successCheckInterval);
         }
-      }, 500);
+      }, checkInterval);
 
       // Clean up interval after timeout
       setTimeout(() => clearInterval(successCheckInterval), getAdTimeout());
       
     } catch (error) {
-      console.error(`Error in loadAd for ${type}:`, error);
+      console.error(`Critical error in loadAd for ${type} on ${browserType}:`, error);
       if (retryCount < maxRetries) {
         setRetryCount(prev => prev + 1);
-        setTimeout(() => loadAd(), 1000); // Retry after 1 second
+        const retryDelay = browserType === 'safari' ? 2000 : 1000;
+        setTimeout(() => loadAd(), retryDelay);
       } else {
         setAdError(true);
       }
@@ -191,27 +251,40 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
     return null;
   }
 
-  // Different ad formats based on type and device
+  // Enhanced ad format selection with comprehensive browser compatibility
   const getAdFormat = () => {
-    // Device-specific ad formats
     const userAgent = navigator.userAgent.toLowerCase();
     const isIOS = /iphone|ipad|ipod/.test(userAgent);
     const isAndroid = /android/.test(userAgent);
+    const isSafari = /safari/.test(userAgent) && !/chrome/.test(userAgent);
+    const isFirefox = /firefox/.test(userAgent);
+    const isEdge = /edge|edg/.test(userAgent);
+    const isOpera = /opera|opr/.test(userAgent);
     
     if (isMobile) {
-      // Mobile-optimized formats with device-specific adjustments
+      // Mobile-optimized formats with comprehensive device-specific adjustments
       switch (type) {
         case 'banner':
-          return isIOS ? 'auto' : 'fluid'; // iOS prefers auto, Android prefers fluid
+          if (isIOS && isSafari) return 'auto'; // iOS Safari prefers auto
+          if (isAndroid) return 'fluid'; // Android prefers fluid
+          if (isFirefox) return 'auto'; // Firefox mobile prefers auto
+          return 'auto';
         case 'sidebar':
           return 'auto';
         case 'in-content':
+          if (isIOS) return 'fluid'; // iOS content ads work better with fluid
+          if (isAndroid) return 'auto'; // Android content ads prefer auto
           return 'fluid';
         case 'article-top':
-          return isIOS ? 'fluid' : 'auto'; // iOS prefers fluid for better layout
+          if (isIOS) return 'fluid'; // iOS prefers fluid for better layout
+          if (isAndroid) return 'auto'; // Android prefers auto
+          if (isFirefox) return 'fluid'; // Firefox mobile works better with fluid
+          return 'fluid';
         case 'article-bottom':
           return 'fluid';
         case 'homepage-hero':
+          if (isIOS) return 'auto'; // iOS hero ads prefer auto
+          if (isAndroid) return 'fluid'; // Android hero ads prefer fluid
           return 'auto';
         case 'homepage-grid':
           return 'fluid';
@@ -220,19 +293,34 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
       }
     }
     
-    // Desktop formats
+    // Desktop formats with browser-specific optimizations
     switch (type) {
       case 'banner':
+        if (isSafari) return 'auto'; // Safari desktop prefers auto
+        if (isFirefox) return 'auto'; // Firefox desktop prefers auto
+        if (isEdge) return 'auto'; // Edge prefers auto
+        if (isOpera) return 'fluid'; // Opera prefers fluid
         return 'auto';
       case 'sidebar':
         return 'auto';
       case 'in-content':
+        if (isSafari) return 'fluid'; // Safari content ads work better with fluid
+        if (isFirefox) return 'auto'; // Firefox content ads prefer auto
+        if (isEdge) return 'fluid'; // Edge content ads prefer fluid
         return 'fluid';
       case 'article-top':
+        if (isSafari) return 'fluid'; // Safari article ads prefer fluid
+        if (isFirefox) return 'auto'; // Firefox article ads prefer auto
+        if (isEdge) return 'fluid'; // Edge article ads prefer fluid
+        if (isOpera) return 'auto'; // Opera article ads prefer auto
         return 'fluid';
       case 'article-bottom':
         return 'fluid';
       case 'homepage-hero':
+        if (isSafari) return 'auto'; // Safari hero ads prefer auto
+        if (isFirefox) return 'auto'; // Firefox hero ads prefer auto
+        if (isEdge) return 'auto'; // Edge hero ads prefer auto
+        if (isOpera) return 'fluid'; // Opera hero ads prefer fluid
         return 'auto';
       case 'homepage-grid':
         return 'fluid';
@@ -402,40 +490,84 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
           height: '100%',
           minHeight: dimensions.minHeight,
           backgroundColor: 'transparent',
-          // Device-specific optimizations
+          // Comprehensive browser-specific optimizations
           ...(isMobile && {
             transform: 'translateZ(0)',
             WebkitTransform: 'translateZ(0)',
             backfaceVisibility: 'hidden',
-            WebkitBackfaceVisibility: 'hidden'
+            WebkitBackfaceVisibility: 'hidden',
+            // Mobile-specific optimizations
+            WebkitPerspective: '1000',
+            perspective: '1000',
+            WebkitTransformStyle: 'preserve-3d',
+            transformStyle: 'preserve-3d'
+          }),
+          // Safari-specific optimizations
+          ...(browserType === 'safari' && {
+            WebkitTransform: 'translate3d(0,0,0)',
+            transform: 'translate3d(0,0,0)',
+            WebkitBackfaceVisibility: 'hidden',
+            backfaceVisibility: 'hidden'
+          }),
+          // Firefox-specific optimizations
+          ...(isFirefox && {
+            MozTransform: 'translateZ(0)',
+            transform: 'translateZ(0)'
+          }),
+          // Edge-specific optimizations
+          ...(browserType === 'edge' && {
+            msTransform: 'translateZ(0)',
+            transform: 'translateZ(0)'
+          }),
+          // Opera-specific optimizations
+          ...(isOpera && {
+            OTransform: 'translateZ(0)',
+            transform: 'translateZ(0)'
           })
         }}
         data-ad-client="ca-pub-9144996607586274"
         data-ad-slot={adSlot}
         data-ad-format={adFormat}
         data-full-width-responsive="true"
-        // Browser-specific ad attributes
+        // Enhanced browser-specific ad attributes
         {...(isOpera ? {
           'data-ad-layout': 'in-article',
           'data-ad-layout-key': '-71+eh+1g-3a+2i',
           'data-ad-region': 'true',
-          'data-ad-loading-strategy': 'prefer-viewability'
+          'data-ad-loading-strategy': 'prefer-viewability',
+          'data-ad-format-key': 'auto'
         } : {})}
         {...(isFirefox ? {
           'data-ad-layout': 'in-article',
           'data-ad-loading-strategy': 'prefer-viewability',
-          'data-ad-region': 'true'
+          'data-ad-region': 'true',
+          'data-ad-format-key': 'auto'
+        } : {})}
+        {...(browserType === 'safari' ? {
+          'data-ad-layout': 'in-article',
+          'data-ad-loading-strategy': 'prefer-viewability',
+          'data-ad-region': 'true',
+          'data-ad-format-key': 'auto'
+        } : {})}
+        {...(browserType === 'edge' ? {
+          'data-ad-layout': 'in-article',
+          'data-ad-loading-strategy': 'prefer-viewability',
+          'data-ad-region': 'true',
+          'data-ad-format-key': 'auto'
         } : {})}
         // Device-specific ad attributes
         {...(isMobile ? {
           'data-ad-layout': 'in-article',
-          'data-ad-layout-key': '-71+eh+1g-3a+2i'
+          'data-ad-layout-key': '-71+eh+1g-3a+2i',
+          'data-ad-loading-strategy': 'prefer-viewability'
         } : {})}
         {...(type === 'in-content' || type === 'article-top' || type === 'article-bottom' ? {
-          'data-ad-layout': 'in-article'
+          'data-ad-layout': 'in-article',
+          'data-ad-loading-strategy': 'prefer-viewability'
         } : {})}
         {...(type === 'homepage-grid' ? {
-          'data-ad-layout-key': '-71+eh+1g-3a+2i'
+          'data-ad-layout-key': '-71+eh+1g-3a+2i',
+          'data-ad-loading-strategy': 'prefer-viewability'
         } : {})}
         // Cross-platform compatibility attributes
         data-adtest="off"
