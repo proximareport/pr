@@ -84,25 +84,8 @@ export const GoogleAdsProvider: React.FC<GoogleAdsProviderProps> = ({ children }
     
     setBrowserType(browser);
     
-    // Enhanced device detection logging for debugging
-    console.log('Enhanced browser detection:', {
-      userAgent: userAgent.substring(0, 100),
-      isIOS,
-      isAndroid,
-      isOperaBrowser,
-      isFirefoxBrowser,
-      isChrome,
-      isSafari,
-      isEdge,
-      isSamsungInternet,
-      isUCBrowser,
-      isMobileBrowser,
-      isSmallScreen,
-      isTouchDevice,
-      isTablet,
-      finalResult: mobile,
-      browserType: browser
-    });
+    // Simple browser detection logging
+    console.log(`Browser detected: ${browser} (${mobile ? 'mobile' : 'desktop'})`);
   };
     
     detectBrowser();
@@ -130,55 +113,44 @@ export const GoogleAdsProvider: React.FC<GoogleAdsProviderProps> = ({ children }
   }, [consentGiven]);
 
   const checkAdBlocker = () => {
-    // Browser-specific ad blocker detection
-    if (isOpera || isFirefox) {
-      // Opera and Firefox need more lenient detection
-      const testAd = document.createElement('div');
-      testAd.innerHTML = '&nbsp;';
-      testAd.className = 'adsbox';
-      testAd.style.position = 'absolute';
-      testAd.style.left = '-10000px';
-      testAd.style.width = '1px';
-      testAd.style.height = '1px';
-      testAd.style.visibility = 'hidden';
-      document.body.appendChild(testAd);
+    // Enhanced ad blocker detection with better accuracy
+    const testAd = document.createElement('div');
+    testAd.innerHTML = '&nbsp;';
+    testAd.className = 'adsbox';
+    testAd.style.position = 'absolute';
+    testAd.style.left = '-10000px';
+    testAd.style.width = '1px';
+    testAd.style.height = '1px';
+    testAd.style.visibility = 'hidden';
+    testAd.style.display = 'block';
+    
+    // Add common ad blocker selectors
+    testAd.id = 'google_ads_iframe_1';
+    testAd.setAttribute('data-ad-client', 'ca-pub-test');
+    
+    document.body.appendChild(testAd);
+    
+    setTimeout(() => {
+      const isBlocked = testAd.offsetHeight === 0 || 
+                       testAd.offsetWidth === 0 || 
+                       testAd.style.display === 'none' ||
+                       getComputedStyle(testAd).display === 'none';
       
-      setTimeout(() => {
-        const isBlocked = testAd.offsetHeight === 0 || testAd.offsetWidth === 0;
-        setIsAdBlocked(isBlocked);
-        document.body.removeChild(testAd);
-      }, 300); // Longer timeout for Opera/Firefox
-    } else if (isMobile) {
-      // Mobile browsers handle ads differently, use a more lenient check
-      const testAd = document.createElement('div');
-      testAd.innerHTML = '&nbsp;';
-      testAd.className = 'adsbox';
-      testAd.style.position = 'absolute';
-      testAd.style.left = '-10000px';
-      testAd.style.width = '1px';
-      testAd.style.height = '1px';
-      document.body.appendChild(testAd);
+      console.log(`Ad blocker detection: ${isBlocked ? 'BLOCKED' : 'NOT BLOCKED'}`, {
+        offsetHeight: testAd.offsetHeight,
+        offsetWidth: testAd.offsetWidth,
+        display: getComputedStyle(testAd).display,
+        browser: browserType
+      });
       
-      setTimeout(() => {
-        const isBlocked = testAd.offsetHeight === 0 || testAd.offsetWidth === 0;
-        setIsAdBlocked(isBlocked);
-        document.body.removeChild(testAd);
-      }, 200); // Longer timeout for mobile
-    } else {
-      // Desktop ad blocker detection
-      const testAd = document.createElement('div');
-      testAd.innerHTML = '&nbsp;';
-      testAd.className = 'adsbox';
-      testAd.style.position = 'absolute';
-      testAd.style.left = '-10000px';
-      document.body.appendChild(testAd);
+      setIsAdBlocked(isBlocked);
       
-      setTimeout(() => {
-        const isBlocked = testAd.offsetHeight === 0;
-        setIsAdBlocked(isBlocked);
+      try {
         document.body.removeChild(testAd);
-      }, 100);
-    }
+      } catch (e) {
+        // Element might have been removed by ad blocker
+      }
+    }, 500); // Longer timeout for better detection
   };
 
   const loadGoogleAds = () => {

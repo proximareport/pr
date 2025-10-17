@@ -39,7 +39,7 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
   };
 
   // Browser-specific retry logic
-  const maxRetries = isOpera ? 3 : isFirefox ? 2 : 1;
+  const maxRetries = isOpera ? 2 : isFirefox ? 2 : 1;
 
   useEffect(() => {
     if (isGoogleAdsLoaded && consentGiven && !adLoaded && !isAdBlocked && !isPaidSubscriber) {
@@ -77,6 +77,26 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
     }
   }, [isGoogleAdsLoaded, consentGiven, adLoaded, isAdBlocked, isPaidSubscriber, type, isOpera, isFirefox, isMobile]);
 
+  // Monitor for network errors
+  useEffect(() => {
+    const handleNetworkError = (event: any) => {
+      if (event.target && event.target.src && event.target.src.includes('ads')) {
+        console.warn(`Network error for ad: ${event.target.src}`);
+        if (retryCount < maxRetries) {
+          setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+            loadAd();
+          }, 2000);
+        } else {
+          setAdError(true);
+        }
+      }
+    };
+
+    window.addEventListener('error', handleNetworkError);
+    return () => window.removeEventListener('error', handleNetworkError);
+  }, [retryCount, maxRetries]);
+
   const loadAd = () => {
     try {
       // Clear any existing timeout
@@ -86,84 +106,43 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
 
       console.log(`Loading ad for ${type} on ${browserType} (${isMobile ? 'mobile' : 'desktop'})`);
 
-      // Enhanced browser-specific ad loading with comprehensive error handling
-      const pushAd = () => {
-        try {
-          // Initialize adsbygoogle array if it doesn't exist
-          if (!window.adsbygoogle) {
-            window.adsbygoogle = [];
-          }
-          
-          // Browser-specific ad loading strategies
-          if (isOpera) {
-            // Opera-specific ad loading with additional attributes
-            (window.adsbygoogle as any[]).push({
-              google_ad_client: "ca-pub-9144996607586274",
-              enable_page_level_ads: false,
-              overlays: {bottom: true}
-            });
-          } else if (isFirefox) {
-            // Firefox-specific ad loading
-            (window.adsbygoogle as any[]).push({
-              google_ad_client: "ca-pub-9144996607586274",
-              enable_page_level_ads: false
-            });
-          } else if (browserType === 'safari') {
-            // Safari-specific ad loading (iOS and macOS)
-            (window.adsbygoogle as any[]).push({
-              google_ad_client: "ca-pub-9144996607586274",
-              enable_page_level_ads: false
-            });
-          } else if (browserType === 'edge') {
-            // Edge-specific ad loading
-            (window.adsbygoogle as any[]).push({
-              google_ad_client: "ca-pub-9144996607586274",
-              enable_page_level_ads: false
-            });
-          } else {
-            // Standard ad loading for Chrome and other browsers
-            (window.adsbygoogle as any[]).push({});
-          }
-        } catch (pushError) {
-          console.error(`Error pushing ad for ${browserType}:`, pushError);
-          throw pushError;
-        }
-      };
+      // Simple, reliable ad loading
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
 
-      pushAd();
-
-      // Enhanced ad success monitoring with multiple detection methods
+      // Enhanced ad success monitoring with error detection
       const checkAdSuccess = () => {
         const container = document.querySelector(`.ad-placement.ad-${type}`) as HTMLElement;
         if (container) {
           const adElement = container.querySelector('.adsbygoogle');
           if (adElement) {
-            // Multiple success indicators for better reliability
-            const hasGoogleAd = adElement.querySelector('[id^="aswift_"], [id^="google_ads_"], [id^="div-gpt-ad"], [id^="google_ad_"]');
+            // Check for actual ad content, not just elements
+            const hasGoogleAd = adElement.querySelector('[id^="aswift_"], [id^="google_ads_"], [id^="div-gpt-ad"]');
             const hasAdContent = adElement.innerHTML.length > 100;
             const hasAdDimensions = (adElement as HTMLElement).offsetHeight > 50 && (adElement as HTMLElement).offsetWidth > 50;
-            const hasAdImages = adElement.querySelectorAll('img').length > 0;
-            const hasAdFrames = adElement.querySelectorAll('iframe').length > 0;
+            const hasImages = adElement.querySelectorAll('img').length > 0;
+            const hasFrames = adElement.querySelectorAll('iframe').length > 0;
             
-            // Browser-specific success criteria
-            const isSuccess = hasGoogleAd || 
-                            (hasAdContent && hasAdDimensions) || 
-                            hasAdImages || 
-                            hasAdFrames ||
-                            (browserType === 'safari' && hasAdDimensions) || // Safari needs dimension check
-                            (isFirefox && hasAdContent); // Firefox needs content check
+            // Check for error states
+            const hasError = adElement.innerHTML.includes('403') || 
+                           adElement.innerHTML.includes('blocked') ||
+                           adElement.innerHTML.includes('failed') ||
+                           adElement.style.display === 'none';
             
-            if (isSuccess) {
+            // Only consider it successful if we have actual ad content
+            if (!hasError && (hasGoogleAd || (hasAdContent && hasAdDimensions && (hasImages || hasFrames)))) {
               console.log(`Ad loaded successfully for ${type} on ${browserType}`);
               setAdLoaded(true);
               return true;
+            } else if (hasError) {
+              console.warn(`Ad failed with error for ${type} on ${browserType}:`, adElement.innerHTML.substring(0, 200));
+              return false;
             }
           }
         }
         return false;
       };
 
-      // Enhanced timeout logic with browser-specific adjustments
+      // Simple timeout logic with proper retry management
       const timeout = setTimeout(() => {
         if (!adLoaded && retryCount < maxRetries) {
           // Check if ad actually loaded but we missed the signal
@@ -171,47 +150,35 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
             return;
           }
           
-          console.log(`Retrying ad load for ${type} on ${browserType} (attempt ${retryCount + 1})`);
+          console.log(`Retrying ad load for ${type} on ${browserType} (attempt ${retryCount + 1} of ${maxRetries + 1})`);
+          
+          // Increment retry count and try again
           setRetryCount(prev => prev + 1);
           setAdError(false);
           
-          // Browser-specific retry delays
-          const retryDelay = browserType === 'safari' ? 2000 : 
-                           browserType === 'firefox' ? 1500 : 
-                           browserType === 'opera' ? 1500 : 1000;
-          
-          setTimeout(() => loadAd(), retryDelay);
+          // Retry after a short delay
+          setTimeout(() => loadAd(), 1000);
         } else if (retryCount >= maxRetries) {
-          console.error(`Ad failed to load after ${maxRetries} attempts for ${type} on ${browserType}`);
+          console.error(`Ad failed to load after ${maxRetries + 1} attempts for ${type} on ${browserType}`);
           setAdError(true);
         }
       }, getAdTimeout());
 
       setAdTimeout(timeout);
 
-      // Enhanced success checking with browser-specific intervals
-      const checkInterval = browserType === 'safari' ? 750 : 
-                          browserType === 'firefox' ? 600 : 
-                          browserType === 'opera' ? 600 : 500;
-      
+      // Simple success checking
       const successCheckInterval = setInterval(() => {
         if (checkAdSuccess()) {
           clearInterval(successCheckInterval);
         }
-      }, checkInterval);
+      }, 500);
 
       // Clean up interval after timeout
       setTimeout(() => clearInterval(successCheckInterval), getAdTimeout());
       
     } catch (error) {
-      console.error(`Critical error in loadAd for ${type} on ${browserType}:`, error);
-      if (retryCount < maxRetries) {
-        setRetryCount(prev => prev + 1);
-        const retryDelay = browserType === 'safari' ? 2000 : 1000;
-        setTimeout(() => loadAd(), retryDelay);
-      } else {
-        setAdError(true);
-      }
+      console.error(`Error in loadAd for ${type} on ${browserType}:`, error);
+      setAdError(true);
     }
   };
 
@@ -241,7 +208,16 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
 
   // Show error state if ad failed to load
   if (adError) {
-    return null;
+    return (
+      <div className={`bg-gray-800 border border-gray-700 rounded-lg p-4 text-center ${className}`} style={style}>
+        <p className="text-gray-400 text-sm">
+          Advertisement temporarily unavailable
+        </p>
+        <p className="text-gray-500 text-xs mt-2">
+          Browser: {browserType} | Type: {type}
+        </p>
+      </div>
+    );
   }
 
   // Get ad slot ID for this type
