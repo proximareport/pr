@@ -39,13 +39,13 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
   };
 
   // Browser-specific retry logic
-  const maxRetries = isOpera ? 2 : isFirefox ? 2 : 1;
+  const maxRetries = isOpera ? 3 : isFirefox ? 2 : 1;
 
   useEffect(() => {
     if (isGoogleAdsLoaded && consentGiven && !adLoaded && !isAdBlocked && !isPaidSubscriber) {
       // Browser-specific loading delays
       let delay = 300;
-      if (isOpera) delay = 500; // Opera needs more time to initialize
+      if (isOpera) delay = 1000; // Opera needs much more time to initialize
       if (isFirefox) delay = 400; // Firefox needs moderate time
       if (isMobile) delay = 200; // Mobile browsers are faster
       
@@ -106,8 +106,32 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
 
       console.log(`Loading ad for ${type} on ${browserType} (${isMobile ? 'mobile' : 'desktop'})`);
 
-      // Simple, reliable ad loading
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
+      // Opera-specific ad loading with enhanced compatibility
+      if (isOpera) {
+        // Opera needs special handling
+        try {
+          // Initialize adsbygoogle array if it doesn't exist
+          if (!window.adsbygoogle) {
+            window.adsbygoogle = [];
+          }
+          
+          // Opera-specific ad push with additional parameters
+          (window.adsbygoogle as any[]).push({
+            google_ad_client: "ca-pub-9144996607586274",
+            enable_page_level_ads: false,
+            overlays: {bottom: true}
+          });
+          
+          console.log(`Opera-specific ad loading for ${type}`);
+        } catch (error) {
+          console.error(`Opera ad loading error:`, error);
+          // Fallback to standard loading
+          (window.adsbygoogle = window.adsbygoogle || []).push({});
+        }
+      } else {
+        // Standard ad loading for other browsers
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      }
 
       // Enhanced ad success monitoring with error detection
       const checkAdSuccess = () => {
@@ -244,12 +268,14 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
           if (isIOS && isSafari) return 'auto'; // iOS Safari prefers auto
           if (isAndroid) return 'fluid'; // Android prefers fluid
           if (isFirefox) return 'auto'; // Firefox mobile prefers auto
+          if (isOpera) return 'auto'; // Opera mobile prefers auto
           return 'auto';
         case 'sidebar':
           return 'auto';
         case 'in-content':
           if (isIOS) return 'fluid'; // iOS content ads work better with fluid
           if (isAndroid) return 'auto'; // Android content ads prefer auto
+          if (isOpera) return 'auto'; // Opera mobile content ads prefer auto
           return 'fluid';
         case 'article-top':
           if (isIOS) return 'fluid'; // iOS prefers fluid for better layout
@@ -511,7 +537,9 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
           'data-ad-layout-key': '-71+eh+1g-3a+2i',
           'data-ad-region': 'true',
           'data-ad-loading-strategy': 'prefer-viewability',
-          'data-ad-format-key': 'auto'
+          'data-ad-format-key': 'auto',
+          'data-ad-client': 'ca-pub-9144996607586274',
+          'data-adtest': 'off'
         } : {})}
         {...(isFirefox ? {
           'data-ad-layout': 'in-article',

@@ -173,11 +173,15 @@ export const GoogleAdsProvider: React.FC<GoogleAdsProviderProps> = ({ children }
       
       // Comprehensive browser-specific loading optimizations
       if (isOpera) {
-        // Opera-specific optimizations
+        // Opera-specific optimizations with enhanced compatibility
         script.setAttribute('data-ad-client', GOOGLE_ADSENSE_ID);
         script.setAttribute('data-adtest', 'off');
         script.setAttribute('data-ad-region', 'true');
         script.setAttribute('data-ad-loading-strategy', 'prefer-viewability');
+        script.setAttribute('data-ad-format-key', 'auto');
+        // Opera needs additional attributes for proper loading
+        script.setAttribute('data-ad-layout', 'in-article');
+        script.setAttribute('data-ad-layout-key', '-71+eh+1g-3a+2i');
       } else if (isFirefox) {
         // Firefox-specific optimizations
         script.setAttribute('data-ad-client', GOOGLE_ADSENSE_ID);
@@ -229,6 +233,14 @@ export const GoogleAdsProvider: React.FC<GoogleAdsProviderProps> = ({ children }
               retryScript.setAttribute('data-adtest', 'off');
               retryScript.setAttribute('data-ad-loading-strategy', 'prefer-viewability');
               
+              // Opera-specific retry attributes
+              if (isOpera) {
+                retryScript.setAttribute('data-ad-region', 'true');
+                retryScript.setAttribute('data-ad-format-key', 'auto');
+                retryScript.setAttribute('data-ad-layout', 'in-article');
+                retryScript.setAttribute('data-ad-layout-key', '-71+eh+1g-3a+2i');
+              }
+              
               retryScript.onload = () => {
                 console.log(`Google Ads retry successful for ${browserType}`);
                 setIsGoogleAdsLoaded(true);
@@ -242,7 +254,7 @@ export const GoogleAdsProvider: React.FC<GoogleAdsProviderProps> = ({ children }
             } catch (retryError) {
               console.error(`Retry script creation failed for ${browserType}:`, retryError);
             }
-          }, browserType === 'safari' ? 2000 : 1000); // Safari needs more time
+          }, isOpera ? 2000 : browserType === 'safari' ? 2000 : 1000); // Opera and Safari need more time
         }
       };
       

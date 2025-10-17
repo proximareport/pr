@@ -53,7 +53,7 @@ function FeaturedArticle({ article }: FeaturedArticleProps) {
   
   return (
     <div 
-      className="relative h-[50vh] md:h-[60vh] overflow-hidden rounded-lg border border-white/10"
+      className="relative h-[50vh] md:h-[60vh] overflow-hidden rounded-2xl border border-white/10 group hover:border-purple-500/30 transition-all duration-700 hover:shadow-2xl hover:shadow-purple-500/20"
       style={{ 
         backgroundImage: `url(${article.feature_image})`,
         backgroundPosition: 'center 20%',
@@ -62,13 +62,14 @@ function FeaturedArticle({ article }: FeaturedArticleProps) {
         backgroundColor: '#0D0D17'
       }}
     >
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D17] via-[#0D0D17]/70 to-transparent"></div>
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D17] via-[#0D0D17]/70 to-transparent group-hover:from-[#0D0D17]/90 group-hover:via-[#0D0D17]/80 transition-all duration-700"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/0 via-purple-500/0 to-purple-500/10 group-hover:from-purple-500/5 group-hover:via-purple-500/5 group-hover:to-purple-500/15 transition-all duration-700"></div>
       <div className="container mx-auto px-4 md:px-6 h-full flex flex-col justify-end pb-8 md:pb-12 relative z-10">
         <div className="max-w-4xl">
           {/* Category Badge */}
           {article.primary_tag && (
-            <div className="mb-4">
-              <Badge className="bg-purple-600 hover:bg-purple-700 text-white border-0">
+            <div className="mb-4 animate-in fade-in-0 slide-in-from-left-4 duration-500 delay-200">
+              <Badge className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white border-0 shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105">
                 {article.primary_tag.name}
               </Badge>
             </div>
@@ -76,22 +77,26 @@ function FeaturedArticle({ article }: FeaturedArticleProps) {
           
           {/* Title - Only headline as text-on-image */}
           <Link href={`/articles/${article.slug}`}>
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-4 hover:text-purple-400 transition-colors duration-300">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-4 hover:text-purple-300 transition-all duration-500 group-hover:translate-x-2 bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent animate-in fade-in-0 slide-in-from-bottom-4 duration-700 delay-300">
               {article.title}
             </h2>
           </Link>
           
           {/* Author and metadata */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex items-center">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 animate-in fade-in-0 slide-in-from-bottom-4 duration-700 delay-500">
+            <div className="flex items-center group/author">
               {article.authors && article.authors.length > 1 ? (
                 <>
                   <div className="flex -space-x-1 md:-space-x-2">
                     {article.authors.slice(0, 3).map((author, index) => (
-                      <div key={author.id} className="w-8 h-8 md:w-12 md:h-12 rounded-full overflow-hidden border-2 border-purple-500">
+                      <div 
+                        key={author.id} 
+                        className="w-8 h-8 md:w-12 md:h-12 rounded-full overflow-hidden border-2 border-purple-500 hover:border-purple-400 transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-purple-500/30"
+                        style={{ animationDelay: `${index * 100}ms` }}
+                      >
                         <Avatar className="h-8 w-8 md:h-12 md:w-12">
                           <AvatarImage src={author.profile_image} alt={author.name} />
-                          <AvatarFallback className="bg-purple-900 text-white text-xs md:text-sm">
+                          <AvatarFallback className="bg-gradient-to-br from-purple-600 to-purple-800 text-white text-xs md:text-sm">
                             {author.name ? author.name.substring(0, 2).toUpperCase() : 'AU'}
                           </AvatarFallback>
                         </Avatar>
@@ -121,13 +126,13 @@ function FeaturedArticle({ article }: FeaturedArticleProps) {
                 </>
               ) : (
                 <>
-                  <div className="w-8 h-8 md:w-12 md:h-12 rounded-full overflow-hidden border-2 border-purple-500">
+                  <div className="w-8 h-8 md:w-12 md:h-12 rounded-full overflow-hidden border-2 border-purple-500 hover:border-purple-400 transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-purple-500/30">
                     <Avatar className="h-8 w-8 md:h-12 md:w-12">
                       <AvatarImage 
                         src={(article.authors?.[0]?.profile_image || article.primary_author?.profile_image) || ''} 
                         alt={(article.authors?.[0]?.name || article.primary_author?.name) || 'Author'} 
                       />
-                      <AvatarFallback className="bg-purple-900 text-white text-xs md:text-sm">
+                      <AvatarFallback className="bg-gradient-to-br from-purple-600 to-purple-800 text-white text-xs md:text-sm">
                         {(article.authors?.[0]?.name || article.primary_author?.name) 
                           ? (article.authors[0]?.name || article.primary_author?.name)?.substring(0, 2).toUpperCase() 
                           : 'AU'}

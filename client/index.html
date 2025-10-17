@@ -124,10 +124,20 @@
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9144996607586274" crossorigin="anonymous"></script>
     <meta name="google-site-verification" content="your-verification-code">
     
-    <!-- Simple AdSense Configuration -->
+    <!-- Enhanced AdSense Configuration for Opera Compatibility -->
     <script>
-      // Simple Google Ads initialization
+      // Enhanced Google Ads initialization with Opera-specific handling
       window.adsbygoogle = window.adsbygoogle || [];
+      
+      // Opera-specific initialization
+      if (/opera|opr/.test(navigator.userAgent.toLowerCase())) {
+        console.log('Opera detected - applying Opera-specific AdSense optimizations');
+        window.adsbygoogle.push({
+          google_ad_client: "ca-pub-9144996607586274",
+          enable_page_level_ads: false,
+          overlays: {bottom: true}
+        });
+      }
     </script>
     
     <!-- Privacy and Cookie Compliance -->

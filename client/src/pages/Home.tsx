@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { Link } from 'wouter';
@@ -16,13 +16,17 @@ import {
   Users, 
   Zap,
   ImageIcon,
-  ExternalLink
+  ExternalLink,
+  Sparkles,
+  Star,
+  Rocket
 } from 'lucide-react';
 import { useGallery } from '@/services/galleryService';
 import ArticleCard from "@/components/article/ArticleCard";
 import FeaturedArticle from "@/components/article/FeaturedArticle";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
+import { ModernLoading, ModernSkeleton } from "@/components/ui/modern-loading";
 import type { GhostPost } from '../../../server/ghostService';
 import NewsletterSubscription from "@/components/NewsletterSubscription";
 import SEO from "@/components/SEO";
@@ -37,7 +41,11 @@ const GallerySection: React.FC = () => {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[...Array(4)].map((_, index) => (
-          <div key={index} className="aspect-square bg-white/5 rounded-lg animate-pulse" />
+          <ModernSkeleton 
+            key={index} 
+            variant="card" 
+            className="aspect-square" 
+          />
         ))}
       </div>
     );
@@ -84,7 +92,8 @@ const GallerySection: React.FC = () => {
           return (
             <Card 
               key={item.id} 
-              className="relative aspect-square overflow-hidden group cursor-pointer bg-white/5 border-white/20 hover:border-purple-500/50 transition-all duration-300"
+              className="relative aspect-square overflow-hidden group cursor-pointer bg-white/5 border-white/20 hover:border-purple-500/50 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/20 animate-in fade-in-0 slide-in-from-bottom-4"
+              style={{ animationDelay: `${index * 100}ms` }}
             >
               {imageUrl ? (
                 <>
@@ -92,7 +101,7 @@ const GallerySection: React.FC = () => {
                     <img 
                       src={imageUrl} 
                       alt={title}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                      className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110 group-hover:brightness-110"
                       onError={(e) => {
                         // Fallback for broken images
                         e.currentTarget.style.display = 'none';
@@ -102,16 +111,20 @@ const GallerySection: React.FC = () => {
                     <div className="hidden w-full h-full flex items-center justify-center bg-white/5">
                       <ImageIcon className="w-12 h-12 text-white/40" />
                     </div>
-                  </div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <h4 className="text-white font-semibold text-sm mb-2 line-clamp-2">{title}</h4>
-                      <div className="flex items-center text-purple-400 text-xs">
-                        <ExternalLink className="w-3 h-3 mr-1" />
-                        View in Gallery
+                    {/* Animated overlay gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500">
+                      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    </div>
+                    {/* Content overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500">
+                      <div className="absolute bottom-4 left-4 right-4 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                        <h4 className="text-white font-semibold text-sm mb-2 line-clamp-2 group-hover:text-purple-200 transition-colors duration-300">{title}</h4>
+                        <div className="flex items-center text-purple-400 text-xs group-hover:text-purple-300 transition-colors duration-300">
+                          <ExternalLink className="w-3 h-3 mr-1 group-hover:scale-110 transition-transform duration-300" />
+                          View in Gallery
+                        </div>
                       </div>
                     </div>
-                  </div>
                   <Link href="/gallery">
                     <div className="absolute inset-0 cursor-pointer" />
                   </Link>
@@ -244,8 +257,12 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-[#0D0D17] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin h-12 w-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-white/70">Loading latest articles...</p>
+          <ModernLoading 
+            text="Loading latest articles..." 
+            variant="sparkles" 
+            size="lg"
+            className="mb-4"
+          />
         </div>
       </div>
     );
@@ -312,8 +329,14 @@ export default function Home() {
       <div className="container mx-auto px-3 md:px-4 py-4 md:py-8">
         {/* Featured Article */}
         {featuredPostData && (
-          <div className="mb-8 md:mb-12">
-            <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-white mb-4 md:mb-6 px-1">Featured Story</h2>
+          <div className="mb-8 md:mb-12 animate-in fade-in-0 slide-in-from-bottom-8 duration-700">
+            <div className="flex items-center gap-2 mb-4 md:mb-6 px-1">
+              <Sparkles className="w-6 h-6 text-purple-400 animate-pulse" />
+              <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-white bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
+                Featured Story
+              </h2>
+              <div className="flex-1 h-px bg-gradient-to-r from-purple-500/50 to-transparent" />
+            </div>
             <FeaturedArticle article={featuredPostData} />
           </div>
         )}
@@ -324,30 +347,36 @@ export default function Home() {
         </div>
 
         {/* Category Filter */}
-        <div className="mb-6 md:mb-8 px-1">
+        <div className="mb-6 md:mb-8 px-1 animate-in fade-in-0 slide-in-from-bottom-6 duration-700 delay-200">
           <div className="flex items-center justify-between mb-3 md:mb-4">
-            <h3 className="text-lg md:text-xl font-bold text-white">Browse by Category</h3>
+            <div className="flex items-center gap-2">
+              <Star className="w-5 h-5 text-purple-400" />
+              <h3 className="text-lg md:text-xl font-bold text-white bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
+                Browse by Category
+              </h3>
+            </div>
             <Link href="/topics">
               <Button 
                 variant="outline" 
                 size="sm"
-                className="border-purple-600 text-purple-400 hover:bg-purple-600/20 hover:text-purple-300 transition-colors"
+                className="border-purple-600 text-purple-400 hover:bg-purple-600/20 hover:text-purple-300 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/20 group"
               >
-                <BookOpen className="w-4 h-4 mr-2" />
+                <BookOpen className="w-4 h-4 mr-2 group-hover:rotate-12 transition-transform duration-300" />
                 View All Topics
               </Button>
             </Link>
           </div>
           <div className="flex flex-wrap gap-2">
-            {categories.map((category: string) => (
+            {categories.map((category: string, index: number) => (
               <Badge
                 key={category}
                 variant={selectedCategory === category ? "default" : "outline"}
-                className={`cursor-pointer transition-colors text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 ${
+                className={`cursor-pointer transition-all duration-300 text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 hover:scale-105 hover:shadow-lg animate-in fade-in-0 slide-in-from-left-4 ${
                   selectedCategory === category 
-                    ? "bg-purple-600 hover:bg-purple-700" 
-                    : "border-purple-600 text-purple-400 hover:bg-purple-600/20"
+                    ? "bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 shadow-lg shadow-purple-500/30" 
+                    : "border-purple-600 text-purple-400 hover:bg-purple-600/20 hover:border-purple-500 hover:text-purple-300"
                 }`}
+                style={{ animationDelay: `${index * 50}ms` }}
                 onClick={() => setSelectedCategory(category)}
               >
                 {category === 'all' ? 'All Articles' : category}
@@ -357,15 +386,25 @@ export default function Home() {
         </div>
 
         {/* Articles Grid */}
-        <div className="mb-8 md:mb-12 px-1">
-          <h3 className="text-lg md:text-xl lg:text-2xl font-bold text-white mb-4 md:mb-6">Latest Articles</h3>
+        <div className="mb-8 md:mb-12 px-1 animate-in fade-in-0 slide-in-from-bottom-6 duration-700 delay-300">
+          <div className="flex items-center gap-2 mb-4 md:mb-6">
+            <Rocket className="w-5 h-5 text-purple-400" />
+            <h3 className="text-lg md:text-xl lg:text-2xl font-bold text-white bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
+              Latest Articles
+            </h3>
+            <div className="flex-1 h-px bg-gradient-to-r from-purple-500/30 to-transparent" />
+          </div>
           {filteredPosts.length > 0 ? (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                {filteredPosts.slice(0, 3).map((post: GhostPost) => (
-                  <ArticleCard
+                {filteredPosts.slice(0, 3).map((post: GhostPost, index: number) => (
+                  <div 
                     key={post.id}
-                    article={{
+                    className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500"
+                    style={{ animationDelay: `${index * 150}ms` }}
+                  >
+                    <ArticleCard
+                      article={{
                       id: parseInt(post.id) || 0,
                       title: post.title,
                       slug: post.slug,
@@ -388,7 +427,8 @@ export default function Home() {
                         profilePicture: author.profile_image || ''
                       })) : []
                     }}
-                  />
+                    />
+                  </div>
                 ))}
               </div>
 
@@ -398,10 +438,14 @@ export default function Home() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                {filteredPosts.slice(3).map((post: GhostPost) => (
-                  <ArticleCard
+                {filteredPosts.slice(3).map((post: GhostPost, index: number) => (
+                  <div 
                     key={post.id}
-                    article={{
+                    className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500"
+                    style={{ animationDelay: `${(index + 3) * 150}ms` }}
+                  >
+                    <ArticleCard
+                      article={{
                       id: parseInt(post.id) || 0,
                       title: post.title,
                       slug: post.slug,
@@ -424,26 +468,34 @@ export default function Home() {
                         profilePicture: author.profile_image || ''
                       })) : []
                     }}
-                  />
+                    />
+                  </div>
                 ))}
               </div>
-              
+
               {/* Load More Button */}
               {hasMorePosts && (
-                <div className="flex justify-center mt-8">
+                <div className="flex justify-center mt-8 animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-500">
                   <Button
                     onClick={loadMorePosts}
                     disabled={isLoadingMore}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg transition-colors duration-300"
+                    className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-purple-500/30 group relative overflow-hidden"
                   >
-                    {isLoadingMore ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Loading More...
-                      </>
-                    ) : (
-                      'Load More Articles'
-                    )}
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="relative flex items-center">
+                      {isLoadingMore ? (
+                        <ModernLoading 
+                          text="Loading More..." 
+                          variant="rocket" 
+                          size="sm"
+                        />
+                      ) : (
+                        <>
+                          Load More Articles
+                          <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+                        </>
+                      )}
+                    </div>
                   </Button>
                 </div>
               )}
@@ -456,11 +508,25 @@ export default function Home() {
         </div>
 
         {/* Enhanced Featured Gallery Section */}
-        <div className="mb-12 px-1">
-          <h3 className="text-lg md:text-xl lg:text-2xl font-bold text-white mb-4 md:mb-6 flex items-center gap-2">
-            <ImageIcon className="w-5 h-5 text-purple-400" />
-            Featured Gallery
-          </h3>
+        <div className="mb-12 px-1 animate-in fade-in-0 slide-in-from-bottom-6 duration-700 delay-400">
+          <div className="flex items-center justify-between mb-4 md:mb-6">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="w-5 h-5 text-purple-400" />
+              <h3 className="text-lg md:text-xl lg:text-2xl font-bold text-white bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
+                Featured Gallery
+              </h3>
+            </div>
+            <Link href="/gallery">
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="border-purple-600 text-purple-400 hover:bg-purple-600/20 hover:text-purple-300 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/20 group"
+              >
+                <ImageIcon className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform duration-300" />
+                View Gallery
+              </Button>
+            </Link>
+          </div>
           
           {/* Use the proper gallery service instead of the broken featured endpoint */}
           <GallerySection />
@@ -472,7 +538,7 @@ export default function Home() {
         </div>
 
         {/* Newsletter Subscription Section */}
-        <div className="mt-12">
+        <div className="mt-12 animate-in fade-in-0 slide-in-from-bottom-6 duration-700 delay-500">
           <NewsletterSubscription />
         </div>
       </div>
