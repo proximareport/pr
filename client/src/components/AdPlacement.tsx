@@ -117,9 +117,7 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
           
           // Opera-specific ad push with additional parameters
           (window.adsbygoogle as any[]).push({
-            google_ad_client: "ca-pub-9144996607586274",
-            enable_page_level_ads: false,
-            overlays: {bottom: true}
+            google_ad_client: "ca-pub-9144996607586274"
           });
           
           console.log(`Opera-specific ad loading for ${type}`);

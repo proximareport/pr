@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import { useEffect } from 'react';
 import { Link } from 'wouter';
+import ParticleBackground from '@/components/ParticleBackground';
+import GradientBackground from '@/components/GradientBackground';
 
 // Import logo image
 import mobileLogo from "../assets/images/proxima-logo-mobile.png";
@@ -132,12 +134,13 @@ export default function About() {
           }
         }}
       />
-      <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/40 to-black relative overflow-hidden">
-      {/* Background effects */}
-      <div className="absolute inset-0">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-purple-900/10 via-violet-900/10 to-purple-800/10"></div>
-        <div className="absolute top-20 left-20 w-64 h-64 bg-gradient-to-r from-purple-600/10 to-violet-600/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-20 w-48 h-48 bg-gradient-to-r from-blue-600/10 to-cyan-600/10 rounded-full blur-3xl animate-pulse"></div>
+      <div className="min-h-screen relative overflow-hidden">
+        <GradientBackground variant="aurora" intensity="medium" />
+        <ParticleBackground 
+          particleCount={70} 
+          speed={0.7}
+          colors={['#10B981', '#8B5CF6', '#06B6D4', '#F59E0B']}
+        />
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

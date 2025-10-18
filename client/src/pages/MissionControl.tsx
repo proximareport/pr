@@ -1356,7 +1356,8 @@ const MissionControl: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <>
+      <div className="min-h-screen bg-black text-white">
       {/* Header */}
       <div className="bg-gray-900 border-b border-gray-700 px-3 sm:px-6 py-3 sm:py-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0">
@@ -3431,6 +3432,7 @@ const MissionControl: React.FC = () => {
         />
       )}
     </div>
+    </>
   );
 };
 

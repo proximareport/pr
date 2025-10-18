@@ -44,22 +44,17 @@ const RelatedArticles: React.FC<RelatedArticlesProps> = ({
 
   return (
     <div className={`space-y-6 ${className}`}>
-      <div className="flex items-center justify-between">
-        <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-          <ArrowRight className="w-6 h-6 text-purple-400" />
+      <div className="mb-4">
+        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+          <ArrowRight className="w-5 h-5 text-purple-400" />
           Related Articles
         </h3>
-        <Link href="/">
-          <span className="text-purple-400 hover:text-purple-300 text-sm font-medium transition-colors">
-            View All Articles
-          </span>
-        </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-4">
         {relatedArticles.map((article) => (
           <Link key={article.id} href={`/articles/${article.slug}`}>
-            <article className="group bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-400/50 rounded-2xl p-6 transition-all duration-500 backdrop-blur-md hover:shadow-lg hover:shadow-purple-500/20 cursor-pointer">
+            <article className="group bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-400/50 rounded-xl p-4 transition-all duration-500 backdrop-blur-md hover:shadow-lg hover:shadow-purple-500/20 cursor-pointer">
               {/* Article Image */}
               {article.featuredImage && (
                 <div className="relative overflow-hidden rounded-xl mb-4 aspect-video">
@@ -73,32 +68,32 @@ const RelatedArticles: React.FC<RelatedArticlesProps> = ({
               )}
 
               {/* Article Content */}
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {/* Tags */}
                 {article.category && (
                   <Badge 
                     variant="secondary" 
-                    className="bg-purple-500/20 text-purple-300 border-purple-400/30 hover:bg-purple-500/30"
+                    className="bg-purple-500/20 text-purple-300 border-purple-400/30 hover:bg-purple-500/30 text-xs"
                   >
                     {article.category}
                   </Badge>
                 )}
 
                 {/* Title */}
-                <h4 className="text-lg font-bold text-white group-hover:text-purple-300 transition-colors line-clamp-2">
+                <h4 className="text-base font-bold text-white group-hover:text-purple-300 transition-colors line-clamp-2">
                   {article.title}
                 </h4>
 
                 {/* Excerpt */}
                 {article.summary && (
-                  <p className="text-white/70 text-sm line-clamp-3 leading-relaxed">
+                  <p className="text-white/70 text-xs line-clamp-2 leading-relaxed">
                     {article.summary}
                   </p>
                 )}
 
                 {/* Meta Information */}
                 <div className="flex items-center justify-between text-xs text-white/50">
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     {article.author && (
                       <div className="flex items-center gap-1">
                         <User className="w-3 h-3" />
@@ -107,7 +102,7 @@ const RelatedArticles: React.FC<RelatedArticlesProps> = ({
                     )}
                     <div className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      <span>{article.readTime} min read</span>
+                      <span>{article.readTime} min</span>
                     </div>
                   </div>
                   {article.publishedAt && (
@@ -120,7 +115,7 @@ const RelatedArticles: React.FC<RelatedArticlesProps> = ({
               </div>
 
               {/* Hover Effect */}
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-600/0 via-purple-600/0 to-purple-600/0 group-hover:from-purple-600/5 group-hover:via-purple-600/10 group-hover:to-purple-600/5 transition-all duration-500 pointer-events-none" />
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-600/0 via-purple-600/0 to-purple-600/0 group-hover:from-purple-600/5 group-hover:via-purple-600/10 group-hover:to-purple-600/5 transition-all duration-500 pointer-events-none" />
             </article>
           </Link>
         ))}

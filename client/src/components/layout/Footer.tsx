@@ -31,7 +31,7 @@ function Footer() {
   };
   
   return (
-    <footer className="relative bg-gradient-to-br from-gray-950 via-purple-950/40 to-black border-t border-purple-900/30 overflow-hidden">
+    <footer className="relative bg-gradient-to-br from-slate-950 via-purple-950/20 to-slate-900 border-t border-white/10 overflow-hidden backdrop-blur-sm">
       {/* Dark purple geometric background */}
       <div className="absolute inset-0">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-purple-900/10 via-violet-900/10 to-purple-800/10"></div>
@@ -201,9 +201,9 @@ function Footer() {
               </div>
             </div>
             
-            {/* Newsletter Section - Dark Purple */}
+            {/* Newsletter Section - Modern Glassmorphism */}
             <div className="lg:col-span-2">
-              <div className="bg-gradient-to-br from-gray-900/80 to-purple-950/50 backdrop-blur-sm rounded-2xl border border-purple-900/30 p-6 space-y-4">
+              <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-6 space-y-4 hover:bg-white/10 transition-all duration-300 hover:border-purple-500/30">
                 <h3 className="text-lg font-semibold text-white">Stay Updated</h3>
                 <p className="text-gray-400 text-sm">
                   Get the latest space news and updates delivered to your inbox.

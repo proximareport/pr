@@ -32,6 +32,8 @@ import NewsletterSubscription from "@/components/NewsletterSubscription";
 import SEO from "@/components/SEO";
 import { useGoogleAdSense } from "@/hooks/useGoogleAdSense";
 import { HomepageHeroAd, HomepageGridAd, InContentAd } from "@/components/AdPlacement";
+import ParticleBackground from "@/components/ParticleBackground";
+import GradientBackground from "@/components/GradientBackground";
 
 // Gallery Section Component
 const GallerySection: React.FC = () => {
@@ -326,8 +328,15 @@ export default function Home() {
           }
         }}
       />
-      <div className="bg-[#0D0D17] min-h-screen">
-      <div className="container mx-auto px-3 md:px-4 py-4 md:py-8">
+      <div className="min-h-screen relative overflow-hidden">
+        <GradientBackground variant="cosmic" intensity="medium" />
+        <ParticleBackground 
+          particleCount={80} 
+          speed={0.8}
+          colors={['#8B5CF6', '#3B82F6', '#06B6D4', '#10B981', '#F59E0B']}
+        />
+        
+        <div className="relative z-10 container mx-auto px-4 py-8">
         {/* Featured Article */}
         {featuredPostData && (
           <div className="mb-8 md:mb-12 animate-in fade-in-0 slide-in-from-bottom-8 duration-700">
@@ -397,11 +406,11 @@ export default function Home() {
           </div>
           {filteredPosts.length > 0 ? (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredPosts.slice(0, 3).map((post: GhostPost, index: number) => (
                   <div 
                     key={post.id}
-                    className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500"
+                    className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700 hover:scale-[1.02] transition-all duration-300 group"
                     style={{ animationDelay: `${index * 150}ms` }}
                   >
                     <ArticleCard
@@ -438,11 +447,11 @@ export default function Home() {
                 <InContentAd className="w-full" />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredPosts.slice(3).map((post: GhostPost, index: number) => (
                   <div 
                     key={post.id}
-                    className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500"
+                    className="animate-in fade-in-0 slide-in-from-bottom-4 duration-700 hover:scale-[1.02] transition-all duration-300 group"
                     style={{ animationDelay: `${(index + 3) * 150}ms` }}
                   >
                     <ArticleCard

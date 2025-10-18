@@ -197,28 +197,6 @@ function TableOfContents({ headings, activeHeadingId }: TableOfContentsProps) {
           </Button>
         </div>
 
-        {/* Quick Actions */}
-        <div className="pt-4 border-t border-white/10">
-          <p className="text-xs text-white/50 text-center mb-3">Quick Actions</p>
-          <div className="flex gap-2">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              className="flex-1 h-9 text-xs bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 hover:border-white/20 transition-all duration-300"
-            >
-              <UserIcon className="w-3 h-3 mr-1" />
-              Follow Author
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              className="flex-1 h-9 text-xs bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 hover:border-white/20 transition-all duration-300"
-            >
-              <CalendarIcon className="w-3 h-3 mr-1" />
-              Schedule
-            </Button>
-          </div>
-        </div>
       </div>
     </div>
   );
