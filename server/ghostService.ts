@@ -362,14 +362,14 @@ export async function getGalleryImages(page = 1, limit = 20, tag?: string) {
     params.append('include', 'tags,authors');
     params.append('fields', 'id,title,slug,excerpt,feature_image,published_at,reading_time,primary_tag,html');
     
-    // Filter posts that have featured images or any images
-    let filter = 'feature_image:-null';
+    // Try to get any posts first, then filter for images
+    let filter = '';
     
     if (tag) {
-      filter += `+tag:${tag}`;
+      filter = `tag:${tag}`;
     }
     
-    console.log('Gallery filter:', filter);
+    console.log('Gallery filter:', filter || 'no filter');
     
     params.append('filter', filter);
 
@@ -393,76 +393,28 @@ export async function getGalleryImages(page = 1, limit = 20, tag?: string) {
 
     // Extract images from posts with metadata
     const posts = response.data?.posts || [];
+    console.log('Total posts found:', posts.length);
     
-    // If no posts with featured images, try to get recent posts and extract images from content
-    if (posts.length === 0) {
-      console.log('No posts with featured images found, trying to get recent posts...');
+    // Filter posts that have either featured images or images in content
+    const postsWithImages = posts.filter((post: any) => {
+      const hasFeaturedImage = post.feature_image;
+      const hasContentImages = extractImagesFromHTML(post.html || '').length > 0;
+      const hasImages = hasFeaturedImage || hasContentImages;
       
-      // Try without the featured image filter
-      const fallbackParams = new URLSearchParams();
-      fallbackParams.append('key', GHOST_CONTENT_API_KEY);
-      fallbackParams.append('page', page.toString());
-      fallbackParams.append('limit', limit.toString());
-      fallbackParams.append('include', 'tags,authors');
-      fallbackParams.append('fields', 'id,title,slug,excerpt,feature_image,published_at,reading_time,primary_tag,html');
-      
-      if (tag) {
-        fallbackParams.append('filter', `tag:${tag}`);
+      if (hasImages) {
+        console.log(`Post "${post.title}" has images:`, {
+          featured: !!hasFeaturedImage,
+          content: hasContentImages,
+          total: (hasFeaturedImage ? 1 : 0) + extractImagesFromHTML(post.html || '').length
+        });
       }
       
-      const fallbackResponse = await axios.get(`${GHOST_URL}/ghost/api/v3/content/posts/`, {
-        params: fallbackParams,
-        headers: {
-          'Accept-Version': 'v3.0',
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      const fallbackPosts = fallbackResponse.data?.posts || [];
-      console.log('Fallback posts found:', fallbackPosts.length);
-      
-      // Filter posts that have either featured images or images in content
-      const postsWithImages = fallbackPosts.filter((post: any) => {
-        const hasFeaturedImage = post.feature_image;
-        const hasContentImages = extractImagesFromHTML(post.html || '').length > 0;
-        return hasFeaturedImage || hasContentImages;
-      });
-      
-      console.log('Posts with images found:', postsWithImages.length);
-      
-      const galleryItems = postsWithImages.map((post: any) => {
-        const htmlImages = extractImagesFromHTML(post.html || '');
-        
-        return {
-          id: post.id,
-          title: post.title,
-          slug: post.slug,
-          excerpt: post.excerpt,
-          published_at: post.published_at,
-          primary_tag: post.primary_tag,
-          primary_author: post.primary_author,
-          feature_image: post.feature_image,
-          content_images: htmlImages,
-          total_images: htmlImages.length + (post.feature_image ? 1 : 0)
-        };
-      });
-      
-      return {
-        items: galleryItems,
-        meta: {
-          pagination: {
-            page: fallbackResponse.data?.meta?.pagination?.page || page,
-            limit: fallbackResponse.data?.meta?.pagination?.limit || limit,
-            pages: fallbackResponse.data?.meta?.pagination?.pages || 1,
-            total: galleryItems.length,
-            next: fallbackResponse.data?.meta?.pagination?.next || null,
-            prev: fallbackResponse.data?.meta?.pagination?.prev || null
-          }
-        }
-      };
-    }
+      return hasImages;
+    });
     
-    const galleryItems = posts.map((post: any) => {
+    console.log('Posts with images found:', postsWithImages.length);
+    
+    const galleryItems = postsWithImages.map((post: any) => {
       // Extract additional images from HTML content
       const htmlImages = extractImagesFromHTML(post.html || '');
       
