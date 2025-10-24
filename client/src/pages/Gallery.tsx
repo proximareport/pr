@@ -50,7 +50,7 @@ const Gallery: React.FC = () => {
   const isPageLocked = currentPage >= 3 && !isPaidSubscriber;
 
   // Filter items based on search query
-  const filteredItems = galleryData?.posts?.filter(item => 
+  const filteredItems = galleryData?.items?.filter(item => 
     item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.excerpt?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.primary_tag?.name.toLowerCase().includes(searchQuery.toLowerCase())
