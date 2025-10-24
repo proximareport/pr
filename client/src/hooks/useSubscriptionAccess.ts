@@ -43,6 +43,13 @@ export const useSubscriptionAccess = () => {
       case 'exclusive_articles':
       case 'exclusive_themes':
         return hasAccess('tier3');
+      // Free ProxiHub tools
+      case 'space_fact_generator':
+      case 'planet_name_generator':
+      case 'space_mission_generator':
+      case 'planet_calculator':
+      case 'astronomy_data':
+        return true; // Always available to all users
       default:
         return false;
     }
@@ -67,6 +74,13 @@ export const useSubscriptionAccess = () => {
       case 'exclusive_articles':
       case 'exclusive_themes':
         return 'tier3';
+      // Free ProxiHub tools
+      case 'space_fact_generator':
+      case 'planet_name_generator':
+      case 'space_mission_generator':
+      case 'planet_calculator':
+      case 'astronomy_data':
+        return 'free';
       default:
         return 'free';
     }

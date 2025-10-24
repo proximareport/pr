@@ -41,10 +41,15 @@ const FEATURES = {
     { feature: "Basic profile customization", included: true },
     { feature: "Newsletter subscription", included: true },
     { feature: "Google ads experience", included: true },
+    { feature: "Space Fact Generator", included: true },
+    { feature: "Planet Name Generator", included: true },
+    { feature: "Space Mission Generator", included: true },
+    { feature: "Planet Calculator", included: true },
+    { feature: "Astronomy Data", included: true },
     { feature: "Premium themes", included: false },
     { feature: "Advanced profile customization", included: false },
     { feature: "Comment boosting", included: false },
-    { feature: "Proxihub & Mission Control access", included: false }
+    { feature: "Full Proxihub & Mission Control access", included: false }
   ],
   tier1: [
     { feature: "Access to all public articles", included: true },
@@ -56,7 +61,7 @@ const FEATURES = {
     { feature: "Access to premium themes", included: true },
     { feature: "More profile customization options", included: true },
     { feature: "Tier 1 Supporter badge", included: true },
-    { feature: "Basic Proxihub access", included: true },
+    { feature: "All ProxiHub tools", included: true },
     { feature: "Mission Control pages access", included: true },
     { feature: "Comment boosting on articles", included: false },
     { feature: "Advanced Proxihub features", included: false }

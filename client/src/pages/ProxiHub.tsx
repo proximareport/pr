@@ -565,7 +565,18 @@ function ProxiHub() {
                       // Unlock the first tool in each category for free users
                       const isFirstToolInCategory = toolIndex === 0;
                       const isAdvancedTool = tool.category === "Advanced" || tool.badge === "Advanced";
-                      const hasAccess = isFirstToolInCategory || canAccessFeature('proxihub_basic');
+                      
+                      // Free tools that should be available to all users
+                      const freeTools = [
+                        "Space Fact Generator",
+                        "Planet Name Generator", 
+                        "Space Mission Generator",
+                        "Planet Calculator",
+                        "Astronomy Data"
+                      ];
+                      
+                      const isFreeTool = freeTools.includes(tool.name);
+                      const hasAccess = isFirstToolInCategory || isFreeTool || canAccessFeature('proxihub_basic');
                       
                       const toolCard = (
                         <Card key={toolIndex} className="bg-white/5 border-white/10 backdrop-blur-sm hover:bg-white/10 transition-all duration-300 group">
@@ -647,7 +658,7 @@ function ProxiHub() {
                           requiredTier="tier1"
                           featureName={tool.name}
                           description={isAdvancedTool ? "Advanced tools require Supporter plan or higher" : 
-                                     !isFirstToolInCategory ? "Additional tools require Supporter plan or higher" : undefined}
+                                     !isFirstToolInCategory && !isFreeTool ? "Additional tools require Supporter plan or higher" : undefined}
                           showUpgrade={!hasAccess}
                           compact={true}
                         >
