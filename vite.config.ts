@@ -7,7 +7,9 @@ export default defineConfig({
   plugins: [
     react({
       jsxRuntime: 'automatic',
-      jsxImportSource: 'react'
+      jsxImportSource: 'react',
+      fastRefresh: true,
+      include: '**/*.{jsx,tsx}'
     }),
     // runtimeErrorOverlay(), // Temporarily disabled to fix preamble error
     ...(process.env.NODE_ENV !== "production" &&
