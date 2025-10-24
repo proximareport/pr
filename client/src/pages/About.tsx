@@ -141,9 +141,8 @@ export default function About() {
           speed={0.7}
           colors={['#10B981', '#8B5CF6', '#06B6D4', '#F59E0B']}
         />
-      </div>
-
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Mission Statement */}
         <div className="bg-gray-900/60 backdrop-blur-sm rounded-xl p-8 border border-purple-900/30 mb-16">
           <div className="max-w-4xl mx-auto text-center">
@@ -556,6 +555,7 @@ export default function About() {
               <span>Status: Active</span>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </>
