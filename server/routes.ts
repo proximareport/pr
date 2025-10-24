@@ -6774,6 +6774,42 @@ Crawl-delay: 1`;
     }
   });
 
+  // Debug endpoint to test Ghost API directly
+  app.get('/api/debug/ghost-posts', async (req, res) => {
+    try {
+      const response = await axios.get(`${process.env.GHOST_URL}/ghost/api/v3/content/posts/`, {
+        params: {
+          key: process.env.GHOST_CONTENT_API_KEY,
+          limit: 3,
+          fields: 'id,title,feature_image,html'
+        },
+        headers: {
+          'Accept-Version': 'v3.0',
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      res.json({
+        status: response.status,
+        postCount: response.data?.posts?.length || 0,
+        posts: response.data?.posts?.map((post: any) => ({
+          id: post.id,
+          title: post.title,
+          hasFeatureImage: !!post.feature_image,
+          featureImageUrl: post.feature_image,
+          hasHtml: !!post.html,
+          htmlLength: post.html?.length || 0
+        })) || []
+      });
+    } catch (error) {
+      console.error('Debug Ghost API error:', error);
+      res.status(500).json({ 
+        error: 'Failed to fetch Ghost posts',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Gallery Tags API
   app.get('/api/gallery/tags', async (req, res) => {
     try {

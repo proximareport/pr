@@ -527,7 +527,7 @@ const MissionControl: React.FC = () => {
   const [editingMission, setEditingMission] = useState<MissionControlMission | null>(null);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [newUpdate, setNewUpdate] = useState('');
-  const [viewMode, setViewMode] = useState<'mission-control' | 'dashboard'>('mission-control');
+  const [viewMode, setViewMode] = useState<'mission-control' | 'dashboard'>('dashboard');
   const [userLocation, setUserLocation] = useState<Location | null>(null);
   const [apodModalOpen, setApodModalOpen] = useState(false);
   const [videoFeedUrl, setVideoFeedUrl] = useState('');
@@ -2787,12 +2787,6 @@ const MissionControl: React.FC = () => {
               <p className="text-gray-400 text-sm sm:text-base">Comprehensive overview of space missions, scientific data, and space exploration activities</p>
             </div>
 
-            {/* Top Ad for Dashboard */}
-            <div className="flex justify-center mb-8">
-              <div className="w-full max-w-md">
-                <BannerAd />
-              </div>
-            </div>
 
             {/* Dashboard Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
@@ -2952,9 +2946,7 @@ const MissionControl: React.FC = () => {
 
             {/* Middle Ad for Dashboard */}
             <div className="flex justify-center my-8">
-              <div className="w-full max-w-lg">
-                <InContentAd />
-              </div>
+              <InContentAd />
             </div>
 
             {/* Additional Dashboard Sections */}
@@ -3413,9 +3405,7 @@ const MissionControl: React.FC = () => {
 
             {/* Bottom Ad for Dashboard */}
             <div className="flex justify-center mt-8">
-              <div className="w-full max-w-md">
-                <BannerAd />
-      </div>
+              <BannerAd />
             </div>
           </div>
         </div>

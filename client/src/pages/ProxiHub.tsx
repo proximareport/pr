@@ -395,9 +395,7 @@ function ProxiHub() {
 
           {/* Tiny Top Ad - Minimal Size */}
           <div className="mb-2 flex justify-center">
-            <div className="w-96 h-6">
-              <InContentAd className="w-full h-full" />
-            </div>
+            <InContentAd />
           </div>
 
           {/* Search and Filter Bar */}
@@ -673,9 +671,7 @@ function ProxiHub() {
               {/* In-Content Ad after first group - Tiny */}
               {filteredGroups.length > 0 && (
                 <div className="my-2 flex justify-center">
-                  <div className="w-96 h-6">
-                    <InContentAd className="w-full h-full" />
-                  </div>
+                  <InContentAd />
                 </div>
               )}
             </div>

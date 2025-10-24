@@ -271,10 +271,7 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
         case 'sidebar':
           return 'auto';
         case 'in-content':
-          if (isIOS) return 'fluid'; // iOS content ads work better with fluid
-          if (isAndroid) return 'auto'; // Android content ads prefer auto
-          if (isOpera) return 'auto'; // Opera mobile content ads prefer auto
-          return 'fluid';
+          return 'horizontal'; // Use horizontal format for in-content ads
         case 'article-top':
           if (isIOS) return 'fluid'; // iOS prefers fluid for better layout
           if (isAndroid) return 'auto'; // Android prefers auto
@@ -304,10 +301,7 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
       case 'sidebar':
         return 'auto';
       case 'in-content':
-        if (isSafari) return 'fluid'; // Safari content ads work better with fluid
-        if (isFirefox) return 'auto'; // Firefox content ads prefer auto
-        if (isEdge) return 'fluid'; // Edge content ads prefer fluid
-        return 'fluid';
+        return 'horizontal'; // Use horizontal format for in-content ads
       case 'article-top':
         if (isSafari) return 'fluid'; // Safari article ads prefer fluid
         if (isFirefox) return 'auto'; // Firefox article ads prefer auto
@@ -347,7 +341,7 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
           case 'sidebar':
             return { width: '100%', height: '280px', minHeight: '280px' };
           case 'in-content':
-            return { width: '100%', height: '250px', minHeight: '250px' };
+            return { width: '100%', height: '60px', minHeight: '60px' };
           case 'article-top':
             return { width: '100%', height: '250px', minHeight: '250px' };
           case 'article-bottom':
@@ -366,7 +360,7 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
           case 'sidebar':
             return { width: '100%', height: '300px', minHeight: '300px' };
           case 'in-content':
-            return { width: '100%', height: '250px', minHeight: '250px' };
+            return { width: '100%', height: '60px', minHeight: '60px' };
           case 'article-top':
             return { width: '100%', height: '250px', minHeight: '250px' };
           case 'article-bottom':
@@ -386,7 +380,7 @@ export const AdPlacement: React.FC<AdPlacementProps> = ({ type, className = '', 
           case 'sidebar':
             return { width: '100%', height: '300px', minHeight: '300px' };
           case 'in-content':
-            return { width: '100%', height: '250px', minHeight: '250px' };
+            return { width: '100%', height: '60px', minHeight: '60px' };
           case 'article-top':
             return { width: '100%', height: '250px', minHeight: '250px' };
           case 'article-bottom':

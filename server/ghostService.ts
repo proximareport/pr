@@ -360,7 +360,7 @@ export async function getGalleryImages(page = 1, limit = 20, tag?: string) {
     params.append('page', page.toString());
     params.append('limit', limit.toString());
     params.append('include', 'tags,authors');
-    params.append('fields', 'id,title,slug,excerpt,feature_image,published_at,reading_time,primary_tag,html');
+    params.append('fields', 'id,title,slug,excerpt,feature_image,published_at,reading_time,primary_tag,html,meta_description,custom_excerpt');
     
     // Try to get any posts first, then filter for images
     let filter = '';
@@ -388,7 +388,14 @@ export async function getGalleryImages(page = 1, limit = 20, tag?: string) {
 
     console.log('Gallery API response:', {
       status: response.status,
-      postCount: response.data?.posts?.length || 0
+      postCount: response.data?.posts?.length || 0,
+      firstPost: response.data?.posts?.[0] ? {
+        id: response.data.posts[0].id,
+        title: response.data.posts[0].title,
+        hasFeatureImage: !!response.data.posts[0].feature_image,
+        featureImageUrl: response.data.posts[0].feature_image,
+        hasHtml: !!response.data.posts[0].html
+      } : null
     });
 
     // Extract images from posts with metadata
