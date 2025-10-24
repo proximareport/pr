@@ -9,7 +9,7 @@ export default defineConfig({
       jsxRuntime: 'automatic',
       jsxImportSource: 'react'
     }),
-    runtimeErrorOverlay(),
+    // runtimeErrorOverlay(), // Temporarily disabled to fix preamble error
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
